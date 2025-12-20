@@ -66,3 +66,17 @@ yarn-error.log*
 # Generated documentation
 docs/_build/
 site/
+
+# C/C++
+*.o
+*.a
+*.so
+*.exe
+*.out
+build/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile.cmake
+CTestTestfile.cmake
+compile_commands.json
