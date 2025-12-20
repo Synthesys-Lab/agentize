@@ -36,6 +36,7 @@ make agentize \
 - `README.md` - Project README stub
 - `.gitignore` - Common ignore patterns
 - `setup.sh` - Environment setup script
+- `tests/` - Automated test suite (SDK-level only)
 
 #### 2. Port to Existing Project (`port` mode)
 
@@ -383,7 +384,30 @@ See `scripts/install.sh` for substitution logic.
 
 **IMPORTANT**: Always use `make agentize` to run the installation script. DO NOT run `scripts/install.sh` directly with bash.
 
-Test by installing into sample projects:
+#### Automated Testing
+
+The SDK includes an automated test suite to verify installation correctness:
+
+```bash
+# Run all automated tests
+make test
+
+# Clean up test artifacts
+make clean
+```
+
+Tests verify:
+- Init mode creates full project structure
+- Port mode creates only `.claude/` without modifying existing files
+- Language templates generate correct files (Python, C++, C, Rust)
+- Multi-language projects combine templates correctly
+
+See [tests/README.md](tests/README.md) for test details and [docs/architecture/testing-infrastructure.md](docs/architecture/testing-infrastructure.md) for architecture.
+
+#### Manual Verification
+
+For manual testing or debugging, install into sample projects:
+
 ```bash
 # Test init mode
 make agentize AGENTIZE_MASTER_PROJ=/tmp/test-init AGENTIZE_MODE=init

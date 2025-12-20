@@ -54,7 +54,9 @@ make build
 make test
 ```
 
-[TODO: Document testing strategy and how to run specific tests]
+Runs the automated test suite. Tests verify installation script correctness across different modes (init, port) and language templates (Python, C++, C, Rust).
+
+See [README.md](../README.md#testing-strategy) for testing strategy and [tests/README.md](../tests/README.md) for test details.
 
 ### Project Structure
 
