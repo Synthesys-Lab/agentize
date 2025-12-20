@@ -1,8 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(echo FILE OPERATIONS - Reading and viewing files)",
+      "Bash(echo FILE OPERATIONS - Reading files and general editions)",
       "Read(//tmp/**)",
+      "Read(~/.claude/**)",
       "Bash(cat:*)",
       "Bash(find:*)",
       "Bash(ls:*)",
@@ -12,6 +13,8 @@
       "Bash(tee:*)",
       "Bash(awk:*)",
       "Bash(xargs ls:*)",
+      "Bash(sed:*)",
+      "Bash(cp:*)",
 
       "Bash(echo BUILD TOOLS - Compilation and build system)",
       "Bash(ninja:*)",
@@ -26,31 +29,9 @@
       "Bash(make setup:*)",
       "Bash(make test:*)",
 
-      "Bash(echo DSA STACK TOOLS - Project-specific tools)",
-      "Bash(dsa-cc:*)",
-      "Bash(dsa-sim:*)",
-      "Bash(dsa-hwgen:*)",
-      "Bash(dsa-exp:*)",
-      "Bash(dsa-mapper:*)",
-      "Bash(./build/bin/dsa-cc:*)",
-      "Bash(./build/bin/dsa-sim:*)",
-      "Bash(./build/bin/dsa-hwgen:*)",
-      "Bash(./build/bin/dsa-mapper:*)",
-      "Bash(build/bin/dsa-cc:*)",
-      "Bash(build/bin/dsa-hwgen:*)",
-      "Bash(build/bin/dsa-mapper:*)",
-
-      "Bash(echo DSA DEBUG VARIANTS - Debug builds and profiling)",
-      "Bash(DSA_DEBUG=1 ./build/bin/dsa-cc:*)",
-      "Bash(DSA_DEBUG=1 dsa-mapper:*)",
-      "Bash(DSA_DEBUG=1 llvm-lit:*)",
-      "Bash(DSA_DEBUG=1 dsa-hwgen:*)",
-      "Bash(DSA_DEBUG=1 ninja:*)",
-      "Bash(time dsa-mapper:*)",
-
       "Bash(echo LLVM/MLIR TOOLS - LLVM and MLIR infrastructure)",
-      "Bash(mlir-opt:*)",
       "Bash(clang++:*)",
+      "Bash(clang:*)",
       "Bash(mlir-translate:*)",
       "Bash(lit:*)",
       "Bash(llvm-lit:*)",
@@ -59,12 +40,8 @@
       "Bash(./externals/llvm-project/build/bin/llvm-lit:*)",
       "Bash(./externals/llvm-project/build/bin/mlir-translate:*)",
 
-      "Bash(echo LLVM DEBUG VARIANTS - LLVM debug builds)",
-      "Bash(LLVM_DEBUG=1 ./build/bin/dsa-cc:*)",
-
       "Bash(echo ENVIRONMENT - Module system and runtime)",
       "Bash(module load:*)",
-      "Bash(module load ./env/dsa-stack)",
 
       "Bash(echo SKILL - Agent skills)",
       "Skill(pr-templates)",
@@ -105,7 +82,7 @@
       "Bash(git checkout:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-
+      
       "Bash(echo KIND OF TOO GENERAL COMMANDS)",
       "Bash(python3:*)",
       "Bash(test:*)",
@@ -117,29 +94,6 @@
       "Bash(gh issue create:*)",
       "Bash(gh project item-edit:*)",
       "Bash(gh pr create:*)"
-    ]
-  },
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-init.sh"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/post-edit.sh"
-          }
-        ]
-      }
     ]
   }
 }

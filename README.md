@@ -381,6 +381,8 @@ See `scripts/install.sh` for substitution logic.
 
 ### Testing Strategy
 
+**IMPORTANT**: Always use `make agentize` to run the installation script. DO NOT run `scripts/install.sh` directly with bash.
+
 Test by installing into sample projects:
 ```bash
 # Test init mode
@@ -389,9 +391,15 @@ make agentize AGENTIZE_MASTER_PROJ=/tmp/test-init AGENTIZE_MODE=init
 # Test port mode
 make agentize AGENTIZE_MASTER_PROJ=/tmp/test-port AGENTIZE_MODE=port
 
+# Test multi-language projects
+make agentize AGENTIZE_MASTER_PROJ=/tmp/test-multi AGENTIZE_LANG=python,cpp AGENTIZE_MODE=init
+
 # Verify installation
 ls -la /tmp/test-init/.claude
 ls -la /tmp/test-port/.claude
+
+# Verify generated Makefile for multi-language project
+cat /tmp/test-multi/Makefile
 ```
 
 ---

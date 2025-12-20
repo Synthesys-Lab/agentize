@@ -1,4 +1,6 @@
-# Rust build targets
+# ============================================================================
+# Rust Build Targets
+# ============================================================================
 
 .PHONY: build-rust
 build-rust:
@@ -12,10 +14,10 @@ test-rust:
 
 .PHONY: clean-rust
 clean-rust:
-	@echo "Cleaning Rust artifacts..."
-	@cargo clean 2>/dev/null || true
+	@echo "Cleaning Rust build artifacts..."
+	@cargo clean
 
 .PHONY: lint-rust
 lint-rust:
-	@echo "Linting Rust code..."
-	@cargo clippy --all-targets --all-features 2>/dev/null || echo "  (cargo clippy not available)"
+	@echo "Running Rust linter (clippy)..."
+	@cargo clippy -- -D warnings 2>/dev/null || cargo clippy

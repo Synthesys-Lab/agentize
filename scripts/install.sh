@@ -230,6 +230,11 @@ copy_language_template() {
         local src_file="$1"
         local dest_file="$2"
 
+        # Skip Makefile.template files (they are concatenated into main Makefile)
+        if [ "$(basename "$src_file")" = "Makefile.template" ]; then
+            return 0
+        fi
+
         # Replace directory names
         dest_file=$(echo "$dest_file" | sed "s/__NAME__/$proj_snake/g")
 
@@ -239,7 +244,7 @@ copy_language_template() {
         # Skip if destination already exists
         if [ -f "$dest_file" ]; then
             log_info "Skipping existing file: $(basename "$dest_file")"
-            return
+            return 0
         fi
 
         # Process file content with substitutions
@@ -250,7 +255,11 @@ copy_language_template() {
             "$src_file" > "$dest_file"
 
         # Preserve executable bit
-        [ -x "$src_file" ] && chmod +x "$dest_file"
+        if [ -x "$src_file" ]; then
+            chmod +x "$dest_file"
+        fi
+
+        return 0
     }
 
     # Copy Python template
