@@ -1,0 +1,24 @@
+# C build targets
+
+BUILD_DIR := build
+
+.PHONY: build-c
+build-c:
+	@echo "Building C project with CMake..."
+	@cmake -B $(BUILD_DIR) -DCMAKE_BUILD_TYPE=Release 2>/dev/null || echo "  (CMake not found)"
+	@cmake --build $(BUILD_DIR) 2>/dev/null || true
+
+.PHONY: test-c
+test-c:
+	@echo "Running C tests..."
+	@cd $(BUILD_DIR) && ctest --output-on-failure 2>/dev/null || echo "  (no tests configured)"
+
+.PHONY: clean-c
+clean-c:
+	@echo "Cleaning C build artifacts..."
+	@rm -rf $(BUILD_DIR)
+
+.PHONY: lint-c
+lint-c:
+	@echo "Linting C code..."
+	@command -v clang-tidy >/dev/null 2>&1 && echo "  (run clang-tidy manually)" || echo "  (install clang-tidy)"

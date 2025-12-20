@@ -67,9 +67,11 @@ detect_languages() {
         return
     fi
 
-    # Parse comma-separated language list
-    IFS=',' read -ra LANGS <<< "$LANG"
-    for lang in "${LANGS[@]}"; then
+    # Parse comma-separated language list (bash 3.2 compatible)
+    OLDIFS="$IFS"
+    IFS=','
+    for lang in $LANG; do
+        IFS="$OLDIFS"
         # Trim whitespace
         lang=$(echo "$lang" | tr -d ' ')
         case "$lang" in
@@ -431,148 +433,107 @@ generate_enhanced_makefile() {
 
     log_info "Generating language-aware Makefile..."
 
-    # Build language flags
-    local lang_flags=""
-    $HAS_PYTHON && lang_flags="${lang_flags}HAS_PYTHON := true\n"
-    $HAS_C && lang_flags="${lang_flags}HAS_C := true\n"
-    $HAS_CPP && lang_flags="${lang_flags}HAS_CPP := true\n"
-    $HAS_RUST && lang_flags="${lang_flags}HAS_RUST := true\n"
-
-    # Build help targets
-    local help_targets=""
-    $HAS_PYTHON && help_targets="${help_targets}\t@echo \"  py-test     - Run Python tests with pytest\"\n"
-    $HAS_CPP && help_targets="${help_targets}\t@echo \"  cmake-build - Build C/C++ project with CMake\"\n"
-    $HAS_C && help_targets="${help_targets}\t@echo \"  cmake-build - Build C/C++ project with CMake\"\n"
-    $HAS_RUST && help_targets="${help_targets}\t@echo \"  cargo-build - Build Rust project with cargo\"\n"
-
-    # Build environment setup
-    local env_setup=""
-    if $HAS_PYTHON; then
-        env_setup="${env_setup}# Python environment\n"
-        env_setup="${env_setup}export PYTHONPATH=\"\\\$\\\$PWD/${IMPL_DIR}:\\\$\\\$PYTHONPATH\"\n\n"
-    fi
-    if $HAS_RUST; then
-        env_setup="${env_setup}# Rust environment\n"
-        env_setup="${env_setup}export PATH=\"\\\$\\\$PWD/target/release:\\\$\\\$PATH\"\n\n"
-    fi
-    if $HAS_CPP || $HAS_C; then
-        env_setup="${env_setup}# C/C++ build environment\n"
-        env_setup="${env_setup}export PATH=\"\\\$\\\$PWD/build/bin:\\\$\\\$PATH\"\n\n"
-    fi
-
-    # Build commands
+    # Collect build/test/clean/lint dependencies
     local build_deps=""
-    local build_commands=""
-    if $HAS_CPP || $HAS_C; then
-        build_deps="${build_deps} cmake-build"
-        build_commands="${build_commands}\t@\$(MAKE) -s cmake-build\n"
-    fi
-    if $HAS_PYTHON; then
-        build_deps="${build_deps} py-build"
-        build_commands="${build_commands}\t@\$(MAKE) -s py-build\n"
-    fi
-    if $HAS_RUST; then
-        build_deps="${build_deps} cargo-build"
-        build_commands="${build_commands}\t@\$(MAKE) -s cargo-build\n"
-    fi
-
-    # Test commands
     local test_deps=""
-    local test_commands=""
-    if $HAS_CPP || $HAS_C; then
-        test_deps="${test_deps} cmake-test"
-        test_commands="${test_commands}\t@\$(MAKE) -s cmake-test\n"
-    fi
+    local clean_deps=""
+    local lint_deps=""
+
+    $HAS_PYTHON && build_deps="${build_deps} build-python"
+    $HAS_C && build_deps="${build_deps} build-c"
+    $HAS_CPP && build_deps="${build_deps} build-cxx"
+    $HAS_RUST && build_deps="${build_deps} build-rust"
+
+    $HAS_PYTHON && test_deps="${test_deps} test-python"
+    $HAS_C && test_deps="${test_deps} test-c"
+    $HAS_CPP && test_deps="${test_deps} test-cxx"
+    $HAS_RUST && test_deps="${test_deps} test-rust"
+
+    $HAS_PYTHON && clean_deps="${clean_deps} clean-python"
+    $HAS_C && clean_deps="${clean_deps} clean-c"
+    $HAS_CPP && clean_deps="${clean_deps} clean-cxx"
+    $HAS_RUST && clean_deps="${clean_deps} clean-rust"
+
+    $HAS_PYTHON && lint_deps="${lint_deps} lint-python"
+    $HAS_C && lint_deps="${lint_deps} lint-c"
+    $HAS_CPP && lint_deps="${lint_deps} lint-cxx"
+    $HAS_RUST && lint_deps="${lint_deps} lint-rust"
+
+    # Create Makefile header
+    cat > "$MASTER_PROJ/Makefile" <<EOF
+# ============================================================================
+# ${PROJ_NAME} - Makefile
+# ============================================================================
+
+.PHONY: help
+help:
+	@echo "=============================="
+	@echo "${PROJ_NAME}"
+	@echo "=============================="
+	@echo ""
+	@echo "Usage: make [target]"
+	@echo ""
+	@echo "Targets:"
+	@echo "  help   - Show this help message"
+	@echo "  build  - Build the project"
+	@echo "  test   - Run all tests"
+	@echo "  clean  - Clean build artifacts"
+	@echo "  lint   - Run linters"
+	@echo ""
+
+.PHONY: build
+build:${build_deps}
+
+.PHONY: test
+test:${test_deps}
+
+.PHONY: clean
+clean:${clean_deps}
+	@rm -f setup.sh
+	@echo "✓ Clean complete"
+
+.PHONY: lint
+lint:${lint_deps}
+
+# ============================================================================
+# Language-Specific Targets
+# ============================================================================
+
+EOF
+
+    # Append language-specific Makefile templates
     if $HAS_PYTHON; then
-        test_deps="${test_deps} py-test"
-        test_commands="${test_commands}\t@\$(MAKE) -s py-test\n"
-    fi
-    if $HAS_RUST; then
-        test_deps="${test_deps} cargo-test"
-        test_commands="${test_commands}\t@\$(MAKE) -s cargo-test\n"
+        if [ -f "$AGENTIZE_ROOT/templates/python/Makefile.template" ]; then
+            cat "$AGENTIZE_ROOT/templates/python/Makefile.template" >> "$MASTER_PROJ/Makefile"
+            echo "" >> "$MASTER_PROJ/Makefile"
+        fi
     fi
 
-    # Lint commands
-    local lint_commands=""
-    if $HAS_PYTHON; then
-        lint_commands="${lint_commands}\t@echo \"Linting Python code...\"\n"
-        lint_commands="${lint_commands}\t@command -v ruff >/dev/null 2>&1 && ruff check ${IMPL_DIR} || echo \"  (install ruff for Python linting)\"\n"
-    fi
-    if $HAS_RUST; then
-        lint_commands="${lint_commands}\t@echo \"Linting Rust code...\"\n"
-        lint_commands="${lint_commands}\t@cargo clippy --all-targets --all-features 2>/dev/null || echo \"  (cargo clippy not available)\"\n"
-    fi
-    if $HAS_CPP || $HAS_C; then
-        lint_commands="${lint_commands}\t@echo \"Linting C/C++ code...\"\n"
-        lint_commands="${lint_commands}\t@command -v clang-tidy >/dev/null 2>&1 && echo \"  (run clang-tidy manually)\" || echo \"  (install clang-tidy for C/C++ linting)\"\n"
-    fi
-    [ -z "$lint_commands" ] && lint_commands="\t@echo \"No linters configured\"\n"
-
-    # Clean commands
-    local clean_commands=""
-    if $HAS_CPP || $HAS_C; then
-        clean_commands="${clean_commands}\t@rm -rf \$(BUILD_DIR)\n"
-    fi
-    if $HAS_PYTHON; then
-        clean_commands="${clean_commands}\t@find . -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true\n"
-        clean_commands="${clean_commands}\t@find . -type f -name '*.pyc' -delete 2>/dev/null || true\n"
-    fi
-    if $HAS_RUST; then
-        clean_commands="${clean_commands}\t@cargo clean 2>/dev/null || true\n"
+    if $HAS_C; then
+        if [ -f "$AGENTIZE_ROOT/templates/c/Makefile.template" ]; then
+            cat "$AGENTIZE_ROOT/templates/c/Makefile.template" >> "$MASTER_PROJ/Makefile"
+            echo "" >> "$MASTER_PROJ/Makefile"
+        fi
     fi
 
-    # Language-specific targets
-    local language_targets=""
-
-    if $HAS_PYTHON; then
-        language_targets="${language_targets}.PHONY: py-build\npy-build:\n"
-        language_targets="${language_targets}\t@echo \"Building Python project...\"\n"
-        language_targets="${language_targets}\t@pip install -e . 2>/dev/null || echo \"  (run 'pip install -e .' manually)\"\n\n"
-
-        language_targets="${language_targets}.PHONY: py-test\npy-test:\n"
-        language_targets="${language_targets}\t@echo \"Running Python tests...\"\n"
-        language_targets="${language_targets}\t@pytest \$(TEST_DIR) -v 2>/dev/null || echo \"  (install pytest: pip install pytest)\"\n\n"
-    fi
-
-    if $HAS_CPP || $HAS_C; then
-        language_targets="${language_targets}.PHONY: cmake-build\ncmake-build:\n"
-        language_targets="${language_targets}\t@echo \"Building with CMake...\"\n"
-        language_targets="${language_targets}\t@cmake -B \$(BUILD_DIR) -DCMAKE_BUILD_TYPE=Release 2>/dev/null || echo \"  (CMake not found)\"\n"
-        language_targets="${language_targets}\t@cmake --build \$(BUILD_DIR) 2>/dev/null || true\n\n"
-
-        language_targets="${language_targets}.PHONY: cmake-test\ncmake-test:\n"
-        language_targets="${language_targets}\t@echo \"Running CMake tests...\"\n"
-        language_targets="${language_targets}\t@cd \$(BUILD_DIR) && ctest --output-on-failure 2>/dev/null || echo \"  (no tests configured)\"\n\n"
+    if $HAS_CPP; then
+        if [ -f "$AGENTIZE_ROOT/templates/cxx/Makefile.template" ]; then
+            cat "$AGENTIZE_ROOT/templates/cxx/Makefile.template" >> "$MASTER_PROJ/Makefile"
+            echo "" >> "$MASTER_PROJ/Makefile"
+        fi
     fi
 
     if $HAS_RUST; then
-        language_targets="${language_targets}.PHONY: cargo-build\ncargo-build:\n"
-        language_targets="${language_targets}\t@echo \"Building with Cargo...\"\n"
-        language_targets="${language_targets}\t@cargo build --release\n\n"
-
-        language_targets="${language_targets}.PHONY: cargo-test\ncargo-test:\n"
-        language_targets="${language_targets}\t@echo \"Running Cargo tests...\"\n"
-        language_targets="${language_targets}\t@cargo test\n\n"
+        if [ -f "$AGENTIZE_ROOT/templates/rust/Makefile.template" ]; then
+            cat "$AGENTIZE_ROOT/templates/rust/Makefile.template" >> "$MASTER_PROJ/Makefile"
+            echo "" >> "$MASTER_PROJ/Makefile"
+        fi
     fi
 
-    # Generate Makefile from template
-    if [ -f "$AGENTIZE_ROOT/claude/templates/project-Makefile.template" ]; then
-        sed -e "s/\${PROJECT_NAME}/$PROJ_NAME_ESCAPED/g" \
-            -e "s/\${IMPL_DIR}/$IMPL_DIR/g" \
-            -e "s/\${LANG_FLAGS}/$lang_flags/g" \
-            -e "s/\${HELP_TARGETS}/$help_targets/g" \
-            -e "s/\${ENV_SETUP}/$env_setup/g" \
-            -e "s/\${BUILD_DEPS}/$build_deps/g" \
-            -e "s/\${BUILD_COMMANDS}/$build_commands/g" \
-            -e "s/\${TEST_DEPS}/$test_deps/g" \
-            -e "s/\${TEST_COMMANDS}/$test_commands/g" \
-            -e "s/\${LINT_COMMANDS}/$lint_commands/g" \
-            -e "s/\${CLEAN_COMMANDS}/$clean_commands/g" \
-            -e "s/\${LANGUAGE_TARGETS}/$language_targets/g" \
-            "$AGENTIZE_ROOT/claude/templates/project-Makefile.template" \
-            > "$MASTER_PROJ/Makefile"
-        log_success "Created language-aware Makefile"
-    fi
+    # Add default goal
+    echo ".DEFAULT_GOAL := help" >> "$MASTER_PROJ/Makefile"
+
+    log_success "Created language-aware Makefile"
 }
 
 # ============================================================================

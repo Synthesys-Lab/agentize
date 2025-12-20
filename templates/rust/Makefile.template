@@ -1,0 +1,21 @@
+# Rust build targets
+
+.PHONY: build-rust
+build-rust:
+	@echo "Building Rust project with Cargo..."
+	@cargo build --release
+
+.PHONY: test-rust
+test-rust:
+	@echo "Running Rust tests..."
+	@cargo test
+
+.PHONY: clean-rust
+clean-rust:
+	@echo "Cleaning Rust artifacts..."
+	@cargo clean 2>/dev/null || true
+
+.PHONY: lint-rust
+lint-rust:
+	@echo "Linting Rust code..."
+	@cargo clippy --all-targets --all-features 2>/dev/null || echo "  (cargo clippy not available)"

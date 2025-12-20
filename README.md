@@ -151,7 +151,7 @@ make build
 make test
 ```
 
-See `claude/templates/project-Makefile.template` for examples.
+See `templates/python/Makefile.template`, `templates/cxx/Makefile.template`, etc. for language-specific examples.
 
 ## Key Commands
 

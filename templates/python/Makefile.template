@@ -1,0 +1,24 @@
+# Python build targets
+
+.PHONY: build-python
+build-python:
+	@echo "Building Python project..."
+	@pip install -e . 2>/dev/null || echo "  (run 'pip install -e .' manually)"
+
+.PHONY: test-python
+test-python:
+	@echo "Running Python tests..."
+	@pytest tests/ -v 2>/dev/null || echo "  (install pytest: pip install pytest)"
+
+.PHONY: clean-python
+clean-python:
+	@echo "Cleaning Python artifacts..."
+	@find . -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
+	@find . -type f -name '*.pyc' -delete 2>/dev/null || true
+	@find . -type d -name '*.egg-info' -exec rm -rf {} + 2>/dev/null || true
+	@rm -rf dist/ build/ .pytest_cache/ htmlcov/ .coverage
+
+.PHONY: lint-python
+lint-python:
+	@echo "Linting Python code..."
+	@command -v ruff >/dev/null 2>&1 && ruff check . || echo "  (install ruff: pip install ruff)"
