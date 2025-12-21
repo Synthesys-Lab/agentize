@@ -716,7 +716,8 @@ lint:${lint_deps}
 
 .PHONY: env
 env:
-	@echo "export PATH=\"\$(CURDIR)/bin:\$\$PATH\""
+	@echo "export PROJECT_ROOT=\"\$(CURDIR)\""
+	@echo "export PATH=\"\$(CURDIR)/build/bin:\$\$PATH\""
 EOF
 
     # Conditional: Python environment variables
@@ -742,20 +743,22 @@ env-script:
 	@echo "# Auto-generated environment setup for ${PROJ_NAME}" >> setup.sh
 	@echo "# Generated: \$\$(date)" >> setup.sh
 	@echo "" >> setup.sh
-	@echo "export PATH=\"\$(CURDIR)/bin:\$\$PATH\"" >> setup.sh
+	@echo "PROJECT_ROOT=\"\$(CURDIR)\"" >> setup.sh
+	@echo "export PROJECT_ROOT" >> setup.sh
+	@echo "export PATH=\"\\\$\$PROJECT_ROOT/build/bin:\\\$\$PATH\"" >> setup.sh
 EOF
 
     # Add Python environment variables to setup.sh
     if $HAS_PYTHON; then
         cat >> "$MASTER_PROJ/Makefile" <<'EOF'
-	@echo "export PYTHONPATH=\"\$(CURDIR)/src:\$\$PYTHONPATH\"" >> setup.sh
+	@echo "export PYTHONPATH=\"\$$PROJECT_ROOT/src:\$$PYTHONPATH\"" >> setup.sh
 EOF
     fi
 
     # Add Rust environment variables to setup.sh
     if $HAS_RUST; then
         cat >> "$MASTER_PROJ/Makefile" <<'EOF'
-	@echo "export CARGO_TARGET_DIR=\"\$(CURDIR)/target\"" >> setup.sh
+	@echo "export CARGO_TARGET_DIR=\"\$$PROJECT_ROOT/target\"" >> setup.sh
 EOF
     fi
 
