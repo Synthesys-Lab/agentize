@@ -130,12 +130,44 @@ validate_target_project() {
     fi
 
     # Validate mode
-    if [ "$MODE" != "init" ] && [ "$MODE" != "port" ]; then
-        log_error "Invalid mode: $MODE (must be 'init' or 'port')"
+    if [ "$MODE" != "init" ] && [ "$MODE" != "port" ] && [ "$MODE" != "update" ]; then
+        log_error "Invalid mode: $MODE (must be 'init', 'port', or 'update')"
         exit 1
     fi
 
     log_success "Validation complete"
+}
+
+# Validate target for update mode
+validate_update_target() {
+    if [ ! -d "$MASTER_PROJ/.claude" ]; then
+        log_error "No .claude/ directory found in $MASTER_PROJ"
+        log_error "Use 'init' or 'port' mode to create .claude/ first"
+        exit 1
+    fi
+
+    log_success "Found existing .claude/ directory for update"
+}
+
+# Create timestamped backup of .claude/ directory
+create_backup() {
+    local timestamp=$(date +%Y%m%d-%H%M%S)
+    local backup_dir="$MASTER_PROJ/.claude.backup.$timestamp"
+
+    # Handle timestamp collision (unlikely but possible)
+    while [ -d "$backup_dir" ]; do
+        backup_dir="${backup_dir}-${RANDOM}"
+    done
+
+    # Copy entire .claude/ directory to backup
+    if ! cp -r "$MASTER_PROJ/.claude" "$backup_dir"; then
+        log_error "Failed to create backup at $backup_dir"
+        exit 1
+    fi
+
+    log_success "Backup created: $backup_dir"
+    # Store backup path for use in summary
+    BACKUP_DIR="$backup_dir"
 }
 
 # ============================================================================
@@ -201,6 +233,149 @@ copy_components() {
         cp "$AGENTIZE_ROOT/claude/README.md" "$MASTER_PROJ/.claude/README.md"
         log_success "Copied README.md"
     fi
+}
+
+# ============================================================================
+# Update Mode Functions
+# ============================================================================
+
+# Update SDK-owned directories (replace completely)
+update_sdk_directories() {
+    log_info "Updating SDK-owned directories..."
+
+    local dirs=("agents" "commands" "skills" "hooks")
+
+    for dir in "${dirs[@]}"; do
+        # Remove old directory and replace with SDK version
+        rm -rf "$MASTER_PROJ/.claude/$dir"
+        cp -r "$AGENTIZE_ROOT/claude/$dir" "$MASTER_PROJ/.claude/$dir"
+        log_success "Updated $dir/"
+    done
+
+    # Update README.md
+    cp "$AGENTIZE_ROOT/claude/README.md" "$MASTER_PROJ/.claude/README.md"
+    log_success "Updated README.md"
+}
+
+# Update SDK-owned rules selectively (preserve user-owned files)
+update_sdk_rules() {
+    log_info "Updating SDK-owned rules..."
+
+    local sdk_rules=(
+        "language.md"
+        "git-commit-format.md"
+        "issue-pr-format.md"
+        "milestone-guide.md"
+        "file-movement-protocol.md"
+        "github-comment-attribution.md"
+        "project-board-integration.md"
+        "summary-preferences.md"
+        "documentation-guidelines.md"
+    )
+
+    for rule in "${sdk_rules[@]}"; do
+        cp "$AGENTIZE_ROOT/claude/rules/$rule" "$MASTER_PROJ/.claude/rules/$rule"
+    done
+
+    log_success "Updated rules/"
+    log_info "Preserved: custom-project-rules.md, custom-workflows.md"
+}
+
+# Report orphaned files (present in target but not in SDK)
+report_orphaned_files() {
+    log_info "Checking for orphaned files..."
+
+    local orphans=()
+
+    while IFS= read -r file; do
+        local rel_path="${file#$MASTER_PROJ/.claude/}"
+        local sdk_path="$AGENTIZE_ROOT/claude/$rel_path"
+
+        # Skip user-owned files (these are expected to not be in SDK)
+        [[ "$rel_path" == "rules/custom-project-rules.md" ]] && continue
+        [[ "$rel_path" == "rules/custom-workflows.md" ]] && continue
+
+        # Skip backup directories
+        [[ "$rel_path" =~ ^\.claude\.backup ]] && continue
+
+        # Check if file exists in SDK
+        if [ ! -f "$sdk_path" ]; then
+            orphans+=("$rel_path")
+        fi
+    done < <(find "$MASTER_PROJ/.claude" -type f)
+
+    if [ ${#orphans[@]} -gt 0 ]; then
+        log_warning "Orphaned files (not in SDK):"
+        for orphan in "${orphans[@]}"; do
+            echo "  - $orphan"
+        done
+        log_info "These files were NOT deleted. Remove manually if not needed."
+    else
+        log_success "No orphaned files found"
+    fi
+}
+
+# Handle templated files with interactive prompts
+handle_templated_files() {
+    log_info "Checking templated files for changes..."
+
+    local templates=("CLAUDE.md" "git-tags.md" "settings.json" "PROJECT_CONFIG.md")
+
+    for template in "${templates[@]}"; do
+        local sdk_file="$AGENTIZE_ROOT/claude/templates/${template}.template"
+        local target_file="$MASTER_PROJ/.claude/$template"
+
+        # Check if template exists in SDK
+        if [ ! -f "$sdk_file" ]; then
+            continue
+        fi
+
+        # Check if target file exists
+        if [ ! -f "$target_file" ]; then
+            log_info "Target file does not exist: $template (skipping)"
+            continue
+        fi
+
+        # Compare files (ignore template if identical)
+        if diff -q "$sdk_file" "$target_file" >/dev/null 2>&1; then
+            continue
+        fi
+
+        # Files differ - prompt user
+        log_warning "Template file changed: $template"
+        while true; do
+            echo ""
+            echo "  [s]kip  [o]verwrite  [d]iff  [q]uit"
+            read -p "Choice: " choice
+
+            case "$choice" in
+                s|S)
+                    log_info "Skipped: $template"
+                    break
+                    ;;
+                o|O)
+                    cp "$sdk_file" "$target_file"
+                    log_success "Overwrote: $template"
+                    break
+                    ;;
+                d|D)
+                    echo ""
+                    echo "Diff (current vs SDK template):"
+                    diff -u "$target_file" "$sdk_file" | head -50 || true
+                    echo ""
+                    ;;
+                q|Q)
+                    log_info "User quit during templated file handling"
+                    exit 0
+                    ;;
+                *)
+                    log_error "Invalid choice: $choice"
+                    ;;
+            esac
+        done
+    done
+
+    log_success "Templated files handled"
 }
 
 # ============================================================================
@@ -373,6 +548,35 @@ process_templates() {
            "$MASTER_PROJ/.claude/PROJECT_CONFIG.md"
         log_success "Created .claude/PROJECT_CONFIG.md"
     fi
+}
+
+# ============================================================================
+# Update Mode Orchestration
+# ============================================================================
+
+# Main update mode workflow
+update_mode() {
+    log_info "Starting SDK update mode..."
+
+    # Step 1: Validate that .claude/ exists
+    validate_update_target
+
+    # Step 2: Create backup before any modifications
+    create_backup
+
+    # Step 3: Update SDK-owned directories
+    update_sdk_directories
+
+    # Step 4: Update SDK-owned rules selectively
+    update_sdk_rules
+
+    # Step 5: Handle templated files interactively
+    handle_templated_files
+
+    # Step 6: Report orphaned files
+    report_orphaned_files
+
+    log_success "Update mode complete!"
 }
 
 # ============================================================================
@@ -637,45 +841,74 @@ EOF
 
 print_summary() {
     echo ""
-    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${GREEN}Installation Complete!${NC}"
-    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo ""
-    echo "Project: $PROJ_NAME"
-    echo "Location: $MASTER_PROJ"
-    echo "Mode: $MODE"
-    echo ""
-    echo "Installed components:"
-    echo "  • $(ls -1 "$MASTER_PROJ/.claude/agents"/*.md 2>/dev/null | wc -l | tr -d ' ') agents"
-    echo "  • $(ls -1 "$MASTER_PROJ/.claude/commands"/*.md 2>/dev/null | wc -l | tr -d ' ') commands"
-    echo "  • $(ls -1 "$MASTER_PROJ/.claude/rules"/*.md 2>/dev/null | wc -l | tr -d ' ') rules"
-    echo "  • $(ls -1 "$MASTER_PROJ/.claude/skills"/*.md 2>/dev/null | wc -l | tr -d ' ') skills"
 
-    if [ "$MODE" = "init" ]; then
+    if [ "$MODE" = "update" ]; then
+        # Update mode summary
+        echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo -e "${GREEN}SDK Update Complete!${NC}"
+        echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
         echo ""
-        echo "Initialized project files:"
-        [ -d "$MASTER_PROJ/docs" ] && echo "  • docs/ folder"
-        [ -f "$MASTER_PROJ/docs/CLAUDE.md" ] && echo "  • docs/CLAUDE.md"
-        [ -f "$MASTER_PROJ/Makefile" ] && echo "  • Makefile"
-        [ -f "$MASTER_PROJ/README.md" ] && echo "  • README.md"
-        [ -f "$MASTER_PROJ/.gitignore" ] && echo "  • .gitignore"
-        [ -f "$MASTER_PROJ/setup.sh" ] && echo "  • setup.sh"
-    fi
-
-    echo ""
-    echo -e "${BLUE}Next steps:${NC}"
-    echo "  1. cd $MASTER_PROJ"
-    echo "  2. Review .claude/CLAUDE.md and customize for your project"
-    echo "  3. Customize .claude/git-tags.md with your project's component tags"
-    echo "  4. Check .claude/PROJECT_CONFIG.md for configuration guide"
-    if [ "$MODE" = "init" ]; then
-        echo "  5. Run 'make build' to build your project"
-        echo "  6. Run 'make test' to run tests"
-        echo "  7. Update docs/CLAUDE.md with your project documentation"
+        echo "Project: $PROJ_NAME"
+        echo "Location: $MASTER_PROJ"
+        echo ""
+        echo "Your .claude/ configuration has been updated to the latest SDK version."
+        echo "User customizations have been preserved."
+        echo ""
+        echo -e "${BLUE}Backup:${NC}"
+        echo "  Location: $BACKUP_DIR"
+        echo ""
+        echo -e "${BLUE}Rollback procedure (if needed):${NC}"
+        echo "  rm -rf $MASTER_PROJ/.claude"
+        echo "  mv $BACKUP_DIR $MASTER_PROJ/.claude"
+        echo ""
+        echo -e "${BLUE}Updated components:${NC}"
+        echo "  • $(ls -1 "$MASTER_PROJ/.claude/agents"/*.md 2>/dev/null | wc -l | tr -d ' ') agents"
+        echo "  • $(ls -1 "$MASTER_PROJ/.claude/commands"/*.md 2>/dev/null | wc -l | tr -d ' ') commands"
+        echo "  • $(ls -1 "$MASTER_PROJ/.claude/rules"/*.md 2>/dev/null | wc -l | tr -d ' ') rules"
+        echo "  • $(ls -1 "$MASTER_PROJ/.claude/skills"/*.md 2>/dev/null | wc -l | tr -d ' ') skills"
+        echo ""
     else
-        echo "  5. Ensure your project has: make build, make test, source setup.sh"
+        # Init/Port mode summary
+        echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo -e "${GREEN}Installation Complete!${NC}"
+        echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+        echo ""
+        echo "Project: $PROJ_NAME"
+        echo "Location: $MASTER_PROJ"
+        echo "Mode: $MODE"
+        echo ""
+        echo "Installed components:"
+        echo "  • $(ls -1 "$MASTER_PROJ/.claude/agents"/*.md 2>/dev/null | wc -l | tr -d ' ') agents"
+        echo "  • $(ls -1 "$MASTER_PROJ/.claude/commands"/*.md 2>/dev/null | wc -l | tr -d ' ') commands"
+        echo "  • $(ls -1 "$MASTER_PROJ/.claude/rules"/*.md 2>/dev/null | wc -l | tr -d ' ') rules"
+        echo "  • $(ls -1 "$MASTER_PROJ/.claude/skills"/*.md 2>/dev/null | wc -l | tr -d ' ') skills"
+
+        if [ "$MODE" = "init" ]; then
+            echo ""
+            echo "Initialized project files:"
+            [ -d "$MASTER_PROJ/docs" ] && echo "  • docs/ folder"
+            [ -f "$MASTER_PROJ/docs/CLAUDE.md" ] && echo "  • docs/CLAUDE.md"
+            [ -f "$MASTER_PROJ/Makefile" ] && echo "  • Makefile"
+            [ -f "$MASTER_PROJ/README.md" ] && echo "  • README.md"
+            [ -f "$MASTER_PROJ/.gitignore" ] && echo "  • .gitignore"
+            [ -f "$MASTER_PROJ/setup.sh" ] && echo "  • setup.sh"
+        fi
+
+        echo ""
+        echo -e "${BLUE}Next steps:${NC}"
+        echo "  1. cd $MASTER_PROJ"
+        echo "  2. Review .claude/CLAUDE.md and customize for your project"
+        echo "  3. Customize .claude/git-tags.md with your project's component tags"
+        echo "  4. Check .claude/PROJECT_CONFIG.md for configuration guide"
+        if [ "$MODE" = "init" ]; then
+            echo "  5. Run 'make build' to build your project"
+            echo "  6. Run 'make test' to run tests"
+            echo "  7. Update docs/CLAUDE.md with your project documentation"
+        else
+            echo "  5. Ensure your project has: make build, make test, source setup.sh"
+        fi
+        echo ""
     fi
-    echo ""
 }
 
 # ============================================================================
@@ -688,16 +921,23 @@ main() {
     echo "======================"
     echo ""
 
-    validate_target_project
-    detect_languages
-    create_directory_structure
-    copy_components
-    process_templates
-    copy_language_template
-    initialize_project
-    generate_enhanced_makefile
-    append_gitignore_patterns
-    print_summary
+    if [ "$MODE" = "update" ]; then
+        # Update mode: Different workflow
+        update_mode
+        print_summary
+    else
+        # Init/Port mode: Original workflow
+        validate_target_project
+        detect_languages
+        create_directory_structure
+        copy_components
+        process_templates
+        copy_language_template
+        initialize_project
+        generate_enhanced_makefile
+        append_gitignore_patterns
+        print_summary
+    fi
 }
 
 main
