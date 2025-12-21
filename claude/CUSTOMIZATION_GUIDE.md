@@ -22,6 +22,61 @@ The Agentize SDK is installed with sensible defaults, but you'll want to customi
 - **Coding conventions** (naming, testing, documentation standards)
 - **Development workflows** (release process, deployment procedures)
 
+**Important**: For persistent customizations that should survive SDK updates, always use `custom-project-rules.md` - this file is never touched by SDK updates.
+
+---
+
+## Understanding File Ownership
+
+Agentize categorizes files to safely handle SDK updates while preserving your customizations.
+
+### File Categories
+
+#### SDK-Owned Files (Replaced on Update)
+
+These files are maintained by the Agentize SDK and will be replaced during `make agentize AGENTIZE_MODE=update`:
+
+- **Agents**: `agents/*.md` (all agent definitions)
+- **Commands**: `commands/*.md` (all command definitions)
+- **Core Rules**: Most files in `rules/` except `custom-project-rules.md` and `custom-workflows.md`
+- **Skills**: `skills/**/*` (all skill definitions)
+- **Hooks**: `hooks/**/*` (git hooks and event handlers)
+- **Documentation**: `README.md`
+
+**Do not customize these files directly** - your changes will be lost on update. Instead, use the user-owned files below.
+
+#### User-Owned Files (Never Touched)
+
+These files are yours to customize and will never be modified by SDK updates:
+
+- `rules/custom-project-rules.md` - Your project-specific coding conventions
+- `rules/custom-workflows.md` - Your team's workflows and processes
+
+**Best practice**: Put all project-specific rules and customizations in these files.
+
+#### Templated Files (Interactive Prompts)
+
+These files contain project-specific values (like `${PROJECT_NAME}`) and require your input during updates:
+
+- `CLAUDE.md` - Project README for Claude Code
+- `git-tags.md` - Custom git commit tags
+- `settings.json` - Claude Code settings
+- `PROJECT_CONFIG.md` - Project-specific configuration
+
+**Update behavior**: You'll see a diff and can choose to:
+- Accept SDK changes (overwrite)
+- Keep your version (skip)
+- Manually merge later (skip for now)
+
+### Customization Best Practices
+
+1. **Always use `custom-project-rules.md`** for project-specific conventions
+2. **Never modify SDK-owned files** unless you're prepared to lose changes
+3. **Track `.claude/` in git** to see what changes during updates
+4. **Review diff previews carefully** when prompted for templated files
+
+---
+
 ## Template Placeholders
 
 During installation, the following placeholders are substituted:
@@ -258,6 +313,149 @@ npm test
 
 ---
 
+## Makefile Environment Setup Customization
+
+The generated Makefile includes `make env` and `make env-script` targets for environment setup. You can customize these targets to add project-specific environment variables.
+
+### Understanding the Environment Setup Targets
+
+**`make env`**: Outputs shell export statements for use with `eval $(make env)`
+
+**`make env-script`**: Generates/regenerates `setup.sh` script with current paths
+
+See `docs/architecture/makefile-generation.md` for complete architecture documentation.
+
+### Adding Environment Variables (One-Time)
+
+For project-specific customization, edit your project's `Makefile` directly:
+
+```makefile
+.PHONY: env
+env:
+	@echo 'export PROJECT_ROOT="$(CURDIR)"'
+	@echo 'export PATH="$(CURDIR)/build/bin:$$PATH"'
+	@echo 'export MY_CUSTOM_VAR="custom_value"'  # Add your variable here
+```
+
+**Example use cases**:
+- Custom API endpoints for development
+- Local database URLs
+- Feature flags or configuration overrides
+
+### Adding Environment Variables to Templates (Permanent)
+
+To add environment variables for all future projects of a specific language, edit the language-specific Makefile template.
+
+**Step 1**: Identify the template file
+
+| Language | Template Path |
+|----------|---------------|
+| Python | `templates/python/Makefile.template` |
+| C | `templates/c/Makefile.template` |
+| C++ | `templates/cxx/Makefile.template` |
+| Rust | `templates/rust/Makefile.template` |
+
+**Step 2**: Add your environment exports
+
+Example for Python (`templates/python/Makefile.template`):
+
+```makefile
+# Add to the end of the template
+env-python:
+	@echo 'export PYTHONPATH="$(CURDIR)/src:$$PYTHONPATH"'
+	@echo 'export DJANGO_SETTINGS_MODULE="myproject.settings.dev"'  # Add custom var
+```
+
+**Step 3**: Update the main `env` target (in `scripts/install.sh`)
+
+Modify `generate_enhanced_makefile()` to call your custom env target:
+
+```bash
+if $HAS_PYTHON; then
+    cat >> "$MASTER_PROJ/Makefile" << 'PYTHON_ENV'
+	@echo 'export PYTHONPATH="$(CURDIR)/src:$$PYTHONPATH"'
+	@echo 'export DJANGO_SETTINGS_MODULE="myproject.settings.dev"'
+PYTHON_ENV
+fi
+```
+
+### Example: Adding Go Environment Setup
+
+**Step 1**: Create `templates/go/Makefile.template`:
+
+```makefile
+.PHONY: build-go test-go clean-go lint-go
+
+build-go:
+	@echo "Building Go project..."
+	go build -o build/bin/myapp ./cmd/myapp
+
+test-go:
+	go test ./...
+
+clean-go:
+	rm -rf build/
+
+lint-go:
+	golangci-lint run
+```
+
+**Step 2**: Update `scripts/install.sh` to detect Go projects:
+
+```bash
+HAS_GO=false
+if [ -f "$MASTER_PROJ/go.mod" ]; then
+    HAS_GO=true
+fi
+```
+
+**Step 3**: Add Go environment exports to `generate_enhanced_makefile()`:
+
+```bash
+if $HAS_GO; then
+    cat >> "$MASTER_PROJ/Makefile" << 'GO_ENV'
+	@echo 'export GOPATH="$(CURDIR)"'
+	@echo 'export PATH="$(CURDIR)/bin:$$PATH"'
+GO_ENV
+
+    # Append Go template
+    if [ -f "$AGENTIZE_ROOT/templates/go/Makefile.template" ]; then
+        cat "$AGENTIZE_ROOT/templates/go/Makefile.template" >> "$MASTER_PROJ/Makefile"
+    fi
+fi
+```
+
+### Multi-Language Project Environment Aggregation
+
+For projects with multiple languages, the generated Makefile automatically aggregates environment variables. The order is:
+
+1. Common variables (PROJECT_ROOT, PATH)
+2. Python variables (if detected)
+3. Rust variables (if detected)
+4. C/C++ variables (already in PATH)
+
+No manual coordination needed - the `generate_enhanced_makefile()` function handles aggregation.
+
+### Troubleshooting Environment Setup
+
+**Issue**: `eval $(make env)` doesn't set variables
+
+**Solution**: Check for shell escaping issues. Ensure you use `$$` for literal `$` in Makefile:
+
+```makefile
+# Correct:
+@echo 'export PATH="$(CURDIR)/bin:$$PATH"'
+
+# Incorrect (will fail):
+@echo 'export PATH="$(CURDIR)/bin:$PATH"'
+```
+
+**Issue**: `make env-script` generates incorrect paths
+
+**Solution**: Verify you're using `$(CURDIR)` not `$(shell pwd)`. `$(CURDIR)` handles `make -C` correctly.
+
+---
+
 ## Agent Customization
 
 ### Adjusting Triage Thresholds
@@ -444,6 +642,46 @@ test:
 	# Run integration tests
 	./scripts/integration-tests.sh
 ```
+
+---
+
+## Updating Your SDK
+
+When new Agentize features are released:
+
+1. **Pull latest Agentize SDK**:
+   ```bash
+   cd /path/to/agentize
+   git pull origin main
+   ```
+
+2. **Update your project**:
+   ```bash
+   cd agentize/
+   make agentize \
+     AGENTIZE_MASTER_PROJ=/path/to/your-project \
+     AGENTIZE_MODE=update
+   ```
+
+3. **Review changes**:
+   - Check backup location (reported in output)
+   - Review any templated file prompts carefully
+   - Run `git diff .claude/` to see what changed
+
+4. **Test your workflows**:
+   - Ensure `/gen-handoff`, `/issue2impl`, etc. still work
+   - Validate any custom agents/commands if you have them
+
+### Troubleshooting Updates
+
+**Problem**: Update fails partway through
+- **Solution**: Restore from backup: `rm -rf .claude && mv .claude.backup.* .claude`
+
+**Problem**: Lost some customizations
+- **Solution**: Check backup, copy customizations to `custom-project-rules.md`
+
+**Problem**: Templated file has conflicts
+- **Solution**: Skip during update, manually merge from `.claude.backup.*/`
 
 ---
 

@@ -32,13 +32,17 @@ ${COMPONENT_TAGS}
 ### Environment Setup
 
 ```bash
+# Option 1: Traditional script sourcing
 source setup.sh
+
+# Option 2: Makefile-based (alternative)
+eval $(make env)
 ```
 
 This will:
 - Set up PATH and environment variables
 - Load any required modules
-- Verify tool availability
+- Verify tool availability (source setup.sh only)
 
 ### Build
 

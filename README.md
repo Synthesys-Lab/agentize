@@ -52,13 +52,37 @@ make agentize \
 **Creates:**
 - `.claude/` - AI workflow configurations only
 
+#### 3. Update Existing Installation (`update` mode)
+
+Updates an existing Agentize installation to the latest SDK version while preserving your customizations:
+
+```bash
+cd agentize/
+make agentize \
+  AGENTIZE_MASTER_PROJ=/path/to/your-project \
+  AGENTIZE_MODE=update
+```
+
+**What gets updated:**
+- SDK-owned files (agents, commands, most rules, skills, hooks)
+
+**What gets preserved:**
+- User-owned files (`custom-project-rules.md`, `custom-workflows.md`)
+- Your project-specific configurations
+
+**Safety**: A timestamped backup is created before any changes. If something goes wrong:
+```bash
+rm -rf .claude
+mv .claude.backup.YYYYMMDD-HHMMSS .claude
+```
+
 ### Configuration Variables
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `AGENTIZE_MASTER_PROJ` | No | `../..` | Path to target project |
 | `AGENTIZE_PROJ_NAME` | No | `MyProject` | Project name |
-| `AGENTIZE_MODE` | No | `init` | Installation mode: `init` or `port` |
+| `AGENTIZE_MODE` | No | `init` | Installation mode: `init`, `port`, or `update` |
 | `AGENTIZE_LANG` | No | (empty → `cpp`) | Languages: `python`, `c`, `cpp`, `rust` (comma-separated) |
 | `AGENTIZE_IMPL_DIR` | No | `src` | Implementation directory: `src`, `lib`, etc. |
 
@@ -141,8 +165,9 @@ make agentize \
 Your project must provide these standard commands:
 
 ```bash
-# Environment setup (sets PATH, activates venv, loads env vars)
-source setup.sh
+# Environment setup (choose one):
+source setup.sh           # Option 1: Source script directly (traditional)
+eval $(make env)          # Option 2: Makefile-based setup
 
 # Build the project
 make build
@@ -150,6 +175,10 @@ make build
 # Run test suite
 make test
 ```
+
+**Environment setup guidance:**
+- **`source setup.sh`**: Use for first-time setup, interactive work, or when visual feedback is desired
+- **`eval $(make env)`**: Use for automation, CI/CD pipelines, or Makefile-centric workflows
 
 See `templates/python/Makefile.template`, `templates/cxx/Makefile.template`, etc. for language-specific examples.
 
