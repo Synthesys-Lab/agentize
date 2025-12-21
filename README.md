@@ -15,7 +15,7 @@ Agentize is a project-neutral SDK that provides:
 
 ### Installation Modes
 
-Agentize supports two installation modes:
+Agentize supports three installation modes:
 
 #### 1. Initialize New Project (`init` mode)
 
@@ -52,13 +52,37 @@ make agentize \
 **Creates:**
 - `.claude/` - AI workflow configurations only
 
+#### 3. Update Existing Installation (`update` mode)
+
+Updates an existing Agentize installation to the latest SDK version while preserving your customizations:
+
+```bash
+cd agentize/
+make agentize \
+  AGENTIZE_MASTER_PROJ=/path/to/your-project \
+  AGENTIZE_MODE=update
+```
+
+**What gets updated:**
+- SDK-owned files (agents, commands, most rules, skills, hooks)
+
+**What gets preserved:**
+- User-owned files (`custom-project-rules.md`, `custom-workflows.md`)
+- Your project-specific configurations
+
+**Safety**: A timestamped backup is created before any changes. If something goes wrong:
+```bash
+rm -rf .claude
+mv .claude.backup.YYYYMMDD-HHMMSS .claude
+```
+
 ### Configuration Variables
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `AGENTIZE_MASTER_PROJ` | No | `../..` | Path to target project |
 | `AGENTIZE_PROJ_NAME` | No | `MyProject` | Project name |
-| `AGENTIZE_MODE` | No | `init` | Installation mode: `init` or `port` |
+| `AGENTIZE_MODE` | No | `init` | Installation mode: `init`, `port`, or `update` |
 | `AGENTIZE_LANG` | No | (empty → `cpp`) | Languages: `python`, `c`, `cpp`, `rust` (comma-separated) |
 | `AGENTIZE_IMPL_DIR` | No | `src` | Implementation directory: `src`, `lib`, etc. |
 

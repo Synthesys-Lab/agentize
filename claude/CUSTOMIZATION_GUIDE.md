@@ -22,6 +22,61 @@ The Agentize SDK is installed with sensible defaults, but you'll want to customi
 - **Coding conventions** (naming, testing, documentation standards)
 - **Development workflows** (release process, deployment procedures)
 
+**Important**: For persistent customizations that should survive SDK updates, always use `custom-project-rules.md` - this file is never touched by SDK updates.
+
+---
+
+## Understanding File Ownership
+
+Agentize categorizes files to safely handle SDK updates while preserving your customizations.
+
+### File Categories
+
+#### SDK-Owned Files (Replaced on Update)
+
+These files are maintained by the Agentize SDK and will be replaced during `make agentize AGENTIZE_MODE=update`:
+
+- **Agents**: `agents/*.md` (all agent definitions)
+- **Commands**: `commands/*.md` (all command definitions)
+- **Core Rules**: Most files in `rules/` except `custom-project-rules.md` and `custom-workflows.md`
+- **Skills**: `skills/**/*` (all skill definitions)
+- **Hooks**: `hooks/**/*` (git hooks and event handlers)
+- **Documentation**: `README.md`
+
+**Do not customize these files directly** - your changes will be lost on update. Instead, use the user-owned files below.
+
+#### User-Owned Files (Never Touched)
+
+These files are yours to customize and will never be modified by SDK updates:
+
+- `rules/custom-project-rules.md` - Your project-specific coding conventions
+- `rules/custom-workflows.md` - Your team's workflows and processes
+
+**Best practice**: Put all project-specific rules and customizations in these files.
+
+#### Templated Files (Interactive Prompts)
+
+These files contain project-specific values (like `${PROJECT_NAME}`) and require your input during updates:
+
+- `CLAUDE.md` - Project README for Claude Code
+- `git-tags.md` - Custom git commit tags
+- `settings.json` - Claude Code settings
+- `PROJECT_CONFIG.md` - Project-specific configuration
+
+**Update behavior**: You'll see a diff and can choose to:
+- Accept SDK changes (overwrite)
+- Keep your version (skip)
+- Manually merge later (skip for now)
+
+### Customization Best Practices
+
+1. **Always use `custom-project-rules.md`** for project-specific conventions
+2. **Never modify SDK-owned files** unless you're prepared to lose changes
+3. **Track `.claude/` in git** to see what changes during updates
+4. **Review diff previews carefully** when prompted for templated files
+
+---
+
 ## Template Placeholders
 
 During installation, the following placeholders are substituted:
@@ -444,6 +499,46 @@ test:
 	# Run integration tests
 	./scripts/integration-tests.sh
 ```
+
+---
+
+## Updating Your SDK
+
+When new Agentize features are released:
+
+1. **Pull latest Agentize SDK**:
+   ```bash
+   cd /path/to/agentize
+   git pull origin main
+   ```
+
+2. **Update your project**:
+   ```bash
+   cd agentize/
+   make agentize \
+     AGENTIZE_MASTER_PROJ=/path/to/your-project \
+     AGENTIZE_MODE=update
+   ```
+
+3. **Review changes**:
+   - Check backup location (reported in output)
+   - Review any templated file prompts carefully
+   - Run `git diff .claude/` to see what changed
+
+4. **Test your workflows**:
+   - Ensure `/gen-handoff`, `/issue2impl`, etc. still work
+   - Validate any custom agents/commands if you have them
+
+### Troubleshooting Updates
+
+**Problem**: Update fails partway through
+- **Solution**: Restore from backup: `rm -rf .claude && mv .claude.backup.* .claude`
+
+**Problem**: Lost some customizations
+- **Solution**: Check backup, copy customizations to `custom-project-rules.md`
+
+**Problem**: Templated file has conflicts
+- **Solution**: Skip during update, manually merge from `.claude.backup.*/`
 
 ---
 

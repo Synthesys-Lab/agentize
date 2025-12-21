@@ -309,3 +309,39 @@ make agentize \
 ```
 
 See the main Agentize README for more installation options.
+
+## Updating Your Configuration
+
+To update to the latest Agentize SDK version:
+
+```bash
+cd agentize/
+make agentize \
+  AGENTIZE_MASTER_PROJ=/path/to/your-project \
+  AGENTIZE_MODE=update
+```
+
+### What Happens During Update
+
+1. **Backup Created**: `.claude.backup.YYYYMMDD-HHMMSS/` preserves your current state
+2. **SDK Files Updated**: Agents, commands, skills, hooks, and SDK rules are replaced
+3. **User Files Preserved**: `custom-project-rules.md` and `custom-workflows.md` are never touched
+4. **Templated Files Prompted**: For files like `CLAUDE.md` with project-specific content, you'll be asked to review changes
+5. **Orphans Reported**: Files in your `.claude/` that no longer exist in the SDK are reported (but not deleted)
+
+### File Ownership Model
+
+| Category | Examples | Update Behavior |
+|----------|----------|-----------------|
+| SDK-owned | `agents/*.md`, `commands/*.md`, `rules/git-commit-format.md` | Replaced |
+| User-owned | `rules/custom-project-rules.md`, `rules/custom-workflows.md` | Preserved |
+| Templated | `CLAUDE.md`, `git-tags.md`, `settings.json` | Interactive prompt |
+
+### Rollback
+
+If something goes wrong:
+```bash
+rm -rf .claude
+mv .claude.backup.YYYYMMDD-HHMMSS .claude
+```
+
