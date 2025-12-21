@@ -46,7 +46,7 @@ flowchart TB
     Start([/issue2impl]) --> P1
 
     subgraph P1[Phase 1: Input Validation]
-        IV[input-validator]
+        IV[issue2impl-validator]
     end
 
     subgraph P2[Phase 2: Issue Analysis]
@@ -118,7 +118,7 @@ flowchart TB
 
 | Phase | Components | Purpose |
 |-------|------------|---------|
-| 1 | `input-validator` (Haiku) | Validate issue number, branch, dependencies |
+| 1 | `issue2impl-validator` (Haiku) | Validate issue number, branch, dependencies |
 | 2 | `issue-analyzer` | Analyze issue requirements and codebase |
 | 3 | `doc-architect` | Interactive documentation brainstorming |
 | 4 | `workflow-reference` skill | Size thresholds, L1/L2 tag inference |
@@ -139,7 +139,7 @@ flowchart TB
     Start([/feat2issue]) --> P0
 
     subgraph P0[Phase 0: Input Validation]
-        IV2[input-validator]
+        IV2[feat2issue-validator]
     end
 
     subgraph P1[Phase 1: Three-Agent Brainstorming]
@@ -215,14 +215,14 @@ User Idea -> creative-proposer (divergent) -> critical-checker (convergent) -> c
 ```
 Commands (Entry Points)
     │
-    ├── /issue2impl ─┬─> input-validator
+    ├── /issue2impl ─┬─> issue2impl-validator
     │                   ├─> issue-analyzer
     │                   ├─> doc-architect
     │                   ├─> code-reviewer
     │                   ├─> milestone-generator ──> project-manager
     │                   └─> pre-commit-gate
     │
-    ├── /feat2issue ┬─> input-validator
+    ├── /feat2issue ┬─> feat2issue-validator
     │                   ├─> idea-creative-proposer
     │                   ├─> idea-critical-checker
     │                   ├─> idea-comprehensive-analyzer

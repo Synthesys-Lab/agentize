@@ -15,7 +15,7 @@ allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git b
 
 ## Phase 1: Input Validation
 
-**Spawn `input-validator` agent (Haiku):**
+**Spawn `issue2impl-validator` agent (Haiku):**
 
 ```
 Validate inputs for /issue2impl workflow.
@@ -342,7 +342,7 @@ Reference `pr-templates` skill for summary template (complete or handoff).
 
 | Component | Type | Purpose | Phase | Model |
 |-----------|------|---------|-------|-------|
-| `input-validator` | Agent | Input validation (issue, branch, dependencies) | 1 | Haiku |
+| `issue2impl-validator` | Agent | Input validation (issue, branch, dependencies) | 1 | Haiku |
 | `issue-analyzer` | Agent | Issue and codebase analysis | 2 | - |
 | `doc-architect` | Agent | Interactive documentation brainstorming | 3 | - |
 | `code-reviewer` | Agent | Comprehensive skeptical code review with scoring | 6 | - |

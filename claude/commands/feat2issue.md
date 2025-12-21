@@ -29,11 +29,10 @@ This command transforms design ideas into actionable GitHub issues through a 7-p
 
 ## Phase 0: Input Validation
 
-**Spawn `input-validator` agent (Haiku):**
+**Spawn `feat2issue-validator` agent (Haiku):**
 
 ```
 Validate inputs for /feat2issue workflow.
-Workflow: feat2issue
 Raw input: $ARGUMENTS
 ```
 
@@ -480,7 +479,7 @@ Start with issues that have no dependencies.
 
 | Component | Type | Purpose | Phase | Model |
 |-----------|------|---------|-------|-------|
-| `input-validator` | Agent | Input validation and parsing | 0 | Haiku |
+| `feat2issue-validator` | Agent | Input validation and parsing | 0 | Haiku |
 | `idea-creative-proposer` | Agent | Creative brainstorming and research | 1.1 | Opus |
 | `idea-critical-checker` | Agent | Rigorous critique and fact-checking | 1.2 | Opus |
 | `idea-comprehensive-analyzer` | Agent | Independent synthesis and recommendation | 1.3 | Opus |
