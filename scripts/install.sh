@@ -488,6 +488,8 @@ help:
 	@echo "  test   - Run all tests"
 	@echo "  clean  - Clean build artifacts"
 	@echo "  lint   - Run linters"
+	@echo "  env    - Print shell exports (use: eval \$(make env))"
+	@echo "  env-script - Generate setup.sh for environment setup"
 	@echo ""
 
 .PHONY: build
@@ -503,6 +505,60 @@ clean:${clean_deps}
 
 .PHONY: lint
 lint:${lint_deps}
+
+# ============================================================================
+# Environment Setup Targets
+# ============================================================================
+
+.PHONY: env
+env:
+	@echo "export PATH=\"\$(CURDIR)/bin:\$\$PATH\""
+EOF
+
+    # Conditional: Python environment variables
+    if $HAS_PYTHON; then
+        cat >> "$MASTER_PROJ/Makefile" <<'EOF'
+	@echo "export PYTHONPATH=\"$(CURDIR)/src:$$PYTHONPATH\""
+EOF
+    fi
+
+    # Conditional: Rust environment variables
+    if $HAS_RUST; then
+        cat >> "$MASTER_PROJ/Makefile" <<'EOF'
+	@echo "export CARGO_TARGET_DIR=\"$(CURDIR)/target\""
+EOF
+    fi
+
+    # Resume main heredoc for env-script target
+    cat >> "$MASTER_PROJ/Makefile" <<EOF
+
+.PHONY: env-script
+env-script:
+	@echo "#!/bin/bash" > setup.sh
+	@echo "# Auto-generated environment setup for ${PROJ_NAME}" >> setup.sh
+	@echo "# Generated: \$\$(date)" >> setup.sh
+	@echo "" >> setup.sh
+	@echo "export PATH=\"\$(CURDIR)/bin:\$\$PATH\"" >> setup.sh
+EOF
+
+    # Add Python environment variables to setup.sh
+    if $HAS_PYTHON; then
+        cat >> "$MASTER_PROJ/Makefile" <<'EOF'
+	@echo "export PYTHONPATH=\"\$(CURDIR)/src:\$\$PYTHONPATH\"" >> setup.sh
+EOF
+    fi
+
+    # Add Rust environment variables to setup.sh
+    if $HAS_RUST; then
+        cat >> "$MASTER_PROJ/Makefile" <<'EOF'
+	@echo "export CARGO_TARGET_DIR=\"\$(CURDIR)/target\"" >> setup.sh
+EOF
+    fi
+
+    # Finalize setup.sh creation
+    cat >> "$MASTER_PROJ/Makefile" <<EOF
+	@chmod +x setup.sh
+	@echo "✓ Created setup.sh (use: source setup.sh)"
 
 # ============================================================================
 # Language-Specific Targets
