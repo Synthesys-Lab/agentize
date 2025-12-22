@@ -38,6 +38,9 @@ tmp/
 temp/
 *.tmp
 
+# Test temporary files
+.tmp/
+
 # Log files
 *.log
 logs/

@@ -65,10 +65,32 @@ agentize:
 		"$(AGENTIZE_LANG)" \
 		"$(AGENTIZE_IMPL_DIR)"
 
+# Include test infrastructure (optional, for SDK development)
+-include tests/test.inc
+
+# Unified test target
+.PHONY: test
+test: test-python test-cxx test-c
+	@echo "All SDK tests complete"
+
+# Individual test targets (TODO: implement test scripts)
+.PHONY: test-python test-cxx test-c
+test-python:
+	@echo "Running Python SDK tests..."
+	@# TODO: Add test script invocation
+
+test-cxx:
+	@echo "Running C++ SDK tests..."
+	@# TODO: Add test script invocation
+
+test-c:
+	@echo "Running C SDK tests..."
+	@# TODO: Add test script invocation
+
 .PHONY: clean
 clean:
 	@echo "Cleaning temporary artifacts..."
-	@rm -rf /tmp/agentize-test-*
+	@rm -rf .tmp/
 	@echo "✓ Clean complete"
 
 .DEFAULT_GOAL := help

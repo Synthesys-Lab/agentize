@@ -38,7 +38,7 @@ fi
 #
 # Usage: test_dir=$(create_test_dir "name_suffix")
 # Example: test_dir=$(create_test_dir "init")
-#          # Returns: /tmp/agentize-test-init-a1b2c3
+#          # Returns: .tmp/agentize-test-init-a1b2c3
 #
 # Returns: Absolute path to created temporary directory
 #
@@ -48,8 +48,11 @@ create_test_dir() {
     local name_suffix="$1"
     local temp_dir
 
-    # Create unique temporary directory
-    temp_dir=$(mktemp -d "/tmp/agentize-test-${name_suffix}-XXXXXX")
+    # Create .tmp/ if it doesn't exist
+    mkdir -p .tmp
+
+    # Create unique temporary directory in project-local .tmp/
+    temp_dir=$(mktemp -d ".tmp/agentize-test-${name_suffix}-XXXXXX")
 
     echo "$temp_dir"
 }
