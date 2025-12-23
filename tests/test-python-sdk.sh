@@ -1,0 +1,78 @@
+#!/bin/bash
+
+set -e
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+echo "======================================"
+echo "Testing Python SDK"
+echo "======================================"
+echo ""
+
+# Test: Default Python SDK
+echo ">>> Test: Creating Python SDK project"
+TMP_DIR="$PROJECT_ROOT/.tmp/python-sdk-test"
+rm -rf "$TMP_DIR"
+
+echo "Creating Python SDK..."
+make -C "$PROJECT_ROOT" agentize \
+    AGENTIZE_PROJECT_NAME="test_python_sdk" \
+    AGENTIZE_PROJECT_PATH="$TMP_DIR" \
+    AGENTIZE_PROJECT_LANG="python" \
+    AGENTIZE_MODE="init"
+
+# Verify test_python_sdk/ directory exists (project_name renamed)
+if [ ! -d "$TMP_DIR/test_python_sdk" ]; then
+    echo "Error: test_python_sdk/ directory not found!"
+    exit 1
+fi
+
+if [ ! -f "$TMP_DIR/test_python_sdk/__init__.py" ]; then
+    echo "Error: __init__.py not found in test_python_sdk/!"
+    exit 1
+fi
+
+# Verify bootstrap.sh was deleted
+if [ -f "$TMP_DIR/bootstrap.sh" ]; then
+    echo "Error: bootstrap.sh should have been deleted!"
+    exit 1
+fi
+
+# Verify test file was updated to use correct module name
+if grep -q "import project_name" "$TMP_DIR/tests/test_main.py"; then
+    echo "Error: tests/test_main.py still references 'project_name' instead of 'test_python_sdk'!"
+    exit 1
+fi
+
+echo "Generating env-script..."
+make -C "$TMP_DIR" env-script
+
+# Verify setup.sh was created
+if [ ! -f "$TMP_DIR/setup.sh" ]; then
+    echo "Error: setup.sh not generated!"
+    exit 1
+fi
+
+# Verify setup.sh sets PYTHONPATH
+if ! grep -q "PYTHONPATH" "$TMP_DIR/setup.sh"; then
+    echo "Error: setup.sh does not set PYTHONPATH!"
+    exit 1
+fi
+
+echo "Sourcing setup.sh and running tests..."
+(
+    cd "$TMP_DIR"
+    source ./setup.sh > /dev/null
+    make test
+)
+
+echo "✓ Test passed: Python SDK works correctly"
+echo ""
+
+echo "======================================"
+echo "All Python SDK tests completed successfully!"
+echo "======================================"
+echo "Test project remains at:"
+echo "  - $TMP_DIR"
