@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Pre-commit hook to run tests before committing
+# This ensures code quality by running all test suites
+
+set -e
+
+echo "Running pre-commit tests..."
+echo ""
+
+# Get the repository root directory
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+# Run the test-all.sh script
+if ! "$REPO_ROOT/tests/test-all.sh"; then
+    echo ""
+    echo "❌ Tests failed! Commit aborted."
+    echo "Please fix the failing tests before committing."
+    exit 1
+fi
+
+echo ""
+echo "✅ All tests passed! Proceeding with commit."
+exit 0

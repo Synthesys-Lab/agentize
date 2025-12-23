@@ -38,11 +38,14 @@ agentize:
 		echo "Initializing SDK structure..."; \
 		mkdir -p "$(AGENTIZE_PROJECT_PATH)"; \
 		cp -r templates/$(AGENTIZE_PROJECT_LANG)/* "$(AGENTIZE_PROJECT_PATH)/"; \
-		if [ "$$SOURCE_PATH" != "src" ]; then \
-			echo "Renaming src/ to $$SOURCE_PATH/..."; \
-			mv "$(AGENTIZE_PROJECT_PATH)/src" "$(AGENTIZE_PROJECT_PATH)/$$SOURCE_PATH"; \
-			sed -i.bak "s|src/|$$SOURCE_PATH/|g" "$(AGENTIZE_PROJECT_PATH)/CMakeLists.txt"; \
-			rm -f "$(AGENTIZE_PROJECT_PATH)/CMakeLists.txt.bak"; \
+		if [ -f "$(AGENTIZE_PROJECT_PATH)/bootstrap.sh" ]; then \
+			echo "Running bootstrap script..."; \
+			chmod +x "$(AGENTIZE_PROJECT_PATH)/bootstrap.sh"; \
+			(cd "$(AGENTIZE_PROJECT_PATH)" && \
+			AGENTIZE_PROJECT_NAME="$(AGENTIZE_PROJECT_NAME)" \
+			AGENTIZE_PROJECT_PATH="$(AGENTIZE_PROJECT_PATH)" \
+			AGENTIZE_SOURCE_PATH="$$SOURCE_PATH" \
+			./bootstrap.sh); \
 		fi; \
 		echo "SDK initialized successfully at $(AGENTIZE_PROJECT_PATH)"; \
 	elif [ "$$MODE" = "update" ]; then \
