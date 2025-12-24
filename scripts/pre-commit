@@ -5,11 +5,21 @@
 
 set -e
 
-echo "Running pre-commit tests..."
-echo ""
-
 # Get the repository root directory
 REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+# Run documentation linter first
+echo "Running documentation linter..."
+if ! "$REPO_ROOT/scripts/lint-documentation.sh"; then
+    echo ""
+    echo "❌ Documentation linting failed! Commit aborted."
+    echo "Fix missing documentation or use --no-verify for milestone commits."
+    exit 1
+fi
+
+echo ""
+echo "Running pre-commit tests..."
+echo ""
 
 # Run the test-all.sh script
 if ! "$REPO_ROOT/tests/test-all.sh"; then
