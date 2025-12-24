@@ -1,5 +1,5 @@
 ---
-name: make-a-plan
+name: plan-guideline
 description: Create comprehensive implementation plans with detailed file-level changes and test strategies
 ---
 
@@ -35,7 +35,7 @@ This design-first test-driven development (TDD) style ensures:
 
 ## Inputs
 
-The make-a-plan skill takes the following inputs:
+The plan-guideline skill takes the following inputs:
 - User's goal or requirement (either from conversation or a markdown file)
 - Current codebase context (will be explored by the agent)
 - Existing architecture patterns and conventions

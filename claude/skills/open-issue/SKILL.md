@@ -76,7 +76,7 @@ The AI agent must determine which prefix and tag combination to use based on the
 
 The open-issue skill takes the following inputs:
 
-1. **For [plan] issues**: A complete implementation plan from the `make-a-plan` skill
+1. **For [plan] issues**: A complete implementation plan from the `plan-guideline` skill
    - The plan should include all sections: Goal, Codebase Analysis, Interface Design, Test Strategy, and Implementation Steps
    - The plan becomes the "Proposed Solution" section of the issue
 
@@ -94,7 +94,7 @@ When this skill is invoked, the AI agent **MUST** follow these steps:
 Review the conversation to determine issue type and extract details:
 
 **For [plan] issues:**
-- Check if a plan was already created using the `make-a-plan` skill
+- Check if a plan was already created using the `plan-guideline` skill
 - If yes, use that plan directly as the "Proposed Solution"
 - If no, inform the user to run `make-a-plan` first before creating a [plan] issue
 
@@ -136,14 +136,14 @@ Build the issue following the format specification:
 
 **Proposed Solution section (mandatory for [plan] issues):**
 
-**For [plan] issues:** Use the complete plan output from the `make-a-plan` skill:
+**For [plan] issues:** Use the complete plan output from the `plan-guideline` skill:
 - Copy the entire plan structure: Goal, Codebase Analysis, Interface Design, Test Strategy, and Implementation Steps
-- The plan from `make-a-plan` already includes all necessary details:
+- The plan from `plan-guideline` already includes all necessary details:
   - Specific files to modify/create/delete with line ranges
   - Implementation steps in Design-first TDD order (Docs → Tests → Implementation)
   - LOC estimates and complexity assessment
   - Milestone strategy for large features
-- **DO NOT** modify or rewrite the plan - use it as-is from `make-a-plan`
+- **DO NOT** modify or rewrite the plan - use it as-is from `plan-guideline`
 
 **For other issue types without a formal plan:**
 - Provide a brief description of the proposed approach (if applicable)
@@ -233,7 +233,7 @@ explicitly requested by the user.
 
 ### Example 1: Plan Issue with Feature Tag
 
-**Context:** User wants to add a new feature. A plan was created using the `make-a-plan` skill.
+**Context:** User wants to add a new feature. A plan was created using the `plan-guideline` skill.
 
 **Issue:**
 ```markdown
@@ -245,9 +245,9 @@ Brief description of what the feature does and why it's needed.
 
 ## Proposed Solution
 
-[The complete plan output from make-a-plan skill is inserted here]
+[The complete plan output from plan-guideline skill is inserted here]
 
-See the `make-a-plan` skill documentation for detailed examples of plan structure,
+See the `plan-guideline` skill documentation for detailed examples of plan structure,
 including Goal, Codebase Analysis, Interface Design, Test Strategy, and Implementation Steps.
 
 ## Related PR

@@ -16,7 +16,7 @@ If arguments are provided via $ARGUMENTS, they will be used as the planning requ
 
 ## What This Command Does
 
-This command invokes the `make-a-plan` skill to create a comprehensive implementation plan that includes:
+This command invokes the `plan-guideline` skill to create a comprehensive implementation plan that includes:
 
 1. **Goal Understanding** - Clear problem statement and success criteria
 2. **Codebase Analysis** - Specific files to modify/create/delete (audit results, not audit tasks)
