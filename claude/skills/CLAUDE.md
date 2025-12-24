@@ -5,7 +5,7 @@
     - further skills' development ideas
     - improvements to the overall workflow
     - post-skill steps
-- Ownership/authorship claim is **ONLY** reflected for the `git-commit` skill, other skills **SHALL NOT** have any ownership claim.
+- Ownership/authorship claim is **ONLY** reflected for the `commit-msg` skill, other skills **SHALL NOT** have any ownership claim.
 - Few-shot examples are encouraged to be a part of skill, but do not overdo it.
   - If you have concrete big examples that consumes multiple (~10) lines, at most 3 examples: 2 positive and 1 negative, are recommended.
   - If examples are as simple as 1-2 lines, you can add up to 5 examples for both positive and negative.

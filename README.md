@@ -101,7 +101,7 @@ agentize/
 ├── docs/                   # Document
 │   ├── draft/              # Draft documents for local development
 │   ├── OPTIONS.md          # Document for make options
-│   └── git-msg-tags.md     # Used by \git-commit skill and command to write meaningful commit messages
+│   └── git-msg-tags.md     # Used by \commit-msg skill and command to write meaningful commit messages
 ├── templates/              # Templates for SDK generation
 ├── claude/                 # Core agent rules for Claude Code
 ├── tests/                  # Test cases
