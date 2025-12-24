@@ -195,9 +195,55 @@ Should I create this PR?
 - If the user requests modifications, update the draft and present again
 - If the user declines, abort PR creation gracefully
 
+### 6.5. Remote Branch Verification
+
+**CRITICAL:** Before creating the PR, verify the current branch exists on the remote repository.
+
+Check if the current branch is tracking a remote branch:
+
+```bash
+# Check if current branch has an upstream branch
+git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null
+```
+
+**If the command fails (no upstream branch):**
+1. Get the current branch name:
+   ```bash
+   git branch --show-current
+   ```
+2. Push the branch with tracking:
+   ```bash
+   git push -u origin <branch-name>
+   ```
+3. Confirm to user: "Pushed branch to remote: origin/<branch-name>"
+
+**If the command succeeds (upstream branch exists):**
+1. Check if local is ahead of remote:
+   ```bash
+   git status --porcelain --branch
+   ```
+2. If output contains `[ahead N]`, push changes:
+   ```bash
+   git push
+   ```
+3. If up-to-date, continue to PR creation
+
+**Error handling:**
+- If push fails due to authentication:
+  ```
+  Git push failed. Please check your Git credentials.
+  ```
+- If push fails due to conflicts:
+  ```
+  Cannot push: your branch has diverged from remote.
+  Please resolve conflicts manually with:
+    git pull --rebase origin <branch-name>
+  ```
+- For other push failures: Display the error and abort PR creation
+
 ### 7. GitHub PR Creation
 
-Once confirmed, create the PR using the GitHub CLI:
+Once confirmed and the branch is on remote, create the PR using the GitHub CLI:
 
 ```bash
 gh pr create --title "TITLE_HERE" --body "$(cat <<'EOF'
