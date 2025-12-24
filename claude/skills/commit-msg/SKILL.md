@@ -1,9 +1,9 @@
 ---
-name: git-commit
+name: commit-msg
 description: Commit the staged changes to git with meaningful messages.
 ---
 
-# Git Commit
+# Commit Message
 
 This skill instructs AI agent on how to commit staged changes to a git repository with
 meaningful commit messages.

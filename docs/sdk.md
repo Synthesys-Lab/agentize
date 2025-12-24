@@ -11,9 +11,9 @@ your-project/
 ├── .claude/                    # Claude Code configuration (DIRECTORY, not symlink!)
 │   ├── settings.json          # Claude Code settings
 │   ├── commands/              # Custom slash commands
-│   │   └── git-commit/
+│   │   └── commit-msg/
 │   ├── skills/                # Agent skills
-│   │   ├── git-commit/
+│   │   ├── commit-msg/
 │   │   └── open-issue/
 │   └── hooks/                 # Git and event hooks
 ├── CLAUDE.md                  # Project-specific instructions for Claude

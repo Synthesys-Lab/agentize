@@ -16,7 +16,7 @@ Commands provide a simple interface to invoke complex workflows or skills. Each 
 
 ## Available Commands
 
-- `git-commit.md`: Invokes the git-commit skill to create commits with meaningful messages following project standards
+- `git-commit.md`: Invokes the commit-msg skill to create commits with meaningful messages following project standards
 - `make-a-plan.md`: Creates comprehensive implementation plans following design-first TDD approach
 - `issue-to-impl.md`: Orchestrates full implementation workflow from issue to completion (creates branch, docs, tests, and first milestone)
 - `miles2miles.md`: Resumes implementation from the latest milestone on current branch

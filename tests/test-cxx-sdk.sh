@@ -55,8 +55,8 @@ if [ ! -f "$TMP_DIR_SRC/.claude/settings.json" ]; then
     exit 1
 fi
 
-if [ ! -d "$TMP_DIR_SRC/.claude/skills/git-commit" ]; then
-    echo "Error: .claude/skills/git-commit/ not found!"
+if [ ! -d "$TMP_DIR_SRC/.claude/skills/commit-msg" ]; then
+    echo "Error: .claude/skills/commit-msg/ not found!"
     exit 1
 fi
 

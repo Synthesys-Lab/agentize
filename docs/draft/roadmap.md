@@ -5,12 +5,12 @@
 ### Completed Components (as of 2025-12-23)
 
 #### Skills
-- `git-commit`: Creates meaningful git commits following project standards
+- `commit-msg`: Creates meaningful git commits following project standards
 - `open-issue`: Creates GitHub issues from conversation context with proper formatting
 - `open-pr`: Creates pull requests with proper formatting
 
 #### Commands
-- `git-commit.md`: Invokes the git-commit skill
+- `commit-msg.md`: Invokes the commit-msg skill
 - `open-issue.md`: Invokes the open-issue skill
 
 #### Infrastructure

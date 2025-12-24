@@ -373,15 +373,15 @@ Create the file `.milestones/issue-{N}-milestone-{M}.md`:
 
 ### Step 6: Create Milestone Commit
 
-Use the `git-commit` skill with milestone flag:
+Use the `commit-msg` skill with milestone flag:
 
-**Invoke git-commit skill with:**
+**Invoke commit-msg skill with:**
 - Purpose: milestone
 - Staged files: all changes made so far
 - Issue number: {N}
 - Test status: "{passed}/{total} tests passed"
 
-The git-commit skill will:
+The commit-msg skill will:
 - Create commit message with `[milestone][tag]` prefix
 - Include test status in message
 - Use `git commit --no-verify` to bypass pre-commit hooks
@@ -434,7 +434,7 @@ Next steps:
 **Do NOT create a milestone** when all tests pass - this indicates completion.
 
 The final commit should be a **delivery commit** (not a milestone):
-- Use git-commit skill with purpose: delivery
+- Use commit-msg skill with purpose: delivery
 - No `--no-verify` flag
 - Normal pre-commit hooks will run
 - All tests must pass for commit to succeed
@@ -678,9 +678,9 @@ Implementation complete:
 
 ## Integration with Other Skills
 
-### With `git-commit` Skill
+### With `commit-msg` Skill
 
-The milestone skill invokes the `git-commit` skill for:
+The milestone skill invokes the `commit-msg` skill for:
 
 **Milestone commits:**
 - Purpose: milestone

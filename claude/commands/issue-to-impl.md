@@ -143,7 +143,7 @@ git add .
   - Next File Changes: Extracted from first implementation step in plan
   - Test Status: All tests failing (expected, no implementation yet)
 
-**Invoke:** `git-commit` skill
+**Invoke:** `commit-msg` skill
 **Input:**
 - Purpose: `milestone`
 - Issue number: `{N}`
