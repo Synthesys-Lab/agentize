@@ -6,31 +6,15 @@ test:
 
 # Agentize target - creates SDK for projects
 agentize:
-	@if [ -z "$(AGENTIZE_PROJECT_PATH)" ]; then \
-		echo "Error: AGENTIZE_PROJECT_PATH is required"; \
-		exit 1; \
-	fi
 	@# Set default mode to init if not specified
 	@MODE=$(AGENTIZE_MODE); \
 	if [ -z "$$MODE" ]; then MODE="init"; fi; \
+	./scripts/check-parameter.sh "$$MODE" "$(AGENTIZE_PROJECT_PATH)" "$(AGENTIZE_PROJECT_NAME)" "$(AGENTIZE_PROJECT_LANG)" || exit 1; \
 	SOURCE_PATH=$(AGENTIZE_SOURCE_PATH); \
 	if [ -z "$$SOURCE_PATH" ]; then SOURCE_PATH="src"; fi; \
 	echo "Mode: $$MODE"; \
 	echo "Target path: $(AGENTIZE_PROJECT_PATH)"; \
 	if [ "$$MODE" = "init" ]; then \
-		if [ -z "$(AGENTIZE_PROJECT_NAME)" ]; then \
-			echo "Error: AGENTIZE_PROJECT_NAME is required for init mode"; \
-			exit 1; \
-		fi; \
-		if [ -z "$(AGENTIZE_PROJECT_LANG)" ]; then \
-			echo "Error: AGENTIZE_PROJECT_LANG is required for init mode"; \
-			exit 1; \
-		fi; \
-		if [ ! -d "templates/$(AGENTIZE_PROJECT_LANG)" ]; then \
-			echo "Error: Template for language '$(AGENTIZE_PROJECT_LANG)' not found"; \
-			echo "Available languages: c, cxx, python"; \
-			exit 1; \
-		fi; \
 		echo "Creating SDK for project: $(AGENTIZE_PROJECT_NAME)"; \
 		echo "Language: $(AGENTIZE_PROJECT_LANG)"; \
 		echo "Source path: $$SOURCE_PATH"; \
@@ -85,19 +69,8 @@ agentize:
 		echo "  Updated .claude/settings.json, commands, skills, and hooks"; \
 		if [ ! -f "$(AGENTIZE_PROJECT_PATH)/docs/git-msg-tags.md" ]; then \
 			echo "  Creating missing docs/git-msg-tags.md..."; \
-			DETECTED_LANG=""; \
-			if [ -f "$(AGENTIZE_PROJECT_PATH)/requirements.txt" ] || \
-			   [ -f "$(AGENTIZE_PROJECT_PATH)/pyproject.toml" ] || \
-			   [ -n "$$(find '$(AGENTIZE_PROJECT_PATH)' -maxdepth 2 -name '*.py' -print -quit 2>/dev/null)" ]; then \
-				DETECTED_LANG="python"; \
-			elif [ -f "$(AGENTIZE_PROJECT_PATH)/CMakeLists.txt" ]; then \
-				if grep -q "project.*CXX" "$(AGENTIZE_PROJECT_PATH)/CMakeLists.txt" 2>/dev/null; then \
-					DETECTED_LANG="cxx"; \
-				else \
-					DETECTED_LANG="c"; \
-				fi; \
-			fi; \
-			if [ -n "$$DETECTED_LANG" ]; then \
+			DETECTED_LANG=$$(./scripts/detect-lang.sh "$(AGENTIZE_PROJECT_PATH)" 2>&1); \
+			if [ $$? -eq 0 ]; then \
 				echo "    Detected language: $$DETECTED_LANG"; \
 				mkdir -p "$(AGENTIZE_PROJECT_PATH)/docs"; \
 				if [ "$$DETECTED_LANG" = "python" ]; then \
@@ -113,7 +86,7 @@ agentize:
 				fi; \
 				echo "    Created docs/git-msg-tags.md"; \
 			else \
-				echo "    Warning: Could not detect project language, skipping git-msg-tags.md creation"; \
+				echo "    $$DETECTED_LANG"; \
 			fi; \
 		else \
 			echo "  Existing CLAUDE.md and docs/git-msg-tags.md were preserved"; \
