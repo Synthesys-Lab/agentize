@@ -6,26 +6,25 @@ This tutorial explains how to create implementation plans and GitHub issues usin
 
 ## What is `/plan-an-issue`?
 
-`/plan-an-issue` creates GitHub issues tagged with `[plan][tag]` that contain detailed implementation plans. These issues serve as blueprints for implementing features, refactoring code, or fixing bugs.
+`/plan-an-issue` creates GitHub issues tagged with `[plan][tag]` that contain detailed implementation plans. It handles the end-to-end process: creating a plan and generating a GitHub issue from it.
 
 The tags come from `docs/git-msg-tags.md` (see Tutorial 00 for customization).
 
-## Prerequisites
+**Note**: `/make-a-plan` is an intermediate exposure of the planning guideline. You can use `/plan-an-issue` directly for an end-to-end experience that both creates the plan and the GitHub issue.
 
-Before using `/plan-an-issue`, you need an implementation plan. You can get one by:
+## Standard Workflow
 
-1. **Using `/make-a-plan`**: Let the AI create a detailed plan from your requirements
-2. **Providing a plan file**: If you already have a plan document
+This is the **recommended (and often mandatory) standard flow**: When you find an implementation to be done, first use `/plan-an-issue` to have it planned.
 
-## Typical Workflow
-
-### Step 1: Create a Plan with `/make-a-plan`
+### Step 1: Describe Your Requirements
 
 Start by describing what you want to implement:
 
 ```
-User: I need to add TypeScript SDK template support to the project
+User: /plan-an-issue I need to add TypeScript SDK template support to the project
 ```
+
+### Step 2: AI Creates the Plan
 
 The AI will create a detailed implementation plan including:
 - Files to create or modify
@@ -34,22 +33,14 @@ The AI will create a detailed implementation plan including:
 - Test strategy
 - Architectural considerations
 
-### Step 2: Review and Approve the Plan
-
 The AI will present the plan for your review. You can:
 - Approve it as-is
 - Request modifications
 - Ask clarifying questions
 
-### Step 3: Create the GitHub Issue with `/plan-an-issue`
+### Step 3: AI Creates the GitHub Issue
 
-Once you're satisfied with the plan:
-
-```
-/plan-an-issue
-```
-
-The AI will:
+Once you're satisfied with the plan, the AI will:
 1. Review tag standards in `docs/git-msg-tags.md`
 2. Determine the appropriate tag (e.g., `[plan][feat]`, `[plan][docs]`, `[plan][refactor]`)
 3. Draft the issue with proper formatting
@@ -86,29 +77,26 @@ The AI automatically selects tags from `docs/git-msg-tags.md`. Common tags inclu
 
 If you customized tags in Tutorial 00, those will be available too.
 
-## When to Use `/plan-an-issue`
+## Scope of `/plan-an-issue`
 
-Use this command for:
-- **New features** requiring detailed implementation steps
+Use this command as the **standard workflow** for:
+- **New features** requiring implementation
 - **Refactoring tasks** with multiple file changes
 - **Bug fixes** that need a structured approach
 - **Improvements** with specific implementation details
 
-Don't use it for:
-- Simple one-line fixes
-- Trivial documentation updates
-- Tasks without clear implementation steps
+For simple one-line fixes or trivial updates, you may skip planning and implement directly.
 
 ## Example Walkthrough
 
 Let's walk through planning a new feature:
 
-**1. User provides requirements:**
+**1. User invokes `/plan-an-issue` with requirements:**
 ```
-User: I want to add support for Rust projects. The SDK should generate proper Rust project structure with cargo configuration.
+User: /plan-an-issue I want to add support for Rust projects. The SDK should generate proper Rust project structure with cargo configuration.
 ```
 
-**2. AI creates a plan using `/make-a-plan`:**
+**2. AI creates a plan:**
 ```
 Agent: I'll create a detailed plan for adding Rust SDK support.
 [Creates plan with:
@@ -125,10 +113,8 @@ Agent: Here's the plan. Does this approach look good?
 User: Yes, looks good
 ```
 
-**4. AI creates the issue:**
+**4. AI creates the GitHub issue:**
 ```
-User: /plan-an-issue
-
 Agent: I'll create a [plan][feat] issue for this implementation.
 
 Title: [plan][feat] Add Rust SDK template support

@@ -25,39 +25,29 @@ This creates the initial SDK structure with:
 
 **Available languages**: `c`, `cxx`, `python` (see `docs/options.md` for more)
 
-### 2. Import into an Existing Project
+### 2. Import to/Update for an Existing Project
 
-To add Agentize to your existing codebase:
+To add Agentize to your existing codebase or update the framework rules:
 
 ```bash
 make agentize \
    AGENTIZE_PROJECT_NAME="existing_project" \
    AGENTIZE_PROJECT_PATH="/path/to/existing/project" \
    AGENTIZE_PROJECT_LANG="python" \
-   AGENTIZE_MODE="init"
-```
-
-The framework will:
-- Create `claude/` directory with core rules
-- Set up `.claude/` symlink
-- Leave your existing code untouched
-- Allow you to start using AI-powered development commands
-
-### 3. Update Rules Without Losing Extensions
-
-When Agentize framework updates, sync the latest rules while preserving your custom extensions:
-
-```bash
-make agentize \
-   AGENTIZE_PROJECT_NAME="my_project" \
-   AGENTIZE_PROJECT_PATH="/path/to/project" \
    AGENTIZE_MODE="update"
 ```
 
 This mode:
+- Creates `claude/` directory with core rules (if not present)
+- Sets up `.claude/` symlink
+- Leaves your existing code untouched
 - Updates core framework files (skills, commands, agents)
 - Preserves your custom extensions and modifications
 - Merges new features from the framework
+
+Use this for both:
+- **Initial import**: Adding Agentize to an existing project for the first time
+- **Framework updates**: Syncing latest Agentize rules while keeping your customizations
 
 ## What Gets Created
 
@@ -87,28 +77,13 @@ You should see your custom commands listed (like `/issue-to-impl`, `/code-review
 
 ## Customizing Git Commit Tags (Optional)
 
-Agentize uses standardized git commit tags for automatic commit message generation. The default tags are defined in `docs/git-msg-tags.md`:
+Feel free to edit `docs/git-msg-tags.md` - the current tags are for the Agentize project itself. You can customize these tags to fulfill your project's module requirements.
 
-- `feat`: New features
-- `docs`: Documentation updates
-- `bugfix`: Bug fixes
-- `refactor`: Code refactoring
-- `test`: Test-only changes
-- `agent.skill`: Skill modifications
-- `agent.command`: Command modifications
-
-### Adding Your Own Tags
-
-To add project-specific tags, edit `docs/git-msg-tags.md` in your project:
-
+For example, you might add project-specific tags like:
 ```markdown
-## Tags
-
-[... existing tags ...]
-
+- `api`: API changes
+- `ui`: User interface updates
 - `perf`: Performance improvements
-- `security`: Security fixes
-- `deps`: Dependency updates
 ```
 
 The AI will use these tags when creating commits and issues. This is particularly useful in Tutorial 01 when creating [plan] issues.

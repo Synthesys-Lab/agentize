@@ -108,11 +108,11 @@ If implementation creates a milestone (doesn't complete), resume with:
 /miles2miles
 ```
 
-No arguments needed - it automatically:
+**How it works**: `/miles2miles` takes a milestone document as input - without a milestone document, there are no "miles" to continue to the next "miles". The command automatically:
 1. Detects your current branch (issue-42-*)
-2. Finds the latest milestone file
-3. Loads context (work remaining, test status)
-4. Continues implementation
+2. Finds the latest milestone file in `.milestones/`
+3. Loads context from the milestone (work remaining, test status)
+4. Continues implementation from that checkpoint
 
 ## Code Review with `/code-review`
 
