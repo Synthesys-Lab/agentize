@@ -4,16 +4,15 @@ This directory contains agent definitions for Claude Code. Agents are specialize
 
 ## Purpose
 
-Agents provide isolated execution environments for complex, multi-step tasks. Each agent is defined with a specification file (AGENT.md), configuration (agent.json), and documentation (README.md).
+Agents provide isolated execution environments for complex, multi-step tasks. Each agent is defined as a markdown file with YAML frontmatter configuration.
 
 ## Organization
 
-- Each agent is in its own subdirectory
-- Agent directories include:
-  - `AGENT.md`: Agent behavior specification and workflow
-  - `agent.json`: Configuration (model, tools, skills, timeout)
-  - `README.md`: User-facing documentation and usage examples
+- Each agent is a `.md` file in the `agents/` directory
+- Agent files include:
+  - YAML frontmatter: Configuration (name, description, model, tools, skills)
+  - Markdown content: Agent behavior specification and workflow
 
 ## Available Agents
 
-- `code-review/`: Comprehensive code review with enhanced quality standards using Opus model for long context analysis
+- `code-review.md`: Comprehensive code review with enhanced quality standards using Opus model for long context analysis
