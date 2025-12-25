@@ -36,26 +36,31 @@ For more details of the variables and options available, refer to our
 
 ### Workflow:
 
-`/plan-an-issue` command flow:
+`/ultra-planner` command flow (multi-agent debate-based planning):
 ```mermaid
 graph TD
-    A[User provides requirements] --> B[Novel-proposer agent]
-    B[Novel-proposer: Break down into uncommon plans] --> D[Synthesis agent]
-    B --> C[Critique agent]
-    C[Critique: Review feasibility] --> D
-    D[3rd-party reviewer: Synthesize final plan via consensus & conflicts] --> E[User approves/rejects plan]
-    E -->|Approved| F[Create Github Issue]
-    E -->|Refined| A
-    E -->|Abandoned| Z(End)
-    F[Open a dev issue] --> G[Code implementation]
+    A[User provides requirements] --> B[Bold-proposer agent]
+    A --> C[Proposal-critique agent]
+    A --> D[Proposal-reducer agent]
+    B[Bold-proposer: Research SOTA & propose innovation] --> E[Combine reports]
+    C[Critique: Validate assumptions & feasibility] --> E
+    D[Reducer: Simplify following 'less is more'] --> E
+    E[Combined 3-perspective report] --> F[External consensus review]
+    F[Codex/Opus: Synthesize consensus plan] --> G[User approves/rejects plan]
+    G -->|Approved| H[Create Github Issue]
+    G -->|Refine| A
+    G -->|Abandoned| Z(End)
+    H[Open a dev issue via open-issue skill] --> I[Code implementation]
 
     style A fill:#ffcccc
-    style E fill:#ffcccc
+    style G fill:#ffcccc
     style B fill:#ccddff
     style C fill:#ccddff
     style D fill:#ccddff
+    style E fill:#ccddff
     style F fill:#ccddff
-    style G fill:#ccddff
+    style H fill:#ccddff
+    style I fill:#ccddff
     style Z fill:#dddddd
 ```
 
@@ -96,8 +101,9 @@ Learn Agentize in 15 minutes with our step-by-step tutorials (3-5 min each):
 
 1. **[Initialize Your Project](./docs/00-initialize.md)** - Set up Agentize in new or existing projects
 2. **[Plan an Issue](./docs/01-plan-an-issue.md)** - Create implementation plans and GitHub issues
-3. **[Issue to Implementation](./docs/02-issue-to-impl.md)** - Complete development cycle with `/issue-to-impl`, `/code-review`, and `/sync-master`
-4. **[Advanced Usage](./docs/03-advanced-usage.md)** - Scale up with parallel development workflows
+3. **[Ultra Planner](./docs/01b-ultra-planner.md)** - Multi-agent debate-based planning for complex features
+4. **[Issue to Implementation](./docs/02-issue-to-impl.md)** - Complete development cycle with `/issue-to-impl`, `/code-review`, and `/sync-master`
+5. **[Advanced Usage](./docs/03-advanced-usage.md)** - Scale up with parallel development workflows
 
 ## Project Organization
 

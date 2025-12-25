@@ -15,4 +15,16 @@ Agents provide isolated execution environments for complex, multi-step tasks. Ea
 
 ## Available Agents
 
+### Review & Analysis
+
 - `code-quality-reviewer.md`: Comprehensive code review with enhanced quality standards using Opus model for long context analysis
+
+### Debate-Based Planning
+
+Multi-perspective planning agents for collaborative proposal development:
+
+- `bold-proposer.md`: Research SOTA solutions and propose innovative, bold approaches
+- `proposal-critique.md`: Validate assumptions and analyze technical feasibility
+- `proposal-reducer.md`: Simplify proposals following "less is more" philosophy
+
+These agents work together in the `/ultra-planner` workflow to generate well-balanced implementation plans through structured debate.
