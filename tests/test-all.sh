@@ -27,6 +27,18 @@ else
 fi
 echo ""
 
+# Test Makefile parameter validation logic
+echo ">>> Testing Makefile parameter validation..."
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+if bash "$SCRIPT_DIR/test-makefile-validation.sh"; then
+    echo "✓ Makefile validation tests passed"
+    PASSED_TESTS=$((PASSED_TESTS + 1))
+else
+    echo "✗ Makefile validation tests failed"
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+fi
+echo ""
+
 # Test C SDK
 echo ">>> Testing C SDK..."
 TOTAL_TESTS=$((TOTAL_TESTS + 1))
