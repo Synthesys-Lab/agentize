@@ -76,7 +76,7 @@ Call the external review script with proper arguments:
 ```
 
 The script will:
-1. Load prompt template from `.tmp/templates/external-review-prompt.md`
+1. Load prompt template from `./external-review-prompt.md` (in skill folder)
 2. Substitute variables: `{{FEATURE_NAME}}`, `{{FEATURE_DESCRIPTION}}`, `{{COMBINED_REPORT}}`
 3. Try Codex CLI first (if available)
 4. Fallback to Claude Opus CLI (if Codex unavailable)
@@ -308,7 +308,7 @@ This could indicate:
 
 Debug steps:
 1. Check combined report size: wc -l {combined_report_file}
-2. Check prompt template: .tmp/templates/external-review-prompt.md
+2. Check prompt template: ./external-review-prompt.md (in skill folder)
 3. Try running script manually:
    ./scripts/external-review.sh {combined_report_file} "{feature_name}" "{feature_description}"
 ```
@@ -394,7 +394,7 @@ This skill outputs to:
 - Codex is **preferred** due to cost and speed
 - Claude Opus is **fallback** with same capability
 - Manual review is **last resort** if tools unavailable
-- Prompt template is **customizable** in `.tmp/templates/external-review-prompt.md`
+- Prompt template is **customizable** in `./external-review-prompt.md` (in skill folder)
 - Consensus plan format follows **standard implementation plan structure**
 - Execution time: 1-3 minutes (depending on model and API latency)
 - Cost: Single Opus API call (~$0.50-2.00 depending on report size)

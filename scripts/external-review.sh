@@ -28,9 +28,10 @@ fi
 COMBINED_REPORT=$(cat "$COMBINED_REPORT_FILE")
 
 # Load the prompt template
-PROMPT_TEMPLATE=".tmp/templates/external-review-prompt.md"
+PROMPT_TEMPLATE="claude/skills/external-consensus/external-review-prompt.md"
 if [ ! -f "$PROMPT_TEMPLATE" ]; then
     echo "Error: Prompt template not found: $PROMPT_TEMPLATE"
+    echo "Expected location: $PROMPT_TEMPLATE (relative to project root)"
     exit 1
 fi
 
