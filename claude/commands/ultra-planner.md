@@ -19,9 +19,10 @@ If arguments are provided via $ARGUMENTS, parse them as either:
 This command orchestrates a three-agent debate system to generate high-quality implementation plans:
 
 1. **Three-agent debate**: Launch bold-proposer, proposal-critique, and proposal-reducer agents in parallel
-2. **External consensus**: Synthesize balanced plan using Codex or Claude Opus
-3. **User approval**: Present consensus plan for review
-4. **GitHub issue creation**: Invoke open-issue skill to create [plan] issue
+2. **Combine reports**: Merge all three perspectives into single document
+3. **External consensus**: Invoke external-consensus skill to synthesize balanced plan
+4. **User approval**: Present consensus plan for review
+5. **GitHub issue creation**: Invoke open-issue skill to create [plan] issue
 
 ## Inputs
 
@@ -106,43 +107,72 @@ Please provide more details:
 
 Ask user for clarification.
 
-### Step 3: Invoke Debate-Based Planning Skill
+### Step 3: Launch Three Agents in Parallel
 
-Launch the debate workflow:
+Use the Task tool to launch all three debate agents simultaneously:
 
-**Skill:** `debate-based-planning`
-
-**Inputs:**
-- Feature request: `$FEATURE_DESCRIPTION`
-- Context files: (optional, can be provided if relevant codebase files identified)
-- Output path: `.tmp/debate-report-{timestamp}.md`
-
-**Skill behavior:**
-1. Launches three agents in parallel (bold-proposer, proposal-critique, proposal-reducer)
-2. Each agent analyzes the feature independently
-3. Combines all three reports into single document
-4. Returns combined report path
-
-**Expected output:**
+**Agent 1: Bold Proposer**
 ```
-Debate complete! Three perspectives generated:
-
-1. Bold Proposer:
-   - Innovation: {key innovation}
-   - LOC estimate: ~{N}
-
-2. Critique:
-   - Feasibility: {High/Medium/Low}
-   - Critical risks: {count}
-
-3. Reducer:
-   - LOC estimate: ~{M} ({reduction}% reduction)
-   - Simplifications: {count}
-
-Combined report saved to: {file}
+Task tool:
+  subagent_type: 'bold-proposer'
+  prompt: "Research and propose an innovative solution for: {feature_description}"
+  description: "Research SOTA solutions"
 ```
 
-### Step 4: Display Debate Summary to User
+**Agent 2: Proposal Critique**
+```
+Task tool:
+  subagent_type: 'proposal-critique'
+  prompt: "Analyze the feasibility and risks for: {feature_description}"
+  description: "Validate assumptions and risks"
+```
+
+**Agent 3: Proposal Reducer**
+```
+Task tool:
+  subagent_type: 'proposal-reducer'
+  prompt: "Propose a simplified solution following 'less is more' for: {feature_description}"
+  description: "Simplify and reduce complexity"
+```
+
+**IMPORTANT**: All three agents MUST be launched in a **single message** with three Task tool calls to ensure parallel execution.
+
+**Expected agent outputs:**
+- Bold proposer: Innovative proposal with SOTA research
+- Critique: Risk analysis and feasibility assessment
+- Reducer: Simplified proposal with complexity analysis
+
+### Step 4: Combine Agent Reports
+
+After all three agents complete, combine their outputs into a single debate report:
+
+**Load template:**
+```bash
+TEMPLATE=".tmp/templates/debate-combined.md"
+```
+
+**Substitute variables in template:**
+- `{{FEATURE_NAME}}`: Extract from feature description (first 5-7 words)
+- `{{TIMESTAMP}}`: Current datetime in format YYYY-MM-DD HH:MM
+- `{{BOLD_PROPOSER_CONTENT}}`: Full output from bold-proposer agent
+- `{{CRITIQUE_CONTENT}}`: Full output from proposal-critique agent
+- `{{REDUCER_CONTENT}}`: Full output from proposal-reducer agent
+
+**Save combined report:**
+```bash
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+OUTPUT_FILE=".tmp/debate-report-$TIMESTAMP.md"
+# Write substituted template to output file
+```
+
+**Extract key summaries for user display:**
+
+Parse each agent's output to extract:
+- **Bold proposer**: Core innovation + LOC estimate
+- **Critique**: Feasibility rating + critical risk count
+- **Reducer**: LOC estimate + simplification percentage
+
+### Step 5: Display Debate Summary to User
 
 Show user the key points from each agent:
 
@@ -151,36 +181,42 @@ Multi-Agent Debate Complete
 ============================
 
 BOLD PROPOSER (Innovation):
-{summary of bold proposal}
+- Innovation: {key innovation from bold proposer}
+- LOC estimate: ~{N}
 
 CRITIQUE (Risk Analysis):
-{summary of critical concerns}
+- Feasibility: {High/Medium/Low}
+- Critical risks: {count}
+- Key concerns: {summary}
 
 REDUCER (Simplification):
-{summary of simplifications}
+- LOC estimate: ~{M} ({X}% reduction from bold)
+- Simplifications: {summary}
+
+Combined report saved to: {debate-report-file}
 
 Proceeding to external consensus review...
 ```
 
-### Step 5: Invoke External Consensus Skill
+### Step 6: Invoke External Consensus Skill
 
-Synthesize final plan from debate report:
+Synthesize final plan from debate report using the external-consensus skill:
 
 **Skill:** `external-consensus`
 
 **Inputs:**
-- Combined report file: (from step 3)
+- Combined report file: `.tmp/debate-report-{timestamp}.md` (from step 4)
 - Feature name: Extract from description (first 5 words)
 - Feature description: `$FEATURE_DESCRIPTION`
 
 **Skill behavior:**
 1. Loads combined debate report
-2. Prepares external review prompt
-3. Invokes Codex CLI (or Claude Opus fallback)
+2. Prepares external review prompt using template
+3. Invokes Codex CLI (preferred) or Claude Opus (fallback)
 4. Parses and validates consensus plan
 5. Saves plan to `.tmp/consensus-plan-{timestamp}.md`
 
-**Expected output:**
+**Expected output from skill:**
 ```
 External consensus review complete!
 
@@ -198,7 +234,7 @@ Key Decisions:
 Consensus plan saved to: {output_file}
 ```
 
-### Step 6: Present Plan to User for Approval
+### Step 7: Present Plan to User for Approval
 
 Display the consensus plan and ask for approval:
 
@@ -224,14 +260,14 @@ Your choice: _
 
 **Wait for user decision.**
 
-### Step 7A: If Approved - Create GitHub Issue
+### Step 8A: If Approved - Create GitHub Issue
 
 Invoke open-issue skill:
 
 **Skill:** `open-issue`
 
 **Inputs:**
-- Plan file: Consensus plan from step 5
+- Plan file: Consensus plan from step 6
 - Issue title: Extract from consensus plan
 - Issue body: Use standard [plan] format with consensus plan as "Proposed Solution"
 
@@ -256,7 +292,7 @@ Next steps:
 
 Command completes successfully.
 
-### Step 7B: If Refine - Restart with Existing Plan
+### Step 8B: If Refine - Restart with Existing Plan
 
 User chooses to refine the plan:
 
@@ -268,7 +304,7 @@ Use: /ultra-planner --refine {consensus_plan_file}
 
 The plan file becomes input for a new debate cycle. The three agents will analyze the existing plan and propose improvements.
 
-### Step 7C: If Abandoned - Exit
+### Step 8C: If Abandoned - Exit
 
 User abandons the plan:
 
@@ -319,33 +355,66 @@ Available plans:
 
 Show available plan files.
 
-### Debate Skill Failure
+### Agent Launch Failure
 
-One or more agents fail during debate.
+One or more agents fail to launch (e.g., agent not found, invalid configuration).
 
 **Response:**
 ```
-Error: Debate-based planning failed.
+Error: Failed to launch agent(s):
+- {agent-name}: {error-message}
 
-Failed agents: {list}
-Error details: {errors}
-
-You can:
-1. Retry /ultra-planner with the same description
-2. Use /make-a-plan for single-agent planning instead
+Please ensure all debate agents are properly configured:
+- claude/agents/bold-proposer.md
+- claude/agents/proposal-critique.md
+- claude/agents/proposal-reducer.md
 ```
 
-Offer fallback to regular planning.
+Stop execution.
 
-### External Consensus Failure
+### Agent Execution Failure
 
-External reviewer (Codex/Claude) unavailable or fails.
+Agent launches but fails during execution (e.g., timeout, internal error).
+
+**Response:**
+```
+Warning: Agent execution failed:
+- {agent-name}: {error-message}
+
+You have {N}/3 successful agent reports.
+
+Options:
+1. Retry failed agent: {agent-name}
+2. Continue with partial results ({N} perspectives)
+3. Abort debate and use /plan-an-issue instead
+```
+
+Wait for user decision.
+
+### Template Not Found
+
+Combined report template file doesn't exist.
+
+**Response:**
+```
+Error: Combined report template not found.
+
+Expected: .tmp/templates/debate-combined.md
+
+Please ensure the template file exists.
+```
+
+Stop execution.
+
+### External Consensus Skill Failure
+
+external-consensus skill fails (Codex/Claude unavailable or error).
 
 **Response:**
 ```
 Error: External consensus review failed.
 
-Error: {details}
+Error from skill: {details}
 
 Options:
 1. Retry consensus review
@@ -389,7 +458,7 @@ Provide plan file for manual issue creation.
 ```
 Starting multi-agent debate...
 
-[Agents run in parallel]
+[3 agents run in parallel - 3-5 minutes]
 
 Debate complete! Three perspectives:
 - Bold: OAuth2 + JWT + RBAC (~450 LOC)
@@ -462,10 +531,12 @@ Tip: Review the debate report for insights on how to break this down.
 ## Notes
 
 - Three agents run in **parallel** (faster than sequential)
-- External reviewer is **required** (not optional)
+- Command directly orchestrates agents (no debate-based-planning skill needed)
+- **external-consensus skill** is required for synthesis
+- **open-issue skill** is used for GitHub issue creation
 - Refinement mode **reruns full debate** (not just consensus)
 - Plan files in `.tmp/` are **gitignored** (not tracked)
 - Execution time: **5-10 minutes** end-to-end
 - Cost: **~$2-5** per planning session (3 Opus agents + 1 external review)
-- Best for: **Medium to Very Large** features (>200 LOC)
-- Not for: **Trivial changes** (<50 LOC) - use `/make-a-plan` instead
+- Best for: **Large to Very Large** features (≥400 LOC)
+- Not for: **Small to Medium features** (<400 LOC) - use `/plan-an-issue` instead

@@ -87,6 +87,26 @@ Use this command as the **standard workflow** for:
 
 For simple one-line fixes or trivial updates, you may skip planning and implement directly.
 
+## Choosing Between `/plan-an-issue` and `/ultra-planner`
+
+**Use `/plan-an-issue`** (single-agent planning) for:
+- ✅ **Small to Medium features** (<400 LOC)
+- ✅ **Clear requirements** with straightforward implementation path
+- ✅ **Time-sensitive planning** (completes in 1-2 minutes)
+- ✅ **Standard features** using well-known patterns
+- ✅ **Most day-to-day tasks**
+
+**Use `/ultra-planner`** (multi-agent debate) for:
+- ✅ **Large to Very Large features** (≥400 LOC)
+- ✅ **Complex architectural decisions** requiring multiple perspectives
+- ✅ **High-risk features** needing thorough validation
+- ✅ **Innovative solutions** where SOTA research adds value
+- ✅ **Trade-off analysis** between complexity and simplicity
+
+**When in doubt**: Start with `/plan-an-issue`. If the single-agent plan feels incomplete or you want deeper analysis, use `/ultra-planner --refine <plan-file>` to get multi-agent feedback on the existing plan.
+
+See [Tutorial 01b: Ultra Planner](./01b-ultra-planner.md) for details on multi-agent debate-based planning.
+
 ## Example Walkthrough
 
 Let's walk through planning a new feature:
