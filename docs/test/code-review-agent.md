@@ -4,7 +4,7 @@ Test coverage for the code-review agent created in issue #38.
 
 ## Module Under Test
 
-`claude/agents/code-review.md` - Comprehensive code review agent using Opus model
+`claude/agents/code-quality-reviewer.md` - Comprehensive code review agent using Opus model
 
 ## Test Status
 
@@ -17,7 +17,7 @@ Test coverage for the code-review agent created in issue #38.
 **Test**: Verify agent YAML frontmatter is correct
 
 **Validation**:
-- [ ] `name: code-review` is set
+- [ ] `name: code-quality-reviewer` is set
 - [ ] `description` is clear and actionable
 - [ ] `tools: Read, Grep, Glob, Bash` are specified
 - [ ] `model: opus` is specified
@@ -32,7 +32,7 @@ Test coverage for the code-review agent created in issue #38.
 **Test**: Verify agent can be invoked via Task tool
 
 **Validation**:
-- [ ] Agent can be called with `Task tool` and `subagent_type='code-review'`
+- [ ] Agent can be called with `Task tool` and `subagent_type='code-quality-reviewer'`
 - [ ] Agent initializes with Opus model
 - [ ] Agent loads review-standard skill
 - [ ] Agent has access to specified tools

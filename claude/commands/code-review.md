@@ -9,7 +9,7 @@ Execute the review-standard skill to perform comprehensive code review of change
 
 Invoke the skill: /code-review
 
-**Note**: For large diffs or comprehensive reviews requiring long context analysis, consider using the `code-review` agent which runs on Opus model in isolated context. The agent provides the same review standards with enhanced capacity for thorough analysis.
+**Note**: For large diffs or comprehensive reviews requiring long context analysis, consider using the `code-quality-reviewer` agent which runs on Opus model in isolated context. The agent provides the same review standards with enhanced capacity for thorough analysis.
 
 ## Inputs
 

@@ -16,6 +16,8 @@ Commands provide a simple interface to invoke complex workflows or skills. Each 
 
 ## Available Commands
 
+- `agent-review.md`: Review code changes via agent with isolated context and Opus model
+- `code-review.md`: Review code changes from current HEAD to main/HEAD following review standards
 - `git-commit.md`: Invokes the commit-msg skill to create commits with meaningful messages following project standards
 - `make-a-plan.md`: Creates comprehensive implementation plans following design-first TDD approach
 - `issue-to-impl.md`: Orchestrates full implementation workflow from issue to completion (creates branch, docs, tests, and first milestone)

@@ -15,4 +15,4 @@ Agents provide isolated execution environments for complex, multi-step tasks. Ea
 
 ## Available Agents
 
-- `code-review.md`: Comprehensive code review with enhanced quality standards using Opus model for long context analysis
+- `code-quality-reviewer.md`: Comprehensive code review with enhanced quality standards using Opus model for long context analysis
