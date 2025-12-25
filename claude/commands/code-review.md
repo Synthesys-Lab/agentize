@@ -9,6 +9,8 @@ Execute the review-standard skill to perform comprehensive code review of change
 
 Invoke the skill: /code-review
 
+**Note**: For large diffs or comprehensive reviews requiring long context analysis, consider using the `code-review` agent which runs on Opus model in isolated context. The agent provides the same review standards with enhanced capacity for thorough analysis.
+
 ## Inputs
 
 **From git:**
@@ -88,9 +90,10 @@ Execute the review-standard skill with gathered context:
 - Full diff content
 - Repository root path
 
-The skill performs a comprehensive two-phase review (see `claude/skills/review-standard/SKILL.md` for details):
+The skill performs a comprehensive three-phase review (see `claude/skills/review-standard/SKILL.md` for details):
 - Phase 1: Documentation Quality Review
 - Phase 2: Code Quality & Reuse Review
+- Phase 3: Advanced Code Quality Review
 
 **Skill output:**
 - Structured review report with findings
@@ -101,6 +104,7 @@ Present the formatted review report to the user with:
 - Branch name and change summary
 - Phase 1 findings (documentation quality)
 - Phase 2 findings (code quality & reuse)
+- Phase 3 findings (advanced code quality)
 - Overall assessment (APPROVED / NEEDS CHANGES / CRITICAL ISSUES)
 - Specific, actionable recommendations
 
@@ -130,6 +134,16 @@ Example output format:
 
 ---
 
+## Phase 3: Advanced Code Quality
+
+### ✅ Passed
+- No unnecessary indirection detected
+
+### ⚠️  Warnings
+- src/utils/parser.py:15 - Missing type annotations
+
+---
+
 ## Overall Assessment
 
 **Status**: ⚠️  NEEDS CHANGES
@@ -137,6 +151,7 @@ Example output format:
 **Recommended actions before merge**:
 1. Create parser.md documenting interfaces
 2. Use existing validate_json() utility
+3. Add type annotations to parse_input()
 ```
 
 ## Error Handling

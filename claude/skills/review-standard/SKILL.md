@@ -23,6 +23,13 @@ Effective code review is:
 Every review must assess:
 1. **Documentation Quality**: Are changes properly documented per `document-guideline` standards?
 2. **Code Quality & Reuse**: Does the code follow best practices and leverage existing utilities?
+3. **Advanced Code Quality**: Does the code exhibit clarity, type safety, and appropriate scope?
+   - **Indirection Analysis**: Question wrappers and unnecessary abstractions
+   - **Code Repetition Detection**: Identify duplicate patterns requiring unified interfaces
+   - **Module Focus Validation**: Ensure code paths aren't repurposed for unrelated features
+   - **Interface Clarity**: Verify clear separation of declaration, usage, and error handling
+   - **Type Safety**: Enforce type annotations and eliminate magic numbers
+   - **Change Impact Control**: Validate modifications are scoped appropriately
 
 The review process is designed to catch issues before merge, not to block progress. Reviews
 provide recommendations - final merge decisions remain with maintainers.
@@ -34,7 +41,8 @@ When the `/code-review` command is invoked, agents must:
 1. **Gather context**: Get list of changed files and full diff
 2. **Phase 1 - Documentation Review**: Validate documentation completeness and quality
 3. **Phase 2 - Code Quality Review**: Assess code quality and reuse opportunities
-4. **Generate report**: Provide structured, actionable feedback
+4. **Phase 3 - Advanced Code Quality Review**: Evaluate indirection, type safety, and change scope
+5. **Generate report**: Provide structured, actionable feedback
 
 ## Phase 1: Documentation Quality Review
 
@@ -421,6 +429,361 @@ git grep -l "similar_pattern"
    - validateData() → validate_data()
 ```
 
+## Phase 3: Advanced Code Quality Review
+
+This phase performs deep analysis of code structure, type safety, and architectural boundaries.
+
+### Step 1: Indirection Analysis
+
+**Objective**: Identify and question unnecessary wrappers and abstractions.
+
+**Method**:
+```bash
+# Check for wrapper patterns
+git diff main...HEAD | grep -E "class.*Wrapper|def.*wrapper|class.*Adapter|def.*adapter"
+
+# Look for delegation-only classes/functions
+git diff main...HEAD | grep -E "^\+.*def.*\(.*\):" | head -20
+```
+
+**Check for**:
+- Classes that only delegate to another class without adding value
+- Functions that wrap existing functions without transformation
+- Abstractions created prematurely without clear need
+- Wrappers that exist to compensate for poor interface design
+
+**Common issues**:
+- Wrapper class adds no functionality, just forwards calls
+- Helper function wraps standard library with no value added
+- Abstraction layer introduced without concrete use case
+- Interface design flaw hidden behind wrapper instead of fixing root cause
+
+**Example finding**:
+```
+❌ Unnecessary indirection
+   src/utils/request_wrapper.py:12 - Class RequestWrapper only delegates to requests.get()
+
+   Code:
+   class RequestWrapper:
+       def get(self, url):
+           return requests.get(url)
+
+   Recommendation: Remove wrapper and use requests.get() directly
+
+   OR if wrapper provides value (retries, logging, auth):
+   - Document the added value in docstring
+   - Add meaningful functionality, not just delegation
+```
+
+### Step 2: Code Repetition Deep Analysis
+
+**Objective**: Identify patterns suggesting need for unified interface or refactoring.
+
+**Method**:
+```bash
+# Find repeated function name patterns
+git diff main...HEAD | grep -E "^\+\s*def (validate_|parse_|format_|handle_)"
+
+# Look for similar code blocks
+git diff main...HEAD | grep -E "^\+" | sort | uniq -d
+```
+
+**Check for**:
+- Multiple similar functions with slight variations (validate_x, validate_y, validate_z)
+- Repeated code patterns that could use unified interface
+- Copy-pasted logic with minor differences
+- Opportunities for generalization vs. over-engineering
+
+**Balance**:
+- **Generalize** when pattern appears 3+ times with clear abstraction
+- **Flag over-engineering** when premature abstraction adds complexity
+- **Clarify intent** when uncertain about appropriate level of abstraction
+
+**Example finding**:
+```
+⚠️  Code repetition pattern detected
+   src/validators.py - Three similar validation functions:
+   - validate_email() (line 15)
+   - validate_phone() (line 32)
+   - validate_url() (line 48)
+
+   Pattern: All follow format:
+   1. Regex match against pattern
+   2. Return True/False
+   3. Optional custom error message
+
+   Recommendation: Consider unified interface:
+   def validate_format(value, pattern, error_msg=None):
+       if not re.match(pattern, value):
+           raise ValueError(error_msg or f"Invalid format: {value}")
+       return True
+
+   Then call with:
+   validate_format(email, EMAIL_PATTERN, "Invalid email")
+   validate_format(phone, PHONE_PATTERN, "Invalid phone")
+
+   Note: Only proceed if this simplifies the codebase. If each validator
+   has unique logic beyond pattern matching, keep them separate.
+```
+
+### Step 3: Module Focus Validation
+
+**Objective**: Ensure modules maintain single responsibility and don't repurpose code paths.
+
+**Method**:
+```bash
+# Identify modules being modified
+git diff --name-only main...HEAD
+
+# For each module, check if new code aligns with module purpose
+# Read existing module content and compare with changes
+```
+
+**Check for**:
+- Borrowing code paths for unrelated features
+- Adding functionality that belongs in different module
+- Module scope creep (utils becoming catch-all)
+- Private helpers that should be shared utilities
+
+**Differentiate**:
+- **Module-specific helpers**: Keep private to module (e.g., `_format_response()` in API handler)
+- **Reusable utilities**: Move to shared `utils/` (e.g., `validate_json()` used across modules)
+
+**Example finding**:
+```
+❌ Module focus violation
+   src/api/user_handler.py:67 - Added file parsing logic
+
+   Issue: user_handler.py is responsible for HTTP request handling,
+   but now includes CSV parsing functionality unrelated to API handling
+
+   Recommendation: Extract to appropriate location:
+   - If CSV parsing is reusable → src/utils/csv_parser.py
+   - If specific to user data → src/models/user_csv.py
+   - Then import and use in user_handler.py
+
+⚠️  Helper scope consideration
+   src/analysis/checker.py:45 - Added _validate_config() helper
+
+   Question: Is this validation specific to checker module or reusable?
+   - If checker-specific: Keep as private helper (current location OK)
+   - If reusable across analysis modules: Move to src/analysis/utils.py
+   - If project-wide: Move to src/utils/validators.py
+```
+
+### Step 4: Interface Boundary Clarity
+
+**Objective**: Verify clear separation of declaration, usage, and error handling.
+
+**Method**:
+```bash
+# Check for dynamic attribute access
+git diff main...HEAD | grep -E "getattr|setattr|hasattr"
+
+# Look for dataclass usage (preferred for structured data)
+git diff main...HEAD | grep -E "@dataclass|class.*\(.*\):"
+
+# Find None-handling patterns
+git diff main...HEAD | grep -E "is None|if.*None|== None"
+```
+
+**Prefer `@dataclass` for structured data**:
+- Pre-declares all attributes explicitly
+- Provides type safety
+- Generates `__init__`, `__repr__` automatically
+- Avoids dynamic attribute assignment
+
+**Check for**:
+- Use of `getattr`/`setattr` instead of explicit attributes
+- None-handling scattered at usage sites instead of accessor level
+- Mixing mandatory vs. optional attributes without clear contract
+- Dynamic attribute assignment hiding interface contract
+
+**Example finding**:
+```
+❌ Dynamic attribute access reduces clarity
+   src/models/config.py:23 - Uses getattr(obj, 'field', default)
+
+   Code:
+   value = getattr(config, 'timeout', 30)
+
+   Issue: Unclear whether 'timeout' is:
+   - Mandatory attribute (should error if missing)
+   - Optional attribute (default is intentional)
+
+   Recommendation: Use @dataclass with explicit declaration:
+   from dataclasses import dataclass
+
+   @dataclass
+   class Config:
+       timeout: int = 30  # Optional with default
+       host: str          # Mandatory, no default
+
+   Benefits:
+   - Clear interface contract
+   - Type safety
+   - IDE autocomplete support
+
+⚠️  None-handling at usage site
+   src/api/handler.py:45 - None check at usage:
+
+   Code:
+   if user.email is not None:
+       send_email(user.email)
+
+   Recommendation: Handle at accessor level instead:
+   - If email is mandatory: Ensure user.email is never None (validation at creation)
+   - If email is optional: Provide method has_email() or email property with default
+
+   Example:
+   @property
+   def has_email(self) -> bool:
+       return self.email is not None
+```
+
+### Step 5: Type Safety & Magic Numbers
+
+**Objective**: Enforce type annotations and eliminate unnamed literal constants.
+
+**Method**:
+```bash
+# Find magic numbers (2+ digit literals)
+git diff main...HEAD | grep -E "^\+.*[^a-zA-Z_0-9][0-9]{2,}[^a-zA-Z_0-9]"
+
+# Check for type annotations on new functions
+git diff main...HEAD | grep -E "^\+\s*def\s+[a-zA-Z_]+" | grep -v " -> "
+
+# Look for string-based type annotations (avoid these)
+git diff main...HEAD | grep -E ":\s*['\"].*['\"]"
+
+# Check for TYPE_CHECKING usage (good for circular imports)
+git diff main...HEAD | grep -E "from typing import TYPE_CHECKING|if TYPE_CHECKING:"
+```
+
+**Type annotation requirements**:
+- All function signatures must have parameter and return type annotations
+- Use `typing.TYPE_CHECKING` for types that cause circular dependencies
+- Avoid string-based type annotations (use actual types)
+- Import types properly at module level
+
+**Magic number detection**:
+- Flag literal constants embedded in code (86400, 3600, 1024, etc.)
+- Suggest named constants or enums
+- Allow well-known literals (0, 1, 2, -1) without flags
+
+**Example finding**:
+```
+❌ Magic number detected
+   src/cache.py:34 - Literal constant 86400
+
+   Code:
+   cache.set(key, value, 86400)
+
+   Issue: Unclear what 86400 represents
+
+   Recommendation: Extract to named constant:
+   SECONDS_PER_DAY = 86400
+   cache.set(key, value, SECONDS_PER_DAY)
+
+   OR use more readable calculation:
+   CACHE_TTL = 24 * 60 * 60  # 24 hours in seconds
+
+❌ Missing type annotations
+   src/utils/parser.py:15 - Function lacks return type
+
+   Code:
+   def parse_input(data):
+       return json.loads(data)
+
+   Recommendation: Add type annotations:
+   def parse_input(data: str) -> dict:
+       return json.loads(data)
+
+   OR with more specific return type:
+   from typing import Dict, Any
+
+   def parse_input(data: str) -> Dict[str, Any]:
+       return json.loads(data)
+
+⚠️  Circular import handled well
+   src/models/user.py:5 - Uses TYPE_CHECKING for type imports
+
+   Code:
+   from typing import TYPE_CHECKING
+   if TYPE_CHECKING:
+       from src.services.auth import AuthService
+
+   def validate_auth(self, auth: 'AuthService') -> bool:
+
+   This is acceptable pattern, but could be improved to:
+   def validate_auth(self, auth: AuthService) -> bool:
+
+   Since AuthService is imported under TYPE_CHECKING guard
+```
+
+### Step 6: Change Impact Analysis
+
+**Objective**: Validate changes are appropriately scoped and justify cross-module impact.
+
+**Method**:
+```bash
+# Count affected modules
+git diff --name-only main...HEAD | cut -d'/' -f1-2 | sort -u | wc -l
+
+# List affected modules
+git diff --name-only main...HEAD | cut -d'/' -f1-2 | sort -u
+
+# Check for broad refactoring across many files
+git diff --stat main...HEAD
+```
+
+**Check for**:
+- Changes limited to target module vs. widespread modification
+- Cross-module impact with explicit justification
+- Refactoring scope appropriate for stated intent
+- Unintended side effects from broad changes
+
+**Scope expectations**:
+- **Feature addition**: Should touch 1-3 modules (implementation + tests)
+- **Bug fix**: Ideally 1-2 files (bug location + test)
+- **Refactoring**: Broad impact acceptable if explicitly stated
+- **API change**: Multiple files expected, should be documented
+
+**Example finding**:
+```
+⚠️  Broad change impact
+   Changes affect 8 modules across 3 subsystems:
+   - src/api/ (4 files)
+   - src/models/ (3 files)
+   - src/utils/ (2 files)
+
+   Issue: PR title suggests "Add email validation to User model"
+   but changes span multiple subsystems
+
+   Question: Is this scope appropriate?
+   - If refactoring email validation project-wide: ✅ Appropriate, document in PR
+   - If just adding User.email field: ⚠️  Scope too broad, should be limited
+
+   Recommendation: Clarify intent in PR description and justify cross-module changes
+
+❌ Uncontrolled change scope
+   src/config.py:23 - Changed constant value
+
+   Code change:
+   - MAX_RETRIES = 3
+   + MAX_RETRIES = 5
+
+   Impact: Affects all modules using MAX_RETRIES:
+   - src/api/client.py
+   - src/services/fetcher.py
+   - tests/integration/test_retry.py
+
+   Recommendation: Verify this is intended behavior change, not accidental:
+   1. Document reason for change in commit message
+   2. Update related tests to reflect new retry count
+   3. Consider adding migration notes if breaking external expectations
+```
+
 ## Workflow and Integration
 
 ### When to Use Review-Standard
@@ -557,19 +920,51 @@ Every review must produce a structured report with actionable feedback.
 
 ---
 
+## Phase 3: Advanced Code Quality
+
+### ✅ Passed
+- No unnecessary indirection detected
+- Change scope appropriate for feature
+
+### ❌ Issues Found
+
+#### Magic number detected
+- `src/cache.py:34` - Literal constant 86400
+
+  **Recommendation**: Extract to named constant:
+  ```python
+  SECONDS_PER_DAY = 86400
+  cache.set(key, value, SECONDS_PER_DAY)
+  ```
+
+### ⚠️  Warnings
+
+#### Missing type annotations
+- `src/utils/parser.py:15` - Function lacks return type
+
+  **Recommendation**: Add type annotations:
+  ```python
+  def parse_input(data: str) -> dict:
+      return json.loads(data)
+  ```
+
+---
+
 ## Overall Assessment
 
 **Status**: ⚠️  NEEDS CHANGES
 
 **Summary**:
-- 2 critical issues: missing documentation, code reuse opportunity
-- 2 warnings: design doc consideration, dependency consistency
+- 3 critical issues: missing documentation, code reuse opportunity, magic number
+- 3 warnings: design doc consideration, dependency consistency, type annotations
 
 **Recommended actions before merge**:
 1. Create parser.md documenting interfaces
 2. Replace manual JSON validation with existing utility
-3. Consider design doc for authentication subsystem
-4. Evaluate httpx vs requests for HTTP client
+3. Extract magic number to named constant
+4. Add type annotations to parse_input()
+5. Consider design doc for authentication subsystem
+6. Evaluate httpx vs requests for HTTP client
 
 **Merge readiness**: Not ready - address critical issues first
 ```
@@ -580,18 +975,26 @@ Every review must produce a structured report with actionable feedback.
 - All documentation complete and accurate
 - No code quality issues found
 - All reuse opportunities identified and addressed
+- No unnecessary indirection or magic numbers
+- Type annotations present and correct
+- Change scope appropriate for intent
 - Ready for merge
 
 **⚠️  NEEDS CHANGES**:
 - Minor documentation gaps
 - Code reuse opportunities exist
 - Non-critical improvements recommended
+- Missing type annotations on some functions
+- Minor magic numbers or scope considerations
 - Can merge after addressing issues
 
 **❌ CRITICAL ISSUES**:
 - Missing required documentation
 - Significant code quality problems
 - Major reuse opportunities ignored
+- Unnecessary wrappers hiding design flaws
+- Module responsibility violations
+- Uncontrolled change scope
 - Security or correctness concerns
 - Must address before merge
 
