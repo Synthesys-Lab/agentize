@@ -43,16 +43,16 @@ echo "=== Worktree Smoke Test ==="
   echo "Test CLAUDE.md" > CLAUDE.md
 
   echo ""
-  # Test 1: Create worktree with custom description
+  # Test 1: Create worktree with custom description (truncated to 10 chars)
   echo "Test 1: Create worktree with custom description"
   ./worktree.sh create 42 test-feature
 
-  if [ ! -d "trees/issue-42-test-feature" ]; then
-      echo -e "${RED}FAIL: Worktree directory not created${NC}"
+  if [ ! -d "trees/issue-42-test" ]; then
+      echo -e "${RED}FAIL: Worktree directory not created (expected: issue-42-test)${NC}"
       exit 1
   fi
 
-  if [ ! -f "trees/issue-42-test-feature/CLAUDE.md" ]; then
+  if [ ! -f "trees/issue-42-test/CLAUDE.md" ]; then
       echo -e "${RED}FAIL: CLAUDE.md not bootstrapped${NC}"
       exit 1
   fi
@@ -63,7 +63,7 @@ echo "=== Worktree Smoke Test ==="
   # Test 2: List worktrees
   echo "Test 2: List worktrees"
   OUTPUT=$(./worktree.sh list)
-  if [[ ! "$OUTPUT" =~ "issue-42-test-feature" ]]; then
+  if [[ ! "$OUTPUT" =~ "issue-42-test" ]]; then
       echo -e "${RED}FAIL: Worktree not listed${NC}"
       exit 1
   fi
@@ -72,7 +72,7 @@ echo "=== Worktree Smoke Test ==="
   echo ""
   # Test 3: Verify branch exists
   echo "Test 3: Verify branch exists"
-  if ! git branch | grep -q "issue-42-test-feature"; then
+  if ! git branch | grep -q "issue-42-test"; then
       echo -e "${RED}FAIL: Branch not created${NC}"
       exit 1
   fi
@@ -83,7 +83,7 @@ echo "=== Worktree Smoke Test ==="
   echo "Test 4: Remove worktree"
   ./worktree.sh remove 42
 
-  if [ -d "trees/issue-42-test-feature" ]; then
+  if [ -d "trees/issue-42-test" ]; then
       echo -e "${RED}FAIL: Worktree directory still exists${NC}"
       exit 1
   fi
@@ -132,8 +132,8 @@ echo "=== Worktree Smoke Test ==="
   # Test 9: Env override changes limit
   echo "Test 9: Env override changes limit"
   WORKTREE_SUFFIX_MAX_LENGTH=5 ./worktree.sh create 66 test-feature
-  if [ ! -d "trees/issue-66-test-" ]; then
-      echo -e "${RED}FAIL: Env override not applied${NC}"
+  if [ ! -d "trees/issue-66-test" ]; then
+      echo -e "${RED}FAIL: Env override not applied (expected: issue-66-test)${NC}"
       exit 1
   fi
   ./worktree.sh remove 66
