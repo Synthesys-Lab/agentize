@@ -1,6 +1,16 @@
 ---
 name: external-consensus
 description: Synthesize consensus implementation plan from multi-agent debate reports using external AI review
+allowed-tools:
+  - Bash(date:*)
+  - Bash(cat:*)
+  - Bash(sed:*)
+  - Bash(mktemp:*)
+  - Bash(test:*)
+  - Bash(wc:*)
+  - Bash(command:*)
+  - Bash(codex:*)
+  - Bash(claude:*)
 ---
 
 # External Consensus Skill
@@ -24,14 +34,14 @@ OUTPUT_FILE=".tmp/external-review-output-$TIMESTAMP.txt"
 # Write prompt to input file
 echo "$FULL_PROMPT" > "$INPUT_FILE"
 
-# Invoke Codex with advanced features
+# Invoke Codex with advanced features (prompt read from stdin via -)
 codex exec \
     -m gpt-5.2-codex \
     -s read-only \
     --enable web_search_request \
     -c model_reasoning_effort=xhigh \
-    -i "$INPUT_FILE" \
-    -o "$OUTPUT_FILE"
+    -o "$OUTPUT_FILE" \
+    - < "$INPUT_FILE"
 
 # Read output
 CONSENSUS_PLAN=$(cat "$OUTPUT_FILE")
@@ -162,23 +172,41 @@ fi
 Prepare the consensus review prompt:
 
 1. Load prompt template from `.claude/skills/external-consensus/external-review-prompt.md`
-2. Substitute variables:
-   - `{{FEATURE_NAME}}` → Feature name
-   - `{{FEATURE_DESCRIPTION}}` → Feature description
-   - `{{COMBINED_REPORT}}` → Contents of combined debate report file
-3. Save prepared prompt to temporary file: `.tmp/external-review-input-{timestamp}.md`
+2. Substitute variables using sed:
+   ```bash
+   PROMPT_TEMPLATE=$(cat ".claude/skills/external-consensus/external-review-prompt.md")
+   COMBINED_REPORT=$(cat "$COMBINED_REPORT_FILE")
+
+   # Substitute FEATURE_NAME and FEATURE_DESCRIPTION
+   echo "$PROMPT_TEMPLATE" | \
+       sed "s|{{FEATURE_NAME}}|$FEATURE_NAME|g" | \
+       sed "s|{{FEATURE_DESCRIPTION}}|$FEATURE_DESCRIPTION|g" > "$INPUT_FILE.tmp"
+
+   # Replace {{COMBINED_REPORT}} with actual report content
+   TEMP_REPORT=$(mktemp)
+   echo "$COMBINED_REPORT" > "$TEMP_REPORT"
+   sed -e '/{{COMBINED_REPORT}}/r '"$TEMP_REPORT" -e '/{{COMBINED_REPORT}}/d' "$INPUT_FILE.tmp" > "$INPUT_FILE"
+   rm "$TEMP_REPORT" "$INPUT_FILE.tmp"
+   ```
+3. Verify prompt was created: `test -f "$INPUT_FILE" && wc -l "$INPUT_FILE"`
 
 Invoke external reviewer (try Codex first, fallback to Claude Code):
 
+**Check if Codex is available:**
+```bash
+command -v codex &> /dev/null
+```
+
 **If Codex is available:**
 ```bash
+# IMPORTANT: Use '-' to read prompt from stdin, not '-i' (which is for images)
 codex exec \
     -m gpt-5.2-codex \
     -s read-only \
     --enable web_search_request \
     -c model_reasoning_effort=xhigh \
-    -i ".tmp/external-review-input-{timestamp}.md" \
-    -o ".tmp/external-review-output-{timestamp}.txt"
+    -o ".tmp/external-review-output-{timestamp}.txt" \
+    - < ".tmp/external-review-input-{timestamp}.md"
 ```
 
 **If Codex is unavailable, use Claude Code:**
@@ -190,6 +218,12 @@ claude -p \
     < ".tmp/external-review-input-{timestamp}.md" \
     > ".tmp/external-review-output-{timestamp}.txt"
 ```
+
+**Execution notes:**
+- Codex with xhigh reasoning takes 2-5 minutes to complete
+- Claude Opus typically takes 1-3 minutes
+- Can run in background if desired (use bash run_in_background parameter)
+- Check output file exists with `test -f` and verify non-empty with `wc -l`
 
 **Expected output format:**
 ```markdown
