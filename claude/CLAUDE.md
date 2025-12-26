@@ -1,3 +1,10 @@
 - Use `docs/llms.txt` to check the Claude related documentations when needed.
-- When devloping commands/skills, please make sure a command has no skill with the same name.
-  - `Claude Code` prioritizes skills over commands, while skills cannot be directly invoked by the users using `/skill-name`.
+- When devloping commands/skills/agents, please make sure no name conflicts.
+  - Claude Code prioritizes skills over commands, while skills cannot be directly invoked by the users using `/skill-name`.
+- An agent should not named `agent-`, as Claude Code uses `/agent-` to invoke agents, which is redundant.
+- When developing commands/skills/agents, please make sure to be concise and avoid unnecessary verbosity in the descriptions.
+  - Make good assumptions about the file availability: If a file referred is committed in this repo, assume it is always available.
+  - This is a Claude Code environment, so you can assume `claude` is always available.
+  - Be careful with the post-rule **Note** section, think twice before adding it: Is it for user to understand the command/skill/agent better, or just for AI's internal understanding?
+    - For user, add the **Note** in `README.md` if you really want to.
+    - For AI's internal understanding, add this in the system prompt of the command/skill/agent.
