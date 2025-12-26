@@ -23,8 +23,8 @@ This skill acts as the "tie-breaker" and "integrator" in the ultra-planner workf
 ## Dependencies
 
 ### Required
-- **scripts/external-review.sh** - Shell script that invokes external CLI tools
 - **Combined debate report** - Output from debate-based-planning skill (3 agents)
+- **Prompt template** - external-review-prompt.md (in skill directory)
 
 ### External Tools (one required)
 
