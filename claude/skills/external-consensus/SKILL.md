@@ -7,6 +7,99 @@ description: Synthesize consensus implementation plan from multi-agent debate re
 
 This skill invokes an external AI reviewer (Codex or Claude Opus) to synthesize a balanced, consensus implementation plan from the combined multi-agent debate report.
 
+## CLI Tool Usage
+
+This skill uses external CLI tools for consensus review. The implementation pattern follows best practices for security, reasoning quality, and external research capabilities.
+
+### Codex CLI (Preferred)
+
+The skill uses `codex exec` with advanced features:
+
+```bash
+# Create temporary files for input/output
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+INPUT_FILE=".tmp/external-review-input-$TIMESTAMP.md"
+OUTPUT_FILE=".tmp/external-review-output-$TIMESTAMP.txt"
+
+# Write prompt to input file
+echo "$FULL_PROMPT" > "$INPUT_FILE"
+
+# Invoke Codex with advanced features
+codex exec \
+    -m gpt-5.2-codex \
+    -s read-only \
+    --enable web_search_request \
+    -c model_reasoning_effort=xhigh \
+    -i "$INPUT_FILE" \
+    -o "$OUTPUT_FILE"
+
+# Read output
+CONSENSUS_PLAN=$(cat "$OUTPUT_FILE")
+```
+
+**Configuration details:**
+- **Model**: `gpt-5.2-codex` - Latest Codex model with enhanced reasoning
+- **Sandbox**: `read-only` - Security restriction (no file writes)
+- **Web Search**: `--enable web_search_request` - External research capability for fact-checking and SOTA patterns
+- **Reasoning Effort**: `model_reasoning_effort=xhigh` - Maximum reasoning depth for thorough analysis
+
+**Benefits:**
+- Web search allows fact-checking technical decisions and researching best practices
+- High reasoning effort produces more thorough trade-off analysis
+- Read-only sandbox ensures security
+- File-based I/O handles large debate reports reliably
+
+### Claude Code CLI (Fallback)
+
+When Codex is unavailable, the skill falls back to Claude Code with Opus:
+
+```bash
+# Create temporary files
+INPUT_FILE=".tmp/external-review-input-$TIMESTAMP.md"
+OUTPUT_FILE=".tmp/external-review-output-$TIMESTAMP.txt"
+
+# Write prompt to input file
+echo "$FULL_PROMPT" > "$INPUT_FILE"
+
+# Invoke Claude Code with Opus model and read-only tools
+claude -p \
+    --model opus \
+    --tools "Read,Grep,Glob,WebSearch,WebFetch" \
+    --permission-mode bypassPermissions \
+    < "$INPUT_FILE" > "$OUTPUT_FILE"
+
+# Read output
+CONSENSUS_PLAN=$(cat "$OUTPUT_FILE")
+```
+
+**Configuration details:**
+- **Model**: `opus` - Claude Opus 4.5 with highest reasoning capability
+- **Tools**: Limited to read-only tools (Read, Grep, Glob, WebSearch, WebFetch)
+- **Permission Mode**: `bypassPermissions` - Skip permission prompts for automated execution
+- **File I/O**: Input via stdin, output via stdout redirection
+
+**Benefits:**
+- Same research capabilities (WebSearch, WebFetch) as Codex
+- High reasoning quality from Opus model
+- Read-only tools ensure security
+- Seamless fallback when Codex unavailable
+
+### Cost and Timing Considerations
+
+**Codex (gpt-5.2-codex with xhigh reasoning):**
+- Cost: ~$0.50-1.50 per consensus review (varies with debate report size)
+- Time: 2-5 minutes (xhigh reasoning takes longer but produces better results)
+
+**Claude Opus (fallback):**
+- Cost: ~$1.00-3.00 per consensus review
+- Time: 1-3 minutes
+
+The increased cost and time from high reasoning effort and web search are justified by:
+- More thorough analysis of trade-offs between agent perspectives
+- Fact-checked technical decisions
+- Research-backed implementation recommendations
+- Higher quality consensus plans
+
 ## Skill Philosophy
 
 After three agents debate a feature from different perspectives, an **external, neutral reviewer** synthesizes the final plan:
@@ -228,25 +321,18 @@ Expected file format: .tmp/debate-report-YYYYMMDD-HHMMSS.md
 
 Stop execution.
 
-### External Reviewer Tools Unavailable
+### Codex CLI Unavailable (Auto-fallback to Claude)
 
-Neither Codex nor Claude CLI is installed.
+When Codex CLI is not installed, the script automatically falls back to Claude Code (which is always available as part of this skill).
 
 **Response:**
 ```
-Error: External review tools unavailable.
+Codex not available. Using Claude Opus as fallback...
 
-The external-review.sh script requires one of:
-- Codex CLI: https://github.com/openai/codex
-- Claude CLI: https://github.com/anthropics/claude-cli
-
-Please install one of these tools and try again.
-
-Alternatively, you can manually review the combined debate report:
-{combined_report_file}
+[Claude Code executes consensus review with same capabilities]
 ```
 
-Offer manual review option.
+The fallback is seamless and maintains the same research capabilities (WebSearch, WebFetch) and read-only security restrictions.
 
 ### External Reviewer Failure
 
@@ -264,11 +350,31 @@ Possible causes:
 - Network connection issue
 - Invalid API credentials
 - Malformed input
+- Web search request timeout (Codex only)
+- Reasoning effort timeout (xhigh setting)
 
 Retry external consensus review? (y/n)
 ```
 
 Offer retry or manual fallback.
+
+### Temporary File Conflicts
+
+Multiple concurrent runs create conflicting temp files.
+
+**Response:**
+```
+Warning: Temporary file already exists: {temp_file}
+
+This may indicate a concurrent run of the external-review.sh script.
+
+Options:
+1. Wait for previous run to complete
+2. Clean up stale temp files: rm .tmp/external-review-*
+3. Continue (may overwrite previous run)
+```
+
+Timestamp-based file naming prevents most conflicts, but this handles edge cases.
 
 ### Invalid Consensus Plan Output
 
@@ -317,13 +423,26 @@ Provide debugging guidance.
 
 ## Usage Examples
 
-### Example 1: Successful Consensus
+### Example 1: Successful Consensus with Codex
 
 **Input:**
 ```
 Combined report: .tmp/debate-report-20251225-155030.md
 Feature name: "JWT Authentication"
 Feature description: "Add user authentication with JWT tokens"
+```
+
+**Execution:**
+```
+Using Codex (gpt-5.2-codex) for external consensus review...
+
+[Codex executes with advanced features:]
+- Model: gpt-5.2-codex
+- Sandbox: read-only
+- Web search: enabled (researching JWT best practices)
+- Reasoning effort: xhigh
+- Input: .tmp/external-review-input-20251225-160130.md
+- Output: .tmp/external-review-output-20251225-160130.txt
 ```
 
 **Output:**
@@ -338,45 +457,66 @@ Consensus Plan Summary:
 
 Key Decisions:
 - From Bold Proposal: Accepted JWT with refresh tokens
-- From Critique: Addressed token storage security concern
+- From Critique: Addressed token storage security concern (httpOnly cookies)
 - From Reducer: Removed OAuth2 complexity, kept simple JWT
+
+Research Applied:
+- Verified OWASP JWT security guidelines (via web search)
+- Confirmed refresh token rotation best practices
+- Fact-checked token expiration standards
 
 Consensus plan saved to: .tmp/consensus-plan-20251225-160245.md
 
 Next step: Review plan and create GitHub issue with open-issue skill.
 ```
 
-### Example 2: Codex Unavailable, Claude Fallback
+### Example 2: Web Search Usage
+
+**Scenario:** Feature requires external research for SOTA patterns.
+
+**Input:**
+```
+Feature name: "Real-time Collaboration"
+Feature description: "Add multi-user real-time editing with CRDT"
+```
+
+**Codex behavior:**
+```
+Using Codex (gpt-5.2-codex) for external consensus review...
+
+[Web search queries executed:]
+- "CRDT implementation best practices 2025"
+- "Yjs vs Automerge performance comparison"
+- "Operational transformation vs CRDT trade-offs"
+
+[External research findings incorporated into consensus:]
+- Yjs recommended for browser-based collaboration (proven, actively maintained)
+- WebSocket vs WebRTC trade-off analysis
+- Conflict resolution strategies from recent papers
+```
+
+**Output includes fact-checked decisions based on web research.**
+
+### Example 3: Claude Fallback with Research
+
+**Scenario:** Codex unavailable, Claude Code (always available) provides same research capabilities.
 
 **Output:**
 ```
-Using Claude Opus as fallback for external consensus...
+Codex not available. Using Claude Opus as fallback...
 
-[Claude Opus generates consensus plan]
+[Claude Opus executes with:]
+- Model: opus
+- Tools: Read, Grep, Glob, WebSearch, WebFetch (read-only)
+- Permission mode: bypassPermissions
+- Input: .tmp/external-review-input-20251225-160130.md (via stdin)
+- Output: .tmp/external-review-output-20251225-160130.txt (via stdout)
 
 External consensus review complete!
-[Summary as above...]
+[Summary as Example 1...]
 
 Note: Used Claude Opus (Codex unavailable)
-```
-
-### Example 3: Manual Fallback
-
-**Scenario:** Both Codex and Claude CLI unavailable.
-
-**Output:**
-```
-Error: External review tools unavailable.
-
-The external-review.sh script requires Codex or Claude CLI.
-
-Manual review option:
-1. Review combined debate report: .tmp/debate-report-20251225-155030.md
-2. Synthesize consensus plan manually
-3. Save plan to: .tmp/consensus-plan-{timestamp}.md
-4. Continue with open-issue skill
-
-Proceed with manual review? (y/n)
+Research capability: WebSearch and WebFetch used for fact-checking
 ```
 
 ## Integration Points
@@ -391,10 +531,16 @@ This skill outputs to:
 ## Notes
 
 - External reviewer is **required** for consensus (not optional)
-- Codex is **preferred** due to cost and speed
-- Claude Opus is **fallback** with same capability
+- Codex with `gpt-5.2-codex` is **preferred** for advanced features (web search, xhigh reasoning)
+- Claude Opus is **fallback** with same research capabilities
 - Manual review is **last resort** if tools unavailable
 - Prompt template is **customizable** in `./external-review-prompt.md` (in skill folder)
 - Consensus plan format follows **standard implementation plan structure**
-- Execution time: 1-3 minutes (depending on model and API latency)
-- Cost: Single Opus API call (~$0.50-2.00 depending on report size)
+- **File-based I/O** pattern: Uses `.tmp/` directory with timestamps for input/output
+- **Execution time**: 2-5 minutes with Codex (xhigh reasoning), 1-3 minutes with Claude
+- **Cost**: Higher with advanced features but justified by quality:
+  - Codex gpt-5.2-codex: ~$0.50-1.50 per review
+  - Claude Opus: ~$1.00-3.00 per review
+- **Security**: Read-only sandbox/tools ensure no file modifications
+- **Research capability**: Web search enables fact-checking and SOTA pattern research
+- **Reasoning quality**: xhigh effort produces more thorough trade-off analysis

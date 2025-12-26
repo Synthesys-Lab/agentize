@@ -48,38 +48,70 @@ echo "$PROMPT" | awk -v report="$COMBINED_REPORT" '
     { print }
 ' > "$TEMP_PROMPT"
 
+# Create timestamped temporary files for file-based I/O
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+INPUT_FILE=".tmp/external-review-input-$TIMESTAMP.md"
+OUTPUT_FILE=".tmp/external-review-output-$TIMESTAMP.txt"
+
+# Ensure .tmp directory exists
+mkdir -p .tmp
+
+# Write prompt to input file
+cat "$TEMP_PROMPT" > "$INPUT_FILE"
+rm "$TEMP_PROMPT"
+
 # Try Codex first (if available)
 if command -v codex &> /dev/null; then
-    echo "Using Codex for external consensus review..."
-    codex --model gpt-4 --prompt "$(cat "$TEMP_PROMPT")"
-    RESULT=$?
-    rm "$TEMP_PROMPT"
-    exit $RESULT
-fi
+    echo "Using Codex (gpt-5.2-codex) for external consensus review..." >&2
 
-# Fallback to Claude CLI with Opus
-if command -v claude &> /dev/null; then
-    echo "Codex not available. Using Claude Opus as fallback..."
-    # Create a temporary file with the prompt
-    TEMP_INPUT=$(mktemp)
-    cat "$TEMP_PROMPT" > "$TEMP_INPUT"
+    # Invoke Codex with advanced features
+    codex exec \
+        -m gpt-5.2-codex \
+        -s read-only \
+        --enable web_search_request \
+        -c model_reasoning_effort=xhigh \
+        -i "$INPUT_FILE" \
+        -o "$OUTPUT_FILE"
 
-    # Invoke Claude CLI with Opus model
-    claude --model opus < "$TEMP_INPUT"
     RESULT=$?
 
-    rm "$TEMP_PROMPT"
-    rm "$TEMP_INPUT"
-    exit $RESULT
+    if [ $RESULT -eq 0 ] && [ -f "$OUTPUT_FILE" ]; then
+        # Output consensus plan to stdout
+        cat "$OUTPUT_FILE"
+
+        # Clean up temp files
+        rm "$INPUT_FILE" "$OUTPUT_FILE"
+        exit 0
+    else
+        echo "Error: Codex execution failed (exit code: $RESULT)" >&2
+        rm "$INPUT_FILE"
+        [ -f "$OUTPUT_FILE" ] && rm "$OUTPUT_FILE"
+        exit $RESULT
+    fi
 fi
 
-# Neither tool available
-rm "$TEMP_PROMPT"
-echo "Error: Neither 'codex' nor 'claude' CLI tools are available."
-echo ""
-echo "Please install one of the following:"
-echo "  - Codex CLI: https://github.com/openai/codex"
-echo "  - Claude CLI: https://github.com/anthropics/claude-cli"
-echo ""
-echo "Or manually review the combined report and synthesize a consensus plan."
-exit 1
+# Fallback to Claude Code CLI with Opus (always available as part of this skill)
+echo "Codex not available. Using Claude Opus as fallback..." >&2
+
+# Invoke Claude Code with Opus model and read-only tools
+claude -p \
+    --model opus \
+    --tools "Read,Grep,Glob,WebSearch,WebFetch" \
+    --permission-mode bypassPermissions \
+    < "$INPUT_FILE" > "$OUTPUT_FILE" 2>&1
+
+RESULT=$?
+
+if [ $RESULT -eq 0 ] && [ -f "$OUTPUT_FILE" ]; then
+    # Output consensus plan to stdout
+    cat "$OUTPUT_FILE"
+
+    # Clean up temp files
+    rm "$INPUT_FILE" "$OUTPUT_FILE"
+    exit 0
+else
+    echo "Error: Claude execution failed (exit code: $RESULT)" >&2
+    rm "$INPUT_FILE"
+    [ -f "$OUTPUT_FILE" ] && rm "$OUTPUT_FILE"
+    exit $RESULT
+fi
