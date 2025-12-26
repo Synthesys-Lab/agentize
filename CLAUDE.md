@@ -4,6 +4,7 @@
 - DO NOT use `cd` anywhere!
   - Use relative paths to this project root only!
   - `cd` permission is disabled for this CLI.
+  - **Project root**: The directory containing `.git` (or `.git` file for worktrees). For worktrees, each worktree is its own project root with relative paths scoped to that worktree.
 - `README.md` in each folder shall decribe the folder purpose and organization.
   - If not, please create one!
 - Keep in mind, all the rules developed in this project should be as project-neutral as possible.

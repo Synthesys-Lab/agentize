@@ -80,6 +80,18 @@ else
 fi
 echo ""
 
+# Test Worktree functionality
+echo ">>> Testing Worktree functionality..."
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+if bash "$SCRIPT_DIR/test-worktree.sh"; then
+    echo "✓ Worktree tests passed"
+    PASSED_TESTS=$((PASSED_TESTS + 1))
+else
+    echo "✗ Worktree tests failed"
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+fi
+echo ""
+
 # Print summary
 echo "======================================"
 echo "Test Summary"
