@@ -2,6 +2,7 @@
   "permissions": {
     "allow": [
       "WebSearch",
+      "Fetch",
 
       "Bash(echo FILE OPERATIONS - Reading and viewing files)",
       "Read(//tmp/**)",
