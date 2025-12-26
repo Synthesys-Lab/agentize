@@ -6,13 +6,13 @@ Learn how to use multi-agent debate-based planning for complex features with `/u
 
 ## What is `/ultra-planner`?
 
-`/ultra-planner` uses **three AI agents** that debate to create balanced implementation plans:
+`/ultra-planner` uses **three AI agents** in a serial debate workflow to create balanced implementation plans:
 
-1. **Bold Proposer**: Researches SOTA solutions, proposes innovative approaches
-2. **Proposal Critique**: Validates assumptions, identifies technical risks
-3. **Proposal Reducer**: Simplifies following "less is more" philosophy
+1. **Bold Proposer**: Runs first, researches SOTA solutions and proposes innovative approaches
+2. **Proposal Critique**: Analyzes Bold's proposal, validates assumptions and identifies technical risks
+3. **Proposal Reducer**: Analyzes Bold's proposal, simplifies following "less is more" philosophy
 
-An external reviewer (Codex/Claude Opus) synthesizes these into a consensus plan.
+Bold-proposer runs first to generate a concrete proposal, then Critique and Reducer both analyze that proposal (running in parallel with each other). An external reviewer (Codex/Claude Opus) synthesizes all three perspectives into a consensus plan.
 
 ## When to Use It?
 
@@ -34,14 +34,18 @@ An external reviewer (Codex/Claude Opus) synthesizes these into a consensus plan
 User: /ultra-planner Add user authentication with JWT tokens and role-based access control
 ```
 
-**2. Three agents debate (3-5 minutes):**
+**2. Bold-proposer generates proposal (1-2 minutes):**
 ```
 BOLD PROPOSER: OAuth2 + JWT + RBAC (~450 LOC)
+```
+
+**3. Critique and Reducer analyze Bold's proposal (2-3 minutes):**
+```
 CRITIQUE: Medium feasibility, 2 critical risks (token storage, complexity)
 REDUCER: Simple JWT only (~180 LOC, 60% reduction)
 ```
 
-**3. External consensus synthesizes:**
+**4. External consensus synthesizes:**
 ```
 Consensus: JWT + basic roles (~280 LOC)
 - From Bold: JWT tokens + role-based access
@@ -49,7 +53,7 @@ Consensus: JWT + basic roles (~280 LOC)
 - From Reducer: Removed OAuth2 complexity
 ```
 
-**4. You approve:**
+**5. You approve:**
 ```
 Options:
 1. Approve and create GitHub issue

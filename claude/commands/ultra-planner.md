@@ -18,7 +18,7 @@ If arguments are provided via $ARGUMENTS, parse them as either:
 
 This command orchestrates a three-agent debate system to generate high-quality implementation plans:
 
-1. **Three-agent debate**: Launch bold-proposer, proposal-critique, and proposal-reducer agents in parallel
+1. **Three-agent debate**: Launch bold-proposer first, then critique and reducer analyze its output
 2. **Combine reports**: Merge all three perspectives into single document
 3. **External consensus**: Invoke external-consensus skill to synthesize balanced plan
 4. **User approval**: Present consensus plan for review
@@ -107,9 +107,9 @@ Please provide more details:
 
 Ask user for clarification.
 
-### Step 3: Launch Three Agents in Parallel
+### Step 3: Launch Bold-Proposer Agent
 
-Use the Task tool to launch all three debate agents simultaneously:
+First, launch the bold-proposer agent to generate an innovative proposal:
 
 **Agent 1: Bold Proposer**
 ```
@@ -119,30 +119,50 @@ Task tool:
   description: "Research SOTA solutions"
 ```
 
+Wait for the bold-proposer to complete and extract its proposal output.
+
+### Step 4: Launch Critique and Reducer Agents
+
+Once bold-proposer completes, launch the critique and reducer agents in parallel to analyze Bold's proposal:
+
 **Agent 2: Proposal Critique**
 ```
 Task tool:
   subagent_type: 'proposal-critique'
-  prompt: "Analyze the feasibility and risks for: {feature_description}"
-  description: "Validate assumptions and risks"
+  prompt: "Analyze the following proposal for feasibility and risks:
+
+  Feature: {feature_description}
+
+  Proposal from Bold-Proposer:
+  {bold_proposer_output}
+
+  Provide critical analysis of assumptions, risks, and feasibility."
+  description: "Critique bold proposal"
 ```
 
 **Agent 3: Proposal Reducer**
 ```
 Task tool:
   subagent_type: 'proposal-reducer'
-  prompt: "Propose a simplified solution following 'less is more' for: {feature_description}"
-  description: "Simplify and reduce complexity"
+  prompt: "Simplify the following proposal using 'less is more' philosophy:
+
+  Feature: {feature_description}
+
+  Proposal from Bold-Proposer:
+  {bold_proposer_output}
+
+  Identify unnecessary complexity and propose simpler alternatives."
+  description: "Simplify bold proposal"
 ```
 
-**IMPORTANT**: All three agents MUST be launched in a **single message** with three Task tool calls to ensure parallel execution.
+**IMPORTANT**: Critique and Reducer agents should be launched in a **single message** with two Task tool calls to ensure they run in parallel while both analyzing Bold's proposal.
 
 **Expected agent outputs:**
 - Bold proposer: Innovative proposal with SOTA research
-- Critique: Risk analysis and feasibility assessment
-- Reducer: Simplified proposal with complexity analysis
+- Critique: Risk analysis and feasibility assessment of Bold's proposal
+- Reducer: Simplified version of Bold's proposal with complexity analysis
 
-### Step 4: Combine Agent Reports
+### Step 5: Combine Agent Reports
 
 After all three agents complete, combine their outputs into a single debate report:
 
@@ -172,7 +192,7 @@ Parse each agent's output to extract:
 - **Critique**: Feasibility rating + critical risk count
 - **Reducer**: LOC estimate + simplification percentage
 
-### Step 5: Display Debate Summary to User
+### Step 6: Display Debate Summary to User
 
 Show user the key points from each agent:
 
@@ -198,14 +218,14 @@ Combined report saved to: {debate-report-file}
 Proceeding to external consensus review...
 ```
 
-### Step 6: Invoke External Consensus Skill
+### Step 7: Invoke External Consensus Skill
 
 Synthesize final plan from debate report using the external-consensus skill:
 
 **Skill:** `external-consensus`
 
 **Inputs:**
-- Combined report file: `.tmp/debate-report-{timestamp}.md` (from step 4)
+- Combined report file: `.tmp/debate-report-{timestamp}.md` (from step 5)
 - Feature name: Extract from description (first 5 words)
 - Feature description: `$FEATURE_DESCRIPTION`
 
@@ -234,7 +254,7 @@ Key Decisions:
 Consensus plan saved to: {output_file}
 ```
 
-### Step 7: Present Plan to User for Approval
+### Step 8: Present Plan to User for Approval
 
 Display the consensus plan and ask for approval:
 
@@ -267,7 +287,7 @@ Invoke open-issue skill:
 **Skill:** `open-issue`
 
 **Inputs:**
-- Plan file: Consensus plan from step 6
+- Plan file: Consensus plan from step 7
 - Issue title: Extract from consensus plan
 - Issue body: Use standard [plan] format with consensus plan as "Proposed Solution"
 
@@ -458,7 +478,7 @@ Provide plan file for manual issue creation.
 ```
 Starting multi-agent debate...
 
-[3 agents run in parallel - 3-5 minutes]
+[Bold-proposer runs, then critique/reducer - 3-5 minutes]
 
 Debate complete! Three perspectives:
 - Bold: OAuth2 + JWT + RBAC (~450 LOC)
@@ -530,7 +550,7 @@ Tip: Review the debate report for insights on how to break this down.
 
 ## Notes
 
-- Three agents run in **parallel** (faster than sequential)
+- Bold-proposer runs first, then critique and reducer analyze its proposal in parallel
 - Command directly orchestrates agents (no debate-based-planning skill needed)
 - **external-consensus skill** is required for synthesis
 - **open-issue skill** is used for GitHub issue creation

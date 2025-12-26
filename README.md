@@ -40,11 +40,11 @@ For more details of the variables and options available, refer to our
 ```mermaid
 graph TD
     A[User provides requirements] --> B[Bold-proposer agent]
-    A --> C[Proposal-critique agent]
-    A --> D[Proposal-reducer agent]
-    B[Bold-proposer: Research SOTA & propose innovation] --> E[Combine reports]
-    C[Critique: Validate assumptions & feasibility] --> E
+    B[Bold-proposer: Research SOTA & propose innovation] --> C[Proposal-critique agent]
+    B --> D[Proposal-reducer agent]
+    C[Critique: Validate assumptions & feasibility] --> E[Combine reports]
     D[Reducer: Simplify following 'less is more'] --> E
+    B --> E
     E[Combined 3-perspective report] --> F[External consensus review]
     F[Codex/Opus: Synthesize consensus plan] --> G[User approves/rejects plan]
     G -->|Approved| H[Create Github Issue]
