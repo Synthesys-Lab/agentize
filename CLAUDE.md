@@ -8,3 +8,6 @@
   - If not, please create one!
 - Keep in mind, all the rules developed in this project should be as project-neutral as possible.
 - `docs/draft` folder is for user to draft documents locally, any rules committed to git should avoid mentioning any files in this folder!
+- Focus on the rationale of the design itself. DO NOT mention any incremental changes of a history design!
+  - **DO NOT**: this design reduces 30% LoC compared to previous design.
+  - **DO**: this design simplifies the architecture by providing a unified interface across the modules.
