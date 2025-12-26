@@ -61,28 +61,42 @@ This command orchestrates a three-agent debate system to generate high-quality i
 
 ## Workflow
 
-### Step 1: Parse Arguments
+### Step 1: Parse Arguments and Extract Feature Description
 
-Check if `$ARGUMENTS` contains `--refine`:
+**IMPORTANT**: Parse $ARGUMENTS ONCE at the beginning and store in variables.
 
+**Check for refinement mode:**
 ```bash
 if echo "$ARGUMENTS" | grep -q "^--refine"; then
     MODE="refine"
-    PLAN_FILE=$(echo "$ARGUMENTS" | sed 's/--refine //')
+    PLAN_FILE_PATH=$(echo "$ARGUMENTS" | sed 's/--refine //')
+    # Load plan content into FEATURE_DESC
+    if [ -f "$PLAN_FILE_PATH" ]; then
+        FEATURE_DESC=$(cat "$PLAN_FILE_PATH")
+    else
+        echo "Error: Plan file not found: $PLAN_FILE_PATH"
+        exit 1
+    fi
 else
     MODE="default"
-    FEATURE_DESCRIPTION="$ARGUMENTS"
+    FEATURE_DESC="$ARGUMENTS"
 fi
 ```
 
+**Store these variables for the entire workflow:**
+- `MODE`: Either "default" or "refine"
+- `FEATURE_DESC`: The feature description (in default mode) or loaded from file (in refine mode)
+- `PLAN_FILE_PATH`: Path to existing plan file (only in refine mode)
+
 **Default mode:**
-- Use `$ARGUMENTS` as feature description
+- Use `FEATURE_DESC` from $ARGUMENTS
 - If empty, extract from conversation context
 
 **Refinement mode:**
-- Load existing plan from `$PLAN_FILE`
-- Validate file exists
-- Use plan content as feature description for debate
+- Plan file content loaded into `FEATURE_DESC`
+- File existence validated above
+
+**DO NOT reference $ARGUMENTS again after this step.** Use `FEATURE_DESC` instead.
 
 ### Step 2: Validate Feature Description
 
@@ -107,55 +121,69 @@ Please provide more details:
 
 Ask user for clarification.
 
-### Step 3: Launch Bold-Proposer Agent
+### Step 3: Invoke Bold-Proposer Agent
 
-First, launch the bold-proposer agent to generate an innovative proposal:
+**REQUIRED TOOL CALL #1:**
 
-**Agent 1: Bold Proposer**
+Use the Task tool to launch the bold-proposer agent:
+
 ```
-Task tool:
-  subagent_type: 'bold-proposer'
-  prompt: "Research and propose an innovative solution for: {feature_description}"
+Task tool parameters:
+  subagent_type: "bold-proposer"
+  prompt: "Research and propose an innovative solution for: {FEATURE_DESC}"
   description: "Research SOTA solutions"
+  model: "opus"
 ```
 
-Wait for the bold-proposer to complete and extract its proposal output.
+**Wait for agent completion** (blocking operation, do not proceed to Step 4 until done).
 
-### Step 4: Launch Critique and Reducer Agents
+**Extract output:**
+- Save the agent's full response as `BOLD_PROPOSAL`
+- This will be used as input for the critique and reducer agents in Step 4
 
-Once bold-proposer completes, launch the critique and reducer agents in parallel to analyze Bold's proposal:
+### Step 4: Invoke Critique and Reducer Agents
 
-**Agent 2: Proposal Critique**
+**REQUIRED TOOL CALLS #2 & #3:**
+
+**CRITICAL**: Launch BOTH agents in a SINGLE message with TWO Task tool calls to ensure parallel execution.
+
+**Task tool call #1 - Critique Agent:**
 ```
-Task tool:
-  subagent_type: 'proposal-critique'
+Task tool parameters:
+  subagent_type: "proposal-critique"
   prompt: "Analyze the following proposal for feasibility and risks:
 
-  Feature: {feature_description}
+Feature: {FEATURE_DESC}
 
-  Proposal from Bold-Proposer:
-  {bold_proposer_output}
+Proposal from Bold-Proposer:
+{BOLD_PROPOSAL}
 
-  Provide critical analysis of assumptions, risks, and feasibility."
+Provide critical analysis of assumptions, risks, and feasibility."
   description: "Critique bold proposal"
+  model: "opus"
 ```
 
-**Agent 3: Proposal Reducer**
+**Task tool call #2 - Reducer Agent:**
 ```
-Task tool:
-  subagent_type: 'proposal-reducer'
+Task tool parameters:
+  subagent_type: "proposal-reducer"
   prompt: "Simplify the following proposal using 'less is more' philosophy:
 
-  Feature: {feature_description}
+Feature: {FEATURE_DESC}
 
-  Proposal from Bold-Proposer:
-  {bold_proposer_output}
+Proposal from Bold-Proposer:
+{BOLD_PROPOSAL}
 
-  Identify unnecessary complexity and propose simpler alternatives."
+Identify unnecessary complexity and propose simpler alternatives."
   description: "Simplify bold proposal"
+  model: "opus"
 ```
 
-**IMPORTANT**: Critique and Reducer agents should be launched in a **single message** with two Task tool calls to ensure they run in parallel while both analyzing Bold's proposal.
+**Wait for both agents to complete** (blocking operation).
+
+**Extract outputs:**
+- Save critique agent's response as `CRITIQUE_OUTPUT`
+- Save reducer agent's response as `REDUCER_OUTPUT`
 
 **Expected agent outputs:**
 - Bold proposer: Innovative proposal with SOTA research
@@ -172,11 +200,11 @@ TEMPLATE=".tmp/templates/debate-combined.md"
 ```
 
 **Substitute variables in template:**
-- `{{FEATURE_NAME}}`: Extract from feature description (first 5-7 words)
+- `{{FEATURE_NAME}}`: Extract from FEATURE_DESC (first 5-7 words)
 - `{{TIMESTAMP}}`: Current datetime in format YYYY-MM-DD HH:MM
-- `{{BOLD_PROPOSER_CONTENT}}`: Full output from bold-proposer agent
-- `{{CRITIQUE_CONTENT}}`: Full output from proposal-critique agent
-- `{{REDUCER_CONTENT}}`: Full output from proposal-reducer agent
+- `{{BOLD_PROPOSER_CONTENT}}`: Full output from BOLD_PROPOSAL
+- `{{CRITIQUE_CONTENT}}`: Full output from CRITIQUE_OUTPUT
+- `{{REDUCER_CONTENT}}`: Full output from REDUCER_OUTPUT
 
 **Save combined report:**
 ```bash
@@ -220,23 +248,25 @@ Proceeding to external consensus review...
 
 ### Step 7: Invoke External Consensus Skill
 
-Synthesize final plan from debate report using the external-consensus skill:
+**REQUIRED SKILL CALL:**
 
-**Skill:** `external-consensus`
+Use the Skill tool to invoke the external-consensus skill:
 
-**Inputs:**
-- Combined report file: `.tmp/debate-report-{timestamp}.md` (from step 5)
-- Feature name: Extract from description (first 5 words)
-- Feature description: `$FEATURE_DESCRIPTION`
+```
+Skill tool parameters:
+  skill: "external-consensus"
+  args: "{DEBATE_REPORT_FILE}"
+```
 
-**Skill behavior:**
-1. Loads combined debate report
-2. Prepares external review prompt using template
-3. Invokes Codex CLI (preferred) or Claude Opus (fallback)
-4. Parses and validates consensus plan
-5. Saves plan to `.tmp/consensus-plan-{timestamp}.md`
+**What this skill does:**
+1. Reads the combined debate report from `DEBATE_REPORT_FILE`
+2. Prepares external review prompt using `.claude/skills/external-consensus/external-review-prompt.md`
+3. Invokes Codex CLI (preferred) or Claude API (fallback) for consensus synthesis
+4. Parses and validates the consensus plan structure
+5. Saves consensus plan to `.tmp/consensus-plan-{timestamp}.md`
+6. Returns summary and file path
 
-**Expected output from skill:**
+**Expected output structure from skill:**
 ```
 External consensus review complete!
 
@@ -251,8 +281,11 @@ Key Decisions:
 - From Critique: {risks_addressed}
 - From Reducer: {simplifications_applied}
 
-Consensus plan saved to: {output_file}
+Consensus plan saved to: {CONSENSUS_PLAN_FILE}
 ```
+
+**Extract:**
+- Save the consensus plan file path as `CONSENSUS_PLAN_FILE`
 
 ### Step 8: Present Plan to User for Approval
 
@@ -282,23 +315,24 @@ Your choice: _
 
 ### Step 8A: If Approved - Create GitHub Issue
 
-Invoke open-issue skill:
+**REQUIRED SKILL CALL:**
 
-**Skill:** `open-issue`
+Use the Skill tool to invoke the open-issue skill:
 
-**Inputs:**
-- Plan file: Consensus plan from step 7
-- Issue title: Extract from consensus plan
-- Issue body: Use standard [plan] format with consensus plan as "Proposed Solution"
+```
+Skill tool parameters:
+  skill: "open-issue"
+  args: "{CONSENSUS_PLAN_FILE}"
+```
 
-**Skill behavior:**
-1. Reads consensus plan
+**What this skill does:**
+1. Reads consensus plan from file
 2. Determines appropriate tag from `docs/git-msg-tags.md`
-3. Formats issue with Problem Statement and Proposed Solution
-4. Creates issue via `gh issue create`
-5. Returns issue URL
+3. Formats issue with Problem Statement and Proposed Solution sections
+4. Creates issue via `gh issue create` command
+5. Returns issue number and URL
 
-**Output:**
+**Expected output:**
 ```
 GitHub issue created: #{issue_number}
 
@@ -310,7 +344,7 @@ Next steps:
 - Use /issue-to-impl {issue_number} to start implementation
 ```
 
-Command completes successfully.
+Display this output to the user. Command completes successfully.
 
 ### Step 8B: If Refine - Restart with Existing Plan
 
@@ -343,7 +377,7 @@ Command exits without creating issue.
 
 ### Feature Description Missing
 
-`$ARGUMENTS` is empty and no feature found in context.
+`FEATURE_DESC` is empty and no feature found in context.
 
 **Response:**
 ```
