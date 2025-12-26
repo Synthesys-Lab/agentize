@@ -37,7 +37,40 @@ When `/code-review` is invoked:
 
 Validates compliance with `document-guideline` standards.
 
-### Check 1: Folder README.md Files
+**Documentation & Comment Content Principle**: All documentation and code comments should focus on current design rationale, not historical changes or comparisons. Explain *why* the current approach exists and *how* it works, not how it improved from previous versions.
+
+**Common violations**:
+- ❌ Documentation: "This design reduces 30% LOC compared to previous version"
+- ❌ Documentation: "Simplified from X to Y lines"
+- ❌ Comment: "// Refactored to be 40% faster than old implementation"
+- ❌ Comment: "# Changed from recursive to iterative approach"
+- ✅ Documentation: "This design provides unified interface across modules"
+- ✅ Documentation: "Uses dataclass for explicit attribute declaration and type safety"
+- ✅ Comment: "// Use iterative approach to avoid stack overflow for large inputs"
+- ✅ Comment: "# Cache results to avoid redundant API calls"
+
+### Check 1: Documentation & Comment Content Quality
+
+**Standard**: Documentation and comments must focus on current rationale, not historical comparisons.
+
+**Check**: Review documentation files and code comments for historical references or improvement claims.
+
+**Example findings**:
+```
+❌ Historical comparison in documentation
+   README.md:18 - "This implementation reduced LOC by 40% compared to v1.0"
+
+   Recommendation: Rewrite to focus on current design:
+   "This implementation uses a unified interface to simplify module interactions"
+
+❌ Historical reference in code comment
+   src/parser.py:45 - "# Changed from regex to AST parsing for better performance"
+
+   Recommendation: Explain current rationale:
+   "# Use AST parsing to handle nested structures and provide detailed error locations"
+```
+
+### Check 2: Folder README.md Files
 
 **Standard**: Every folder (except hidden) must have `README.md`.
 
@@ -55,7 +88,7 @@ Validates compliance with `document-guideline` standards.
    Recommendation: Create README.md documenting folder purpose, key files, integration points
 ```
 
-### Check 2: Source Code Interface Documentation
+### Check 3: Source Code Interface Documentation
 
 **Standard**: Every source file (`.py`, `.c`, `.cpp`, `.cxx`, `.cc`) must have companion `.md` file.
 
@@ -81,7 +114,7 @@ Validates compliance with `document-guideline` standards.
    Recommendation: Add handle_request() signature, parameters, return value, error conditions
 ```
 
-### Check 3: Test Documentation
+### Check 4: Test Documentation
 
 **Standard**: Test files need documentation explaining what they test.
 
@@ -101,7 +134,7 @@ Validates compliance with `document-guideline` standards.
    # Test 2: Validator rejects malformed input (expect: exit 1, error message)
 ```
 
-### Check 4: Design Documentation
+### Check 5: Design Documentation
 
 **Standard**: Architectural changes should have design docs in `docs/`.
 
@@ -119,7 +152,7 @@ Validates compliance with `document-guideline` standards.
    Recommendation: Consider docs/authentication.md documenting architecture, flow, integration, security
 ```
 
-### Check 5: Documentation Linter
+### Check 6: Documentation Linter
 
 **Tool**: `scripts/lint-documentation.sh`
 
@@ -216,6 +249,48 @@ Assesses code quality and identifies reuse opportunities.
    Project convention: snake_case (see src/utils/, src/api/)
 
    Recommendation: Rename to match project style (parseInput → parse_input)
+```
+
+### Check 6: Commit Hygiene
+
+**Objective**: Ensure only appropriate files are committed and debug code is removed.
+
+**Check for inappropriate files**:
+- Temporary files: `.tmp`, `*.swp`, `*.bak`, `*~`, `.DS_Store`
+- Build artifacts: `*.pyc`, `__pycache__/`, `build/`, `dist/`, `*.o`, `*.so`
+- IDE/editor files: `.vscode/`, `.idea/`, `*.sublime-*`
+- Local config: `.env`, `*.local.*`, `settings.local.json`
+- Log files: `*.log`, `debug.txt`
+
+**Check for debug code**:
+- Debug print statements: `console.log()`, `print("debug")`, `printf("DEBUG")`
+- Commented-out debug code blocks
+- Debug-only imports: `import pdb; pdb.set_trace()`
+- Verbose logging left in production code
+- Test data hardcoded in source files
+
+**Example findings**:
+```
+❌ Temporary file committed
+   .tmp/debug-output.txt - Temporary file should not be committed
+
+   Recommendation: Remove from staging and add pattern to .gitignore
+
+❌ Debug code left in commit
+   src/api/handler.py:23 - console.log("DEBUG: request received")
+
+   Recommendation: Remove debug logging before commit
+
+⚠️  Local configuration file
+   config/settings.local.json - Local config file committed
+
+   Recommendation: Move to settings.example.json or add to .gitignore
+   Users should copy example to .local version
+
+❌ Debug breakpoint left in code
+   src/utils/parser.py:45 - import pdb; pdb.set_trace()
+
+   Recommendation: Remove debugger statement
 ```
 
 ## Phase 3: Advanced Code Quality Review

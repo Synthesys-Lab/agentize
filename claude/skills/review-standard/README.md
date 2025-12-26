@@ -15,14 +15,6 @@ This skill is invoked by the `/code-review` command and integrates with:
 - `scripts/lint-documentation.sh` - Uses for structural documentation validation
 - Git and GitHub CLI - For accessing change diffs and repository context
 
-## Implementation
-
-The skill was simplified from 1042 to 495 lines (52% reduction) while preserving analytical depth:
-- Condensed verbose procedural instructions into concise guidelines
-- Removed redundant bash examples (agents understand git commands)
-- Maintained all 6 Phase 3 specialized checks
-- Preserved evidence requirements and severity classification
-
 ## Usage
 
 See `SKILL.md` for complete review process and standards.
