@@ -92,6 +92,18 @@ else
 fi
 echo ""
 
+# Test Command metadata
+echo ">>> Testing Command metadata..."
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+if bash "$SCRIPT_DIR/test-commands.sh"; then
+    echo "✓ Command metadata tests passed"
+    PASSED_TESTS=$((PASSED_TESTS + 1))
+else
+    echo "✗ Command metadata tests failed"
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+fi
+echo ""
+
 # Print summary
 echo "======================================"
 echo "Test Summary"

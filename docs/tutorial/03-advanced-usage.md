@@ -109,6 +109,26 @@ The script automatically:
 - Creates branch following naming convention
 - Bootstraps `CLAUDE.md` and `.claude/` into worktree
 
+### Automated Workflow with `/spawn-worktree`
+
+The `/spawn-worktree` command automates worktree creation and provides explicit next-step instructions:
+
+```bash
+# In Claude Code, run:
+/spawn-worktree 42
+```
+
+The command will:
+- Create a new worktree (or reuse existing) for the issue
+- Print the worktree path and next steps
+
+**Next steps (printed by the command):**
+1. Open a new terminal at the worktree path
+2. Start Claude Code: `claude`
+3. Run: `/issue-to-impl 42`
+
+This streamlines the manual workflow while keeping each step explicit and recoverable.
+
 ### Workflow
 
 **Terminal 1 (Issue #45):**
