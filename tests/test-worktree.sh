@@ -95,6 +95,50 @@ echo "=== Worktree Smoke Test ==="
   ./worktree.sh prune
   echo -e "${GREEN}PASS: Prune completed${NC}"
 
+  echo ""
+  # Test 6: Long title truncates to max length (default 10)
+  echo "Test 6: Long title truncates to max length"
+  ./worktree.sh create 99 this-is-a-very-long-suffix-that-should-be-truncated
+  if [ ! -d "trees/issue-99-this-is-a" ]; then
+      echo -e "${RED}FAIL: Long suffix not truncated to 10 chars${NC}"
+      exit 1
+  fi
+  ./worktree.sh remove 99
+  echo -e "${GREEN}PASS: Long suffix truncated${NC}"
+
+  echo ""
+  # Test 7: Short title preserved
+  echo "Test 7: Short title preserved"
+  ./worktree.sh create 88 short
+  if [ ! -d "trees/issue-88-short" ]; then
+      echo -e "${RED}FAIL: Short suffix not preserved${NC}"
+      exit 1
+  fi
+  ./worktree.sh remove 88
+  echo -e "${GREEN}PASS: Short suffix preserved${NC}"
+
+  echo ""
+  # Test 8: Word-boundary trimming
+  echo "Test 8: Word-boundary trimming"
+  ./worktree.sh create 77 very-long-name
+  if [ ! -d "trees/issue-77-very-long" ]; then
+      echo -e "${RED}FAIL: Word-boundary trim failed${NC}"
+      exit 1
+  fi
+  ./worktree.sh remove 77
+  echo -e "${GREEN}PASS: Word-boundary trim works${NC}"
+
+  echo ""
+  # Test 9: Env override changes limit
+  echo "Test 9: Env override changes limit"
+  WORKTREE_SUFFIX_MAX_LENGTH=5 ./worktree.sh create 66 test-feature
+  if [ ! -d "trees/issue-66-test-" ]; then
+      echo -e "${RED}FAIL: Env override not applied${NC}"
+      exit 1
+  fi
+  ./worktree.sh remove 66
+  echo -e "${GREEN}PASS: Env override works${NC}"
+
   # Cleanup
   cd /
   rm -rf "$TEST_DIR"

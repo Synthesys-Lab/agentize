@@ -33,6 +33,7 @@ This directory contains utility scripts and git hooks for the project.
   - Features:
     - Automatically fetches issue titles from GitHub via `gh` CLI
     - Creates branches following `issue-<N>-<title>` convention
+    - Limits suffix length to 10 characters (configurable via `WORKTREE_SUFFIX_MAX_LENGTH`)
     - Bootstraps `CLAUDE.md` into each worktree
     - Worktrees stored in `trees/` directory (gitignored)
   - Exit codes: 0 (success), 1 (error)

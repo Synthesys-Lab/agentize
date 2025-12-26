@@ -23,6 +23,9 @@ if [ -f ".git" ]; then
     exit 1
 fi
 
+# Max suffix length (configurable via env var)
+SUFFIX_MAX_LENGTH="${WORKTREE_SUFFIX_MAX_LENGTH:-10}"
+
 # Helper function to convert title to branch-safe format
 slugify() {
     local input="$1"
@@ -31,6 +34,30 @@ slugify() {
     input=$(echo "$input" | sed 's/\[[^]]*\]//g' | sed 's/^[[:space:]]*://' | sed 's/^[[:space:]]*//')
     # Convert to lowercase, replace spaces with hyphens, remove special chars
     echo "$input" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | sed 's/--*/-/g' | sed 's/^-//' | sed 's/-$//'
+}
+
+# Truncate suffix to max length, preferring word boundaries
+truncate_suffix() {
+    local suffix="$1"
+    local max_len="$SUFFIX_MAX_LENGTH"
+
+    # If already short enough, return as-is
+    if [ ${#suffix} -le "$max_len" ]; then
+        echo "$suffix"
+        return
+    fi
+
+    # Try to find last hyphen within limit
+    local truncated="${suffix:0:$max_len}"
+    local last_hyphen="${truncated%-*}"
+
+    # If we found a hyphen and it's not empty, use word boundary
+    if [ -n "$last_hyphen" ] && [ "$last_hyphen" != "$truncated" ]; then
+        echo "$last_hyphen"
+    else
+        # Otherwise, hard truncate
+        echo "$truncated"
+    fi
 }
 
 # Create worktree
@@ -65,6 +92,9 @@ cmd_create() {
         description=$(slugify "$issue_title")
         echo "Using title: $issue_title"
     fi
+
+    # Apply suffix truncation
+    description=$(truncate_suffix "$description")
 
     local branch_name="issue-${issue_number}-${description}"
     local worktree_path="trees/${branch_name}"
