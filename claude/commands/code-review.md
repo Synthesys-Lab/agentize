@@ -123,14 +123,18 @@ Example output format:
 - All folders have README.md files
 
 ### ❌ Issues Found
-- src/utils/parser.py - No parser.md found
+- Location: src/utils/parser.py
+  Standard: Phase 1, Check 3 — Source Code Interface Documentation
+  Recommendation: Create parser.md documenting interfaces
 
 ---
 
 ## Phase 2: Code Quality & Reuse
 
 ### ❌ Issues Found
-- src/api/handler.py:67 - Reinventing the wheel
+- Location: src/api/handler.py:67
+  Standard: Phase 2, Check 2 — Local Utility Reuse
+  Recommendation: Use existing validate_json() utility instead of manual validation
 
 ---
 
@@ -140,7 +144,9 @@ Example output format:
 - No unnecessary indirection detected
 
 ### ⚠️  Warnings
-- src/utils/parser.py:15 - Missing type annotations
+- Location: src/utils/parser.py:15
+  Standard: Phase 3, Check 5 — Type Safety & Magic Numbers
+  Recommendation: Add type annotations to parse_input()
 
 ---
 

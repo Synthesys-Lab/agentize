@@ -483,6 +483,26 @@ Use `/code-review`:
 
 Every review produces structured report with actionable feedback.
 
+### Traceability in Findings
+
+To enable users to quickly locate the specific standard being referenced, every finding **MUST** include an explicit "Standard" line that references the phase and check from this skill document.
+
+**Required format:**
+```
+❌ Missing interface documentation
+   Location: src/utils/validator.py:1
+   Standard: Phase 1, Check 3 — Source Code Interface Documentation
+   Recommendation: Create validator.md with External Interface section
+```
+
+**Key requirements:**
+- Use exact phase and check names from section headings in this document
+- Format: `Standard: Phase {X}, Check {Y} — {Check Name}`
+- Place the Standard line between Location and Recommendation
+- Keep the reference concise and human-readable
+
+This approach provides clear traceability without introducing separate registry files or cryptic ID codes.
+
 ### Report Structure
 
 ```markdown
@@ -503,14 +523,16 @@ Every review produces structured report with actionable feedback.
 ### ❌ Issues Found
 
 #### Missing source interface documentation
-- `src/utils/parser.py` - No parser.md found
+- Location: `src/utils/parser.py`
+  Standard: Phase 1, Check 3 — Source Code Interface Documentation
   **Recommendation**: Create parser.md with External Interface and Internal Helpers
 
 ### ⚠️  Warnings
 
 #### Consider design documentation
-- New authentication subsystem spans 5 files
-  **Recommendation**: Consider docs/authentication.md
+- Location: Multiple files (authentication subsystem)
+  Standard: Phase 1, Check 5 — Design Documentation
+  **Recommendation**: Consider docs/authentication.md for architectural changes spanning 5 files
 
 ---
 
@@ -555,9 +577,10 @@ Every review produces structured report with actionable feedback.
 
 Every issue must include:
 1. **Specific location**: File path and line number
-2. **Clear problem**: What's wrong and why it matters
-3. **Concrete recommendation**: Exact steps to fix
-4. **Example**: Code sample or specific implementation
+2. **Standard reference**: Phase and check name (e.g., "Phase 1, Check 3 — Source Code Interface Documentation")
+3. **Clear problem**: What's wrong and why it matters
+4. **Concrete recommendation**: Exact steps to fix
+5. **Example**: Code sample or specific implementation (when applicable)
 
 ## Summary
 

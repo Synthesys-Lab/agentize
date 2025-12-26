@@ -80,19 +80,34 @@ Present a structured report with:
 
 ## Phase 1: Documentation Quality
 
-[Findings with specific file:line references]
+[Findings with specific file:line references and Standard line]
+
+Example:
+- Location: src/utils/validator.py
+  Standard: Phase 1, Check 3 — Source Code Interface Documentation
+  Recommendation: Create validator.md documenting interfaces
 
 ---
 
 ## Phase 2: Code Quality & Reuse
 
-[Findings with specific file:line references]
+[Findings with specific file:line references and Standard line]
+
+Example:
+- Location: src/api/handler.py:67
+  Standard: Phase 2, Check 2 — Local Utility Reuse
+  Recommendation: Use existing validate_json() utility
 
 ---
 
 ## Phase 3: Advanced Code Quality
 
-[Findings with specific file:line references]
+[Findings with specific file:line references and Standard line]
+
+Example:
+- Location: src/utils/parser.py:15
+  Standard: Phase 3, Check 5 — Type Safety & Magic Numbers
+  Recommendation: Add type annotations to parse_input()
 
 ---
 
