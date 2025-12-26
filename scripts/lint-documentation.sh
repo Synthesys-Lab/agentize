@@ -41,10 +41,10 @@ should_exclude_dir() {
 
     # Exclude common build/generated directories and template directories
     case "$dir" in
-        node_modules|build|dist|__pycache__|.git|.venv|venv|templates|.milestones)
+        node_modules|build|dist|__pycache__|.git|.venv|venv|templates|.milestones|trees)
             return 0  # true, should exclude
             ;;
-        templates/*|.milestones/*)
+        templates/*|.milestones/*|trees/*)
             return 0  # true, should exclude subdirectories too
             ;;
     esac

@@ -22,6 +22,35 @@ This directory contains utility scripts and git hooks for the project.
   - Internal helpers (check functions)
   - Examples of usage and output
 
+### Git Worktree Helper
+- `worktree.sh` - Manage git worktrees for parallel agent development
+  - Usage: `./scripts/worktree.sh <command> [args]`
+  - Commands:
+    - `create <issue-number> [description]` - Create worktree with GitHub title fetch
+    - `list` - Show all active worktrees
+    - `remove <issue-number>` - Remove worktree by issue number
+    - `prune` - Clean up stale worktree metadata
+  - Features:
+    - Automatically fetches issue titles from GitHub via `gh` CLI
+    - Creates branches following `issue-<N>-<title>` convention
+    - Bootstraps `CLAUDE.md` and `.claude/` into each worktree
+    - Worktrees stored in `trees/` directory (gitignored)
+  - Exit codes: 0 (success), 1 (error)
+  - Examples:
+    ```bash
+    # Create worktree fetching title from GitHub issue #42
+    ./scripts/worktree.sh create 42
+
+    # Create worktree with custom description
+    ./scripts/worktree.sh create 42 add-feature
+
+    # List all worktrees
+    ./scripts/worktree.sh list
+
+    # Remove worktree (force removes with uncommitted changes)
+    ./scripts/worktree.sh remove 42
+    ```
+
 ### Makefile Utilities
 
 #### Parameter Validation

@@ -45,6 +45,7 @@ echo "=== Worktree Smoke Test ==="
   echo "Test .claude" > .claude/test.txt
 
   echo ""
+  # Test 1: Create worktree with custom description
   echo "Test 1: Create worktree with custom description"
   ./worktree.sh create 42 test-feature
 
@@ -66,6 +67,7 @@ echo "=== Worktree Smoke Test ==="
   echo -e "${GREEN}PASS: Worktree created and bootstrapped${NC}"
 
   echo ""
+  # Test 2: List worktrees
   echo "Test 2: List worktrees"
   OUTPUT=$(./worktree.sh list)
   if [[ ! "$OUTPUT" =~ "issue-42-test-feature" ]]; then
@@ -75,6 +77,7 @@ echo "=== Worktree Smoke Test ==="
   echo -e "${GREEN}PASS: Worktree listed${NC}"
 
   echo ""
+  # Test 3: Verify branch exists
   echo "Test 3: Verify branch exists"
   if ! git branch | grep -q "issue-42-test-feature"; then
       echo -e "${RED}FAIL: Branch not created${NC}"
@@ -83,6 +86,7 @@ echo "=== Worktree Smoke Test ==="
   echo -e "${GREEN}PASS: Branch created${NC}"
 
   echo ""
+  # Test 4: Remove worktree
   echo "Test 4: Remove worktree"
   ./worktree.sh remove 42
 
@@ -93,6 +97,7 @@ echo "=== Worktree Smoke Test ==="
   echo -e "${GREEN}PASS: Worktree removed${NC}"
 
   echo ""
+  # Test 5: Prune stale metadata
   echo "Test 5: Prune stale metadata"
   ./worktree.sh prune
   echo -e "${GREEN}PASS: Prune completed${NC}"

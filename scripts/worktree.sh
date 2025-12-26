@@ -26,7 +26,8 @@ fi
 # Helper function to convert title to branch-safe format
 slugify() {
     local input="$1"
-    # Remove tag prefixes like [plan][feat]:
+    # Remove tag prefixes like [plan][feat]: from issue titles
+    # Pattern: \[[^]]*\] matches [anything] including multiple tags
     input=$(echo "$input" | sed 's/\[[^]]*\]//g' | sed 's/^[[:space:]]*://' | sed 's/^[[:space:]]*//')
     # Convert to lowercase, replace spaces with hyphens, remove special chars
     echo "$input" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | sed 's/--*/-/g' | sed 's/^-//' | sed 's/-$//'
