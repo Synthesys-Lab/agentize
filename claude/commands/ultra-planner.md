@@ -146,8 +146,8 @@ Task tool parameters:
 **Wait for agent completion** (blocking operation, do not proceed to Step 4 until done).
 
 **Extract output:**
-- Save the agent's full response as `BOLD_PROPOSAL`
-- This will be used as input for the critique and reducer agents in Step 4
+- Save the agent's full response to `.tmp/bold-proposal-$TIMESTAMP.md`
+- Also store in variable `BOLD_PROPOSAL` for passing to critique and reducer agents in Step 4
 
 ### Step 4: Invoke Critique and Reducer Agents
 
@@ -190,8 +190,8 @@ Identify unnecessary complexity and propose simpler alternatives."
 **Wait for both agents to complete** (blocking operation).
 
 **Extract outputs:**
-- Save critique agent's response as `CRITIQUE_OUTPUT`
-- Save reducer agent's response as `REDUCER_OUTPUT`
+- Save critique agent's response to `.tmp/critique-output-$TIMESTAMP.md`
+- Save reducer agent's response to `.tmp/reducer-output-$TIMESTAMP.md`
 
 **Expected agent outputs:**
 - Bold proposer: Innovative proposal with SOTA research
@@ -200,7 +200,7 @@ Identify unnecessary complexity and propose simpler alternatives."
 
 ### Step 5: Combine Agent Reports
 
-After all three agents complete, combine their outputs into a single debate report using direct string concatenation:
+After all three agents complete, combine their outputs into a single debate report using echo-based construction:
 
 **Generate combined report:**
 ```bash
@@ -209,41 +209,42 @@ FEATURE_NAME=$(echo "$FEATURE_DESC" | head -c 50)
 DATETIME=$(date +"%Y-%m-%d %H:%M")
 OUTPUT_FILE=".tmp/debate-report-$TIMESTAMP.md"
 
-cat > "$OUTPUT_FILE" <<EOF
-# Multi-Agent Debate Report
-
-**Feature**: ${FEATURE_NAME}
-**Generated**: ${DATETIME}
-
-This document combines three perspectives from our multi-agent debate-based planning system:
-1. **Bold Proposer**: Innovative, SOTA-driven approach
-2. **Proposal Critique**: Feasibility analysis and risk assessment
-3. **Proposal Reducer**: Simplified, "less is more" approach
-
----
-
-## Part 1: Bold Proposer Report
-
-${BOLD_PROPOSAL}
-
----
-
-## Part 2: Proposal Critique Report
-
-${CRITIQUE_OUTPUT}
-
----
-
-## Part 3: Proposal Reducer Report
-
-${REDUCER_OUTPUT}
-
----
-
-## Next Steps
-
-This combined report will be reviewed by an external consensus agent (Codex or Claude Opus) to synthesize a final, balanced implementation plan.
-EOF
+{
+    echo "# Multi-Agent Debate Report"
+    echo ""
+    echo "**Feature**: $FEATURE_NAME"
+    echo "**Generated**: $DATETIME"
+    echo ""
+    echo "This document combines three perspectives from our multi-agent debate-based planning system:"
+    echo "1. **Bold Proposer**: Innovative, SOTA-driven approach"
+    echo "2. **Proposal Critique**: Feasibility analysis and risk assessment"
+    echo "3. **Proposal Reducer**: Simplified, \"less is more\" approach"
+    echo ""
+    echo "---"
+    echo ""
+    echo "## Part 1: Bold Proposer Report"
+    echo ""
+    cat ".tmp/bold-proposal-$TIMESTAMP.md"
+    echo ""
+    echo "---"
+    echo ""
+    echo "## Part 2: Proposal Critique Report"
+    echo ""
+    cat ".tmp/critique-output-$TIMESTAMP.md"
+    echo ""
+    echo "---"
+    echo ""
+    echo "## Part 3: Proposal Reducer Report"
+    echo ""
+    cat ".tmp/reducer-output-$TIMESTAMP.md"
+    echo ""
+    echo "---"
+    echo ""
+    echo "## Next Steps"
+    echo ""
+    echo "This combined report will be reviewed by an external consensus agent (Codex or Claude Opus) to synthesize a final, balanced implementation plan."
+} > "$OUTPUT_FILE.tmp"
+mv "$OUTPUT_FILE.tmp" "$OUTPUT_FILE"
 ```
 
 **Extract key summaries for user display:**
