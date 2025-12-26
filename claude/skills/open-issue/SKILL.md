@@ -179,14 +179,13 @@ Should I create this issue?
 Once confirmed, create the issue using the GitHub CLI:
 
 ```bash
-gh issue create --title "TITLE_HERE" --body "$(cat <<'EOF'
+gh issue create --title "TITLE_HERE" --body-file - <<'EOF'
 BODY_CONTENT_HERE
 EOF
-)"
 ```
 
 **Important:**
-- Use heredoc (`<<'EOF' ... EOF`) to preserve markdown formatting
+- Use `--body-file -` with heredoc to preserve markdown formatting and handle special characters safely
 - The body should include all sections from Description onwards (not the title)
 - After successful creation, display the issue URL to the user
 - Confirm: "GitHub issue created successfully: [URL]"
