@@ -36,6 +36,7 @@
       "Skill(open-issue)",
       "Skill(fork-dev-branch)",
       "Skill(external-consensus)",
+      "Bash(.claude/skills/external-consensus/scripts/external-consensus.sh:*)",
 
       "Bash(echo GIT READ OPERATIONS - Non-destructive git commands)",
       "Bash(git status:*)",

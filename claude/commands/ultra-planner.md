@@ -4,7 +4,11 @@ description: Multi-agent debate-based planning with /ultra-planner command
 argument-hint: [feature-description] or --refine [plan-file]
 ---
 
+ultrathink
+
 # Ultra Planner Command
+
+**IMPORTANT**: This is a **planning tool only**. It takes a feature description as input and produces a consensus implementation plan as output. It does NOT make any code changes or implement features.
 
 Create implementation plans through multi-agent debate, combining innovation, critical analysis, and simplification into a balanced consensus plan.
 
@@ -26,13 +30,15 @@ This command orchestrates a three-agent debate system to generate high-quality i
 
 ## Inputs
 
+**This command only accepts feature descriptions for planning purposes. It does not execute implementation.**
+
 **From arguments ($ARGUMENTS):**
 
 **Default mode:**
 ```
 /ultra-planner Add user authentication with JWT tokens and role-based access control
 ```
-- `$ARGUMENTS` = full feature description
+- `$ARGUMENTS` = full feature description (what to plan, not what to implement)
 
 **Refinement mode:**
 ```
@@ -46,6 +52,8 @@ This command orchestrates a three-agent debate system to generate high-quality i
 - Look for: "implement...", "add...", "create...", "build..." statements
 
 ## Outputs
+
+**This command produces planning documents only. No code changes are made.**
 
 **Files created:**
 - `.tmp/debate-report-{timestamp}.md` - Combined three-agent report
