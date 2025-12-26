@@ -157,23 +157,39 @@ fi
 - Feature name (for labeling)
 - Feature description (for context)
 
-### Step 2: Invoke External Review Script
+### Step 2: Prepare Prompt and Invoke External Reviewer
 
-Call the external review script with proper arguments:
+Prepare the consensus review prompt:
 
+1. Load prompt template from `.claude/skills/external-consensus/external-review-prompt.md`
+2. Substitute variables:
+   - `{{FEATURE_NAME}}` → Feature name
+   - `{{FEATURE_DESCRIPTION}}` → Feature description
+   - `{{COMBINED_REPORT}}` → Contents of combined debate report file
+3. Save prepared prompt to temporary file: `.tmp/external-review-input-{timestamp}.md`
+
+Invoke external reviewer (try Codex first, fallback to Claude Code):
+
+**If Codex is available:**
 ```bash
-./scripts/external-review.sh \
-    "$COMBINED_REPORT_FILE" \
-    "$FEATURE_NAME" \
-    "$FEATURE_DESCRIPTION"
+codex exec \
+    -m gpt-5.2-codex \
+    -s read-only \
+    --enable web_search_request \
+    -c model_reasoning_effort=xhigh \
+    -i ".tmp/external-review-input-{timestamp}.md" \
+    -o ".tmp/external-review-output-{timestamp}.txt"
 ```
 
-The script will:
-1. Load prompt template from `./external-review-prompt.md` (in skill folder)
-2. Substitute variables: `{{FEATURE_NAME}}`, `{{FEATURE_DESCRIPTION}}`, `{{COMBINED_REPORT}}`
-3. Try Codex CLI first (if available)
-4. Fallback to Claude Opus CLI (if Codex unavailable)
-5. Return consensus plan on stdout
+**If Codex is unavailable, use Claude Code:**
+```bash
+claude -p \
+    --model opus \
+    --tools "Read,Grep,Glob,WebSearch,WebFetch" \
+    --permission-mode bypassPermissions \
+    < ".tmp/external-review-input-{timestamp}.md" \
+    > ".tmp/external-review-output-{timestamp}.txt"
+```
 
 **Expected output format:**
 ```markdown
@@ -211,16 +227,15 @@ The script will:
 
 ### Step 3: Capture External Reviewer Output
 
-Read the consensus plan from script stdout:
+Read the consensus plan from output file:
 
 ```bash
-CONSENSUS_PLAN=$(./scripts/external-review.sh "$COMBINED_REPORT_FILE" "$FEATURE_NAME" "$FEATURE_DESCRIPTION")
-EXIT_CODE=$?
+CONSENSUS_PLAN=$(cat ".tmp/external-review-output-{timestamp}.txt")
 ```
 
 **Error handling:**
-- If exit code != 0, external review failed
-- Check error message from script
+- If output file doesn't exist or is empty, external review failed
+- Check stderr for error messages
 - Provide fallback options to user
 
 ### Step 4: Validate Consensus Plan
@@ -414,9 +429,8 @@ This could indicate:
 
 Debug steps:
 1. Check combined report size: wc -l {combined_report_file}
-2. Check prompt template: ./external-review-prompt.md (in skill folder)
-3. Try running script manually:
-   ./scripts/external-review.sh {combined_report_file} "{feature_name}" "{feature_description}"
+2. Check prompt template exists: .claude/skills/external-consensus/external-review-prompt.md
+3. Try invoking Codex or Claude Code manually with a simple test prompt
 ```
 
 Provide debugging guidance.
