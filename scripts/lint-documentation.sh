@@ -39,10 +39,13 @@ should_exclude_dir() {
         return 0  # true, should exclude
     fi
 
-    # Exclude common build/generated directories
+    # Exclude common build/generated directories and template directories
     case "$dir" in
-        node_modules|build|dist|__pycache__|.git|.venv|venv)
+        node_modules|build|dist|__pycache__|.git|.venv|venv|templates|.milestones)
             return 0  # true, should exclude
+            ;;
+        templates/*|.milestones/*)
+            return 0  # true, should exclude subdirectories too
             ;;
     esac
 
@@ -55,6 +58,11 @@ should_exclude_file() {
 
     # Exclude files in hidden directories
     if [[ "$file" == .*/* ]]; then
+        return 0  # true, should exclude
+    fi
+
+    # Exclude files in templates and .milestones directories
+    if [[ "$file" == templates/* ]] || [[ "$file" == .milestones/* ]]; then
         return 0  # true, should exclude
     fi
 
