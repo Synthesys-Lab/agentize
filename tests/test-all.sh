@@ -92,6 +92,18 @@ else
 fi
 echo ""
 
+# Test Ultra-planner report generation
+echo ">>> Testing Ultra-planner report generation..."
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+if bash "$SCRIPT_DIR/test-ultra-planner-report.sh"; then
+    echo "✓ Ultra-planner report tests passed"
+    PASSED_TESTS=$((PASSED_TESTS + 1))
+else
+    echo "✗ Ultra-planner report tests failed"
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+fi
+echo ""
+
 # Print summary
 echo "======================================"
 echo "Test Summary"
