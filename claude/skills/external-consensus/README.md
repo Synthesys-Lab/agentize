@@ -10,6 +10,7 @@ This skill acts as the "tie-breaker" and "integrator" in the ultra-planner workf
 
 - **SKILL.md** - Main skill implementation with detailed workflow
 - **external-review-prompt.md** - AI prompt template for external consensus review
+- **scripts/external-consensus.sh** - Formalized script encapsulating all execution logic
 
 ## Integration
 
@@ -96,12 +97,17 @@ claude -p \
 
 ## How It Works
 
-1. Loads combined debate report from `.tmp/debate-report-*.md`
-2. Fills prompt template with feature context and debate content
-3. Invokes external AI (Codex or Claude Opus) to synthesize consensus
-4. Validates output has required implementation plan sections
-5. Saves consensus plan to `.tmp/consensus-plan-*.md`
-6. Returns summary with LOC estimate and key decisions
+The skill uses a formalized script (`scripts/external-consensus.sh`) that:
+
+1. Validates the debate report file exists
+2. Extracts feature name/description from the report (if not provided)
+3. Loads and processes the prompt template with variable substitution
+4. Checks if Codex is available (prefers Codex, falls back to Claude Opus)
+5. Invokes external AI with appropriate configuration:
+   - **Codex**: gpt-5.2-codex, read-only sandbox, web search, xhigh reasoning
+   - **Claude**: Opus model, read-only tools (Read, Grep, Glob, WebSearch, WebFetch)
+6. Saves consensus plan to `.tmp/consensus-plan-{timestamp}.md`
+7. Returns the consensus file path for validation and summary extraction
 
 ## Notes
 

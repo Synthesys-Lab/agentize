@@ -8,3 +8,6 @@
   - Be careful with the post-rule **Note** section, think twice before adding it: Is it for user to understand the command/skill/agent better, or just for AI's internal understanding?
     - For user, add the **Note** in `README.md` if you really want to.
     - For AI's internal understanding, add this in the system prompt of the command/skill/agent.
+- When building any tool, consider minimize the human intervention.
+   - **NOT PREFERRED**: `ENV_VAR=xxx ./command` as such command will be regarded as a different command, which asks for human intervention to permit.
+   - **PREFERRED**: `./command --env-var xxx` where `./command` can be invoked as a allowed-tool in Claude Code.

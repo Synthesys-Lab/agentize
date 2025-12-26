@@ -2,15 +2,11 @@
 name: external-consensus
 description: Synthesize consensus implementation plan from multi-agent debate reports using external AI review
 allowed-tools:
-  - Bash(date:*)
+  - Bash(.claude/skills/external-consensus/scripts/external-consensus.sh:*)
   - Bash(cat:*)
-  - Bash(sed:*)
-  - Bash(mktemp:*)
   - Bash(test:*)
   - Bash(wc:*)
-  - Bash(command:*)
-  - Bash(codex:*)
-  - Bash(claude:*)
+  - Bash(grep:*)
 ---
 
 # External Consensus Skill
@@ -144,86 +140,43 @@ This skill expects:
 
 ## Implementation Workflow
 
-### Step 1: Validate Inputs
+**Design Principle**: Minimize human intervention by avoiding environment variable management. The script should be invoked directly and handle all operations autonomously, outputting results to stdout for the user to review.
 
-Check that all required inputs are provided:
+### Step 1: Invoke External Consensus Script
+
+Direct invocation - the script handles everything and outputs summary:
 
 ```bash
-# Combined report must exist
-if [ ! -f "$COMBINED_REPORT_FILE" ]; then
-    echo "Error: Combined report file not found: $COMBINED_REPORT_FILE"
-    exit 1
-fi
+# Simple invocation: script auto-extracts feature info and outputs summary
+.claude/skills/external-consensus/scripts/external-consensus.sh .tmp/debate-report-20251226-132218.md
 
-# Feature name and description must be non-empty
-if [ -z "$FEATURE_NAME" ] || [ -z "$FEATURE_DESCRIPTION" ]; then
-    echo "Error: Feature name and description are required"
-    exit 1
-fi
+# With explicit feature name and description (optional)
+.claude/skills/external-consensus/scripts/external-consensus.sh \
+    .tmp/debate-report-20251226-132218.md \
+    "Review-Standard Simplification" \
+    "Simplify skill while adding scoring"
 ```
+
+**Script automatically:**
+1. Validates debate report exists
+2. Extracts feature name/description from report if not provided
+3. Loads and processes prompt template with variable substitution
+4. Checks if Codex is available (prefers Codex with xhigh reasoning)
+5. Falls back to Claude Opus if Codex unavailable
+6. Invokes external AI with appropriate configuration:
+   - **Codex**: `gpt-5.2-codex`, read-only sandbox, web search enabled, xhigh reasoning (2-5 min)
+   - **Claude**: Opus model, read-only tools, bypassPermissions (1-3 min)
+7. Saves consensus plan to `.tmp/consensus-plan-{timestamp}.md`
+8. Validates output and extracts summary information
+9. Outputs consensus file path on stdout (last line)
+10. Displays summary information on stderr for user review
 
 **Required inputs:**
-- Path to combined debate report
-- Feature name (for labeling)
-- Feature description (for context)
+- Path to combined debate report (required)
+- Feature name (optional, auto-extracted from report)
+- Feature description (optional, auto-extracted from report)
 
-### Step 2: Prepare Prompt and Invoke External Reviewer
-
-Prepare the consensus review prompt:
-
-1. Load prompt template from `.claude/skills/external-consensus/external-review-prompt.md`
-2. Substitute variables using sed:
-   ```bash
-   PROMPT_TEMPLATE=$(cat ".claude/skills/external-consensus/external-review-prompt.md")
-   COMBINED_REPORT=$(cat "$COMBINED_REPORT_FILE")
-
-   # Substitute FEATURE_NAME and FEATURE_DESCRIPTION
-   echo "$PROMPT_TEMPLATE" | \
-       sed "s|{{FEATURE_NAME}}|$FEATURE_NAME|g" | \
-       sed "s|{{FEATURE_DESCRIPTION}}|$FEATURE_DESCRIPTION|g" > "$INPUT_FILE.tmp"
-
-   # Replace {{COMBINED_REPORT}} with actual report content
-   TEMP_REPORT=$(mktemp)
-   echo "$COMBINED_REPORT" > "$TEMP_REPORT"
-   sed -e '/{{COMBINED_REPORT}}/r '"$TEMP_REPORT" -e '/{{COMBINED_REPORT}}/d' "$INPUT_FILE.tmp" > "$INPUT_FILE"
-   rm "$TEMP_REPORT" "$INPUT_FILE.tmp"
-   ```
-3. Verify prompt was created: `test -f "$INPUT_FILE" && wc -l "$INPUT_FILE"`
-
-Invoke external reviewer (try Codex first, fallback to Claude Code):
-
-**Check if Codex is available:**
-```bash
-command -v codex &> /dev/null
-```
-
-**If Codex is available:**
-```bash
-# IMPORTANT: Use '-' to read prompt from stdin, not '-i' (which is for images)
-codex exec \
-    -m gpt-5.2-codex \
-    -s read-only \
-    --enable web_search_request \
-    -c model_reasoning_effort=xhigh \
-    -o ".tmp/external-review-output-{timestamp}.txt" \
-    - < ".tmp/external-review-input-{timestamp}.md"
-```
-
-**If Codex is unavailable, use Claude Code:**
-```bash
-claude -p \
-    --model opus \
-    --tools "Read,Grep,Glob,WebSearch,WebFetch" \
-    --permission-mode bypassPermissions \
-    < ".tmp/external-review-input-{timestamp}.md" \
-    > ".tmp/external-review-output-{timestamp}.txt"
-```
-
-**Execution notes:**
-- Codex with xhigh reasoning takes 2-5 minutes to complete
-- Claude Opus typically takes 1-3 minutes
-- Can run in background if desired (use bash run_in_background parameter)
-- Check output file exists with `test -f` and verify non-empty with `wc -l`
+**No environment variables needed** - just invoke the script and review the output
 
 **Expected output format:**
 ```markdown
@@ -259,215 +212,96 @@ claude -p \
 [Risk table...]
 ```
 
-### Step 3: Capture External Reviewer Output
-
-Read the consensus plan from output file:
-
-```bash
-CONSENSUS_PLAN=$(cat ".tmp/external-review-output-{timestamp}.txt")
+**Script output on stdout (last line):**
+```
+.tmp/consensus-plan-20251226-150643.md
 ```
 
-**Error handling:**
-- If output file doesn't exist or is empty, external review failed
-- Check stderr for error messages
-- Provide fallback options to user
-
-### Step 4: Validate Consensus Plan
-
-Check that the output is a valid implementation plan:
-
-**Basic validation:**
-- Output is non-empty
-- Contains required sections: "Implementation Plan", "Architecture", "Implementation Steps"
-- Has LOC estimate in "Implementation Steps"
-
-**Quality check:**
-- Plan references decisions from all three perspectives (bold, critique, reducer)
-- Includes specific file paths and components
-- Has actionable implementation steps
-
-If validation fails:
+**Script output on stderr (summary for review):**
 ```
-Warning: External reviewer output may be incomplete.
+Using external AI reviewer for consensus synthesis...
 
-Missing sections: {list}
+Configuration:
+- Input: .tmp/external-review-input-20251226-150643.md (1012 lines)
+- Output: .tmp/external-review-output-20251226-150643.txt
+- Model: gpt-5.2-codex (Codex CLI)
+- Sandbox: read-only
+- Web search: enabled
+- Reasoning effort: xhigh
 
-The consensus plan may need manual review before proceeding.
+This will take 2-5 minutes with xhigh reasoning effort...
 
-Continue anyway? (y/n)
-```
+[Codex execution details...]
 
-### Step 5: Save Consensus Plan
-
-Write the validated plan to output file:
-
-```bash
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-OUTPUT_FILE=".tmp/consensus-plan-$TIMESTAMP.md"
-echo "$CONSENSUS_PLAN" > "$OUTPUT_FILE"
-```
-
-**File location**: `.tmp/consensus-plan-{timestamp}.md` (gitignored)
-
-### Step 6: Extract Summary Information
-
-Parse key information from consensus plan for user display:
-
-**Extract:**
-1. **Total LOC estimate**: Parse from "Implementation Steps" section
-2. **Complexity rating**: Small/Medium/Large/Very Large
-3. **Component count**: Number of major components
-4. **Test strategy**: Brief summary from "Test Strategy" section
-5. **Critical risks**: Count from "Risks and Mitigations" section
-
-**Example parsing:**
-```bash
-# Extract total LOC
-TOTAL_LOC=$(grep -A5 "Implementation Steps" "$OUTPUT_FILE" | grep -i "total" | grep -oP '~\K[0-9]+')
-
-# Extract complexity
-COMPLEXITY=$(grep -A5 "Implementation Steps" "$OUTPUT_FILE" | grep -oP '\(.*\)' | tail -n1)
-```
-
-### Step 7: Return Results
-
-Output summary to user:
-
-```
 External consensus review complete!
 
 Consensus Plan Summary:
-- Feature: {feature_name}
-- Total LOC: ~{N} ({complexity})
-- Components: {count}
-- Critical risks: {risk_count}
+- Feature: Review-Standard Simplification with Scoring
+- Total LOC: ~350-420 (Medium)
+- Implementation Steps: 3
+- Risks Identified: 4
 
 Key Decisions:
-- From Bold Proposal: {accepted_innovations}
-- From Critique: {risks_addressed}
-- From Reducer: {simplifications_applied}
+- Accepted from Bold Proposal: Keep explicit evidence requirements
+- Addressed from Critique: Preserve Phase 3 specialized checks
+- Applied from Reducer: Single-file architecture, compress prose
 
-Consensus plan saved to: {output_file}
-
-Next step: Review plan and create GitHub issue with open-issue skill.
+Consensus plan saved to: .tmp/consensus-plan-20251226-150643.md
 ```
+
+The script performs validation and summary extraction internally - no additional steps needed.
 
 ## Error Handling
 
+The `external-consensus.sh` script handles most error scenarios internally. Here are the main error cases:
+
 ### Combined Report Not Found
 
-Input file path doesn't exist.
+The script validates that the debate report file exists. If not, it exits with:
 
-**Response:**
 ```
-Error: Combined report file not found: {file_path}
-
-Please ensure the debate-based-planning skill completed successfully
-and the combined report was generated.
-
-Expected file format: .tmp/debate-report-YYYYMMDD-HHMMSS.md
+Error: Debate report file not found: {file_path}
 ```
 
-Stop execution.
+**Solution**: Ensure the debate-based-planning skill completed successfully and generated the report.
 
 ### Codex CLI Unavailable (Auto-fallback to Claude)
 
-When Codex CLI is not installed, the script automatically falls back to Claude Code (which is always available as part of this skill).
+The script automatically detects if Codex is available and falls back to Claude Opus:
 
-**Response:**
 ```
 Codex not available. Using Claude Opus as fallback...
-
-[Claude Code executes consensus review with same capabilities]
 ```
 
-The fallback is seamless and maintains the same research capabilities (WebSearch, WebFetch) and read-only security restrictions.
+This is seamless and maintains the same research capabilities (WebSearch, WebFetch) and read-only security.
 
 ### External Reviewer Failure
 
-Script exits with non-zero code (API error, timeout, etc.).
+If the external AI (Codex or Claude) fails, the script exits with a non-zero code:
 
-**Response:**
 ```
-Error: External review failed.
+Error: External review failed with exit code {code}
+```
 
-Script exit code: {code}
-Error output: {stderr}
-
-Possible causes:
+**Possible causes:**
 - API rate limit reached
 - Network connection issue
 - Invalid API credentials
-- Malformed input
-- Web search request timeout (Codex only)
+- Web search timeout (Codex only)
 - Reasoning effort timeout (xhigh setting)
 
-Retry external consensus review? (y/n)
+**Solution**: Check API credentials, network connection, or retry with different settings.
+
+### Invalid or Incomplete Output
+
+If the consensus plan is missing required sections, Step 2 validation will detect it:
+
+```
+Warning: Consensus plan may be incomplete. Missing sections: {list}
+The plan is available at: {file_path}
 ```
 
-Offer retry or manual fallback.
-
-### Temporary File Conflicts
-
-Multiple concurrent runs create conflicting temp files.
-
-**Response:**
-```
-Warning: Temporary file already exists: {temp_file}
-
-This may indicate a concurrent run of the external-review.sh script.
-
-Options:
-1. Wait for previous run to complete
-2. Clean up stale temp files: rm .tmp/external-review-*
-3. Continue (may overwrite previous run)
-```
-
-Timestamp-based file naming prevents most conflicts, but this handles edge cases.
-
-### Invalid Consensus Plan Output
-
-External reviewer returns output but it's missing required sections.
-
-**Response:**
-```
-Warning: Consensus plan may be incomplete.
-
-Missing required sections:
-{missing_sections}
-
-The external reviewer output is available but may need manual review.
-
-Output saved to: {output_file}
-
-Options:
-1. Review plan manually and proceed
-2. Retry external consensus with different prompt
-3. Skip external review and manually create plan
-```
-
-Wait for user decision.
-
-### Empty Output
-
-External reviewer returns empty response.
-
-**Response:**
-```
-Error: External reviewer returned empty output.
-
-This could indicate:
-- API timeout
-- Input too large for model context
-- Malformed prompt template
-
-Debug steps:
-1. Check combined report size: wc -l {combined_report_file}
-2. Check prompt template exists: .claude/skills/external-consensus/external-review-prompt.md
-3. Try invoking Codex or Claude Code manually with a simple test prompt
-```
-
-Provide debugging guidance.
+**Solution**: Review the plan manually, adjust the prompt template if needed, or retry the external consensus review.
 
 ## Usage Examples
 
