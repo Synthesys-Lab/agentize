@@ -196,10 +196,10 @@ fi
 
 echo "- Total LOC: $TOTAL_LOC ($COMPLEXITY)" >&2
 
-# Count implementation steps
-STEP_COUNT=$(grep -ci "^\*\*step" "$CONSENSUS_FILE" 2>/dev/null || echo "0")
-if [ "$STEP_COUNT" -eq 0 ]; then
-    STEP_COUNT=$(grep -ci "^step [0-9]" "$CONSENSUS_FILE" 2>/dev/null || echo "Multiple")
+# Count implementation steps (matches format: "- **Step 1:" or "**Step 1:")
+STEP_COUNT=$(grep -Eci "Step [0-9]+:" "$CONSENSUS_FILE" 2>/dev/null | tr -d '\n' || echo "0")
+if [ -z "$STEP_COUNT" ] || [ "$STEP_COUNT" -eq 0 ]; then
+    STEP_COUNT="Multiple"
 fi
 echo "- Implementation Steps: $STEP_COUNT" >&2
 
