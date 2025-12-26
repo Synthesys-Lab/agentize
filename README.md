@@ -99,11 +99,11 @@ and starting new development sessions.
 
 Learn Agentize in 15 minutes with our step-by-step tutorials (3-5 min each):
 
-1. **[Initialize Your Project](./docs/00-initialize.md)** - Set up Agentize in new or existing projects
-2. **[Plan an Issue](./docs/01-plan-an-issue.md)** - Create implementation plans and GitHub issues
-3. **[Ultra Planner](./docs/01b-ultra-planner.md)** - Multi-agent debate-based planning for complex features
-4. **[Issue to Implementation](./docs/02-issue-to-impl.md)** - Complete development cycle with `/issue-to-impl`, `/code-review`, and `/sync-master`
-5. **[Advanced Usage](./docs/03-advanced-usage.md)** - Scale up with parallel development workflows
+1. **[Initialize Your Project](./docs/tutorial/00-initialize.md)** - Set up Agentize in new or existing projects
+2. **[Plan an Issue](./docs/tutorial/01-plan-an-issue.md)** - Create implementation plans and GitHub issues
+3. **[Ultra Planner](./docs/tutorial/01b-ultra-planner.md)** - Multi-agent debate-based planning for complex features
+4. **[Issue to Implementation](./docs/tutorial/02-issue-to-impl.md)** - Complete development cycle with `/issue-to-impl`, `/code-review`, and `/sync-master`
+5. **[Advanced Usage](./docs/tutorial/03-advanced-usage.md)** - Scale up with parallel development workflows
 
 ## Project Organization
 

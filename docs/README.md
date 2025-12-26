@@ -8,10 +8,11 @@ This directory contains all user-facing and developer documentation for the Agen
 
 Learn Agentize step-by-step in 15 minutes total (3-5 min per tutorial):
 
-- `00-initialize.md` - Project initialization and setup
-- `01-plan-an-issue.md` - Creating implementation plans
-- `02-issue-to-impl.md` - Complete development cycle
-- `03-advanced-usage.md` - Parallel development workflows
+- `tutorial/00-initialize.md` - Project initialization and setup
+- `tutorial/01-plan-an-issue.md` - Creating implementation plans
+- `tutorial/01b-ultra-planner.md` - Multi-agent debate-based planning
+- `tutorial/02-issue-to-impl.md` - Complete development cycle
+- `tutorial/03-advanced-usage.md` - Parallel development workflows
 
 ### Reference Documentation
 
