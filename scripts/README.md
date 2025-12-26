@@ -54,6 +54,21 @@ This directory contains utility scripts and git hooks for the project.
 
 ### Makefile Utilities
 
+#### Agentize Mode Scripts
+- `agentize-init.sh` - Initialize new project with agentize templates
+  - Usage: Called by `make agentize` with `AGENTIZE_MODE=init`
+  - Environment variables: `AGENTIZE_PROJECT_PATH`, `AGENTIZE_PROJECT_NAME`, `AGENTIZE_PROJECT_LANG`
+  - Creates language template structure, copies `.claude/` content, applies substitutions
+  - Executes `bootstrap.sh` if present in project directory
+  - Exit codes: 0 (success), 1 (failure)
+
+- `agentize-update.sh` - Update existing project with latest agentize configs
+  - Usage: Called by `make agentize` with `AGENTIZE_MODE=update`
+  - Environment variables: `AGENTIZE_PROJECT_PATH`
+  - Backs up existing `.claude/` directory, refreshes configurations
+  - Ensures `docs/git-msg-tags.md` exists using language detection
+  - Exit codes: 0 (success), 1 (failure)
+
 #### Parameter Validation
 - `check-parameter.sh` - Mode-based parameter validation for agentize target
   - Usage: `./scripts/check-parameter.sh <mode> <project_path> <project_name> <project_lang>`
