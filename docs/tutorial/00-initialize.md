@@ -19,8 +19,7 @@ make agentize \
 ```
 
 This creates the initial SDK structure with:
-- `claude/` directory containing agent rules, skills, and commands
-- `.claude/` symlink pointing to `claude/` for Claude Code integration
+- `.claude/` directory containing agent rules, skills, and commands
 - Basic project structure and configuration
 
 **Available languages**: `c`, `cxx`, `python` (see `docs/options.md` for more)
@@ -38,8 +37,7 @@ make agentize \
 ```
 
 This mode:
-- Creates `claude/` directory with core rules (if not present)
-- Sets up `.claude/` symlink
+- Creates `.claude/` directory with core rules (if not present)
 - Leaves your existing code untouched
 - Updates core framework files (skills, commands, agents)
 - Preserves your custom extensions and modifications
@@ -55,11 +53,10 @@ After initialization, your project will have:
 
 ```
 your-project/
-├── claude/                    # AI agent configuration
+├── .claude/                   # AI agent configuration
 │   ├── agents/               # Specialized agent definitions
 │   ├── commands/             # User-invocable commands (/command-name)
 │   └── skills/               # Reusable skill implementations
-├── .claude/                  # Symlink to claude/ (required by Claude Code)
 ├── docs/                     # Documentation (if you follow our conventions)
 └── [your existing code]      # Unchanged
 ```
@@ -104,7 +101,7 @@ For detailed configuration options (language settings, modes, paths):
 ## Common Paths
 
 After initialization, key directories are:
-- Commands you can run: `claude/commands/*.md`
-- Skills that power commands: `claude/skills/*/SKILL.md`
-- Agent definitions: `claude/agents/*.md`
+- Commands you can run: `.claude/commands/*.md`
+- Skills that power commands: `.claude/skills/*/SKILL.md`
+- Agent definitions: `.claude/agents/*.md`
 - Git commit standards: `docs/git-msg-tags.md`

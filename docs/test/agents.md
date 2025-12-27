@@ -4,7 +4,7 @@ Test coverage for the agent infrastructure created in issue #38.
 
 ## Module Under Test
 
-`claude/agents/` - Agent infrastructure and directory
+`.claude/agents/` - Agent infrastructure and directory
 
 ## Test Status
 
@@ -14,7 +14,7 @@ Test coverage for the agent infrastructure created in issue #38.
 
 ### TC-1: Agent Directory Documentation
 
-**Test**: Verify `claude/agents/README.md` is complete and accurate
+**Test**: Verify `.claude/agents/README.md` is complete and accurate
 
 **Validation**:
 - [ ] README describes agents vs commands vs skills
@@ -43,8 +43,8 @@ Test coverage for the agent infrastructure created in issue #38.
 **Test**: Verify agent directory follows documented structure
 
 **Validation**:
-- [ ] `claude/agents/` directory exists
-- [ ] `claude/agents/README.md` exists
+- [ ] `.claude/agents/` directory exists
+- [ ] `.claude/agents/README.md` exists
 - [ ] Agent files use `.md` extension
 - [ ] Agent files have YAML frontmatter
 

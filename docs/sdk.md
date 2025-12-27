@@ -24,19 +24,19 @@ your-project/
 └── [language-specific files]  # Makefile, CMakeLists.txt, setup.sh, etc.
 ```
 
-### Important: `.claude/` is a Directory, Not a Symlink
+### Important: `.claude/` Directory Structure
 
 **In the agentize project itself:**
-- `.claude` is a **symlink** pointing to `claude/`
-- This ensures single source of truth for development
+- `.claude/` is the **canonical directory** containing all agent rules, skills, and commands
+- This serves as the single source of truth for development
 
 **In created SDK projects:**
-- `.claude/` is an **independent directory** (copied from `claude/`)
+- `.claude/` is an **independent directory** (copied from the agentize `.claude/`)
 - This makes the SDK project standalone and independent
 - The SDK can be modified without affecting the agentize repository
 
 This is a crucial architectural difference that allows:
-1. **Agentize development**: Changes to `claude/` are immediately reflected via symlink
+1. **Agentize development**: Changes to `.claude/` define the framework
 2. **SDK independence**: Each created SDK has its own configuration that can be customized
 
 ## Initialization Mode (`init`)
@@ -77,7 +77,7 @@ make agentize \
    - Source code structure
    - Test structure
 
-2. **Claude Code configuration** (copied from `claude/` → `.claude/`)
+2. **Claude Code configuration** (copied from `.claude/`)
    - Skills for git operations
    - Commands for development workflow
    - Settings and hooks

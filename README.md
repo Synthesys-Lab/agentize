@@ -28,7 +28,7 @@ For more details of the variables and options available, refer to our
    - This is something like C-style declaration and implementation separation.
      - `/commands` are declarations and interfaces for users to invoke skills.
      - `/skills` are implementations of the skills.
-3. Bootstrapping via self-improvment: We have `.claude` linked to our `claude` rules
+3. Bootstrapping via self-improvement: We use `.claude/` as our canonical rules
    directory. We use these rules to develop these rules further.
    - Top-down design: Start with a high-level view of the development flow.
    - Bottom-up implementation: Implement each aspect of the flow from bottom, and finally
@@ -114,7 +114,7 @@ agentize/
 │   ├── OPTIONS.md          # Document for make options
 │   └── git-msg-tags.md     # Used by \commit-msg skill and command to write meaningful commit messages
 ├── templates/              # Templates for SDK generation
-├── claude/                 # Core agent rules for Claude Code
+├── .claude/                # Core agent rules for Claude Code
 ├── tests/                  # Test cases
 ├── .gitignore              # Git ignore file
 ├── Makefile                # Makefile for creating SDKs

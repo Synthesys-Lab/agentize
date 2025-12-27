@@ -4,7 +4,7 @@ Test coverage for the code-review agent created in issue #38.
 
 ## Module Under Test
 
-`claude/agents/code-quality-reviewer.md` - Comprehensive code review agent using Opus model
+`.claude/agents/code-quality-reviewer.md` - Comprehensive code review agent using Opus model
 
 ## Test Status
 
