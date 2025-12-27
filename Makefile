@@ -20,7 +20,7 @@ agentize:
 		./scripts/agentize-init.sh; \
 	elif [ "$$MODE" = "update" ]; then \
 		export AGENTIZE_PROJECT_PATH="$(AGENTIZE_PROJECT_PATH)"; \
-		./scripts/agentize-update.sh; \
+		./scripts/agentize-update.sh;
 	else \
 		echo "Error: Invalid mode '$$MODE'. Supported modes: init, update"; \
 		exit 1; \
