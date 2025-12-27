@@ -43,9 +43,16 @@ echo "Updating Claude Code configuration..."
 echo "  Backing up existing .claude/ to .claude.backup/"
 cp -r "$AGENTIZE_PROJECT_PATH/.claude" "$AGENTIZE_PROJECT_PATH/.claude.backup"
 
-# Update .claude contents
-cp -r "$PROJECT_ROOT/.claude/"* "$AGENTIZE_PROJECT_PATH/.claude/"
-echo "  Updated .claude/settings.json, commands, skills, and hooks"
+# Update .claude contents with file-level copy to preserve user additions
+file_count=0
+find "$PROJECT_ROOT/.claude" -type f -print0 | while IFS= read -r -d '' src_file; do
+    rel_path="${src_file#$PROJECT_ROOT/.claude/}"
+    dest_file="$AGENTIZE_PROJECT_PATH/.claude/$rel_path"
+    mkdir -p "$(dirname "$dest_file")"
+    cp "$src_file" "$dest_file"
+    file_count=$((file_count + 1))
+done
+echo "  Updated .claude/ with file-level sync (preserves user-added files)"
 
 # Ensure docs/git-msg-tags.md exists
 if [ ! -f "$AGENTIZE_PROJECT_PATH/docs/git-msg-tags.md" ]; then
