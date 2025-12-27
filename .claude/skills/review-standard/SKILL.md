@@ -83,7 +83,7 @@ Validates compliance with `document-guideline` standards.
 **Example finding**:
 ```
 ❌ Missing folder documentation
-   claude/skills/new-skill/ - No README.md found
+   .claude/skills/new-skill/ - No README.md found
 
    Recommendation: Create README.md documenting folder purpose, key files, integration points
 ```
@@ -163,7 +163,7 @@ Validates structural requirements (folder READMEs, source `.md` companions, test
 **Example finding**:
 ```
 ❌ Documentation linter would fail
-   Missing: src/utils/parser.md, claude/commands/README.md
+   Missing: src/utils/parser.md, .claude/commands/README.md
 
    Recommendation: Add missing documentation before final merge
 ```

@@ -82,7 +82,7 @@ Output from this phase:
 **Example of GOOD audit results in plan:**
 ```
 Files to modify:
-- `claude/skills/commit-msg/SKILL.md:15-45` - Add milestone commit logic
+- `.claude/skills/commit-msg/SKILL.md:15-45` - Add milestone commit logic
 - `tests/test_git_commit.sh:23-67` - Update test cases for milestones
 
 Files to create:
@@ -123,7 +123,7 @@ Modified interfaces:
 
 Documentation updates:
 - `docs/git-msg-tags.md:15-20` - Add milestone tag explanation
-- `claude/skills/commit-msg/SKILL.md:40-60` - Add milestone section
+- `.claude/skills/commit-msg/SKILL.md:40-60` - Add milestone section
 ```
 
 ### 4. Test Strategy Design Phase
@@ -238,8 +238,8 @@ Dependencies: [List steps that must complete first]
 ```
 Step 1: Update documentation for milestone commits (Estimated: 60 LOC)
 - `docs/git-msg-tags.md:15-20` - Add milestone tag definition and usage
-- `claude/skills/commit-msg/SKILL.md:14-20` - Add milestone to inputs section
-- `claude/skills/commit-msg/SKILL.md:40-60` - Add milestone commit section with examples
+- `.claude/skills/commit-msg/SKILL.md:14-20` - Add milestone to inputs section
+- `.claude/skills/commit-msg/SKILL.md:40-60` - Add milestone commit section with examples
 Dependencies: None
 
 Step 2: Create test cases for milestone functionality (Estimated: 90 LOC)
@@ -252,8 +252,8 @@ Step 2: Create test cases for milestone functionality (Estimated: 90 LOC)
 Dependencies: Step 1 (documentation must be complete first)
 
 Step 3: Implement milestone detection and handling logic (Estimated: 100 LOC)
-- `claude/skills/commit-msg/SKILL.md:25-35` - Add milestone input handling
-- `claude/skills/commit-msg/SKILL.md:85-88` - Add pre-commit bypass logic
+- `.claude/skills/commit-msg/SKILL.md:25-35` - Add milestone input handling
+- `.claude/skills/commit-msg/SKILL.md:85-88` - Add pre-commit bypass logic
 Dependencies: Step 2 (tests must exist before implementation)
 
 Total estimated complexity: 250 LOC (Medium-Large feature)
@@ -381,8 +381,8 @@ bypass pre-commit hooks on development branches.
 ## Codebase Analysis
 
 **Files to modify:**
-- `claude/skills/commit-msg/SKILL.md:14-20` - Add milestone input handling
-- `claude/skills/commit-msg/SKILL.md:40-88` - Add milestone message format
+- `.claude/skills/commit-msg/SKILL.md:14-20` - Add milestone input handling
+- `.claude/skills/commit-msg/SKILL.md:40-88` - Add milestone message format
 - `tests/test_git_commit.sh:45-67` - Add milestone tests
 
 **Files to create:**
@@ -397,8 +397,8 @@ bypass pre-commit hooks on development branches.
 
 **Step 1: Update documentation** (Estimated: 60 LOC)
 - `docs/git-msg-tags.md:15-20` - Add milestone tag definition and usage rules
-- `claude/skills/commit-msg/SKILL.md:14-20` - Add milestone to inputs section
-- `claude/skills/commit-msg/SKILL.md:40-60` - Add milestone message format section
+- `.claude/skills/commit-msg/SKILL.md:14-20` - Add milestone to inputs section
+- `.claude/skills/commit-msg/SKILL.md:40-60` - Add milestone message format section
 Dependencies: None
 
 **Step 2: Create test cases** (Estimated: 85 LOC)
@@ -410,8 +410,8 @@ Dependencies: None
 Dependencies: Step 1 (documentation must define behavior first)
 
 **Step 3: Implement milestone commit logic** (Estimated: 95 LOC)
-- `claude/skills/commit-msg/SKILL.md:25-35` - Add milestone input processing
-- `claude/skills/commit-msg/SKILL.md:85-88` - Add pre-commit bypass logic
+- `.claude/skills/commit-msg/SKILL.md:25-35` - Add milestone input processing
+- `.claude/skills/commit-msg/SKILL.md:85-88` - Add pre-commit bypass logic
 Dependencies: Step 2 (tests must exist to validate implementation)
 
 **Total estimated complexity:** 240 LOC (Medium feature)

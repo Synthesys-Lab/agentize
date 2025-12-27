@@ -44,7 +44,7 @@ echo "  Backing up existing .claude/ to .claude.backup/"
 cp -r "$AGENTIZE_PROJECT_PATH/.claude" "$AGENTIZE_PROJECT_PATH/.claude.backup"
 
 # Update .claude contents
-cp -r "$PROJECT_ROOT/claude/"* "$AGENTIZE_PROJECT_PATH/.claude/"
+cp -r "$PROJECT_ROOT/.claude/"* "$AGENTIZE_PROJECT_PATH/.claude/"
 echo "  Updated .claude/settings.json, commands, skills, and hooks"
 
 # Ensure docs/git-msg-tags.md exists

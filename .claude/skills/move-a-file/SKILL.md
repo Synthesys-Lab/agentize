@@ -109,26 +109,26 @@ User: Use move-a-file to rename the git-commit skill to commit-msg
 Agent: I'll move the file and update all references.
 
 1. Validating paths...
-   - Source exists: claude/skills/git-commit/SKILL.md ✓
-   - Destination available: claude/skills/commit-msg/SKILL.md ✓
+   - Source exists: .claude/skills/git-commit/SKILL.md ✓
+   - Destination available: .claude/skills/commit-msg/SKILL.md ✓
 
 2. Searching for references to "git-commit"...
    Found references in:
-   - claude/skills/CLAUDE.md (2 references)
-   - claude/commands/README.md (1 reference)
+   - .claude/skills/CLAUDE.md (2 references)
+   - .claude/commands/README.md (1 reference)
    - README.md (1 reference)
 
 3. Updating references...
-   - claude/skills/CLAUDE.md:79 - Updated skill name reference
-   - claude/skills/CLAUDE.md:123 - Updated example path
-   - claude/commands/README.md:45 - Updated skill link
+   - .claude/skills/CLAUDE.md:79 - Updated skill name reference
+   - .claude/skills/CLAUDE.md:123 - Updated example path
+   - .claude/commands/README.md:45 - Updated skill link
    - README.md:67 - Updated workflow reference
 
 4. Moving the file...
-   [Runs: mkdir -p claude/skills/commit-msg && git mv claude/skills/git-commit/SKILL.md claude/skills/commit-msg/SKILL.md]
+   [Runs: mkdir -p .claude/skills/commit-msg && git mv .claude/skills/git-commit/SKILL.md .claude/skills/commit-msg/SKILL.md]
 
 5. Summary:
-   Moved: claude/skills/git-commit/SKILL.md → claude/skills/commit-msg/SKILL.md
+   Moved: .claude/skills/git-commit/SKILL.md → .claude/skills/commit-msg/SKILL.md
    Updated 4 references across 3 files
 ```
 
@@ -150,14 +150,14 @@ Agent: I'll move the file and update all references.
    Found references in:
    - README.md (3 references)
    - docs/index.md (1 reference)
-   - claude/skills/plan-guideline/SKILL.md (1 reference)
+   - .claude/skills/plan-guideline/SKILL.md (1 reference)
 
 3. Updating references...
    - README.md:23 - Updated link: [workflow](docs/workflow.md) → [workflow](docs/agent/workflow.md)
    - README.md:45 - Updated link in list
    - README.md:89 - Updated reference in text
    - docs/index.md:12 - Updated link
-   - claude/skills/plan-guideline/SKILL.md:234 - Updated documentation reference
+   - .claude/skills/plan-guideline/SKILL.md:234 - Updated documentation reference
 
 4. Moving the file...
    [Runs: mkdir -p docs/agent && git mv docs/workflow.md docs/agent/workflow.md]

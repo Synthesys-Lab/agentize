@@ -61,7 +61,7 @@ cp -r "$PROJECT_ROOT/templates/$AGENTIZE_PROJECT_LANG/"* "$AGENTIZE_PROJECT_PATH
 # Copy Claude Code configuration
 echo "Copying Claude Code configuration..."
 mkdir -p "$AGENTIZE_PROJECT_PATH/.claude"
-cp -r "$PROJECT_ROOT/claude/"* "$AGENTIZE_PROJECT_PATH/.claude/"
+cp -r "$PROJECT_ROOT/.claude/"* "$AGENTIZE_PROJECT_PATH/.claude/"
 
 # Apply template substitutions to CLAUDE.md
 if [ -f "$PROJECT_ROOT/templates/claude/CLAUDE.md.template" ]; then

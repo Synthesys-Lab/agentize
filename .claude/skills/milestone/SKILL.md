@@ -67,8 +67,8 @@ Use `git diff --stat` to measure code changes:
 git diff --stat
 
 # Example output:
-#  claude/skills/milestone/SKILL.md | 156 ++++++++++++++++++++++++++++++++++++++
-#  docs/milestone-workflow.md       | 187 ++++++++++++++++++++++++++++++++++++++++++
+#  .claude/skills/milestone/SKILL.md | 156 ++++++++++++++++++++++++++++++++++++++
+#  docs/milestone-workflow.md         | 187 ++++++++++++++++++++++++++++++++++++++++++
 #  2 files changed, 343 insertions(+)
 ```
 
@@ -435,7 +435,7 @@ The commit-msg skill will:
 ```
 [milestone][agent.skill]: Milestone 2 for issue #42
 
-claude/skills/milestone/SKILL.md: Implement LOC tracking and test parsing logic
+.claude/skills/milestone/SKILL.md: Implement LOC tracking and test parsing logic
 docs/milestone-workflow.md: Add workflow documentation
 
 Milestone progress: 820 LOC implemented, 5/8 tests passed.

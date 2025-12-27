@@ -453,9 +453,9 @@ Error: Failed to launch agent(s):
 - {agent-name}: {error-message}
 
 Please ensure all debate agents are properly configured:
-- claude/agents/bold-proposer.md
-- claude/agents/proposal-critique.md
-- claude/agents/proposal-reducer.md
+- .claude/agents/bold-proposer.md
+- .claude/agents/proposal-critique.md
+- .claude/agents/proposal-reducer.md
 ```
 
 Stop execution.

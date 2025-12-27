@@ -90,7 +90,7 @@ Execute the review-standard skill with gathered context:
 - Full diff content
 - Repository root path
 
-The skill performs a comprehensive three-phase review (see `claude/skills/review-standard/SKILL.md` for details):
+The skill performs a comprehensive three-phase review (see `.claude/skills/review-standard/SKILL.md` for details):
 - Phase 1: Documentation Quality Review
 - Phase 2: Code Quality & Reuse Review
 - Phase 3: Advanced Code Quality Review

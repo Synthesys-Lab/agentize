@@ -269,7 +269,7 @@ test suite before allowing commits. This allows broken code to be committed.
 
 ## Steps to Reproduce
 
-1. Make changes to any Python file in `claude/skills/`
+1. Make changes to any Python file in `.claude/skills/`
 2. Run `git add .`
 3. Run `git commit -m "test"`
 4. Observe that no tests are executed before the commit succeeds

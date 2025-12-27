@@ -351,7 +351,7 @@ Python templates.
 - Added `templates/typescript/package.json` with default dependencies (typescript, @types/node)
 - Created `templates/typescript/tsconfig.json` with recommended compiler settings
 - Added `templates/typescript/src/index.ts` as the SDK entry point
-- Updated `claude/skills/sdk-init/SKILL.md` to include TypeScript as a language option
+- Updated `.claude/skills/sdk-init/SKILL.md` to include TypeScript as a language option
 - Modified `sdk-init` skill logic to handle TypeScript template generation
 
 ## Testing
@@ -395,7 +395,7 @@ The hook was not running tests due to incorrect path resolution.
 
 - Modified `tests/test_hooks.py:23-45` to verify pre-commit hook behavior
 - Manually tested the fix:
-  1. Made changes to a Python file in `claude/skills/`
+  1. Made changes to a Python file in `.claude/skills/`
   2. Ran `git add .` and `git commit -m "test"`
   3. Confirmed tests executed and commit was blocked when tests failed
   4. Fixed the test failure
@@ -421,8 +421,8 @@ GitHub pull requests with proper tag selection and mandatory issue references.
 
 ## Changes
 
-- Created `claude/skills/open-pr/` directory
-- Added `claude/skills/open-pr/SKILL.md` with complete PR creation workflow
+- Created `.claude/skills/open-pr/` directory
+- Added `.claude/skills/open-pr/SKILL.md` with complete PR creation workflow
 - Skill enforces issue number requirement in PR titles
 - Includes comprehensive examples and error handling guidelines
 

@@ -46,7 +46,7 @@ Understand existing patterns:
 grep -r "pattern_name" --include="*.md" --include="*.sh"
 
 # Understand project structure
-ls -la claude/{agents,skills,commands}/
+ls -la .claude/{agents,skills,commands}/
 ```
 
 Read relevant files to understand:
