@@ -146,7 +146,8 @@ Task tool parameters:
 **Wait for agent completion** (blocking operation, do not proceed to Step 4 until done).
 
 **Extract output:**
-- Save the agent's full response to `.tmp/bold-proposal-$TIMESTAMP.md`
+- Generate filename: `BOLD_FILE=".tmp/bold-proposal-$(date +%Y%m%d-%H%M%S).md"`
+- Save the agent's full response to `$BOLD_FILE`
 - Also store in variable `BOLD_PROPOSAL` for passing to critique and reducer agents in Step 4
 
 ### Step 4: Invoke Critique and Reducer Agents
@@ -190,8 +191,10 @@ Identify unnecessary complexity and propose simpler alternatives."
 **Wait for both agents to complete** (blocking operation).
 
 **Extract outputs:**
-- Save critique agent's response to `.tmp/critique-output-$TIMESTAMP.md`
-- Save reducer agent's response to `.tmp/reducer-output-$TIMESTAMP.md`
+- Generate filename: `CRITIQUE_FILE=".tmp/critique-output-$(date +%Y%m%d-%H%M%S).md"`
+- Save critique agent's response to `$CRITIQUE_FILE`
+- Generate filename: `REDUCER_FILE=".tmp/reducer-output-$(date +%Y%m%d-%H%M%S).md"`
+- Save reducer agent's response to `$REDUCER_FILE`
 
 **Expected agent outputs:**
 - Bold proposer: Innovative proposal with SOTA research
@@ -204,10 +207,9 @@ After all three agents complete, combine their outputs into a single debate repo
 
 **Generate combined report:**
 ```bash
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 FEATURE_NAME=$(echo "$FEATURE_DESC" | head -c 50)
 DATETIME=$(date +"%Y-%m-%d %H:%M")
-OUTPUT_FILE=".tmp/debate-report-$TIMESTAMP.md"
+DEBATE_REPORT_FILE=".tmp/debate-report-$(date +%Y%m%d-%H%M%S).md"
 
 {
     echo "# Multi-Agent Debate Report"
@@ -224,28 +226,30 @@ OUTPUT_FILE=".tmp/debate-report-$TIMESTAMP.md"
     echo ""
     echo "## Part 1: Bold Proposer Report"
     echo ""
-    cat ".tmp/bold-proposal-$TIMESTAMP.md"
+    cat "$BOLD_FILE"
     echo ""
     echo "---"
     echo ""
     echo "## Part 2: Proposal Critique Report"
     echo ""
-    cat ".tmp/critique-output-$TIMESTAMP.md"
+    cat "$CRITIQUE_FILE"
     echo ""
     echo "---"
     echo ""
     echo "## Part 3: Proposal Reducer Report"
     echo ""
-    cat ".tmp/reducer-output-$TIMESTAMP.md"
+    cat "$REDUCER_FILE"
     echo ""
     echo "---"
     echo ""
     echo "## Next Steps"
     echo ""
     echo "This combined report will be reviewed by an external consensus agent (Codex or Claude Opus) to synthesize a final, balanced implementation plan."
-} > "$OUTPUT_FILE.tmp"
-mv "$OUTPUT_FILE.tmp" "$OUTPUT_FILE"
+} > "$DEBATE_REPORT_FILE.tmp"
+mv "$DEBATE_REPORT_FILE.tmp" "$DEBATE_REPORT_FILE"
 ```
+
+**Note on filename consistency:** Each filename is generated once using inline `$(date ...)` and stored in a variable (`$BOLD_FILE`, `$CRITIQUE_FILE`, `$REDUCER_FILE`, `$DEBATE_REPORT_FILE`). These variables are reused in subsequent steps to ensure all references point to the same files, avoiding timestamp drift from multiple date command invocations.
 
 **Extract key summaries for user display:**
 
