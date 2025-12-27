@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+# Test for cross-project wt shell function
+# Verifies wt spawn works from any directory
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+WT_FUNCTIONS="$PROJECT_ROOT/scripts/wt-functions.sh"
+
+# Colors for output
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+echo "=== Cross-Project wt Function Test ==="
+
+# Test 1: Missing AGENTIZE_HOME produces error
+echo ""
+echo "Test 1: Missing AGENTIZE_HOME produces error"
+(
+  unset AGENTIZE_HOME
+  if source "$WT_FUNCTIONS" 2>/dev/null && wt spawn 42 2>/dev/null; then
+    echo -e "${RED}FAIL: Should error when AGENTIZE_HOME is missing${NC}"
+    exit 1
+  fi
+  echo -e "${GREEN}PASS: Errors correctly on missing AGENTIZE_HOME${NC}"
+) || echo -e "${GREEN}PASS: Errors correctly on missing AGENTIZE_HOME${NC}"
+
+# Test 2: Invalid AGENTIZE_HOME produces error
+echo ""
+echo "Test 2: Invalid AGENTIZE_HOME produces error"
+(
+  export AGENTIZE_HOME="/nonexistent/path"
+  if source "$WT_FUNCTIONS" 2>/dev/null && wt spawn 42 2>/dev/null; then
+    echo -e "${RED}FAIL: Should error when AGENTIZE_HOME is invalid${NC}"
+    exit 1
+  fi
+  echo -e "${GREEN}PASS: Errors correctly on invalid AGENTIZE_HOME${NC}"
+) || echo -e "${GREEN}PASS: Errors correctly on invalid AGENTIZE_HOME${NC}"
+
+# Test 3: wt spawn creates worktree in correct location (cross-project)
+echo ""
+echo "Test 3: wt spawn creates worktree in correct location"
+
+# Create temporary agentize repo and another project
+TEST_AGENTIZE=$(mktemp -d)
+TEST_PROJECT=$(mktemp -d)
+
+echo "Test agentize repo: $TEST_AGENTIZE"
+echo "Test project: $TEST_PROJECT"
+
+# Setup test agentize repo
+(
+  cd "$TEST_AGENTIZE"
+  git init
+  git config user.email "test@example.com"
+  git config user.name "Test User"
+  echo "test" > README.md
+  git add README.md
+  git commit -m "Initial commit"
+
+  # Copy scripts
+  mkdir -p scripts
+  cp "$PROJECT_ROOT/scripts/worktree.sh" scripts/
+  cp "$WT_FUNCTIONS" scripts/
+  chmod +x scripts/worktree.sh
+)
+
+# Setup test project (different repo)
+(
+  cd "$TEST_PROJECT"
+  git init
+  git config user.email "test@example.com"
+  git config user.name "Test User"
+  echo "project" > README.md
+  git add README.md
+  git commit -m "Project init"
+)
+
+# Test wt spawn from different project
+(
+  export AGENTIZE_HOME="$TEST_AGENTIZE"
+  cd "$TEST_PROJECT"  # Run from different project
+
+  # Source wt functions
+  source "$TEST_AGENTIZE/scripts/wt-functions.sh"
+
+  # Create worktree using wt spawn
+  wt spawn 42 test-cross
+
+  # Verify worktree created in agentize repo, not current project
+  if [ ! -d "$TEST_AGENTIZE/trees/issue-42-test-cross" ]; then
+    echo -e "${RED}FAIL: Worktree not created in AGENTIZE_HOME${NC}"
+    exit 1
+  fi
+
+  if [ -d "$TEST_PROJECT/trees/issue-42-test-cross" ]; then
+    echo -e "${RED}FAIL: Worktree incorrectly created in current project${NC}"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: Worktree created in correct location (AGENTIZE_HOME)${NC}"
+
+  # Test wt list
+  if ! wt list | grep -q "issue-42-test-cross"; then
+    echo -e "${RED}FAIL: wt list does not show worktree${NC}"
+    exit 1
+  fi
+  echo -e "${GREEN}PASS: wt list works from different directory${NC}"
+
+  # Test wt remove
+  wt remove 42
+  if [ -d "$TEST_AGENTIZE/trees/issue-42-test-cross" ]; then
+    echo -e "${RED}FAIL: wt remove did not remove worktree${NC}"
+    exit 1
+  fi
+  echo -e "${GREEN}PASS: wt remove works from different directory${NC}"
+)
+
+# Cleanup
+rm -rf "$TEST_AGENTIZE" "$TEST_PROJECT"
+
+echo ""
+echo -e "${GREEN}=== All cross-project tests passed ===${NC}"

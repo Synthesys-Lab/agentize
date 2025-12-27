@@ -92,6 +92,18 @@ else
 fi
 echo ""
 
+# Test Cross-Project wt Function
+echo ">>> Testing Cross-Project wt function..."
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+if bash "$SCRIPT_DIR/test-wt-cross-project.sh"; then
+    echo "✓ Cross-project wt tests passed"
+    PASSED_TESTS=$((PASSED_TESTS + 1))
+else
+    echo "✗ Cross-project wt tests failed"
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+fi
+echo ""
+
 # Print summary
 echo "======================================"
 echo "Test Summary"

@@ -105,6 +105,53 @@ Learn Agentize in 15 minutes with our step-by-step tutorials (3-5 min each):
 4. **[Issue to Implementation](./docs/tutorial/02-issue-to-impl.md)** - Complete development cycle with `/issue-to-impl`, `/code-review`, and `/sync-master`
 5. **[Advanced Usage](./docs/tutorial/03-advanced-usage.md)** - Scale up with parallel development workflows
 
+## Cross-Project Shell Functions
+
+Agentize provides a `wt` shell function for managing worktrees from any directory. This enables `wt spawn 42` to work from any git repository, always creating worktrees in the correct location.
+
+### Setup
+
+**Option 1: Manual Setup (Recommended)**
+
+Add to your shell RC file (`~/.bashrc`, `~/.zshrc`, etc.):
+
+```bash
+export AGENTIZE_HOME="/path/to/agentize"
+source "$AGENTIZE_HOME/scripts/wt-functions.sh"
+```
+
+**Option 2: Automated Setup**
+
+Run the setup helper (prints instructions by default):
+
+```bash
+./scripts/setup.sh
+```
+
+For automated installation (requires confirmation):
+
+```bash
+./scripts/setup.sh --install
+```
+
+### Usage
+
+From any directory:
+
+```bash
+wt spawn 42              # Create worktree for issue #42
+wt list                  # List all worktrees
+wt remove 42             # Remove worktree for issue #42
+wt prune                 # Clean up stale worktree metadata
+```
+
+The `wt` function ensures worktrees are always created under `$AGENTIZE_HOME/trees/`, regardless of your current directory.
+
+### Requirements
+
+- `AGENTIZE_HOME` environment variable must point to the agentize repository
+- The function will fail with a clear error if `AGENTIZE_HOME` is missing or invalid
+
 ## Project Organization
 
 ```plaintext
@@ -113,6 +160,10 @@ agentize/
 │   ├── draft/              # Draft documents for local development
 │   ├── OPTIONS.md          # Document for make options
 │   └── git-msg-tags.md     # Used by \commit-msg skill and command to write meaningful commit messages
+├── scripts/                # Shell scripts and functions
+│   ├── wt-functions.sh     # Cross-project wt shell function
+│   ├── setup.sh            # Installation helper
+│   └── worktree.sh         # Core worktree management
 ├── templates/              # Templates for SDK generation
 ├── .claude/                # Core agent rules for Claude Code
 ├── tests/                  # Test cases
