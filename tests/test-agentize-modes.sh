@@ -158,6 +158,51 @@ fi
 echo "✓ Test 6 passed: update mode correctly updates valid SDK structure"
 echo ""
 
+# Test 7: update mode preserves user-added files
+echo ">>> Test 7: update mode preserves user-added custom files"
+TMP_DIR_7="$PROJECT_ROOT/.tmp/mode-test-7"
+rm -rf "$TMP_DIR_7"
+
+echo "First creating a valid SDK..."
+make -C "$PROJECT_ROOT" agentize \
+    AGENTIZE_PROJECT_NAME="test_mode_7" \
+    AGENTIZE_PROJECT_PATH="$TMP_DIR_7" \
+    AGENTIZE_PROJECT_LANG="python" \
+    AGENTIZE_MODE="init"
+
+# Add custom user files
+mkdir -p "$TMP_DIR_7/.claude/skills/my-custom-skill"
+echo "# My Custom Skill" > "$TMP_DIR_7/.claude/skills/my-custom-skill/SKILL.md"
+mkdir -p "$TMP_DIR_7/.claude/commands/my-custom-command"
+echo "# My Custom Command" > "$TMP_DIR_7/.claude/commands/my-custom-command/COMMAND.md"
+
+echo "Running update to sync template files..."
+make -C "$PROJECT_ROOT" agentize \
+    AGENTIZE_PROJECT_NAME="test_mode_7" \
+    AGENTIZE_PROJECT_PATH="$TMP_DIR_7" \
+    AGENTIZE_PROJECT_LANG="python" \
+    AGENTIZE_MODE="update"
+
+# Verify custom user files still exist
+if [ ! -f "$TMP_DIR_7/.claude/skills/my-custom-skill/SKILL.md" ]; then
+    echo "Error: Custom skill file was deleted during update!"
+    exit 1
+fi
+
+if [ ! -f "$TMP_DIR_7/.claude/commands/my-custom-command/COMMAND.md" ]; then
+    echo "Error: Custom command file was deleted during update!"
+    exit 1
+fi
+
+# Verify template files were updated correctly (settings.json should exist)
+if [ ! -f "$TMP_DIR_7/.claude/settings.json" ]; then
+    echo "Error: Template file settings.json was not updated!"
+    exit 1
+fi
+
+echo "✓ Test 7 passed: update mode preserves user-added files while updating templates"
+echo ""
+
 echo "======================================"
 echo "All Agentize mode tests completed successfully!"
 echo "======================================"

@@ -65,7 +65,8 @@ This directory contains utility scripts and git hooks for the project.
 - `agentize-update.sh` - Update existing project with latest agentize configs
   - Usage: Called by `make agentize` with `AGENTIZE_MODE=update`
   - Environment variables: `AGENTIZE_PROJECT_PATH`
-  - Backs up existing `.claude/` directory, refreshes configurations
+  - Backs up existing `.claude/` directory, refreshes configurations with file-level synchronization
+  - File-level copy preserves user-added files (e.g., custom skills, commands, agents) while updating template files
   - Ensures `docs/git-msg-tags.md` exists using language detection
   - Exit codes: 0 (success), 1 (failure)
 
