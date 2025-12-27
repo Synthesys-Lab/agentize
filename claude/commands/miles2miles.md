@@ -200,9 +200,28 @@ Implementation complete:
 - Total LOC: ~{LOC}
 - All {total} tests passing
 
-Next Step: Review changes and create PR with /open-pr
+Next steps:
+1. Create a delivery commit (without [milestone] tag)
+2. Review the changes with /code-review
+3. Create PR with /open-pr
 ```
-Command completes successfully.
+
+**CRITICAL - Create delivery commit on completion:**
+
+When milestone skill signals completion (all tests pass), invoke `commit-msg` skill:
+- Purpose: `delivery` (NOT milestone)
+- No `--no-verify` flag (pre-commit hooks run)
+- Commit message has NO `[milestone]` tag
+
+**Stage and commit:**
+```bash
+git add .
+git diff --cached --name-only  # Verify no .milestones/ files
+```
+
+Then invoke `commit-msg` skill with `purpose=delivery` and appropriate tags based on the changes.
+
+Command completes successfully after delivery commit is created.
 
 **Output C: Critical error**
 ```
