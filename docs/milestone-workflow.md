@@ -306,8 +306,31 @@ This helps you track progress toward completion.
 Implementation is complete when all tests pass. At this point:
 - No milestone is created
 - Agent signals completion
-- Ready to create PR using `/open-pr`
-- Final commit is a delivery commit (no `--no-verify`)
+- **Final commit must be a delivery commit** (without `[milestone]` tag):
+  - Use `purpose=delivery` in commit-msg skill
+  - No `--no-verify` flag (pre-commit hooks run normally)
+  - Only delivery commits should be merged to main
+- Ready for code review and PR creation
+
+### 7. Review and PR Workflow
+
+After implementation completes with all tests passing, follow this workflow:
+
+**Option A: Manual workflow (recommended for control)**
+```
+1. /code-review          # Review changes, get feedback
+2. [Fix any issues found]
+3. /open-pr              # Create pull request
+```
+
+**Option B: Convenience wrapper**
+```
+/pull-request --open     # Review + create PR in one step
+```
+
+The `/pull-request` command provides a streamlined workflow:
+- **Without flags**: Runs code review and stops with next-step guidance
+- **With --open flag**: Runs code review, then creates PR immediately if review passes
 
 ---
 

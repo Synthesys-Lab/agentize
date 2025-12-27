@@ -23,4 +23,5 @@ Commands provide a simple interface to invoke complex workflows or skills. Each 
 - `issue-to-impl.md`: Orchestrates full implementation workflow from issue to completion (creates branch, docs, tests, and first milestone)
 - `miles2miles.md`: Resumes implementation from the latest milestone on current branch
 - `open-issue.md`: Creates GitHub issues from conversation context with proper formatting and tag selection
+- `pull-request.md`: Review code changes and optionally create a pull request with --open flag
 - `sync-master.md`: Synchronizes local main/master branch with upstream (or origin) using rebase

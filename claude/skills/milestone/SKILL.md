@@ -470,20 +470,46 @@ All tests passed ({total}/{total})!
 Implementation complete:
 - Total LOC: ~{cumulative_loc}
 - All {total} tests passing
-- Ready for PR creation
 
 Next steps:
-1. Review the changes
-2. Use /open-pr to create a pull request
+1. Create a delivery commit (without [milestone] tag):
+   - Stage all changes: git add .
+   - Create commit with purpose=delivery (runs pre-commit hooks)
+   - All tests must pass for commit to succeed
+2. Review the changes with /code-review
+3. Create PR with /open-pr
 ```
 
-**Do NOT create a milestone** when all tests pass - this indicates completion.
+**CRITICAL - Completion requires a delivery commit:**
 
-The final commit should be a **delivery commit** (not a milestone):
-- Use commit-msg skill with purpose: delivery
-- No `--no-verify` flag
-- Normal pre-commit hooks will run
-- All tests must pass for commit to succeed
+When all tests pass, **DO NOT create a milestone**. Instead:
+
+1. **Stage changes for delivery commit:**
+   ```bash
+   git add .
+   git diff --cached --name-only  # Verify staged files
+   ```
+
+2. **Create delivery commit using commit-msg skill:**
+   - Purpose: `delivery` (NOT milestone)
+   - No `--no-verify` flag (normal pre-commit hooks run)
+   - All tests must pass for commit to succeed
+   - Commit message has NO `[milestone]` tag
+
+3. **Delivery commit distinguishes completed work from checkpoints:**
+   - Milestone commits = intermediate checkpoints with incomplete tests
+   - Delivery commits = completed work with all tests passing
+   - Only delivery commits should be merged to main branch
+
+**Example delivery commit message:**
+```
+[feat][agent.command]: Add TypeScript support to build system
+
+src/build.ts: Implement TypeScript compilation pipeline
+tests/test-typescript.sh: Add TypeScript validation tests
+
+All 8 tests passing. Ready for code review.
+```
 
 ---
 
