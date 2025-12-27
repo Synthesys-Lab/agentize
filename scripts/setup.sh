@@ -25,6 +25,7 @@ generate_config() {
     echo "" >> "$CONFIG_FILE"
     echo "export AGENTIZE_HOME=\"$PROJECT_ROOT\"" >> "$CONFIG_FILE"
     echo "source \"\$AGENTIZE_HOME/scripts/wt-functions.sh\"" >> "$CONFIG_FILE"
+    echo "source \"\$AGENTIZE_HOME/scripts/agentize-functions.sh\"" >> "$CONFIG_FILE"
 }
 
 # Print setup instructions
@@ -47,6 +48,9 @@ print_instructions() {
     echo "  - Run ${BLUE}wt spawn 42${NC} from any directory"
     echo "  - Worktrees always created in ${BLUE}$PROJECT_ROOT/trees/${NC}"
     echo "  - Commands: spawn, list, remove, prune"
+    echo ""
+    echo "  - Run ${BLUE}agentize init --name xxx --lang cxx${NC} from any directory"
+    echo "  - Run ${BLUE}agentize update${NC} from project root or subdirectories"
     echo ""
 }
 
