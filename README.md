@@ -6,18 +6,19 @@
 ```bash
 git clone https://github.com/SyntheSys-Lab/agentize.git
 ```
-2. Use this repository to create an SDK for your project.
-```
-make agentize \
-   AGENTIZE_PROJECT_NAME="your_project_name" \
-   AGENTIZE_PROJECT_PATH="/path/to/your/project" \
-   AGENTIZE_PROJECT_LANG="c" \
-   AGENTIZE_MODE="init"
+2. Set up the shell functions (add to `~/.bashrc` or `~/.zshrc`):
+```bash
+export AGENTIZE_HOME="/path/to/agentize"
+source "$AGENTIZE_HOME/scripts/wt-functions.sh"
+source "$AGENTIZE_HOME/scripts/agentize-functions.sh"
 ```
 
-This will create an initial SDK structure in the specified project path.
-For more details of the variables and options available, refer to our
-[usage document](./docs/OPTIONS.md).
+3. Initialize a new project:
+```bash
+agentize init --name your_project_name --lang c --path /path/to/your/project
+```
+
+This creates an initial SDK structure in the specified project path. For more details, see the [usage document](./docs/OPTIONS.md).
 
 ## Core Phylosophy
 
@@ -36,64 +37,12 @@ For more details of the variables and options available, refer to our
 
 ### Workflow:
 
-`/ultra-planner` command flow (multi-agent debate-based planning):
-```mermaid
-graph TD
-    A[User provides requirements] --> B[Bold-proposer agent]
-    B[Bold-proposer: Research SOTA & propose innovation] --> C[Proposal-critique agent]
-    B --> D[Proposal-reducer agent]
-    C[Critique: Validate assumptions & feasibility] --> E[Combine reports]
-    D[Reducer: Simplify following 'less is more'] --> E
-    B --> E
-    E[Combined 3-perspective report] --> F[External consensus review]
-    F[Codex/Opus: Synthesize consensus plan] --> G[User approves/rejects plan]
-    G -->|Approved| H[Create Github Issue]
-    G -->|Refine| A
-    G -->|Abandoned| Z(End)
-    H[Open a dev issue via open-issue skill] --> I[Code implementation]
+See our detailed workflow diagrams:
 
-    style A fill:#ffcccc
-    style G fill:#ffcccc
-    style B fill:#ccddff
-    style C fill:#ccddff
-    style D fill:#ccddff
-    style E fill:#ccddff
-    style F fill:#ccddff
-    style H fill:#ccddff
-    style I fill:#ccddff
-    style Z fill:#dddddd
-```
+- [Ultra Planner Workflow](./docs/workflows/ultra-planner.md) - Multi-agent debate-based planning
+- [Issue to Implementation Workflow](./docs/workflows/issue-to-implementation.md) - Complete development cycle
 
-`/issue2impl` command flow:
-```mermaid
-graph TD
-    A[Github Issue created] --> B[Fork new branch from main]
-    B --> C[Step 0: Update documentation]
-    C --> D[Step 1: Create/update test cases]
-    D --> E[Step 2: towards-next-milestone skill]
-    E -->|more than 800 lines w/o finishing| F[Create milestone document]
-    F --> G[User starts next session]
-    G --> E
-    E -->|finish all tests| H[Step 4: Code reviewer reviews quality]
-    H --> I[Step 5: Create pull request]
-    I --> J[User reviews and merges]
-
-    style G fill:#ffcccc
-    style J fill:#ffcccc
-    style B fill:#ccddff
-    style C fill:#ccddff
-    style D fill:#ccddff
-    style E fill:#ccddff
-    style F fill:#ccddff
-    style H fill:#ccddff
-    style I fill:#ccddff
-```
-
-**Legend**
-- Red boxes: user interventions, including providing development
-requirements, approving/rejecting results (both intermediate and final),
-and starting new development sessions.
-- Blue boxes: automated steps performed by AI agents/skills/commands.
+**Legend**: Red boxes represent user interventions (providing requirements, approving/rejecting results, starting sessions). Blue boxes represent automated AI steps.
 
 ## Tutorials
 
