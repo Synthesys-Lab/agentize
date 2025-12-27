@@ -104,6 +104,18 @@ else
 fi
 echo ""
 
+# Test Agentize CLI Function
+echo ">>> Testing Agentize CLI function..."
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+if bash "$SCRIPT_DIR/test-agentize-cli.sh"; then
+    echo "✓ Agentize CLI tests passed"
+    PASSED_TESTS=$((PASSED_TESTS + 1))
+else
+    echo "✗ Agentize CLI tests failed"
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+fi
+echo ""
+
 # Print summary
 echo "======================================"
 echo "Test Summary"

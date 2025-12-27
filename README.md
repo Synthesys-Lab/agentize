@@ -152,6 +152,69 @@ The `wt` function ensures worktrees are always created under `$AGENTIZE_HOME/tre
 - `AGENTIZE_HOME` environment variable must point to the agentize repository
 - The function will fail with a clear error if `AGENTIZE_HOME` is missing or invalid
 
+## Agentize CLI Wrapper
+
+For convenience, Agentize provides ergonomic `agentize init` and `agentize update` commands as alternatives to the verbose `make agentize` interface. The make interface remains the canonical implementation.
+
+### Setup
+
+The `agentize` shell function is sourced alongside `wt` using the same setup:
+
+**Option 1: Manual Setup (Recommended)**
+
+Add to your shell RC file (`~/.bashrc`, `~/.zshrc`, etc.):
+
+```bash
+export AGENTIZE_HOME="/path/to/agentize"
+source "$AGENTIZE_HOME/scripts/wt-functions.sh"
+source "$AGENTIZE_HOME/scripts/agentize-functions.sh"
+```
+
+**Option 2: Automated Setup**
+
+The setup helper automatically includes both `wt` and `agentize` functions:
+
+```bash
+./scripts/setup.sh --install
+```
+
+### Usage
+
+**Initialize a new project:**
+
+```bash
+agentize init --name my-project --lang python --path /path/to/project
+```
+
+Equivalent to:
+```bash
+make agentize AGENTIZE_PROJECT_NAME="my-project" \
+              AGENTIZE_PROJECT_PATH="/path/to/project" \
+              AGENTIZE_PROJECT_LANG="python" \
+              AGENTIZE_MODE="init"
+```
+
+**Update an existing project:**
+
+From project root or any subdirectory:
+```bash
+agentize update
+```
+
+Or specify explicit path:
+```bash
+agentize update --path /path/to/project
+```
+
+The `update` command finds the nearest `.claude/` directory by traversing parent directories, making it convenient to use from anywhere within your project.
+
+### Requirements
+
+- `AGENTIZE_HOME` environment variable must point to the agentize repository
+- `init` requires explicit `--name` and `--lang` flags (no inference)
+- `update` searches for nearest `.claude/` directory or accepts `--path` override
+- The function prints the resolved project path before executing
+
 ## Project Organization
 
 ```plaintext
