@@ -6,17 +6,27 @@ wt() {
     local subcommand="$1"
     shift || true
 
-    # Resolve git repository root
-    local repo_root
-    repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
-
-    if [ -z "$repo_root" ]; then
+    # Check if we're inside a git work tree
+    if ! git rev-parse --is-inside-work-tree &>/dev/null; then
         echo "Error: Not in a git repository"
         echo ""
         echo "The wt command must be run from within a git repository."
         echo "Please navigate to a git repository or run 'git init' to create one."
         return 1
     fi
+
+    # Resolve git repository root (works correctly from worktrees)
+    local repo_root
+    local git_common_dir
+    git_common_dir=$(git rev-parse --git-common-dir 2>/dev/null)
+
+    if [ -z "$git_common_dir" ]; then
+        echo "Error: Could not determine git repository location"
+        return 1
+    fi
+
+    # Convert to absolute path and get parent directory (repo root)
+    repo_root=$(cd "$git_common_dir/.." && pwd)
 
     # Check if worktree.sh exists in this repo
     if [ ! -f "$repo_root/scripts/worktree.sh" ]; then

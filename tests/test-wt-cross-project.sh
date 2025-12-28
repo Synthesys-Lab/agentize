@@ -350,5 +350,83 @@ echo "Test 6: Running wt outside a git repo yields clear error"
   rm -rf "$TEST_DIR"
 )
 
+# Test 7: wt works correctly from inside a worktree
+echo ""
+echo "Test 7: wt works correctly from inside a worktree"
+
+(
+  # Unset all git environment variables
+  unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+  unset GIT_INDEX_VERSION GIT_COMMON_DIR
+
+  TEST_PROJECT=$(mktemp -d)
+  echo "Test project: $TEST_PROJECT"
+
+  (
+    cd "$TEST_PROJECT"
+    git init -b main
+    git config user.email "test@example.com"
+    git config user.name "Test User"
+    echo "test" > README.md
+    git add README.md
+    git commit -m "Initial commit"
+
+    # Copy scripts
+    mkdir -p scripts
+    cp "$PROJECT_ROOT/scripts/worktree.sh" scripts/
+    cp "$WT_CLI" scripts/
+    chmod +x scripts/worktree.sh
+
+    # Source wt functions
+    source "$TEST_PROJECT/scripts/wt-cli.sh"
+
+    # Initialize bare repository pattern
+    wt init
+
+    # Create a test worktree
+    wt spawn 99 feature
+
+    # Now test running wt commands FROM INSIDE the worktree
+    cd "$TEST_PROJECT/trees/issue-99-feature"
+
+    # Source wt functions again in the worktree context
+    source "$TEST_PROJECT/scripts/wt-cli.sh"
+
+    # Test that wt spawn works from inside a worktree
+    wt spawn 100 nested
+
+    # Verify worktree was created in the main repo root, not inside the current worktree
+    if [ ! -d "$TEST_PROJECT/trees/issue-100-nested" ]; then
+      echo -e "${RED}FAIL: Worktree not created in main repo root when run from inside worktree${NC}"
+      exit 1
+    fi
+
+    if [ -d "$TEST_PROJECT/trees/issue-99-feature/trees/issue-100-nested" ]; then
+      echo -e "${RED}FAIL: Worktree incorrectly created inside another worktree${NC}"
+      exit 1
+    fi
+
+    echo -e "${GREEN}PASS: wt spawn works correctly from inside a worktree${NC}"
+
+    # Test wt list from inside worktree
+    if ! wt list | grep -q "issue-100-nested"; then
+      echo -e "${RED}FAIL: wt list does not work from inside worktree${NC}"
+      exit 1
+    fi
+    echo -e "${GREEN}PASS: wt list works correctly from inside a worktree${NC}"
+
+    # Clean up the nested worktree
+    wt remove 100
+    if [ -d "$TEST_PROJECT/trees/issue-100-nested" ]; then
+      echo -e "${RED}FAIL: wt remove did not work from inside worktree${NC}"
+      exit 1
+    fi
+    echo -e "${GREEN}PASS: wt remove works correctly from inside a worktree${NC}"
+  )
+
+  # Cleanup
+  rm -rf "$TEST_PROJECT"
+)
+
 echo ""
 echo -e "${GREEN}=== All per-project tests passed ===${NC}"
