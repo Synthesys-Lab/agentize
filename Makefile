@@ -21,7 +21,7 @@ setup:
 	@echo "Usage:"
 	@echo "  1. Source it now:  source setup.sh"
 	@echo "  2. For persistence, add to your shell RC file:"
-	@echo "     cat `setup.sh` >> ~/.bashrc  # or ~/.zshrc"
+	@echo "     cat setup.sh >> ~/.bashrc  # or ~/.zshrc"
 
 help:
 	@echo "Available targets:"
