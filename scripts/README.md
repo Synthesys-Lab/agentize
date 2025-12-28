@@ -114,10 +114,10 @@ ln -sf ../../scripts/pre-commit .git/hooks/pre-commit
 
 ### Cross-Project Function Setup
 
-For the agentize repository itself, use `make env-script` to generate a `setup.sh` with hardcoded paths:
+For the agentize repository itself, use `make setup` to generate a `setup.sh` with hardcoded paths:
 
 ```bash
-make env-script
+make setup
 source setup.sh
 # Add 'source /path/to/agentize/setup.sh' to your shell RC for persistence
 ```

@@ -7,21 +7,10 @@
 git clone https://github.com/SyntheSys-Lab/agentize.git
 ```
 2. Set up the shell functions:
-
-   **Option A: Generate local setup script (recommended for development)**
-   ```bash
-   make env-script
-   source setup.sh
-   ```
-   This creates a `setup.sh` with the hardcoded repo path. Add `source /path/to/agentize/setup.sh` to your shell RC file for persistence.
-
-   **Option B: Manual setup**
-   Add to `~/.bashrc` or `~/.zshrc`:
-   ```bash
-   export AGENTIZE_HOME="/path/to/agentize"
-   source "$AGENTIZE_HOME/scripts/wt-cli.sh"
-   source "$AGENTIZE_HOME/scripts/lol-cli.sh"
-   ```
+```bash
+make setup
+source setup.sh
+```
 
 3. Initialize a new project:
 ```bash
@@ -70,22 +59,7 @@ Agentize provides shell functions that work from any directory:
 - `wt` - Manage worktrees (spawn, list, remove, prune)
 - `lol` - Initialize and update SDK projects (init, update)
 
-### Setup
-
-**Option 1: Generate local setup script (recommended)**
-```bash
-make env-script
-source setup.sh
-# Add 'source /path/to/agentize/setup.sh' to your shell RC for persistence
-```
-
-**Option 2: Manual setup**
-Add to your shell RC file (`~/.bashrc`, `~/.zshrc`, etc.):
-```bash
-export AGENTIZE_HOME="/path/to/agentize"
-source "$AGENTIZE_HOME/scripts/wt-cli.sh"
-source "$AGENTIZE_HOME/scripts/lol-cli.sh"
-```
+For persistence, add `source /path/to/agentize/setup.sh` to your shell RC file (`~/.bashrc`, `~/.zshrc`, etc.).
 
 ### Worktree Management (`wt`)
 

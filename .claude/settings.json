@@ -27,7 +27,6 @@
       "Bash(cmake:*)",
       "Bash(mkdir:*)",
       "Bash(make all:*)",
-      "Bash(make env-script:*)",
       "Bash(make build:*)",
       "Bash(make check:*)",
       "Bash(make lint:*)",

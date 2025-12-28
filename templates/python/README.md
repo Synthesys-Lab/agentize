@@ -1,7 +1,7 @@
 # Python SDK
 
 - `Makefile`: The Makefile defines the build commands for the Python SDK.
-  - `make env-script`: Generates a per-project `setup.sh` script to set up environment variables (e.g., PYTHONPATH) for this SDK project.
+  - `make setup`: Generates a per-project `setup.sh` script to set up environment variables (e.g., PYTHONPATH) for this SDK project.
   - `make build`: No-op for Python (no compilation needed).
   - `make clean`: Removes Python cache files and directories.
   - `make test`: Runs the test cases for the Python SDK.
