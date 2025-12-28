@@ -251,40 +251,7 @@ mv "$DEBATE_REPORT_FILE.tmp" "$DEBATE_REPORT_FILE"
 
 **Note on filename consistency:** Each filename is generated once using inline `$(date ...)` and stored in a variable (`$BOLD_FILE`, `$CRITIQUE_FILE`, `$REDUCER_FILE`, `$DEBATE_REPORT_FILE`). These variables are reused in subsequent steps to ensure all references point to the same files, avoiding timestamp drift from multiple date command invocations.
 
-**Extract key summaries for user display:**
-
-Parse each agent's output to extract:
-- **Bold proposer**: Core innovation + LOC estimate
-- **Critique**: Feasibility rating + critical risk count
-- **Reducer**: LOC estimate + simplification percentage
-
-### Step 6: Display Debate Summary to User
-
-Show user the key points from each agent:
-
-```
-Multi-Agent Debate Complete
-============================
-
-BOLD PROPOSER (Innovation):
-- Innovation: {key innovation from bold proposer}
-- LOC estimate: ~{N}
-
-CRITIQUE (Risk Analysis):
-- Feasibility: {High/Medium/Low}
-- Critical risks: {count}
-- Key concerns: {summary}
-
-REDUCER (Simplification):
-- LOC estimate: ~{M} ({X}% reduction from bold)
-- Simplifications: {summary}
-
-Combined report saved to: {debate-report-file}
-
-Proceeding to external consensus review...
-```
-
-### Step 7: Invoke External Consensus Skill
+### Step 6: Invoke External Consensus Skill
 
 **REQUIRED SKILL CALL:**
 
@@ -325,7 +292,7 @@ Consensus plan saved to: {CONSENSUS_PLAN_FILE}
 **Extract:**
 - Save the consensus plan file path as `CONSENSUS_PLAN_FILE`
 
-### Step 8: Present Plan to User for Approval
+### Step 7: Present Plan to User for Approval
 
 Display the consensus plan and ask for approval:
 
@@ -351,7 +318,7 @@ Your choice: _
 
 **Wait for user decision.**
 
-### Step 8A: If Approved - Create GitHub Issue
+### Step 7A: If Approved - Create GitHub Issue
 
 **REQUIRED SKILL CALL:**
 
@@ -384,7 +351,7 @@ Next steps:
 
 Display this output to the user. Command completes successfully.
 
-### Step 8B: If Refine - Restart with Existing Plan
+### Step 7B: If Refine - Restart with Existing Plan
 
 User chooses to refine the plan:
 
@@ -396,7 +363,7 @@ Use: /ultra-planner --refine {consensus_plan_file}
 
 The plan file becomes input for a new debate cycle. The three agents will analyze the existing plan and propose improvements.
 
-### Step 8C: If Abandoned - Exit
+### Step 7C: If Abandoned - Exit
 
 User abandons the plan:
 
