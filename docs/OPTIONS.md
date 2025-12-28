@@ -1,55 +1,103 @@
-# Available Options of "Agentize"
+# lol CLI Options
 
-This document describes the options available for the `make agentize` command used to create an AI-powered SDK for your software development project.
-All the options are `make` variables with prefix `AGENTIZE_`.
+This document describes the command-line options for the `lol` command used to create an AI-powered SDK for your software development project.
 
-## AGENTIZE_PROJECT_NAME (required)
+**Note:** This document is deprecated. Use `lol --help` to see all available options.
+
+## Quick Reference
+
+### Commands
+
+```bash
+lol init --name <name> --lang <lang> [--path <path>] [--source <path>]
+lol update [--path <path>]
+```
+
+### Flags
+
+- `--name <name>` - Project name (required for init)
+- `--lang <lang>` - Programming language: c, cxx, python (required for init)
+- `--path <path>` - Project path (optional, defaults to current directory)
+- `--source <path>` - Source code path relative to project root (optional)
+
+## Commands
+
+### `lol init`
+
+Initializes an SDK structure in the specified project path and copies necessary template files.
+
+**Required flags:**
+- `--name` - Project name
+- `--lang` - Programming language (c, cxx, or python)
+
+**Optional flags:**
+- `--path` - Project path (defaults to current directory)
+- `--source` - Source code path relative to project root
+
+**Behavior:**
+- If the project path exists and is empty, copies SDK template files
+- If the project path exists and is not empty, aborts with error
+- If the project path does not exist, creates it and copies template files
+
+**Example:**
+```bash
+lol init --name my-project --lang python --path /path/to/project
+```
+
+### `lol update`
+
+Updates the AI-related rules and files in an existing SDK structure without affecting user's custom rules.
+
+**Optional flags:**
+- `--path` - Project path (defaults to searching for nearest `.claude/` directory)
+
+**Behavior:**
+- Searches for nearest `.claude/` directory by traversing parent directories
+- If `--path` provided, uses that path directly
+- Aborts if no valid SDK structure found
+
+**Example:**
+```bash
+lol update                      # From project root or subdirectory
+lol update --path /path/to/project
+```
+
+## Flag Details
+
+### `--name <name>`
 
 Specifies the name of your project. This name will be used in various parts of the generated SDK.
 
-## AGENTIZE_PROJECT_PATH (required)
+**Required for:** `init`
 
-Specifies the file system path where the SDK will be created. Ensure that you have write permissions to this path.
+### `--lang <lang>`
 
-## AGENTIZE_PROJECT_LANG (required)
+Specifies the programming language of your project.
 
-Specifies the programming language of your project. Supported values include:
-- `c` for C language
-- `cxx` for C++ language
-- `python` for Python language
+**Supported values:**
+- `c` - C language
+- `cxx` - C++ language
+- `python` - Python language
 
+**Required for:** `init`
 
-TODO: Add more supported languages, including Java, Rust, Go, JavaScript, etc.
+**Note:** More languages (Java, Rust, Go, JavaScript) will be added in future versions.
 
-## AGENTIZE_SOURCE_PATH (optional)
+### `--path <path>`
 
-This is an optional variable that specifies the path to the source code of your project.
-If not provided, for C/C++ projects, it will provide both `src/` and `include/` directories under the specified `AGENTIZE_PROJECT_PATH` by default.
-If specified, for example, LLVM standard uses `lib/` directory for source code, you can set this variable as follows:
+Specifies the file system path where the SDK will be created or updated. Ensure you have write permissions.
 
+**Optional for:** `init`, `update`
+**Default:** Current directory for `init`, nearest `.claude/` directory for `update`
+
+### `--source <path>`
+
+Specifies the path to the source code of your project, relative to the project root.
+
+**Optional for:** `init`
+**Default:** For C/C++ projects, both `src/` and `include/` directories are used
+
+**Example:** LLVM uses `lib/` directory for source code:
 ```bash
-make agentize \
-   AGENTIZE_PROJECT_NAME="/path/to/your/project" \
-   AGENTIZE_PROJECT_PATH="your_project_name" \
-   AGENTIZE_PROJECT_LANG="cxx" \
-   AGENTIZE_SOURCE_PATH="lib"
+lol init --name llvm-project --lang cxx --path /path/to/llvm --source lib
 ```
-
-## AGENTIZE_MODE (optional)
-
-Supported modes are:
-- `init`: Initializes an SDK structure in the specified project path, and copy necessary template files.
-  - For `init`, if `AGENTIZE_PROJECT_PATH` already exists,
-    it will check if it is an empty directory. If so, it will copy all the SDK template files
-    for the specified language into that directory. If the directory is not empty, it will abort.
-    If the directory does not exist, it will create an empty directory at that path
-    and copy the SDK template files into it.
-- `update`: Only copies or updates the AI-related rules and files in the existing SDK structure.
-  - For `update`, if `AGENTIZE_PROJECT_PATH` does not exist or is not a valid SDK structure,
-    it will abort with an error message. If it exists and is a valid SDK structure,
-    it will copy or update the AI-related rules and files in that directory without affecting
-    users' existing rules.
-
-## AGENTIZE_CLI (TODO)
-
-Currently we only support `claude` code, later let's add `codex` and `cursor` as well.

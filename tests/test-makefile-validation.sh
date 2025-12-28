@@ -58,6 +58,29 @@ run_make() {
     return $?
 }
 
+# Helper function to run script with environment variables and capture output
+run_script() {
+    local output_file="$1"
+    local script="$2"
+    shift 2
+
+    # Set environment variables
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            *=*)
+                export "$1"
+                shift
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+
+    "$script" > "$output_file" 2>&1
+    return $?
+}
+
 #####################################################################
 # TC1: Init mode without LANG parameter (should fail)
 #####################################################################
@@ -69,12 +92,11 @@ test_init_without_lang() {
 
     cleanup_test_dir "$test_dir"
 
-    # Run make without AGENTIZE_PROJECT_LANG in init mode
+    # Run script without AGENTIZE_PROJECT_LANG in init mode
     set +e
-    run_make "$output_file" agentize \
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-init.sh" \
         AGENTIZE_PROJECT_NAME="test_proj" \
-        AGENTIZE_PROJECT_PATH="$test_dir" \
-        AGENTIZE_MODE="init"
+        AGENTIZE_PROJECT_PATH="$test_dir"
     local exit_code=$?
     set -e
 
@@ -110,11 +132,10 @@ test_update_without_lang() {
     # Setup: Create a valid SDK structure first
     print_info "Setting up: Creating initial SDK structure"
     set +e
-    run_make "$output_file" agentize \
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-init.sh" \
         AGENTIZE_PROJECT_NAME="test_proj" \
         AGENTIZE_PROJECT_PATH="$test_dir" \
-        AGENTIZE_PROJECT_LANG="python" \
-        AGENTIZE_MODE="init"
+        AGENTIZE_PROJECT_LANG="python"
     local setup_exit=$?
     set -e
 
@@ -129,9 +150,8 @@ test_update_without_lang() {
     # Test: Update without LANG or NAME
     print_info "Testing: Update mode without LANG or NAME parameters"
     set +e
-    run_make "$output_file" agentize \
-        AGENTIZE_PROJECT_PATH="$test_dir" \
-        AGENTIZE_MODE="update"
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-update.sh" \
+        AGENTIZE_PROJECT_PATH="$test_dir"
     local exit_code=$?
     set -e
 
@@ -161,11 +181,10 @@ test_update_creates_git_tags() {
     # Setup: Create SDK structure
     print_info "Setting up: Creating SDK with Python template"
     set +e
-    run_make "$output_file" agentize \
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-init.sh" \
         AGENTIZE_PROJECT_NAME="test_proj" \
         AGENTIZE_PROJECT_PATH="$test_dir" \
-        AGENTIZE_PROJECT_LANG="python" \
-        AGENTIZE_MODE="init"
+        AGENTIZE_PROJECT_LANG="python"
     local setup_exit=$?
     set -e
 
@@ -184,9 +203,8 @@ test_update_creates_git_tags() {
     # Test: Update should recreate the file
     print_info "Testing: Update mode recreates missing git-msg-tags.md"
     set +e
-    run_make "$output_file" agentize \
-        AGENTIZE_PROJECT_PATH="$test_dir" \
-        AGENTIZE_MODE="update"
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-update.sh" \
+        AGENTIZE_PROJECT_PATH="$test_dir"
     local exit_code=$?
     set -e
 
@@ -222,11 +240,10 @@ test_update_preserves_git_tags() {
     # Setup: Create SDK structure
     print_info "Setting up: Creating SDK with C template"
     set +e
-    run_make "$output_file" agentize \
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-init.sh" \
         AGENTIZE_PROJECT_NAME="test_proj" \
         AGENTIZE_PROJECT_PATH="$test_dir" \
-        AGENTIZE_PROJECT_LANG="c" \
-        AGENTIZE_MODE="init"
+        AGENTIZE_PROJECT_LANG="c"
     local setup_exit=$?
     set -e
 
@@ -246,9 +263,8 @@ test_update_preserves_git_tags() {
     # Test: Update should preserve custom content
     print_info "Testing: Update mode preserves existing git-msg-tags.md"
     set +e
-    run_make "$output_file" agentize \
-        AGENTIZE_PROJECT_PATH="$test_dir" \
-        AGENTIZE_MODE="update"
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-update.sh" \
+        AGENTIZE_PROJECT_PATH="$test_dir"
     local exit_code=$?
     set -e
 
@@ -285,11 +301,10 @@ test_init_invalid_lang() {
 
     # Run make with invalid language
     set +e
-    run_make "$output_file" agentize \
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-init.sh" \
         AGENTIZE_PROJECT_NAME="test_proj" \
         AGENTIZE_PROJECT_PATH="$test_dir" \
-        AGENTIZE_PROJECT_LANG="rust" \
-        AGENTIZE_MODE="init"
+        AGENTIZE_PROJECT_LANG="rust"
     local exit_code=$?
     set -e
 
@@ -326,11 +341,10 @@ test_update_infers_lang() {
     # Setup: Create Python SDK
     print_info "Setting up: Creating Python SDK"
     set +e
-    run_make "$output_file" agentize \
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-init.sh" \
         AGENTIZE_PROJECT_NAME="test_proj" \
         AGENTIZE_PROJECT_PATH="$test_dir" \
-        AGENTIZE_PROJECT_LANG="python" \
-        AGENTIZE_MODE="init"
+        AGENTIZE_PROJECT_LANG="python"
     local setup_exit=$?
     set -e
 
@@ -349,9 +363,8 @@ test_update_infers_lang() {
     # Test: Update without LANG should infer Python from structure
     print_info "Testing: Update mode infers Python from project structure"
     set +e
-    run_make "$output_file" agentize \
-        AGENTIZE_PROJECT_PATH="$test_dir" \
-        AGENTIZE_MODE="update"
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-update.sh" \
+        AGENTIZE_PROJECT_PATH="$test_dir"
     local exit_code=$?
     set -e
 

@@ -17,11 +17,12 @@ TMP_DIR_SRC="$PROJECT_ROOT/.tmp/cxx-sdk-test-src"
 rm -rf "$TMP_DIR_SRC"
 
 echo "Creating C++ SDK with default source path..."
-make -C "$PROJECT_ROOT" agentize \
-    AGENTIZE_PROJECT_NAME="test-cxx-sdk-src" \
-    AGENTIZE_PROJECT_PATH="$TMP_DIR_SRC" \
-    AGENTIZE_PROJECT_LANG="cxx" \
-    AGENTIZE_MODE="init"
+(
+    export AGENTIZE_PROJECT_NAME="test-cxx-sdk-src"
+    export AGENTIZE_PROJECT_PATH="$TMP_DIR_SRC"
+    export AGENTIZE_PROJECT_LANG="cxx"
+    "$PROJECT_ROOT/scripts/agentize-init.sh"
+)
 
 # Verify src/ directory exists
 if [ ! -d "$TMP_DIR_SRC/src" ]; then
@@ -92,12 +93,13 @@ TMP_DIR_LIB="$PROJECT_ROOT/.tmp/cxx-sdk-test-lib"
 rm -rf "$TMP_DIR_LIB"
 
 echo "Creating C++ SDK with custom source path (lib/)..."
-make -C "$PROJECT_ROOT" agentize \
-    AGENTIZE_PROJECT_NAME="test-cxx-sdk-lib" \
-    AGENTIZE_PROJECT_PATH="$TMP_DIR_LIB" \
-    AGENTIZE_PROJECT_LANG="cxx" \
-    AGENTIZE_SOURCE_PATH="lib" \
-    AGENTIZE_MODE="init"
+(
+    export AGENTIZE_PROJECT_NAME="test-cxx-sdk-lib"
+    export AGENTIZE_PROJECT_PATH="$TMP_DIR_LIB"
+    export AGENTIZE_PROJECT_LANG="cxx"
+    export AGENTIZE_SOURCE_PATH="lib"
+    "$PROJECT_ROOT/scripts/agentize-init.sh"
+)
 
 # Verify lib/ directory exists and src/ does not
 if [ -d "$TMP_DIR_LIB/src" ]; then

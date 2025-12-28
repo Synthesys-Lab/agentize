@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Cross-project agentize shell function
-# Provides ergonomic init/update commands for agentize operations
+# Cross-project lol shell function
+# Provides ergonomic init/update commands for AI-powered SDK operations
 
-agentize() {
+lol() {
     # Check if AGENTIZE_HOME is set
     if [ -z "$AGENTIZE_HOME" ]; then
         echo "Error: AGENTIZE_HOME environment variable is not set"
         echo ""
         echo "Please set AGENTIZE_HOME to point to your agentize repository:"
         echo "  export AGENTIZE_HOME=\"/path/to/agentize\""
-        echo "  source \"\$AGENTIZE_HOME/scripts/agentize-functions.sh\""
+        echo "  source \"\$AGENTIZE_HOME/scripts/lol-cli.sh\""
         return 1
     fi
 
@@ -42,16 +42,22 @@ agentize() {
             _agentize_update "$@"
             ;;
         *)
-            echo "agentize: AI-powered SDK wrapper"
+            echo "lol: AI-powered SDK CLI"
             echo ""
             echo "Usage:"
-            echo "  agentize init --name <name> --lang <lang> [--path <path>]"
-            echo "  agentize update [--path <path>]"
+            echo "  lol init --name <name> --lang <lang> [--path <path>] [--source <path>]"
+            echo "  lol update [--path <path>]"
+            echo ""
+            echo "Flags:"
+            echo "  --name <name>     Project name (required for init)"
+            echo "  --lang <lang>     Programming language: c, cxx, python (required for init)"
+            echo "  --path <path>     Project path (optional, defaults to current directory)"
+            echo "  --source <path>   Source code path relative to project root (optional)"
             echo ""
             echo "Examples:"
-            echo "  agentize init --name my-project --lang python --path /path/to/project"
-            echo "  agentize update                    # From project root or subdirectory"
-            echo "  agentize update --path /path/to/project"
+            echo "  lol init --name my-project --lang python --path /path/to/project"
+            echo "  lol update                    # From project root or subdirectory"
+            echo "  lol update --path /path/to/project"
             return 1
             ;;
     esac
@@ -61,6 +67,7 @@ _agentize_init() {
     local name=""
     local lang=""
     local path=""
+    local source=""
 
     # Parse arguments
     while [ $# -gt 0 ]; do
@@ -77,9 +84,13 @@ _agentize_init() {
                 path="$2"
                 shift 2
                 ;;
+            --source)
+                source="$2"
+                shift 2
+                ;;
             *)
                 echo "Error: Unknown option '$1'"
-                echo "Usage: agentize init --name <name> --lang <lang> [--path <path>]"
+                echo "Usage: lol init --name <name> --lang <lang> [--path <path>] [--source <path>]"
                 return 1
                 ;;
         esac
@@ -88,13 +99,13 @@ _agentize_init() {
     # Validate required flags
     if [ -z "$name" ]; then
         echo "Error: --name is required"
-        echo "Usage: agentize init --name <name> --lang <lang> [--path <path>]"
+        echo "Usage: lol init --name <name> --lang <lang> [--path <path>] [--source <path>]"
         return 1
     fi
 
     if [ -z "$lang" ]; then
         echo "Error: --lang is required"
-        echo "Usage: agentize init --name <name> --lang <lang> [--path <path>]"
+        echo "Usage: lol init --name <name> --lang <lang> [--path <path>] [--source <path>]"
         return 1
     fi
 
@@ -109,24 +120,25 @@ _agentize_init() {
         return 1
     }
 
-    echo "Initializing agentize SDK:"
+    echo "Initializing SDK:"
     echo "  Name: $name"
     echo "  Language: $lang"
     echo "  Path: $path"
+    if [ -n "$source" ]; then
+        echo "  Source: $source"
+    fi
     echo ""
 
-    # Call make agentize from AGENTIZE_HOME
+    # Call agentize-init.sh directly with environment variables
     (
-        cd "$AGENTIZE_HOME" || {
-            echo "Error: Failed to change directory to $AGENTIZE_HOME"
-            return 1
-        }
+        export AGENTIZE_PROJECT_NAME="$name"
+        export AGENTIZE_PROJECT_PATH="$path"
+        export AGENTIZE_PROJECT_LANG="$lang"
+        if [ -n "$source" ]; then
+            export AGENTIZE_SOURCE_PATH="$source"
+        fi
 
-        make agentize \
-            AGENTIZE_PROJECT_NAME="$name" \
-            AGENTIZE_PROJECT_PATH="$path" \
-            AGENTIZE_PROJECT_LANG="$lang" \
-            AGENTIZE_MODE="init"
+        "$AGENTIZE_HOME/scripts/agentize-init.sh"
     )
 }
 
@@ -142,7 +154,7 @@ _agentize_update() {
                 ;;
             *)
                 echo "Error: Unknown option '$1'"
-                echo "Usage: agentize update [--path <path>]"
+                echo "Usage: lol update [--path <path>]"
                 return 1
                 ;;
         esac
@@ -163,7 +175,7 @@ _agentize_update() {
             echo "Error: No .claude/ directory found in current directory or parents"
             echo ""
             echo "Please run from a project with .claude/ or use --path flag:"
-            echo "  agentize update --path /path/to/project"
+            echo "  lol update --path /path/to/project"
             return 1
         fi
     else
@@ -180,19 +192,13 @@ _agentize_update() {
         fi
     fi
 
-    echo "Updating agentize SDK:"
+    echo "Updating SDK:"
     echo "  Path: $path"
     echo ""
 
-    # Call make agentize from AGENTIZE_HOME
+    # Call agentize-update.sh directly with environment variables
     (
-        cd "$AGENTIZE_HOME" || {
-            echo "Error: Failed to change directory to $AGENTIZE_HOME"
-            return 1
-        }
-
-        make agentize \
-            AGENTIZE_PROJECT_PATH="$path" \
-            AGENTIZE_MODE="update"
+        export AGENTIZE_PROJECT_PATH="$path"
+        "$AGENTIZE_HOME/scripts/agentize-update.sh"
     )
 }

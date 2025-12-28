@@ -1,30 +1,8 @@
 # Default target
-.PHONY: test agentize help env-script
+.PHONY: test help env-script
 
 test:
 	./tests/test-all.sh
-
-# Agentize target - creates SDK for projects
-agentize:
-	@# Set default mode to init if not specified
-	@MODE=$(AGENTIZE_MODE); \
-	if [ -z "$$MODE" ]; then MODE="init"; fi; \
-	echo "Mode: $$MODE"; \
-	echo "Target path: $(AGENTIZE_PROJECT_PATH)"; \
-	./scripts/check-parameter.sh "$$MODE" "$(AGENTIZE_PROJECT_PATH)" "$(AGENTIZE_PROJECT_NAME)" "$(AGENTIZE_PROJECT_LANG)" || exit 1; \
-	if [ "$$MODE" = "init" ]; then \
-		export AGENTIZE_PROJECT_PATH="$(AGENTIZE_PROJECT_PATH)"; \
-		export AGENTIZE_PROJECT_NAME="$(AGENTIZE_PROJECT_NAME)"; \
-		export AGENTIZE_PROJECT_LANG="$(AGENTIZE_PROJECT_LANG)"; \
-		export AGENTIZE_SOURCE_PATH="$(AGENTIZE_SOURCE_PATH)"; \
-		./scripts/agentize-init.sh; \
-	elif [ "$$MODE" = "update" ]; then \
-		export AGENTIZE_PROJECT_PATH="$(AGENTIZE_PROJECT_PATH)"; \
-		./scripts/agentize-update.sh; \
-	else \
-		echo "Error: Invalid mode '$$MODE'. Supported modes: init, update"; \
-		exit 1; \
-	fi
 
 env-script:
 	@echo "Generating local setup script..."
@@ -34,8 +12,8 @@ env-script:
 	@echo '# This file is local-only and gitignored' >> setup.sh
 	@echo '' >> setup.sh
 	@echo 'export AGENTIZE_HOME="$(CURDIR)"' >> setup.sh
-	@echo 'source "$$AGENTIZE_HOME/scripts/wt-functions.sh"' >> setup.sh
-	@echo 'source "$$AGENTIZE_HOME/scripts/agentize-functions.sh"' >> setup.sh
+	@echo 'source "$$AGENTIZE_HOME/scripts/wt-cli.sh"' >> setup.sh
+	@echo 'source "$$AGENTIZE_HOME/scripts/lol-cli.sh"' >> setup.sh
 	@chmod +x setup.sh
 	@echo ""
 	@echo "✓ Created setup.sh in repository root"
@@ -48,12 +26,9 @@ env-script:
 help:
 	@echo "Available targets:"
 	@echo "  make test                - Run all tests"
-	@echo "  make agentize            - Create SDK for a project"
 	@echo "  make env-script          - Generate local setup.sh for development"
 	@echo ""
-	@echo "Agentize usage:"
-	@echo "  make agentize \\"
-	@echo "    AGENTIZE_PROJECT_NAME=\"your_project\" \\"
-	@echo "    AGENTIZE_PROJECT_PATH=\"/path/to/project\" \\"
-	@echo "    AGENTIZE_PROJECT_LANG=\"c\" \\"
-	@echo "    AGENTIZE_MODE=\"init\""
+	@echo "SDK usage:"
+	@echo "  lol init --name your_project --lang c --path /path/to/project"
+	@echo "  lol update                # From project directory"
+	@echo "  lol --help                # For all options"

@@ -19,16 +19,16 @@ git clone https://github.com/SyntheSys-Lab/agentize.git
    Add to `~/.bashrc` or `~/.zshrc`:
    ```bash
    export AGENTIZE_HOME="/path/to/agentize"
-   source "$AGENTIZE_HOME/scripts/wt-functions.sh"
-   source "$AGENTIZE_HOME/scripts/agentize-functions.sh"
+   source "$AGENTIZE_HOME/scripts/wt-cli.sh"
+   source "$AGENTIZE_HOME/scripts/lol-cli.sh"
    ```
 
 3. Initialize a new project:
 ```bash
-agentize init --name your_project_name --lang c --path /path/to/your/project
+lol init --name your_project_name --lang c --path /path/to/your/project
 ```
 
-This creates an initial SDK structure in the specified project path. For more details, see the [usage document](./docs/OPTIONS.md).
+This creates an initial SDK structure in the specified project path. Use `lol --help` to see all available options.
 
 ## Core Phylosophy
 
@@ -68,7 +68,7 @@ Learn Agentize in 15 minutes with our step-by-step tutorials (3-5 min each):
 
 Agentize provides shell functions that work from any directory:
 - `wt` - Manage worktrees (spawn, list, remove, prune)
-- `agentize` - Initialize and update SDK projects (init, update)
+- `lol` - Initialize and update SDK projects (init, update)
 
 ### Setup
 
@@ -83,8 +83,8 @@ source setup.sh
 Add to your shell RC file (`~/.bashrc`, `~/.zshrc`, etc.):
 ```bash
 export AGENTIZE_HOME="/path/to/agentize"
-source "$AGENTIZE_HOME/scripts/wt-functions.sh"
-source "$AGENTIZE_HOME/scripts/agentize-functions.sh"
+source "$AGENTIZE_HOME/scripts/wt-cli.sh"
+source "$AGENTIZE_HOME/scripts/lol-cli.sh"
 ```
 
 ### Worktree Management (`wt`)
@@ -100,42 +100,37 @@ wt prune                 # Clean up stale worktree metadata
 
 Worktrees are always created under `$AGENTIZE_HOME/trees/`, regardless of your current directory.
 
-### SDK Project Management (`agentize`)
+### SDK Project Management (`lol`)
 
 Ergonomic commands for initializing and updating SDK projects:
 
 **Initialize a new project:**
 
 ```bash
-agentize init --name my-project --lang python --path /path/to/project
-```
-
-Equivalent to:
-```bash
-make agentize AGENTIZE_PROJECT_NAME="my-project" \
-              AGENTIZE_PROJECT_PATH="/path/to/project" \
-              AGENTIZE_PROJECT_LANG="python" \
-              AGENTIZE_MODE="init"
+lol init --name my-project --lang python --path /path/to/project
 ```
 
 **Update an existing project:**
 
 From project root or any subdirectory:
 ```bash
-agentize update
+lol update
 ```
 
 Or specify explicit path:
 ```bash
-agentize update --path /path/to/project
+lol update --path /path/to/project
 ```
 
 The `update` command finds the nearest `.claude/` directory by traversing parent directories, making it convenient to use from anywhere within your project.
 
-**Notes:**
-- `init` requires explicit `--name` and `--lang` flags
-- `update` searches for nearest `.claude/` directory or accepts `--path` override
-- Both commands are wrappers around `make agentize` for convenience
+**Available options:**
+- `--name <name>` - Project name (required for init)
+- `--lang <lang>` - Programming language: c, cxx, python (required for init)
+- `--path <path>` - Project path (optional, defaults to current directory)
+- `--source <path>` - Source code path relative to project root (optional)
+
+Use `lol --help` for complete documentation.
 
 ## Project Organization
 
@@ -143,16 +138,15 @@ The `update` command finds the nearest `.claude/` directory by traversing parent
 agentize/
 ├── docs/                   # Document
 │   ├── draft/              # Draft documents for local development
-│   ├── OPTIONS.md          # Document for make options
 │   └── git-msg-tags.md     # Used by \commit-msg skill and command to write meaningful commit messages
 ├── scripts/                # Shell scripts and functions
-│   ├── wt-functions.sh     # Cross-project wt shell function
-│   ├── agentize-functions.sh  # CLI wrapper functions
+│   ├── wt-cli.sh           # Cross-project wt shell function
+│   ├── lol-cli.sh          # CLI wrapper functions
 │   └── worktree.sh         # Core worktree management
 ├── templates/              # Templates for SDK generation
 ├── .claude/                # Core agent rules for Claude Code
 ├── tests/                  # Test cases
 ├── .gitignore              # Git ignore file
-├── Makefile                # Makefile for creating SDKs
+├── Makefile                # Build targets for testing and setup
 └── README.md               # This readme file
 ```

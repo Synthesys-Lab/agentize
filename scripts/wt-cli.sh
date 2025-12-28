@@ -9,7 +9,7 @@ wt() {
         echo ""
         echo "Please set AGENTIZE_HOME to point to your agentize repository:"
         echo "  export AGENTIZE_HOME=\"/path/to/agentize\""
-        echo "  source \"\$AGENTIZE_HOME/scripts/wt-functions.sh\""
+        echo "  source \"\$AGENTIZE_HOME/scripts/wt-cli.sh\""
         return 1
     fi
 

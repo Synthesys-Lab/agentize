@@ -6,7 +6,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-WT_FUNCTIONS="$PROJECT_ROOT/scripts/wt-functions.sh"
+WT_CLI="$PROJECT_ROOT/scripts/wt-cli.sh"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -20,7 +20,7 @@ echo ""
 echo "Test 1: Missing AGENTIZE_HOME produces error"
 (
   unset AGENTIZE_HOME
-  if source "$WT_FUNCTIONS" 2>/dev/null && wt spawn 42 2>/dev/null; then
+  if source "$WT_CLI" 2>/dev/null && wt spawn 42 2>/dev/null; then
     echo -e "${RED}FAIL: Should error when AGENTIZE_HOME is missing${NC}"
     exit 1
   fi
@@ -32,7 +32,7 @@ echo ""
 echo "Test 2: Invalid AGENTIZE_HOME produces error"
 (
   export AGENTIZE_HOME="/nonexistent/path"
-  if source "$WT_FUNCTIONS" 2>/dev/null && wt spawn 42 2>/dev/null; then
+  if source "$WT_CLI" 2>/dev/null && wt spawn 42 2>/dev/null; then
     echo -e "${RED}FAIL: Should error when AGENTIZE_HOME is invalid${NC}"
     exit 1
   fi
@@ -69,7 +69,7 @@ echo "Test 3: wt spawn creates worktree in correct location"
     # Copy scripts
     mkdir -p scripts
     cp "$PROJECT_ROOT/scripts/worktree.sh" scripts/
-    cp "$WT_FUNCTIONS" scripts/
+    cp "$WT_CLI" scripts/
     chmod +x scripts/worktree.sh
   )
 
@@ -90,7 +90,7 @@ echo "Test 3: wt spawn creates worktree in correct location"
     cd "$TEST_PROJECT"  # Run from different project
 
     # Source wt functions
-    source "$TEST_AGENTIZE/scripts/wt-functions.sh"
+    source "$TEST_AGENTIZE/scripts/wt-cli.sh"
 
     # Create worktree using wt spawn
     wt spawn 42 test-cross

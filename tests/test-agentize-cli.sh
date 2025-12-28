@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
-# Test for agentize CLI shell function
-# Verifies agentize init/update commands work correctly
+# Test for lol CLI shell function
+# Verifies lol init/update commands work correctly
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-AGENTIZE_FUNCTIONS="$PROJECT_ROOT/scripts/agentize-functions.sh"
+LOL_CLI="$PROJECT_ROOT/scripts/lol-cli.sh"
 
 # Colors for output
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-echo "=== Agentize CLI Function Test ==="
+echo "=== lol CLI Function Test ==="
 
 # Test 1: Missing AGENTIZE_HOME produces error
 echo ""
 echo "Test 1: Missing AGENTIZE_HOME produces error"
 (
   unset AGENTIZE_HOME
-  if source "$AGENTIZE_FUNCTIONS" 2>/dev/null && agentize init --name test --lang python 2>/dev/null; then
+  if source "$LOL_CLI" 2>/dev/null && lol init --name test --lang python 2>/dev/null; then
     echo -e "${RED}FAIL: Should error when AGENTIZE_HOME is missing${NC}"
     exit 1
   fi
@@ -32,7 +32,7 @@ echo ""
 echo "Test 2: Invalid AGENTIZE_HOME produces error"
 (
   export AGENTIZE_HOME="/nonexistent/path"
-  if source "$AGENTIZE_FUNCTIONS" 2>/dev/null && agentize init --name test --lang python 2>/dev/null; then
+  if source "$LOL_CLI" 2>/dev/null && lol init --name test --lang python 2>/dev/null; then
     echo -e "${RED}FAIL: Should error when AGENTIZE_HOME is invalid${NC}"
     exit 1
   fi
@@ -44,22 +44,22 @@ echo ""
 echo "Test 3: init requires --name and --lang flags"
 (
   export AGENTIZE_HOME="$PROJECT_ROOT"
-  source "$AGENTIZE_FUNCTIONS"
+  source "$LOL_CLI"
 
   # Missing both flags
-  if agentize init 2>/dev/null; then
+  if lol init 2>/dev/null; then
     echo -e "${RED}FAIL: Should require --name and --lang${NC}"
     exit 1
   fi
 
   # Missing --lang
-  if agentize init --name test 2>/dev/null; then
+  if lol init --name test 2>/dev/null; then
     echo -e "${RED}FAIL: Should require --lang${NC}"
     exit 1
   fi
 
   # Missing --name
-  if agentize init --lang python 2>/dev/null; then
+  if lol init --lang python 2>/dev/null; then
     echo -e "${RED}FAIL: Should require --name${NC}"
     exit 1
   fi
@@ -73,7 +73,7 @@ echo "Test 4: update finds nearest .claude/ directory"
 (
   TEST_PROJECT=$(mktemp -d)
   export AGENTIZE_HOME="$PROJECT_ROOT"
-  source "$AGENTIZE_FUNCTIONS"
+  source "$LOL_CLI"
 
   # Create nested structure with .claude/
   mkdir -p "$TEST_PROJECT/src/subdir"
@@ -84,7 +84,6 @@ echo "Test 4: update finds nearest .claude/ directory"
   cd "$TEST_PROJECT/src/subdir"
 
   # Test that update command correctly resolves to project root
-  # (This would call make agentize with AGENTIZE_MODE=update)
 
   echo -e "${GREEN}PASS: update path resolution (implementation test)${NC}"
 
@@ -97,12 +96,12 @@ echo "Test 5: update fails when no .claude/ found"
 (
   TEST_PROJECT=$(mktemp -d)
   export AGENTIZE_HOME="$PROJECT_ROOT"
-  source "$AGENTIZE_FUNCTIONS"
+  source "$LOL_CLI"
 
   cd "$TEST_PROJECT"
 
   # Should fail since no .claude/ exists
-  if agentize update 2>/dev/null; then
+  if lol update 2>/dev/null; then
     echo -e "${RED}FAIL: Should fail when .claude/ not found${NC}"
     exit 1
   fi
@@ -118,7 +117,7 @@ echo "Test 6: --path override works"
 (
   TEST_PROJECT=$(mktemp -d)
   export AGENTIZE_HOME="$PROJECT_ROOT"
-  source "$AGENTIZE_FUNCTIONS"
+  source "$LOL_CLI"
 
   # Create .claude/ for update test
   mkdir -p "$TEST_PROJECT/.claude"
@@ -132,4 +131,4 @@ echo "Test 6: --path override works"
 )
 
 echo ""
-echo -e "${GREEN}=== All agentize CLI tests passed ===${NC}"
+echo -e "${GREEN}=== All lol CLI tests passed ===${NC}"

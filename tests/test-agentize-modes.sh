@@ -17,11 +17,12 @@ TMP_DIR_1="$PROJECT_ROOT/.tmp/mode-test-1"
 rm -rf "$TMP_DIR_1"
 
 echo "Creating SDK in non-existent directory..."
-make -C "$PROJECT_ROOT" agentize \
-    AGENTIZE_PROJECT_NAME="test_mode_1" \
-    AGENTIZE_PROJECT_PATH="$TMP_DIR_1" \
-    AGENTIZE_PROJECT_LANG="python" \
-    AGENTIZE_MODE="init"
+(
+    export AGENTIZE_PROJECT_NAME="test_mode_1"
+    export AGENTIZE_PROJECT_PATH="$TMP_DIR_1"
+    export AGENTIZE_PROJECT_LANG="python"
+    "$PROJECT_ROOT/scripts/agentize-init.sh"
+)
 
 if [ ! -d "$TMP_DIR_1" ]; then
     echo "Error: Directory was not created!"
@@ -43,11 +44,12 @@ rm -rf "$TMP_DIR_2"
 mkdir -p "$TMP_DIR_2"
 
 echo "Creating SDK in empty existing directory..."
-make -C "$PROJECT_ROOT" agentize \
-    AGENTIZE_PROJECT_NAME="test_mode_2" \
-    AGENTIZE_PROJECT_PATH="$TMP_DIR_2" \
-    AGENTIZE_PROJECT_LANG="python" \
-    AGENTIZE_MODE="init"
+(
+    export AGENTIZE_PROJECT_NAME="test_mode_2"
+    export AGENTIZE_PROJECT_PATH="$TMP_DIR_2"
+    export AGENTIZE_PROJECT_LANG="python"
+    "$PROJECT_ROOT/scripts/agentize-init.sh"
+)
 
 if [ ! -d "$TMP_DIR_2/.claude" ]; then
     echo "Error: SDK structure not created!"
@@ -65,11 +67,12 @@ mkdir -p "$TMP_DIR_3"
 touch "$TMP_DIR_3/existing-file.txt"
 
 echo "Attempting to create SDK in non-empty directory (should fail)..."
-if make -C "$PROJECT_ROOT" agentize \
-    AGENTIZE_PROJECT_NAME="test_mode_3" \
-    AGENTIZE_PROJECT_PATH="$TMP_DIR_3" \
-    AGENTIZE_PROJECT_LANG="python" \
-    AGENTIZE_MODE="init" 2>&1 | grep -q "exists and is not empty"; then
+if (
+    export AGENTIZE_PROJECT_NAME="test_mode_3"
+    export AGENTIZE_PROJECT_PATH="$TMP_DIR_3"
+    export AGENTIZE_PROJECT_LANG="python"
+    "$PROJECT_ROOT/scripts/agentize-init.sh"
+) 2>&1 | grep -q "exists and is not empty"; then
     echo "✓ Test 3 passed: init mode correctly rejects non-empty directory"
 else
     echo "Error: init mode should have rejected non-empty directory!"
@@ -83,11 +86,10 @@ TMP_DIR_4="$PROJECT_ROOT/.tmp/mode-test-4"
 rm -rf "$TMP_DIR_4"
 
 echo "Attempting to update non-existent directory (should fail)..."
-if make -C "$PROJECT_ROOT" agentize \
-    AGENTIZE_PROJECT_NAME="test_mode_4" \
-    AGENTIZE_PROJECT_PATH="$TMP_DIR_4" \
-    AGENTIZE_PROJECT_LANG="python" \
-    AGENTIZE_MODE="update" 2>&1 | grep -q "does not exist"; then
+if (
+    export AGENTIZE_PROJECT_PATH="$TMP_DIR_4"
+    "$PROJECT_ROOT/scripts/agentize-update.sh"
+) 2>&1 | grep -q "does not exist"; then
     echo "✓ Test 4 passed: update mode correctly rejects non-existent directory"
 else
     echo "Error: update mode should have rejected non-existent directory!"
@@ -103,11 +105,10 @@ mkdir -p "$TMP_DIR_5"
 touch "$TMP_DIR_5/some-file.txt"
 
 echo "Attempting to update directory without SDK structure (should fail)..."
-if make -C "$PROJECT_ROOT" agentize \
-    AGENTIZE_PROJECT_NAME="test_mode_5" \
-    AGENTIZE_PROJECT_PATH="$TMP_DIR_5" \
-    AGENTIZE_PROJECT_LANG="python" \
-    AGENTIZE_MODE="update" 2>&1 | grep -q "not a valid SDK structure"; then
+if (
+    export AGENTIZE_PROJECT_PATH="$TMP_DIR_5"
+    "$PROJECT_ROOT/scripts/agentize-update.sh"
+) 2>&1 | grep -q "not a valid SDK structure"; then
     echo "✓ Test 5 passed: update mode correctly rejects directory without SDK structure"
 else
     echo "Error: update mode should have rejected directory without SDK structure!"
@@ -121,21 +122,21 @@ TMP_DIR_6="$PROJECT_ROOT/.tmp/mode-test-6"
 rm -rf "$TMP_DIR_6"
 
 echo "First creating a valid SDK..."
-make -C "$PROJECT_ROOT" agentize \
-    AGENTIZE_PROJECT_NAME="test_mode_6" \
-    AGENTIZE_PROJECT_PATH="$TMP_DIR_6" \
-    AGENTIZE_PROJECT_LANG="python" \
-    AGENTIZE_MODE="init"
+(
+    export AGENTIZE_PROJECT_NAME="test_mode_6"
+    export AGENTIZE_PROJECT_PATH="$TMP_DIR_6"
+    export AGENTIZE_PROJECT_LANG="python"
+    "$PROJECT_ROOT/scripts/agentize-init.sh"
+)
 
 # Modify a file in .claude/ to verify backup
 echo "# Modified by test" >> "$TMP_DIR_6/.claude/settings.json"
 
 echo "Now updating the SDK..."
-make -C "$PROJECT_ROOT" agentize \
-    AGENTIZE_PROJECT_NAME="test_mode_6" \
-    AGENTIZE_PROJECT_PATH="$TMP_DIR_6" \
-    AGENTIZE_PROJECT_LANG="python" \
-    AGENTIZE_MODE="update"
+(
+    export AGENTIZE_PROJECT_PATH="$TMP_DIR_6"
+    "$PROJECT_ROOT/scripts/agentize-update.sh"
+)
 
 # Verify backup was created
 if [ ! -d "$TMP_DIR_6/.claude.backup" ]; then
@@ -164,11 +165,12 @@ TMP_DIR_7="$PROJECT_ROOT/.tmp/mode-test-7"
 rm -rf "$TMP_DIR_7"
 
 echo "First creating a valid SDK..."
-make -C "$PROJECT_ROOT" agentize \
-    AGENTIZE_PROJECT_NAME="test_mode_7" \
-    AGENTIZE_PROJECT_PATH="$TMP_DIR_7" \
-    AGENTIZE_PROJECT_LANG="python" \
-    AGENTIZE_MODE="init"
+(
+    export AGENTIZE_PROJECT_NAME="test_mode_7"
+    export AGENTIZE_PROJECT_PATH="$TMP_DIR_7"
+    export AGENTIZE_PROJECT_LANG="python"
+    "$PROJECT_ROOT/scripts/agentize-init.sh"
+)
 
 # Add custom user files
 mkdir -p "$TMP_DIR_7/.claude/skills/my-custom-skill"
@@ -177,11 +179,10 @@ mkdir -p "$TMP_DIR_7/.claude/commands/my-custom-command"
 echo "# My Custom Command" > "$TMP_DIR_7/.claude/commands/my-custom-command/COMMAND.md"
 
 echo "Running update to sync template files..."
-make -C "$PROJECT_ROOT" agentize \
-    AGENTIZE_PROJECT_NAME="test_mode_7" \
-    AGENTIZE_PROJECT_PATH="$TMP_DIR_7" \
-    AGENTIZE_PROJECT_LANG="python" \
-    AGENTIZE_MODE="update"
+(
+    export AGENTIZE_PROJECT_PATH="$TMP_DIR_7"
+    "$PROJECT_ROOT/scripts/agentize-update.sh"
+)
 
 # Verify custom user files still exist
 if [ ! -f "$TMP_DIR_7/.claude/skills/my-custom-skill/SKILL.md" ]; then
