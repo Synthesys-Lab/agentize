@@ -63,16 +63,31 @@ For persistence, add `source /path/to/agentize/setup.sh` to your shell RC file (
 
 ### Worktree Management (`wt`)
 
-Manage git worktrees from any directory:
+Manage git worktrees on a per-project basis using the bare repository pattern:
 
 ```bash
-wt spawn 42              # Create worktree for issue #42
+wt init                  # Initialize trees/ directory with trees/main/ worktree
+wt main                  # Navigate to trees/main/ worktree
+wt spawn 42              # Create worktree for issue #42 in trees/
 wt list                  # List all worktrees
 wt remove 42             # Remove worktree for issue #42
 wt prune                 # Clean up stale worktree metadata
 ```
 
-Worktrees are always created under `$AGENTIZE_HOME/trees/`, regardless of your current directory.
+**Bare Repository Pattern:**
+
+After running `wt init`, your repository structure becomes:
+
+```
+repo-root/           # Coordination point (detached HEAD)
+├── .git/
+├── trees/
+│   ├── main/        # Main branch worktree (created by wt init)
+│   ├── issue-42-*/  # Feature branch worktrees (created by wt spawn)
+│   └── issue-43-*/
+```
+
+The main repository becomes a coordination point while all development work happens in worktrees under `trees/`. Use `wt main` to quickly navigate to the main branch worktree.
 
 ### SDK Project Management (`lol`)
 
