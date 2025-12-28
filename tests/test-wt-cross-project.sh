@@ -56,15 +56,15 @@ echo "Test 1: wt spawn from subdirectory creates worktree under repo root"
     source "$TEST_PROJECT/scripts/wt-cli.sh"
 
     # Create worktree using wt spawn
-    wt spawn 42 test-feature
+    wt spawn 42 test
 
     # Verify worktree created in repo root, not subdirectory
-    if [ ! -d "$TEST_PROJECT/trees/issue-42-test-feature" ]; then
+    if [ ! -d "$TEST_PROJECT/trees/issue-42-test" ]; then
       echo -e "${RED}FAIL: Worktree not created in repo root${NC}"
       exit 1
     fi
 
-    if [ -d "$TEST_PROJECT/src/components/trees/issue-42-test-feature" ]; then
+    if [ -d "$TEST_PROJECT/src/components/trees/issue-42-test" ]; then
       echo -e "${RED}FAIL: Worktree incorrectly created in subdirectory${NC}"
       exit 1
     fi
@@ -72,7 +72,7 @@ echo "Test 1: wt spawn from subdirectory creates worktree under repo root"
     echo -e "${GREEN}PASS: Worktree created in repo root from subdirectory${NC}"
 
     # Test wt list
-    if ! wt list | grep -q "issue-42-test-feature"; then
+    if ! wt list | grep -q "issue-42-test"; then
       echo -e "${RED}FAIL: wt list does not show worktree${NC}"
       exit 1
     fi
@@ -80,7 +80,7 @@ echo "Test 1: wt spawn from subdirectory creates worktree under repo root"
 
     # Test wt remove
     wt remove 42
-    if [ -d "$TEST_PROJECT/trees/issue-42-test-feature" ]; then
+    if [ -d "$TEST_PROJECT/trees/issue-42-test" ]; then
       echo -e "${RED}FAIL: wt remove did not remove worktree${NC}"
       exit 1
     fi
