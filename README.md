@@ -70,8 +70,6 @@ Agentize provides a `wt` shell function for managing worktrees from any director
 
 ### Setup
 
-**Option 1: Manual Setup (Recommended)**
-
 Add to your shell RC file (`~/.bashrc`, `~/.zshrc`, etc.):
 
 ```bash
@@ -79,18 +77,11 @@ export AGENTIZE_HOME="/path/to/agentize"
 source "$AGENTIZE_HOME/scripts/wt-functions.sh"
 ```
 
-**Option 2: Automated Setup**
-
-Run the setup helper (prints instructions by default):
+Or use `make env-script` to generate a local `setup.sh` (gitignored) with hardcoded paths:
 
 ```bash
-./scripts/setup.sh
-```
-
-For automated installation (requires confirmation):
-
-```bash
-./scripts/setup.sh --install
+make env-script
+source setup.sh
 ```
 
 ### Usage
@@ -117,10 +108,6 @@ For convenience, Agentize provides ergonomic `agentize init` and `agentize updat
 
 ### Setup
 
-The `agentize` shell function is sourced alongside `wt` using the same setup:
-
-**Option 1: Manual Setup (Recommended)**
-
 Add to your shell RC file (`~/.bashrc`, `~/.zshrc`, etc.):
 
 ```bash
@@ -129,12 +116,11 @@ source "$AGENTIZE_HOME/scripts/wt-functions.sh"
 source "$AGENTIZE_HOME/scripts/agentize-functions.sh"
 ```
 
-**Option 2: Automated Setup**
-
-The setup helper automatically includes both `wt` and `agentize` functions:
+Or use `make env-script` to generate a local `setup.sh` (gitignored) with hardcoded paths:
 
 ```bash
-./scripts/setup.sh --install
+make env-script
+source setup.sh
 ```
 
 ### Usage
@@ -184,7 +170,7 @@ agentize/
 │   └── git-msg-tags.md     # Used by \commit-msg skill and command to write meaningful commit messages
 ├── scripts/                # Shell scripts and functions
 │   ├── wt-functions.sh     # Cross-project wt shell function
-│   ├── setup.sh            # Installation helper
+│   ├── agentize-functions.sh  # CLI wrapper functions
 │   └── worktree.sh         # Core worktree management
 ├── templates/              # Templates for SDK generation
 ├── .claude/                # Core agent rules for Claude Code

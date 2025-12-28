@@ -112,6 +112,18 @@ The pre-commit hook should be linked to `.git/hooks/pre-commit`:
 ln -sf ../../scripts/pre-commit .git/hooks/pre-commit
 ```
 
+### Cross-Project Function Setup
+
+For the agentize repository itself, use `make env-script` to generate a `setup.sh` with hardcoded paths:
+
+```bash
+make env-script
+source setup.sh
+# Add 'source /path/to/agentize/setup.sh' to your shell RC for persistence
+```
+
+This enables `wt` and `agentize` CLI commands from any directory.
+
 ### Running Linter Manually
 
 ```bash

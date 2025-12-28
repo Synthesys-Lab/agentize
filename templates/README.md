@@ -2,11 +2,11 @@ This folder includes the templates for the supported language SDK.
 Currently, supported languages are C, C++, and Python.
 All the languages share a similar structure and interfaces with some language-specific files and folders.
 
-All the templates has
+All the templates have:
 
 - A `Makefile` in the root folder, which defines the following commands:
-    - `make env-script`: Generates an `setup.sh` script to set up the environment variables for the SDK.
-    - Because environment setup often involves the path to the project, creating the script upon initialization allows this flexibility.
+    - `make env-script`: Generates a `setup.sh` script (per-project) to set up environment variables for the SDK.
+    - This differs from the agentize repo's `make env-script` which generates a cross-project `setup.sh` for `wt` and `agentize` CLI functions.
     - `make build`: Builds the SDK.
     - `make clean`: Cleans all the build files.
     - `make test`: Runs the test cases.

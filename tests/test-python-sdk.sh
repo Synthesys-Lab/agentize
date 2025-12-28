@@ -90,6 +90,7 @@ if grep -q "import project_name" "$TMP_DIR/tests/test_main.py"; then
 fi
 
 echo "Generating env-script..."
+# Note: This tests the SDK's per-project setup.sh generation, not the agentize repo's cross-project setup
 make -C "$TMP_DIR" env-script
 
 # Verify setup.sh was created
