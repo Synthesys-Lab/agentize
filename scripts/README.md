@@ -56,14 +56,14 @@ This directory contains utility scripts and git hooks for the project.
 
 #### Agentize Mode Scripts
 - `agentize-init.sh` - Initialize new project with agentize templates
-  - Usage: Called by `make agentize` with `AGENTIZE_MODE=init`
+  - Usage: Called by `lol init` command
   - Environment variables: `AGENTIZE_PROJECT_PATH`, `AGENTIZE_PROJECT_NAME`, `AGENTIZE_PROJECT_LANG`
   - Creates language template structure, copies `.claude/` content, applies substitutions
   - Executes `bootstrap.sh` if present in project directory
   - Exit codes: 0 (success), 1 (failure)
 
 - `agentize-update.sh` - Update existing project with latest agentize configs
-  - Usage: Called by `make agentize` with `AGENTIZE_MODE=update`
+  - Usage: Called by `lol update` command
   - Environment variables: `AGENTIZE_PROJECT_PATH`
   - Backs up existing `.claude/` directory, refreshes configurations with file-level synchronization
   - File-level copy preserves user-added files (e.g., custom skills, commands, agents) while updating template files
@@ -122,7 +122,7 @@ source setup.sh
 # Add 'source /path/to/agentize/setup.sh' to your shell RC for persistence
 ```
 
-This enables `wt` and `agentize` CLI commands from any directory.
+This enables `wt` and `lol` CLI commands from any directory.
 
 ### Running Linter Manually
 

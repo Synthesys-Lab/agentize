@@ -1,8 +1,8 @@
 # lol CLI Options
 
-This document describes the command-line options for the `lol` command used to create an AI-powered SDK for your software development project.
+This document provides detailed reference documentation for the `lol` command used to create an AI-powered SDK for your software development project.
 
-**Note:** This document is deprecated. Use `lol --help` to see all available options.
+**Quick Reference:** Use `lol --help` for a concise summary of options.
 
 ## Quick Reference
 
