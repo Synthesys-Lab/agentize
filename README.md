@@ -66,27 +66,30 @@ Learn Agentize in 15 minutes with our step-by-step tutorials (3-5 min each):
 
 ## Cross-Project Shell Functions
 
-Agentize provides a `wt` shell function for managing worktrees from any directory. This enables `wt spawn 42` to work from any git repository, always creating worktrees in the correct location.
+Agentize provides shell functions that work from any directory:
+- `wt` - Manage worktrees (spawn, list, remove, prune)
+- `agentize` - Initialize and update SDK projects (init, update)
 
 ### Setup
 
-Add to your shell RC file (`~/.bashrc`, `~/.zshrc`, etc.):
-
-```bash
-export AGENTIZE_HOME="/path/to/agentize"
-source "$AGENTIZE_HOME/scripts/wt-functions.sh"
-```
-
-Or use `make env-script` to generate a local `setup.sh` (gitignored) with hardcoded paths:
-
+**Option 1: Generate local setup script (recommended)**
 ```bash
 make env-script
 source setup.sh
+# Add 'source /path/to/agentize/setup.sh' to your shell RC for persistence
 ```
 
-### Usage
+**Option 2: Manual setup**
+Add to your shell RC file (`~/.bashrc`, `~/.zshrc`, etc.):
+```bash
+export AGENTIZE_HOME="/path/to/agentize"
+source "$AGENTIZE_HOME/scripts/wt-functions.sh"
+source "$AGENTIZE_HOME/scripts/agentize-functions.sh"
+```
 
-From any directory:
+### Worktree Management (`wt`)
+
+Manage git worktrees from any directory:
 
 ```bash
 wt spawn 42              # Create worktree for issue #42
@@ -95,35 +98,11 @@ wt remove 42             # Remove worktree for issue #42
 wt prune                 # Clean up stale worktree metadata
 ```
 
-The `wt` function ensures worktrees are always created under `$AGENTIZE_HOME/trees/`, regardless of your current directory.
+Worktrees are always created under `$AGENTIZE_HOME/trees/`, regardless of your current directory.
 
-### Requirements
+### SDK Project Management (`agentize`)
 
-- `AGENTIZE_HOME` environment variable must point to the agentize repository
-- The function will fail with a clear error if `AGENTIZE_HOME` is missing or invalid
-
-## Agentize CLI Wrapper
-
-For convenience, Agentize provides ergonomic `agentize init` and `agentize update` commands as alternatives to the verbose `make agentize` interface. The make interface remains the canonical implementation.
-
-### Setup
-
-Add to your shell RC file (`~/.bashrc`, `~/.zshrc`, etc.):
-
-```bash
-export AGENTIZE_HOME="/path/to/agentize"
-source "$AGENTIZE_HOME/scripts/wt-functions.sh"
-source "$AGENTIZE_HOME/scripts/agentize-functions.sh"
-```
-
-Or use `make env-script` to generate a local `setup.sh` (gitignored) with hardcoded paths:
-
-```bash
-make env-script
-source setup.sh
-```
-
-### Usage
+Ergonomic commands for initializing and updating SDK projects:
 
 **Initialize a new project:**
 
@@ -153,12 +132,10 @@ agentize update --path /path/to/project
 
 The `update` command finds the nearest `.claude/` directory by traversing parent directories, making it convenient to use from anywhere within your project.
 
-### Requirements
-
-- `AGENTIZE_HOME` environment variable must point to the agentize repository
-- `init` requires explicit `--name` and `--lang` flags (no inference)
+**Notes:**
+- `init` requires explicit `--name` and `--lang` flags
 - `update` searches for nearest `.claude/` directory or accepts `--path` override
-- The function prints the resolved project path before executing
+- Both commands are wrappers around `make agentize` for convenience
 
 ## Project Organization
 
