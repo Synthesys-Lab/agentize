@@ -25,8 +25,7 @@ This command orchestrates a three-agent debate system to generate high-quality i
 1. **Three-agent debate**: Launch bold-proposer first, then critique and reducer analyze its output
 2. **Combine reports**: Merge all three perspectives into single document
 3. **External consensus**: Invoke external-consensus skill to synthesize balanced plan
-4. **User approval**: Present consensus plan for review
-5. **GitHub issue creation**: Invoke open-issue skill to create [plan] issue
+4. **Draft issue creation**: Automatically create draft GitHub issue via open-issue skill
 
 ## Inputs
 
@@ -292,91 +291,40 @@ Consensus plan saved to: {CONSENSUS_PLAN_FILE}
 **Extract:**
 - Save the consensus plan file path as `CONSENSUS_PLAN_FILE`
 
-### Step 7: Present Plan to User for Approval
-
-Display the consensus plan and ask for approval:
-
-```
-Consensus Implementation Plan
-==============================
-
-{display key sections from consensus plan}
-
-Total LOC: ~{N} ({complexity})
-Components: {count}
-Test strategy: {summary}
-
-Full plan saved to: {file}
-
-Options:
-1. Approve and create GitHub issue
-2. Refine plan (run /ultra-planner --refine {file})
-3. Abandon plan
-
-Your choice: _
-```
-
-**Wait for user decision.**
-
-### Step 7A: If Approved - Create GitHub Issue
+### Step 7: Create Draft GitHub Issue
 
 **REQUIRED SKILL CALL:**
 
-Use the Skill tool to invoke the open-issue skill:
+Use the Skill tool to invoke the open-issue skill with draft and auto flags:
 
 ```
 Skill tool parameters:
   skill: "open-issue"
-  args: "{CONSENSUS_PLAN_FILE}"
+  args: "--draft --auto {CONSENSUS_PLAN_FILE}"
 ```
 
 **What this skill does:**
 1. Reads consensus plan from file
 2. Determines appropriate tag from `docs/git-msg-tags.md`
-3. Formats issue with Problem Statement and Proposed Solution sections
-4. Creates issue via `gh issue create` command
+3. Formats issue with `[draft]` prefix and Problem Statement/Proposed Solution sections
+4. Creates issue automatically (no user confirmation due to `--auto` flag)
 5. Returns issue number and URL
 
 **Expected output:**
 ```
-GitHub issue created: #{issue_number}
+Draft GitHub issue created: #{issue_number}
 
-Title: [plan][tag] {feature name}
+Title: [draft][plan][tag] {feature name}
 URL: {issue_url}
 
-Next steps:
-- Review issue on GitHub
-- Use /issue-to-impl {issue_number} to start implementation
+This is a draft plan. To refine it, use:
+  /refine-issue {issue_number}
+
+To approve and implement, remove [draft] from the issue title on GitHub, then:
+  /issue-to-impl {issue_number}
 ```
 
 Display this output to the user. Command completes successfully.
-
-### Step 7B: If Refine - Restart with Existing Plan
-
-User chooses to refine the plan:
-
-```
-Refining plan...
-
-Use: /ultra-planner --refine {consensus_plan_file}
-```
-
-The plan file becomes input for a new debate cycle. The three agents will analyze the existing plan and propose improvements.
-
-### Step 7C: If Abandoned - Exit
-
-User abandons the plan:
-
-```
-Plan abandoned.
-
-Debate report saved to: {debate_report_file}
-Consensus plan saved to: {consensus_plan_file}
-
-You can review these files later or restart with /ultra-planner.
-```
-
-Command exits without creating issue.
 
 ## Error Handling
 
@@ -513,25 +461,26 @@ External consensus review...
 
 Consensus: JWT + basic roles (~280 LOC, Medium)
 
-Approve and create GitHub issue? (y/n): y
-
-GitHub issue created: #42
+Draft GitHub issue created: #42
+Title: [draft][plan][feat] Add user authentication
 URL: https://github.com/user/repo/issues/42
 
-Next: /issue-to-impl 42
+To refine: /refine-issue 42
+To implement: Remove [draft] on GitHub, then /issue-to-impl 42
 ```
 
-### Example 2: Plan Refinement
+### Example 2: Plan Refinement (Using /refine-issue)
+
+**Note:** Plan refinement is now handled by the `/refine-issue` command, not `--refine` mode.
 
 **Input:**
 ```
-/ultra-planner --refine .tmp/consensus-plan-20251225-160245.md
+/refine-issue 42
 ```
 
 **Output:**
 ```
-Refinement mode: Loading existing plan...
-
+Fetching issue #42...
 Running debate on current plan to identify improvements...
 
 [Debate completes]
@@ -541,35 +490,8 @@ Refined consensus plan:
 - Removed: OAuth2 integration
 - Added: Better error handling
 
-Approve refined plan? (y/n): y
-
-GitHub issue created: #43 (refined plan)
-```
-
-### Example 3: Abandonment
-
-**Input:**
-```
-/ultra-planner Build a complete e-commerce platform
-```
-
-**Output:**
-```
-Debate complete.
-
-Consensus: ~2400 LOC (Very Large)
-
-This is a very large feature. Consider breaking it down.
-
-Approve? (y/n): n
-
-Plan abandoned.
-
-Saved files:
-- Debate report: .tmp/debate-report-20251225-160530.md
-- Consensus plan: .tmp/consensus-plan-20251225-160845.md
-
-Tip: Review the debate report for insights on how to break this down.
+Issue #42 updated with refined plan.
+URL: https://github.com/user/repo/issues/42
 ```
 
 ## Notes
@@ -577,8 +499,9 @@ Tip: Review the debate report for insights on how to break this down.
 - Bold-proposer runs first, then critique and reducer analyze its proposal in parallel
 - Command directly orchestrates agents (no debate-based-planning skill needed)
 - **external-consensus skill** is required for synthesis
-- **open-issue skill** is used for GitHub issue creation
-- Refinement mode **reruns full debate** (not just consensus)
+- **open-issue skill** is used for GitHub issue creation with `--draft` and `--auto` flags
+- Draft issues are created automatically (no user confirmation required)
+- Refinement is now handled by `/refine-issue` command (updates existing issue)
 - Plan files in `.tmp/` are **gitignored** (not tracked)
 - Execution time: **5-10 minutes** end-to-end
 - Cost: **~$2-5** per planning session (3 Opus agents + 1 external review)
