@@ -66,11 +66,14 @@ For persistence, add `source /path/to/agentize/setup.sh` to your shell RC file (
 Manage git worktrees from any directory:
 
 ```bash
-wt spawn 42              # Create worktree for issue #42
+wt spawn 42              # Create worktree for issue #42 and auto-launch AI agent
+wt spawn 42 --no-agent   # Create worktree without launching AI agent (for scripting/testing)
 wt list                  # List all worktrees
 wt remove 42             # Remove worktree for issue #42
 wt prune                 # Clean up stale worktree metadata
 ```
+
+When running interactively, `wt spawn` automatically launches an AI agent (Claude Code or Claude) in the new worktree. Use `--no-agent` to disable auto-launch for scripting or testing workflows.
 
 Worktrees are always created under `$AGENTIZE_HOME/trees/`, regardless of your current directory.
 

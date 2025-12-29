@@ -91,10 +91,16 @@ Worktrees share the `.git` directory while providing isolated working directorie
 
 ### Setup
 
-Use the helper script:
+Use the cross-project `wt` function (recommended) or the helper script directly:
 
 ```bash
-# Create worktree (fetches title from GitHub)
+# Using wt function (auto-launches AI agent)
+wt spawn 42
+
+# Or disable auto-launch for scripting/testing
+wt spawn 42 --no-agent
+
+# Or use script directly (fetches title from GitHub)
 scripts/worktree.sh create 42
 
 # Or specify custom description
@@ -104,32 +110,31 @@ scripts/worktree.sh create 42 add-feature
 # Branch: issue-42-add-feature
 ```
 
-The script automatically:
+The `wt spawn` command automatically:
 - Creates `trees/issue-<N>-<title>/` (gitignored)
 - Creates branch following naming convention
 - Bootstraps `CLAUDE.md` and `.claude/` into worktree
+- Launches AI agent in the new worktree (when interactive and `--no-agent` not specified)
 
 ### Workflow
 
 **Terminal 1 (Issue #45):**
 ```bash
-cd ~/projects/my-project
-scripts/worktree.sh create 45
-cd trees/issue-45-add-rust-support
-claude-code
+# wt spawn auto-launches AI agent in the new worktree
+wt spawn 45
+# AI agent is now running in trees/issue-45-add-rust-support/
 # /issue-to-impl 45
 ```
 
 **Terminal 2 (Issue #46):**
 ```bash
-cd ~/projects/my-project
-scripts/worktree.sh create 46
-cd trees/issue-46-update-documentation
-claude-code
+# wt spawn auto-launches AI agent in the new worktree
+wt spawn 46
+# AI agent is now running in trees/issue-46-update-documentation/
 # /issue-to-impl 46
 ```
 
-Each worktree operates independently on its own branch.
+Each worktree operates independently on its own branch. The `wt spawn` command eliminates the manual `cd` and `claude-code` steps by auto-launching the AI agent in the new worktree.
 
 ### Important: Path Rules
 

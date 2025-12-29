@@ -139,6 +139,21 @@ echo "=== Worktree Smoke Test ==="
   ./worktree.sh remove 66
   echo -e "${GREEN}PASS: Env override works${NC}"
 
+  echo ""
+  # Test 10: --print-path marker emission
+  echo "Test 10: --print-path emits marker and creates worktree"
+  OUTPUT=$(./worktree.sh create --print-path 55 test)
+  if [[ ! "$OUTPUT" =~ __WT_WORKTREE_PATH__=trees/issue-55-test ]]; then
+      echo -e "${RED}FAIL: --print-path did not emit marker${NC}"
+      exit 1
+  fi
+  if [ ! -d "trees/issue-55-test" ]; then
+      echo -e "${RED}FAIL: --print-path did not create worktree${NC}"
+      exit 1
+  fi
+  ./worktree.sh remove 55
+  echo -e "${GREEN}PASS: --print-path marker emitted and worktree created${NC}"
+
   # Cleanup
   cd /
   rm -rf "$TEST_DIR"

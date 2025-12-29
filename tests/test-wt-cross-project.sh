@@ -92,8 +92,8 @@ echo "Test 3: wt spawn creates worktree in correct location"
     # Source wt functions
     source "$TEST_AGENTIZE/scripts/wt-cli.sh"
 
-    # Create worktree using wt spawn
-    wt spawn 42 test-cross
+    # Create worktree using wt spawn with --no-agent to prevent auto-launch
+    wt spawn 42 test-cross --no-agent
 
     # Verify worktree created in agentize repo, not current project
     if [ ! -d "$TEST_AGENTIZE/trees/issue-42-test-cross" ]; then
@@ -122,6 +122,17 @@ echo "Test 3: wt spawn creates worktree in correct location"
       exit 1
     fi
     echo -e "${GREEN}PASS: wt remove works from different directory${NC}"
+
+    # Test wt spawn with --no-agent flag
+    wt spawn 43 no-agent-test --no-agent
+    if [ ! -d "$TEST_AGENTIZE/trees/issue-43-no-agent-test" ]; then
+      echo -e "${RED}FAIL: wt spawn --no-agent did not create worktree${NC}"
+      exit 1
+    fi
+    echo -e "${GREEN}PASS: wt spawn --no-agent creates worktree without launching agent${NC}"
+
+    # Cleanup the --no-agent test worktree
+    wt remove 43
   )
 
   # Cleanup
