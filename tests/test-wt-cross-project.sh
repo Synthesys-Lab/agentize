@@ -125,7 +125,8 @@ echo "Test 3: wt spawn creates worktree in correct location"
 
     # Test wt spawn with --no-agent flag
     wt spawn 43 no-agent-test --no-agent
-    if [ ! -d "$TEST_AGENTIZE/trees/issue-43-no-agent-test" ]; then
+    # Note: "no-agent-test" is truncated to "no-agent" (max 10 chars, word boundary)
+    if [ ! -d "$TEST_AGENTIZE/trees/issue-43-no-agent" ]; then
       echo -e "${RED}FAIL: wt spawn --no-agent did not create worktree${NC}"
       exit 1
     fi
