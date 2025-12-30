@@ -62,12 +62,31 @@ truncate_suffix() {
 
 # Create worktree
 cmd_create() {
-    local issue_number="$1"
-    local description="$2"
+    local issue_number=""
+    local description=""
+    local print_path=false
+
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --print-path)
+                print_path=true
+                shift
+                ;;
+            *)
+                if [ -z "$issue_number" ]; then
+                    issue_number="$1"
+                elif [ -z "$description" ]; then
+                    description="$1"
+                fi
+                shift
+                ;;
+        esac
+    done
 
     if [ -z "$issue_number" ]; then
         echo -e "${RED}Error: Issue number required${NC}"
-        echo "Usage: $0 create <issue-number> [description]"
+        echo "Usage: $0 create <issue-number> [description] [--print-path]"
         exit 1
     fi
 
@@ -118,6 +137,12 @@ cmd_create() {
     fi
 
     echo -e "${GREEN}✓ Worktree created successfully${NC}"
+
+    # Emit machine-readable path marker if requested
+    if [ "$print_path" = true ]; then
+        echo "__WT_WORKTREE_PATH__=$worktree_path"
+    fi
+
     echo ""
     echo "To start working:"
     echo "  cd $worktree_path"

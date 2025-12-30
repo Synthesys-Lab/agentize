@@ -174,17 +174,73 @@ wt() {
             ;;
 
         spawn)
-            # wt spawn <issue-number> [description]
+            # wt spawn <issue-number> [description] [--no-agent]
             cd "$repo_root" || {
                 echo "Error: Failed to change directory to $repo_root"
                 cd "$original_dir"
                 return 1
             }
 
-            ./scripts/worktree.sh create "$@"
-            local exit_code=$?
+            # Parse --no-agent flag
+            local no_agent=false
+            local spawn_args=()
+            for arg in "$@"; do
+                if [ "$arg" = "--no-agent" ]; then
+                    no_agent=true
+                else
+                    spawn_args+=("$arg")
+                fi
+            done
+
+            # Call worktree.sh create with --print-path to get machine-readable output
+            local output
+            output=$(./scripts/worktree.sh create "${spawn_args[@]}" --print-path 2>&1)
+            local create_exit_code=$?
+
+            # Display the output (includes progress messages)
+            echo "$output"
+
+            # Exit if creation failed
+            if [ $create_exit_code -ne 0 ]; then
+                cd "$original_dir"
+                return $create_exit_code
+            fi
+
+            # Extract worktree path from marker
+            local worktree_path
+            worktree_path=$(echo "$output" | grep "^__WT_WORKTREE_PATH__=" | cut -d= -f2)
+
+            if [ -z "$worktree_path" ]; then
+                echo "Warning: Could not extract worktree path from output"
+                cd "$original_dir"
+                return 0
+            fi
+
+            # Validate path exists
+            if [ ! -d "$repo_root/$worktree_path" ]; then
+                echo "Warning: Worktree path does not exist: $repo_root/$worktree_path"
+                cd "$original_dir"
+                return 0
+            fi
+
+            # Auto-launch claude if interactive and not disabled
+            if [ "$no_agent" = false ] && [[ -t 0 ]]; then
+                if command -v claude &> /dev/null; then
+                    echo ""
+                    echo "Launching claude in $worktree_path..."
+                    # Run agent in subshell with cd to worktree
+                    (cd "$repo_root/$worktree_path" && exec claude)
+                else
+                    echo ""
+                    echo "claude not found. Please install claude to enable auto-launch."
+                    echo "Manual steps:"
+                    echo "  cd $repo_root/$worktree_path"
+                    echo "  claude"
+                fi
+            fi
+
             cd "$original_dir"
-            return $exit_code
+            return 0
             ;;
 
         list)
@@ -232,7 +288,7 @@ wt() {
             echo "Usage:"
             echo "  wt init                           # Initialize trees/ with bare repository pattern"
             echo "  wt main                           # Navigate to trees/main/ (or trees/master/)"
-            echo "  wt spawn <issue-number> [description]"
+            echo "  wt spawn <issue-number> [description] [--no-agent]"
             echo "  wt list"
             echo "  wt remove <issue-number>"
             echo "  wt prune"
@@ -240,10 +296,13 @@ wt() {
             echo "Examples:"
             echo "  wt init                  # Setup bare repository pattern"
             echo "  wt main                  # Navigate to main worktree"
-            echo "  wt spawn 42              # Fetch title from GitHub"
-            echo "  wt spawn 42 add-feature  # Use custom description"
+            echo "  wt spawn 42              # Fetch title from GitHub and auto-launch claude"
+            echo "  wt spawn 42 add-feature  # Use custom description with auto-launch"
+            echo "  wt spawn 42 --no-agent   # Create worktree without launching claude"
             echo "  wt list                  # Show all worktrees"
             echo "  wt remove 42             # Remove worktree for issue 42"
+            echo ""
+            echo "Note: Auto-launch requires claude in PATH (interactive sessions only)"
             return 1
             ;;
     esac
