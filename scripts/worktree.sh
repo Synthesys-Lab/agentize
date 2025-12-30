@@ -136,6 +136,21 @@ cmd_create() {
         echo "Bootstrapped CLAUDE.md"
     fi
 
+    # Install pre-commit hook fallback if core.hooksPath is not configured
+    local hooks_path
+    hooks_path=$(git config --get core.hooksPath || true)
+
+    if [ -z "$hooks_path" ] && [ -f "scripts/pre-commit" ]; then
+        local git_dir
+        git_dir=$(git -C "$worktree_path" rev-parse --git-dir)
+        local hooks_dir="$git_dir/hooks"
+
+        mkdir -p "$hooks_dir"
+        cp "scripts/pre-commit" "$hooks_dir/pre-commit"
+        chmod +x "$hooks_dir/pre-commit"
+        echo "Installed pre-commit hook (fallback mode)"
+    fi
+
     echo -e "${GREEN}✓ Worktree created successfully${NC}"
 
     # Emit machine-readable path marker if requested
