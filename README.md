@@ -79,11 +79,14 @@ Manage git worktrees on a per-project basis using the bare repository pattern:
 ```bash
 wt init                  # Initialize trees/ directory with trees/main/ worktree
 wt main                  # Navigate to trees/main/ worktree
-wt spawn 42              # Create worktree for issue #42 in trees/
+wt spawn 42              # Create worktree for issue #42 and auto-launch claude
+wt spawn 42 --no-agent   # Create worktree without launching claude (for scripting)
 wt list                  # List all worktrees
 wt remove 42             # Remove worktree for issue #42
 wt prune                 # Clean up stale worktree metadata
 ```
+
+`wt spawn` automatically launches claude in the new worktree when running interactively. Use `--no-agent` to disable auto-launch for scripting or testing.
 
 **Bare Repository Pattern:**
 

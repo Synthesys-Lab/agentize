@@ -55,8 +55,8 @@ echo "Test 1: wt spawn from subdirectory creates worktree under repo root"
     # Source wt functions
     source "$TEST_PROJECT/scripts/wt-cli.sh"
 
-    # Create worktree using wt spawn
-    wt spawn 42 test
+    # Create worktree using wt spawn (with --no-agent for testing)
+    wt spawn 42 test --no-agent
 
     # Verify worktree created in repo root, not subdirectory
     if [ ! -d "$TEST_PROJECT/trees/issue-42-test" ]; then
