@@ -54,21 +54,21 @@ Assign one issue per worker clone:
 **Terminal 1 (Worker 1 - Issue #45):**
 ```bash
 cd ~/projects/my-project-worker-1
-claude-code
+claude
 # /issue-to-impl 45
 ```
 
 **Terminal 2 (Worker 2 - Issue #46):**
 ```bash
 cd ~/projects/my-project-worker-2
-claude-code
+claude
 # /issue-to-impl 46
 ```
 
 **Terminal 3 (Worker 3 - Issue #47):**
 ```bash
 cd ~/projects/my-project-worker-3
-claude-code
+claude
 # /issue-to-impl 47
 ```
 
@@ -115,7 +115,7 @@ The script automatically:
 - Creates branch following naming convention
 - Bootstraps `CLAUDE.md` and `.claude/` into worktree
 
-When using `wt spawn` interactively, an AI agent (claude-code or claude) is automatically launched in the new worktree, eliminating the need to manually `cd` and start a session.
+When using `wt spawn` interactively, claude is automatically launched in the new worktree, eliminating the need to manually `cd` and start a session.
 
 ### Workflow
 
@@ -175,12 +175,12 @@ If a worker creates a milestone, resume in the same location:
 ```bash
 # For clones
 cd ~/projects/my-project-worker-1
-claude-code
+claude
 # /miles2miles
 
 # For worktrees
 cd ~/projects/my-project/trees/issue-45-*
-claude-code
+claude
 # /miles2miles
 ```
 
