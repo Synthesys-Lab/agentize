@@ -349,3 +349,29 @@ Error: GitHub CLI is not authenticated.
 Run: gh auth login
 ```
 Stop execution.
+
+## Hands-Off Mode
+
+**Enable auto-approval for safe operations** to reduce manual permission prompts during implementation workflows.
+
+**To enable:**
+```bash
+# Create or update .claude/hands-off.json
+echo '{"enabled": true}' > .claude/hands-off.json
+```
+
+**To disable:**
+```bash
+# Set enabled to false
+echo '{"enabled": false}' > .claude/hands-off.json
+```
+
+**Safety boundaries:**
+- Only safe/reversible operations auto-approved (reads, file writes on non-main branches)
+- Destructive actions always require manual approval (git push, git reset, rm -rf)
+- `.milestones/` files never auto-staged
+- Only active on non-main branches
+
+**Troubleshooting:**
+- If workflow gets stuck: Check `.tmp/claude-hooks/auto-approvals.log` for decisions
+- To force manual mode: Set `enabled: false` in `.claude/hands-off.json`
