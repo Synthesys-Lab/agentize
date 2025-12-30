@@ -81,7 +81,7 @@ git branch --show-current
 **If Step 2 detected matching branch:**
 - Skip `fork-dev-branch` invocation
 - Output: "Already on issue-{N} branch: {current-branch}"
-- Proceed to Step 4
+- Proceed to Step 3.5
 
 **Otherwise, invoke:** `fork-dev-branch` skill
 **Input:** Issue number from Step 1
@@ -97,6 +97,76 @@ git branch --show-current
 - Issue not found → Stop, display error to user
 - Issue closed → Warn user, ask for confirmation
 - Branch name mismatch (on issue-M branch, requesting issue N where M ≠ N) → Warn user, ask to confirm or switch
+
+### Step 3.5: Sync Current Issue Branch with origin/<default>
+
+**Purpose:** Ensure the current issue branch is rebased onto latest `origin/main` or `origin/master` to minimize late-stage merge conflicts.
+
+**Re-check current branch:**
+```bash
+git branch --show-current
+```
+
+Verify we're on the expected issue branch (issue-{N}-*).
+
+**Enforce clean working tree:**
+```bash
+git status --porcelain
+```
+
+**Error handling:**
+- If output is non-empty (uncommitted changes exist):
+  ```
+  Error: Working directory has uncommitted changes.
+
+  Please commit or stash your changes before syncing:
+    git add .
+    git commit -m "..."
+  OR
+    git stash
+  ```
+  Stop execution.
+
+**Detect default branch:**
+```bash
+# Try main first, fall back to master
+if git rev-parse --verify origin/main >/dev/null 2>&1; then
+  DEFAULT_BRANCH="main"
+elif git rev-parse --verify origin/master >/dev/null 2>&1; then
+  DEFAULT_BRANCH="master"
+else
+  echo "Error: Neither origin/main nor origin/master found"
+  exit 1
+fi
+```
+
+**Fetch and rebase:**
+```bash
+git fetch origin
+git rebase origin/$DEFAULT_BRANCH
+```
+
+**Error handling:**
+- If rebase fails (exit code non-zero), Git will output conflict details:
+  ```
+  Error: Rebase conflict detected.
+
+  To resolve:
+  1. Fix conflicts in the files listed above
+  2. Stage resolved files: git add <file>
+  3. Continue: git rebase --continue
+  OR abort: git rebase --abort
+  ```
+  Stop execution.
+
+**Success output:**
+```
+Synced with origin/{DEFAULT_BRANCH}: branch up to date
+```
+
+**Important note:** This step syncs the **current issue branch** with upstream. This is different from `/sync-master`, which syncs the main/master branch itself before PR creation.
+
+Proceed to Step 4.
 
 ### Step 4: Read Implementation Plan
 
