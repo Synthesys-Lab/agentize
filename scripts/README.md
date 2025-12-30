@@ -105,10 +105,15 @@ This directory contains utility scripts and git hooks for the project.
 
 ### Installing Pre-commit Hook
 
-The pre-commit hook should be linked to `.git/hooks/pre-commit`:
+The pre-commit hook is installed automatically when using the worktree tools:
+
+- **`wt init`** configures `core.hooksPath` to `scripts`, enabling shared hooks across all worktrees.
+- **`wt spawn`** (via `worktree.sh`) installs a fallback hook in new worktrees when `core.hooksPath` is not configured.
+
+For manual setup or troubleshooting, you can link the hook directly:
 
 ```bash
-# Link to git hooks (typically done during project setup)
+# Manual linking (optional, typically not needed)
 ln -sf ../../scripts/pre-commit .git/hooks/pre-commit
 ```
 

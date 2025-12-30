@@ -42,6 +42,16 @@ echo "=== Worktree Smoke Test ==="
   # Copy CLAUDE.md for bootstrap testing
   echo "Test CLAUDE.md" > CLAUDE.md
 
+  # Create scripts directory and pre-commit hook for hook installation testing
+  mkdir -p scripts
+  cat > scripts/pre-commit << 'EOF'
+#!/usr/bin/env bash
+# Test pre-commit hook
+echo "Pre-commit hook executed"
+exit 0
+EOF
+  chmod +x scripts/pre-commit
+
   echo ""
   # Test 1: Create worktree with custom description (truncated to 10 chars)
   echo "Test 1: Create worktree with custom description"
@@ -154,6 +164,28 @@ echo "=== Worktree Smoke Test ==="
   fi
   ./worktree.sh remove 55
   echo -e "${GREEN}PASS: --print-path emits marker and creates worktree${NC}"
+
+  echo ""
+  # Test 11: Pre-commit hook installed in new worktree (when core.hooksPath not set)
+  echo "Test 11: Pre-commit hook installed in new worktree"
+  ./worktree.sh create 56 hook-test
+
+  # Compute worktree git dir
+  WORKTREE_GIT_DIR=$(git -C "trees/issue-56-hook-test" rev-parse --git-dir)
+  HOOK_PATH="$WORKTREE_GIT_DIR/hooks/pre-commit"
+
+  if [ ! -f "$HOOK_PATH" ]; then
+      echo -e "${RED}FAIL: Pre-commit hook not installed in worktree${NC}"
+      exit 1
+  fi
+
+  if [ ! -x "$HOOK_PATH" ]; then
+      echo -e "${RED}FAIL: Pre-commit hook not executable${NC}"
+      exit 1
+  fi
+
+  ./worktree.sh remove 56
+  echo -e "${GREEN}PASS: Pre-commit hook installed and executable${NC}"
 
   # Cleanup
   cd /
