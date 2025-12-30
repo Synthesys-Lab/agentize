@@ -158,6 +158,22 @@ cmd_list() {
 # Remove worktree
 cmd_remove() {
     local issue_number="$1"
+    shift
+    local keep_branch=false
+
+    # Parse flags
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --keep-branch)
+                keep_branch=true
+                shift
+                ;;
+            *)
+                echo -e "${RED}Error: Unknown flag: $1${NC}"
+                exit 1
+                ;;
+        esac
+    done
 
     if [ -z "$issue_number" ]; then
         echo -e "${RED}Error: Issue number required${NC}"
@@ -174,12 +190,35 @@ cmd_remove() {
         exit 1
     fi
 
+    # Resolve branch name before removing worktree
+    local branch_name
+    branch_name=$(git -C "$worktree_path" symbolic-ref --quiet --short HEAD 2>/dev/null || echo "")
+
+    if [ -z "$branch_name" ]; then
+        echo -e "${YELLOW}Warning: Worktree is in detached HEAD state, skipping branch deletion${NC}"
+    elif [[ ! "$branch_name" =~ ^issue-${issue_number}- ]]; then
+        echo -e "${YELLOW}Warning: Branch '$branch_name' does not match expected pattern, skipping deletion${NC}"
+        branch_name=""
+    fi
+
     echo "Removing worktree: $worktree_path"
 
     # Remove worktree (force to handle untracked/uncommitted files)
     git worktree remove --force "$worktree_path"
 
     echo -e "${GREEN}✓ Worktree removed successfully${NC}"
+
+    # Delete branch unless --keep-branch specified
+    if [ "$keep_branch" = true ]; then
+        echo "Kept branch: $branch_name"
+    elif [ -n "$branch_name" ]; then
+        if git branch -d "$branch_name" 2>/dev/null; then
+            echo -e "${GREEN}✓ Branch deleted: $branch_name${NC}"
+        else
+            echo -e "${YELLOW}Warning: Could not delete branch '$branch_name' (may have unmerged commits)${NC}"
+            echo "To force delete: git branch -D $branch_name"
+        fi
+    fi
 }
 
 # Prune stale worktree metadata

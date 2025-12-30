@@ -95,11 +95,11 @@ echo "Test 1: wt spawn from subdirectory creates worktree under repo root"
     cd "$TEST_PROJECT"
     source "$TEST_AGENTIZE/scripts/wt-cli.sh"
 
-    # Create worktree
-    wt spawn 43 test-branch-delete
+    # Create worktree (use short name to avoid truncation)
+    wt spawn 43 test-rm
 
     # Verify branch exists
-    (cd "$TEST_AGENTIZE" && git branch | grep -q "issue-43-test-branch-delete") || {
+    (cd "$TEST_AGENTIZE" && git branch | grep -q "issue-43-test-rm") || {
       echo -e "${RED}FAIL: Branch not created${NC}"
       exit 1
     }
@@ -108,13 +108,13 @@ echo "Test 1: wt spawn from subdirectory creates worktree under repo root"
     wt remove 43
 
     # Verify worktree removed
-    if [ -d "$TEST_AGENTIZE/trees/issue-43-test-branch-delete" ]; then
+    if [ -d "$TEST_AGENTIZE/trees/issue-43-test-rm" ]; then
       echo -e "${RED}FAIL: Worktree not removed${NC}"
       exit 1
     fi
 
     # Verify branch deleted
-    if (cd "$TEST_AGENTIZE" && git branch | grep -q "issue-43-test-branch-delete"); then
+    if (cd "$TEST_AGENTIZE" && git branch | grep -q "issue-43-test-rm"); then
       echo -e "${RED}FAIL: Branch not deleted${NC}"
       exit 1
     fi
@@ -130,11 +130,11 @@ echo "Test 1: wt spawn from subdirectory creates worktree under repo root"
     cd "$TEST_PROJECT"
     source "$TEST_AGENTIZE/scripts/wt-cli.sh"
 
-    # Create worktree
-    wt spawn 44 test-keep-branch
+    # Create worktree (use short name to avoid truncation)
+    wt spawn 44 test-keep
 
     # Verify branch exists
-    (cd "$TEST_AGENTIZE" && git branch | grep -q "issue-44-test-keep-branch") || {
+    (cd "$TEST_AGENTIZE" && git branch | grep -q "issue-44-test-keep") || {
       echo -e "${RED}FAIL: Branch not created${NC}"
       exit 1
     }
@@ -143,19 +143,19 @@ echo "Test 1: wt spawn from subdirectory creates worktree under repo root"
     wt remove 44 --keep-branch
 
     # Verify worktree removed
-    if [ -d "$TEST_AGENTIZE/trees/issue-44-test-keep-branch" ]; then
+    if [ -d "$TEST_AGENTIZE/trees/issue-44-test-keep" ]; then
       echo -e "${RED}FAIL: Worktree not removed${NC}"
       exit 1
     fi
 
     # Verify branch still exists
-    if ! (cd "$TEST_AGENTIZE" && git branch | grep -q "issue-44-test-keep-branch"); then
+    if ! (cd "$TEST_AGENTIZE" && git branch | grep -q "issue-44-test-keep"); then
       echo -e "${RED}FAIL: Branch was deleted when it should be kept${NC}"
       exit 1
     fi
 
     # Cleanup the preserved branch
-    (cd "$TEST_AGENTIZE" && git branch -D issue-44-test-keep-branch)
+    (cd "$TEST_AGENTIZE" && git branch -D issue-44-test-keep)
 
     echo -e "${GREEN}PASS: wt remove --keep-branch preserves branch${NC}"
   )
