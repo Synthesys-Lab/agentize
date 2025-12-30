@@ -162,21 +162,23 @@ _agentize_update() {
 
     # If no path provided, find nearest .claude/ directory
     if [ -z "$path" ]; then
-        path="$PWD"
-        while [ "$path" != "/" ]; do
-            if [ -d "$path/.claude" ]; then
+        local search_path="$PWD"
+        path=""
+        while [ "$search_path" != "/" ]; do
+            if [ -d "$search_path/.claude" ]; then
+                path="$search_path"
                 break
             fi
-            path="$(dirname "$path")"
+            search_path="$(dirname "$search_path")"
         done
 
-        # Check if .claude/ was found
-        if [ ! -d "$path/.claude" ]; then
-            echo "Error: No .claude/ directory found in current directory or parents"
+        # If no .claude/ found, default to current directory with warning
+        if [ -z "$path" ]; then
+            path="$PWD"
+            echo "Warning: No .claude/ directory found in current directory or parents"
+            echo "  Defaulting to: $path"
+            echo "  .claude/ will be created during update"
             echo ""
-            echo "Please run from a project with .claude/ or use --path flag:"
-            echo "  lol update --path /path/to/project"
-            return 1
         fi
     else
         # Convert to absolute path
@@ -185,11 +187,7 @@ _agentize_update() {
             return 1
         }
 
-        # Verify .claude/ exists
-        if [ ! -d "$path/.claude" ]; then
-            echo "Error: No .claude/ directory found at $path"
-            return 1
-        fi
+        # Allow missing .claude/ - it will be created during update
     fi
 
     echo "Updating SDK:"
