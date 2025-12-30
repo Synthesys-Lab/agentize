@@ -161,7 +161,7 @@ cmd_remove() {
 
     if [ -z "$issue_number" ]; then
         echo -e "${RED}Error: Issue number required${NC}"
-        echo "Usage: $0 remove <issue-number>"
+        echo "Usage: $0 remove <issue-number> [--keep-branch]"
         exit 1
     fi
 
@@ -212,14 +212,15 @@ case "$cmd" in
         echo "Usage:"
         echo "  $0 create <issue-number> [description]"
         echo "  $0 list"
-        echo "  $0 remove <issue-number>"
+        echo "  $0 remove <issue-number> [--keep-branch]"
         echo "  $0 prune"
         echo ""
         echo "Examples:"
         echo "  $0 create 42              # Fetch title from GitHub"
         echo "  $0 create 42 add-feature  # Use custom description"
         echo "  $0 list                   # Show all worktrees"
-        echo "  $0 remove 42              # Remove worktree for issue 42"
+        echo "  $0 remove 42              # Remove worktree and branch for issue 42"
+        echo "  $0 remove 42 --keep-branch  # Remove worktree but keep branch"
         exit 1
         ;;
 esac

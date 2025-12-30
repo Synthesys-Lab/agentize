@@ -82,7 +82,8 @@ wt main                  # Navigate to trees/main/ worktree
 wt spawn 42              # Create worktree for issue #42 and auto-launch claude
 wt spawn 42 --no-agent   # Create worktree without launching claude (for scripting)
 wt list                  # List all worktrees
-wt remove 42             # Remove worktree for issue #42
+wt remove 42             # Remove worktree for issue #42 (also deletes branch)
+wt remove 42 --keep-branch  # Remove worktree but keep the branch
 wt prune                 # Clean up stale worktree metadata
 ```
 

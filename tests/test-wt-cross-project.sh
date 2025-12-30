@@ -78,13 +78,86 @@ echo "Test 1: wt spawn from subdirectory creates worktree under repo root"
     fi
     echo -e "${GREEN}PASS: wt list works from subdirectory${NC}"
 
-    # Test wt remove
+    # Test wt remove (basic cleanup for next tests)
     wt remove 42
     if [ -d "$TEST_PROJECT/trees/issue-42-test" ]; then
       echo -e "${RED}FAIL: wt remove did not remove worktree${NC}"
       exit 1
     fi
     echo -e "${GREEN}PASS: wt remove works from subdirectory${NC}"
+  )
+
+  # Test 4: wt remove deletes branch by default
+  echo ""
+  echo "Test 4: wt remove deletes branch by default"
+  (
+    export AGENTIZE_HOME="$TEST_AGENTIZE"
+    cd "$TEST_PROJECT"
+    source "$TEST_AGENTIZE/scripts/wt-cli.sh"
+
+    # Create worktree
+    wt spawn 43 test-branch-delete
+
+    # Verify branch exists
+    (cd "$TEST_AGENTIZE" && git branch | grep -q "issue-43-test-branch-delete") || {
+      echo -e "${RED}FAIL: Branch not created${NC}"
+      exit 1
+    }
+
+    # Remove worktree (should also delete branch)
+    wt remove 43
+
+    # Verify worktree removed
+    if [ -d "$TEST_AGENTIZE/trees/issue-43-test-branch-delete" ]; then
+      echo -e "${RED}FAIL: Worktree not removed${NC}"
+      exit 1
+    fi
+
+    # Verify branch deleted
+    if (cd "$TEST_AGENTIZE" && git branch | grep -q "issue-43-test-branch-delete"); then
+      echo -e "${RED}FAIL: Branch not deleted${NC}"
+      exit 1
+    fi
+
+    echo -e "${GREEN}PASS: wt remove deletes branch by default${NC}"
+  )
+
+  # Test 5: wt remove --keep-branch preserves branch
+  echo ""
+  echo "Test 5: wt remove --keep-branch preserves branch"
+  (
+    export AGENTIZE_HOME="$TEST_AGENTIZE"
+    cd "$TEST_PROJECT"
+    source "$TEST_AGENTIZE/scripts/wt-cli.sh"
+
+    # Create worktree
+    wt spawn 44 test-keep-branch
+
+    # Verify branch exists
+    (cd "$TEST_AGENTIZE" && git branch | grep -q "issue-44-test-keep-branch") || {
+      echo -e "${RED}FAIL: Branch not created${NC}"
+      exit 1
+    }
+
+    # Remove worktree with --keep-branch
+    wt remove 44 --keep-branch
+
+    # Verify worktree removed
+    if [ -d "$TEST_AGENTIZE/trees/issue-44-test-keep-branch" ]; then
+      echo -e "${RED}FAIL: Worktree not removed${NC}"
+      exit 1
+    fi
+
+    # Verify branch still exists
+    if ! (cd "$TEST_AGENTIZE" && git branch | grep -q "issue-44-test-keep-branch"); then
+      echo -e "${RED}FAIL: Branch was deleted when it should be kept${NC}"
+      exit 1
+    fi
+
+    # Cleanup the preserved branch
+    (cd "$TEST_AGENTIZE" && git branch -D issue-44-test-keep-branch)
+
+    echo -e "${GREEN}PASS: wt remove --keep-branch preserves branch${NC}"
   )
 
   # Cleanup

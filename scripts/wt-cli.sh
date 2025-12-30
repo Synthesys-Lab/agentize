@@ -290,7 +290,7 @@ wt() {
             echo "  wt main                           # Navigate to trees/main/ (or trees/master/)"
             echo "  wt spawn <issue-number> [description] [--no-agent]"
             echo "  wt list"
-            echo "  wt remove <issue-number>"
+            echo "  wt remove <issue-number> [--keep-branch]"
             echo "  wt prune"
             echo ""
             echo "Examples:"
@@ -300,9 +300,11 @@ wt() {
             echo "  wt spawn 42 add-feature  # Use custom description with auto-launch"
             echo "  wt spawn 42 --no-agent   # Create worktree without launching claude"
             echo "  wt list                  # Show all worktrees"
-            echo "  wt remove 42             # Remove worktree for issue 42"
+            echo "  wt remove 42             # Remove worktree and branch for issue 42"
+            echo "  wt remove 42 --keep-branch  # Remove worktree but keep branch"
             echo ""
             echo "Note: Auto-launch requires claude in PATH (interactive sessions only)"
+            cd "$original_dir"
             return 1
             ;;
     esac
