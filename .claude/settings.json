@@ -55,6 +55,15 @@
       "Bash(git show:*)",
       "Bash(git rev-parse:*)",
 
+      "Bash(echo GIT Rebase to merge)",
+      "Bash(git fetch origin:*)",
+      "Bash(git fetch upstream:*)",
+      "Bash(git rebase origin main)",
+      "Bash(git rebase upstream main)",
+      "Bash(git rebase origin master)",
+      "Bash(git rebase upstream master)",
+      "Bash(git rebase --continue:*)",
+
       "Bash(echo GITHUB READ OPERATIONS - Viewing GitHub resources)",
       "Bash(gh search:*)",
       "Bash(gh run view:*)",
