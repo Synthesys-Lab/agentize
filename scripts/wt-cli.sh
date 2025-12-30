@@ -135,6 +135,24 @@ wt() {
                 echo "Created .gitignore to exclude trees/"
             fi
 
+            # Configure shared hooks for all worktrees
+            echo ""
+            local hooks_path
+            hooks_path=$(git config --get core.hooksPath || true)
+
+            if [ -z "$hooks_path" ]; then
+                git config core.hooksPath scripts
+                echo "Configured core.hooksPath to 'scripts' for shared hooks across worktrees"
+            else
+                echo "core.hooksPath already set to '$hooks_path', leaving unchanged"
+            fi
+
+            # Ensure pre-commit hook is executable if present
+            if [ -f "$repo_root/scripts/pre-commit" ]; then
+                chmod +x "$repo_root/scripts/pre-commit"
+                echo "Ensured scripts/pre-commit is executable"
+            fi
+
             echo ""
             echo "Bare repository pattern initialized!"
             echo "- Main worktree: trees/$default_branch/"
@@ -286,7 +304,7 @@ wt() {
             echo "wt: Git worktree helper (per-project)"
             echo ""
             echo "Usage:"
-            echo "  wt init                           # Initialize trees/ with bare repository pattern"
+            echo "  wt init                           # Initialize trees/ with bare repository pattern and hooks"
             echo "  wt main                           # Navigate to trees/main/ (or trees/master/)"
             echo "  wt spawn <issue-number> [description] [--no-agent]"
             echo "  wt list"
@@ -294,7 +312,7 @@ wt() {
             echo "  wt prune"
             echo ""
             echo "Examples:"
-            echo "  wt init                  # Setup bare repository pattern"
+            echo "  wt init                  # Setup bare repository pattern and configure hooks"
             echo "  wt main                  # Navigate to main worktree"
             echo "  wt spawn 42              # Fetch title from GitHub and auto-launch claude"
             echo "  wt spawn 42 add-feature  # Use custom description with auto-launch"
