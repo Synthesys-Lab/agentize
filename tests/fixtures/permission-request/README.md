@@ -1,69 +1,22 @@
-# Permission Request Test Fixtures
+# Permission Request Hook Fixtures
 
-This directory contains JSON fixtures for testing the PermissionRequest hook (`.claude/hooks/permission-request.sh`).
+This directory contains test fixtures for the Claude Code permission request hook (`permission-request.sh`).
 
-## Purpose
+## CLAUDE_HANDSOFF Environment Variable
 
-Each JSON file represents a simulated tool permission request that Claude Code would send to the PermissionRequest hook. The test harness (`tests/test-claude-permission-hook.sh`) uses these fixtures to validate that the hook correctly approves safe operations and blocks destructive ones.
+The permission hook uses `CLAUDE_HANDSOFF` as the primary configuration method for hands-off mode.
 
-## Fixture Format
+### Expected Behavior
 
-Each fixture is a JSON object with the structure:
-```json
-{
-  "tool": "ToolName",
-  "parameters": {
-    "param1": "value1",
-    ...
-  }
-}
-```
+- `CLAUDE_HANDSOFF=true` (case-insensitive) → Safe read operations are auto-allowed
+- `CLAUDE_HANDSOFF=false` (case-insensitive) → Always ask for permission
+- `CLAUDE_HANDSOFF=<invalid>` → Treat as disabled (always ask)
+- Unset → Falls back to `.claude/hands-off.json` if present, otherwise asks
 
-## Available Fixtures
+### Test Cases
 
-### safe-read.json
-**Tool**: Read
-**Purpose**: Tests that read-only operations are auto-approved when hands-off mode is enabled
-**Expected**: `allow` when enabled, `ask` when disabled
-
-### reversible-write.json
-**Tool**: Write
-**Purpose**: Tests that file writes are auto-approved on non-main branches
-**Expected**: `allow` on issue branches when enabled, `ask` on main or when disabled
-
-### destructive-push.json
-**Tool**: Bash (git push)
-**Purpose**: Tests that git push commands are blocked
-**Expected**: `deny` or `ask` (never `allow`)
-
-### git-reset-hard.json
-**Tool**: Bash (git reset --hard)
-**Purpose**: Tests that destructive git commands are blocked
-**Expected**: `deny` or `ask` (never `allow`)
-
-### git-add-with-milestones.json
-**Tool**: Bash (git add -A)
-**Purpose**: Tests the .milestones/ staging guard
-**Expected**: Special handling when .milestones/ files are present
-
-## Usage
-
-These fixtures are consumed by `tests/test-claude-permission-hook.sh`:
-
-```bash
-# Run hook with fixture
-./claude/hooks/permission-request.sh < tests/fixtures/permission-request/safe-read.json
-
-# Expected output format
-{"decision": "allow"}
-{"decision": "deny"}
-{"decision": "ask"}
-```
-
-## Adding New Fixtures
-
-To add a new test scenario:
-
-1. Create a new JSON file following the format above
-2. Add corresponding test case in `tests/test-claude-permission-hook.sh`
-3. Document the fixture in this README
+1. **Enabled hands-off**: `CLAUDE_HANDSOFF=true` + safe read → `allow`
+2. **Disabled hands-off**: `CLAUDE_HANDSOFF=false` + safe read → `ask`
+3. **Invalid value**: `CLAUDE_HANDSOFF=maybe` + safe read → `ask` (fail-closed)
+4. **Backward compatibility**: Unset env var + JSON enabled → `allow`
+5. **Destructive protection**: `CLAUDE_HANDSOFF=true` + destructive bash → `deny` or `ask`
