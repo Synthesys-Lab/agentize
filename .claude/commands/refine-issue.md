@@ -1,7 +1,7 @@
 ---
 name: refine-issue
 description: Refine GitHub plan issues using multi-agent debate workflow
-argument-hint: <issue-number>
+argument-hint: <issue-number> [refinement-instructions]
 ---
 
 ultrathink
@@ -10,21 +10,30 @@ ultrathink
 
 Refine existing GitHub plan issues by running the issue body through the multi-agent debate workflow and updating the issue with the improved plan.
 
-Invoke the command: `/refine-issue <issue-number>`
+Invoke the command: `/refine-issue <issue-number> [refinement-instructions]`
 
 ## What This Command Does
 
 This command fetches an existing GitHub plan issue, runs its content through the ultra-planner debate workflow, and updates the issue with the refined consensus plan:
 
 1. **Fetch issue**: Get issue title and body via GitHub CLI
-2. **Extract plan**: Save issue body to temporary file
-3. **Run debate**: Invoke ultra-planner in refine mode with the plan
-4. **Update issue**: Replace issue body with refined consensus plan
+2. **Invoke three-agent debate**: Bold-proposer, then critique and reducer in parallel
+3. **Combine reports**: Merge all three perspectives into single document
+4. **External consensus**: Synthesize balanced refinement from debate
+5. **Update issue**: Replace issue body with refined consensus plan
 
 ## Inputs
 
 **From arguments ($ARGUMENTS):**
-- Issue number (required): `$ARGUMENTS` = issue number to refine
+- Issue number (required): First token in `$ARGUMENTS`
+- Refinement instructions (optional): Remaining tokens after issue number
+
+**Examples:**
+```
+/refine-issue 42
+/refine-issue 42 Focus on reducing complexity
+/refine-issue 42 Add more error handling and edge cases
+```
 
 **From conversation context:**
 - If `$ARGUMENTS` is empty, extract issue number from recent messages
@@ -52,21 +61,40 @@ This command fetches an existing GitHub plan issue, runs its content through the
 
 ### Step 1: Parse Arguments and Extract Issue Number
 
-Parse $ARGUMENTS to get the issue number:
+**IMPORTANT**: Parse $ARGUMENTS ONCE at the beginning and store in variables.
 
 ```bash
-ISSUE_NUMBER="$ARGUMENTS"
+ISSUE_NUMBER=$(echo "$ARGUMENTS" | awk '{print $1}')
+REFINEMENT_INSTRUCTIONS=$(echo "$ARGUMENTS" | cut -d' ' -f2-)
 
+# If only issue number provided, clear refinement instructions
+if [ "$ISSUE_NUMBER" = "$REFINEMENT_INSTRUCTIONS" ]; then
+    REFINEMENT_INSTRUCTIONS=""
+fi
+```
+
+**Store these variables for the entire workflow:**
+- `ISSUE_NUMBER`: The GitHub issue number to refine
+- `REFINEMENT_INSTRUCTIONS`: Optional user-provided refinement focus (empty if not provided)
+
+**Validation:**
+```bash
 if [ -z "$ISSUE_NUMBER" ]; then
     echo "Error: Issue number not provided."
-    echo "Usage: /refine-issue <issue-number>"
+    echo "Usage: /refine-issue <issue-number> [refinement-instructions]"
+    echo ""
+    echo "Examples:"
+    echo "  /refine-issue 42"
+    echo "  /refine-issue 42 Focus on reducing complexity"
     exit 1
 fi
 ```
 
 If empty, extract from conversation context looking for patterns like "issue #123" or "#45".
 
-### Step 2: Fetch Issue from GitHub
+**DO NOT reference $ARGUMENTS again after this step.** Use `ISSUE_NUMBER` and `REFINEMENT_INSTRUCTIONS` instead.
+
+### Step 2: Fetch and Validate Issue from GitHub
 
 Fetch the issue details:
 
@@ -82,10 +110,7 @@ ISSUE_STATE=$(echo "$ISSUE_JSON" | jq -r '.state')
 - Issue is a plan issue (title contains `[plan]` or `[draft][plan]`)
 - Issue state (warn if CLOSED)
 
-### Step 3: Save Issue Body to Temporary File
-
-Save the issue body for the debate workflow:
-
+**Save original plan:**
 ```bash
 ORIGINAL_PLAN_FILE=".tmp/issue-${ISSUE_NUMBER}-original-$(date +%Y%m%d-%H%M%S).md"
 echo "$ISSUE_BODY" > "$ORIGINAL_PLAN_FILE"
@@ -97,17 +122,14 @@ Fetching issue #${ISSUE_NUMBER}...
 
 Title: ${ISSUE_TITLE}
 Current plan size: $(echo "$ISSUE_BODY" | wc -l) lines
+Refinement focus: ${REFINEMENT_INSTRUCTIONS:-"General improvements"}
 
 Starting refinement via multi-agent debate...
 ```
 
-### Step 4: Invoke Ultra-Planner in Refine Mode
+### Step 3: Invoke Bold-Proposer Agent
 
-**CRITICAL:** Use the Task tool (NOT Skill tool) to run ultra-planner workflow:
-
-The ultra-planner is a **command**, not a skill. Commands cannot invoke other commands directly. Therefore, this step must orchestrate the same debate workflow that ultra-planner uses, but without the final issue creation step.
-
-**Substep 4A: Invoke Bold-Proposer Agent**
+**REQUIRED TOOL CALL #1:**
 
 Use the Task tool to launch the bold-proposer agent:
 
@@ -116,56 +138,82 @@ Task tool parameters:
   subagent_type: "bold-proposer"
   prompt: "Review and improve this implementation plan:
 
-{ISSUE_BODY}
+${REFINEMENT_INSTRUCTIONS:+User refinement request: $REFINEMENT_INSTRUCTIONS
+
+}Original Plan:
+$ISSUE_BODY
 
 Propose innovative improvements, identify missing components, and suggest better approaches."
   description: "Research improvements"
   model: "opus"
 ```
 
-Save output to `BOLD_FILE=".tmp/bold-proposal-$(date +%Y%m%d-%H%M%S).md"`
+**Wait for agent completion** (blocking operation, do not proceed to Step 4 until done).
 
-**Substep 4B: Invoke Critique and Reducer Agents in Parallel**
+**Extract output:**
+- Generate filename: `BOLD_FILE=".tmp/bold-proposal-$(date +%Y%m%d-%H%M%S).md"`
+- Save the agent's full response to `$BOLD_FILE`
+- Also store in variable `BOLD_PROPOSAL` for passing to critique and reducer agents in Step 4
 
-Launch BOTH agents in a SINGLE message with TWO Task tool calls:
+### Step 4: Invoke Critique and Reducer Agents
 
+**REQUIRED TOOL CALLS #2 & #3:**
+
+**CRITICAL**: Launch BOTH agents in a SINGLE message with TWO Task tool calls to ensure parallel execution.
+
+**Task tool call #1 - Critique Agent:**
 ```
-Task tool call #1 - Critique Agent:
+Task tool parameters:
   subagent_type: "proposal-critique"
-  prompt: "Analyze this plan and the bold proposer's improvements:
+  prompt: "Analyze the following proposal for feasibility and risks:
 
-Original Plan:
-{ISSUE_BODY}
+${REFINEMENT_INSTRUCTIONS:+User refinement request: $REFINEMENT_INSTRUCTIONS
 
-Proposed Improvements:
-{BOLD_PROPOSAL}
+}Original Plan:
+$ISSUE_BODY
+
+Proposal from Bold-Proposer:
+$BOLD_PROPOSAL
 
 Identify risks, validate assumptions, and assess feasibility."
   description: "Critique improvements"
   model: "opus"
+```
 
-Task tool call #2 - Reducer Agent:
+**Task tool call #2 - Reducer Agent:**
+```
+Task tool parameters:
   subagent_type: "proposal-reducer"
-  prompt: "Simplify this plan using 'less is more' philosophy:
+  prompt: "Simplify the following proposal using 'less is more' philosophy:
 
-Original Plan:
-{ISSUE_BODY}
+${REFINEMENT_INSTRUCTIONS:+User refinement request: $REFINEMENT_INSTRUCTIONS
 
-Bold Proposer's Improvements:
-{BOLD_PROPOSAL}
+}Original Plan:
+$ISSUE_BODY
+
+Proposal from Bold-Proposer:
+$BOLD_PROPOSAL
 
 Identify unnecessary complexity and propose simpler alternatives."
   description: "Simplify improvements"
   model: "opus"
 ```
 
-Save outputs to `CRITIQUE_FILE` and `REDUCER_FILE`
+**Wait for both agents to complete** (blocking operation).
 
-**Substep 4C: Combine Agent Reports**
+**Extract outputs:**
+- Generate filename: `CRITIQUE_FILE=".tmp/critique-output-$(date +%Y%m%d-%H%M%S).md"`
+- Save critique agent's response to `$CRITIQUE_FILE`
+- Generate filename: `REDUCER_FILE=".tmp/reducer-output-$(date +%Y%m%d-%H%M%S).md"`
+- Save reducer agent's response to `$REDUCER_FILE`
 
-Create debate report (same format as ultra-planner Step 5):
+### Step 5: Combine Agent Reports
 
+After all three agents complete, combine their outputs into a single debate report:
+
+**Generate combined report:**
 ```bash
+DATETIME=$(date +"%Y-%m-%d %H:%M")
 DEBATE_REPORT_FILE=".tmp/debate-report-$(date +%Y%m%d-%H%M%S).md"
 
 {
@@ -173,20 +221,50 @@ DEBATE_REPORT_FILE=".tmp/debate-report-$(date +%Y%m%d-%H%M%S).md"
     echo ""
     echo "**Original Issue**: #${ISSUE_NUMBER}"
     echo "**Title**: ${ISSUE_TITLE}"
-    echo "**Generated**: $(date +"%Y-%m-%d %H:%M")"
+    echo "**Generated**: $DATETIME"
+    if [ -n "$REFINEMENT_INSTRUCTIONS" ]; then
+        echo "**Refinement Focus**: $REFINEMENT_INSTRUCTIONS"
+    fi
     echo ""
-    # ... (same structure as ultra-planner)
+    echo "This document combines three perspectives from our multi-agent debate-based refinement system:"
+    echo "1. **Bold Proposer**: Innovative improvements and missing components"
+    echo "2. **Proposal Critique**: Feasibility analysis and risk assessment"
+    echo "3. **Proposal Reducer**: Simplified, \"less is more\" approach"
+    echo ""
+    echo "---"
+    echo ""
+    echo "## Part 1: Bold Proposer Report"
+    echo ""
     cat "$BOLD_FILE"
-    # ...
+    echo ""
+    echo "---"
+    echo ""
+    echo "## Part 2: Proposal Critique Report"
+    echo ""
     cat "$CRITIQUE_FILE"
-    # ...
+    echo ""
+    echo "---"
+    echo ""
+    echo "## Part 3: Proposal Reducer Report"
+    echo ""
     cat "$REDUCER_FILE"
-} > "$DEBATE_REPORT_FILE"
+    echo ""
+    echo "---"
+    echo ""
+    echo "## Next Steps"
+    echo ""
+    echo "This combined report will be reviewed by an external consensus agent to synthesize a final, balanced refinement plan."
+} > "$DEBATE_REPORT_FILE.tmp"
+mv "$DEBATE_REPORT_FILE.tmp" "$DEBATE_REPORT_FILE"
 ```
 
-**Substep 4D: Invoke External Consensus Skill**
+**Note on filename consistency:** Each filename is generated once using inline `$(date ...)` and stored in a variable. These variables are reused in subsequent steps to ensure all references point to the same files.
 
-Use the Skill tool:
+### Step 6: Invoke External Consensus Skill
+
+**REQUIRED SKILL CALL:**
+
+Use the Skill tool to invoke the external-consensus skill:
 
 ```
 Skill tool parameters:
@@ -194,9 +272,18 @@ Skill tool parameters:
   args: "{DEBATE_REPORT_FILE}"
 ```
 
-Extract consensus plan file path as `CONSENSUS_PLAN_FILE`
+**What this skill does:**
+1. Reads the combined debate report from `DEBATE_REPORT_FILE`
+2. Prepares external review prompt using `.claude/skills/external-consensus/external-review-prompt.md`
+3. Invokes Codex CLI (preferred) or Claude API (fallback) for consensus synthesis
+4. Parses and validates the consensus plan structure
+5. Saves consensus plan to `.tmp/consensus-plan-{timestamp}.md`
+6. Returns summary and file path
 
-### Step 5: Update GitHub Issue
+**Extract:**
+- Save the consensus plan file path as `CONSENSUS_PLAN_FILE`
+
+### Step 7: Update GitHub Issue
 
 Update the issue with the refined plan:
 
@@ -343,7 +430,7 @@ Offer manual review fallback.
 
 ## Usage Examples
 
-### Example 1: Basic Refinement
+### Example 1: General Refinement
 
 **Input:**
 ```
@@ -356,6 +443,7 @@ Fetching issue #42...
 
 Title: [draft][plan][feat] Add user authentication
 Current plan size: 150 lines
+Refinement focus: General improvements
 
 Starting refinement via multi-agent debate...
 
@@ -379,7 +467,81 @@ Summary of changes:
 - Key improvements: Better error handling, improved security
 ```
 
-### Example 2: Closed Issue Refinement
+### Example 2: Directed Refinement (Complexity Focus)
+
+**Input:**
+```
+/refine-issue 42 Focus on reducing complexity
+```
+
+**Output:**
+```
+Fetching issue #42...
+
+Title: [draft][plan][feat] Add user authentication
+Current plan size: 280 lines
+Refinement focus: Focus on reducing complexity
+
+Starting refinement via multi-agent debate...
+
+[Agents incorporate user's refinement focus in their analysis]
+
+Debate complete! Three perspectives focused on simplification:
+- Bold: Remove OAuth2, JWT-only (~180 LOC)
+- Critique: Identify complexity risks in current plan
+- Reducer: Minimal viable auth (~120 LOC)
+
+External consensus review...
+
+Refined consensus: Simplified JWT implementation (~150 LOC)
+
+Issue #42 updated with refined plan.
+URL: https://github.com/user/repo/issues/42
+
+Summary of changes:
+- Original LOC: ~280
+- Refined LOC: ~150 (46% reduction)
+- Key improvements: Removed OAuth2, simplified middleware
+```
+
+### Example 3: Directed Refinement (Feature Addition)
+
+**Input:**
+```
+/refine-issue 42 Add more error handling and edge cases
+```
+
+**Output:**
+```
+Fetching issue #42...
+
+Title: [draft][plan][feat] Add user authentication
+Current plan size: 250 lines
+Refinement focus: Add more error handling and edge cases
+
+Starting refinement via multi-agent debate...
+
+[Agents focus on robustness and edge cases]
+
+Debate complete! Three perspectives on error handling:
+- Bold: Comprehensive error scenarios (~320 LOC)
+- Critique: Critical edge cases analysis
+- Reducer: Essential error handling only (~280 LOC)
+
+External consensus review...
+
+Refined consensus: Balanced error handling (~290 LOC)
+
+Issue #42 updated with refined plan.
+URL: https://github.com/user/repo/issues/42
+
+Summary of changes:
+- Original LOC: ~250
+- Refined LOC: ~290 (16% increase)
+- Key improvements: Added token expiry, rate limiting, invalid credential handling
+```
+
+### Example 4: Closed Issue Refinement
 
 **Input:**
 ```
@@ -396,13 +558,3 @@ Continue refining a closed issue? (y/n): y
 
 [Refinement proceeds as normal]
 ```
-
-## Notes
-
-- This command orchestrates the same three-agent debate as ultra-planner
-- The refined plan replaces the entire issue body (Description + Proposed Solution sections)
-- Original plan is saved to `.tmp/` for reference
-- Refinement preserves the `[draft]` prefix if present
-- Does NOT create a new issue - updates the existing one
-- Execution time: **5-10 minutes** (same as ultra-planner)
-- Cost: **~$2-5** per refinement (3 Opus agents + 1 external review)

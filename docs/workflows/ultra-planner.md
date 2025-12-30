@@ -10,15 +10,15 @@ The ultra-planner workflow creates implementation plans through multi-agent deba
 
 ```mermaid
 graph TD
-    A[User provides requirements] --> B[Bold-proposer agent]
-    B[Bold-proposer: Research SOTA & propose innovation] --> C[Proposal-critique agent]
-    B --> D[Proposal-reducer agent]
-    C[Critique: Validate assumptions & feasibility] --> E[Combine reports]
+    A[User provides requirements] --> B
+    B[Bold-proposer: Research SOTA & propose innovation] --> C
+    B --> D
+    C[Critique: Validate assumptions & feasibility] --> E
     D[Reducer: Simplify following 'less is more'] --> E
     B --> E
-    E[Combined 3-perspective report] --> F[External consensus review]
-    F[Codex/Opus: Synthesize consensus plan] --> G[Auto-create draft issue]
-    G[Create draft GitHub issue via open-issue --draft --auto] --> H{User reviews draft}
+    E[Combined 3-perspective report] --> F
+    F[External consensus: Synthesize plan] --> G
+    G[Auto-create draft issue] --> H{User reviews draft}
     H -->|Refine| I[/refine-issue command]
     I --> B
     H -->|Approve| J[Remove draft prefix on GitHub]
@@ -66,10 +66,11 @@ The `/refine-issue` command enables iterative plan improvement:
 
 - **Fetches issue body** - pulls current plan from GitHub
 - **Runs full debate** - same three-agent workflow as ultra-planner
+- **Accepts refinement focus** - optional inline instructions guide the agents
 - **Updates issue atomically** - replaces body only after consensus completes
 - **Preserves draft status** - keeps `[draft]` prefix until manually removed
 
-**Example:**
+**Example (General refinement):**
 ```
 /refine-issue 42
 
@@ -80,6 +81,20 @@ Running debate on current plan...
 
 Issue #42 updated with refined plan.
 Summary: Reduced LOC 280→250, improved security
+```
+
+**Example (Directed refinement):**
+```
+/refine-issue 42 Focus on reducing complexity
+
+Fetching issue #42...
+Refinement focus: Focus on reducing complexity
+Running debate on current plan...
+
+[Agents focus on simplification - 5-10 minutes]
+
+Issue #42 updated with refined plan.
+Summary: Reduced LOC 280→150, removed OAuth2, simplified middleware
 ```
 
 ### 3. Manual Approval
@@ -144,13 +159,15 @@ Creates initial plan via multi-agent debate and auto-creates draft issue.
 
 **Output:** Draft issue URL and refinement/approval instructions
 
-### `/refine-issue <issue-number>`
+### `/refine-issue <issue-number> [refinement-instructions]`
 
 Refines existing plan issue via multi-agent debate and updates issue body.
 
 **Usage:**
 ```
 /refine-issue 42
+/refine-issue 42 Focus on reducing complexity
+/refine-issue 42 Add more error handling and edge cases
 ```
 
 **Output:** Updated issue URL and summary of changes

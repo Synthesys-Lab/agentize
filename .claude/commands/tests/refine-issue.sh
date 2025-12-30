@@ -124,6 +124,36 @@ else
     exit 1
 fi
 
+# Test 6: Verify argument parsing (issue number + refinement instructions)
+echo "Test 6: Parse issue number and refinement instructions"
+MOCK_ARGUMENTS="42 Focus on reducing complexity"
+PARSED_ISSUE_NUMBER=$(echo "$MOCK_ARGUMENTS" | awk '{print $1}')
+PARSED_REFINEMENT=$(echo "$MOCK_ARGUMENTS" | cut -d' ' -f2-)
+
+if [ "$PARSED_ISSUE_NUMBER" = "42" ] && [ "$PARSED_REFINEMENT" = "Focus on reducing complexity" ]; then
+    echo "✓ Test 6 passed: Arguments parsed correctly"
+else
+    echo "✗ Test 6 failed: Argument parsing failed"
+    echo "  Expected issue: 42, got: $PARSED_ISSUE_NUMBER"
+    echo "  Expected refinement: 'Focus on reducing complexity', got: '$PARSED_REFINEMENT'"
+    exit 1
+fi
+
+# Test 7: Verify argument parsing (issue number only)
+echo "Test 7: Parse issue number without refinement instructions"
+MOCK_ARGUMENTS_SIMPLE="42"
+PARSED_ISSUE_NUMBER_SIMPLE=$(echo "$MOCK_ARGUMENTS_SIMPLE" | awk '{print $1}')
+PARSED_REFINEMENT_SIMPLE=$(echo "$MOCK_ARGUMENTS_SIMPLE" | cut -d' ' -f2-)
+
+# When only issue number provided, refinement should equal issue number
+# Command should detect this and clear refinement instructions
+if [ "$PARSED_ISSUE_NUMBER_SIMPLE" = "42" ] && [ "$PARSED_REFINEMENT_SIMPLE" = "$PARSED_ISSUE_NUMBER_SIMPLE" ]; then
+    echo "✓ Test 7 passed: Issue-only arguments parsed correctly"
+else
+    echo "✗ Test 7 failed: Issue-only argument parsing failed"
+    exit 1
+fi
+
 # Cleanup
 rm -f .tmp/gh-mock-refine.sh .tmp/gh-edit-capture.txt .tmp/gh-edit-body-capture.txt
 rm -f "$TEMP_PLAN_FILE" "$REFINED_PLAN_FILE"

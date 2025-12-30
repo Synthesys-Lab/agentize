@@ -25,5 +25,6 @@ Commands provide a simple interface to invoke complex workflows or skills. Each 
 - `open-issue.md`: Creates GitHub issues from conversation context with proper formatting and tag selection
 - `plan-an-issue.md`: Create GitHub [plan] issues from implementation plans with proper formatting
 - `pull-request.md`: Review code changes and optionally create a pull request with --open flag
+- `refine-issue.md`: Refine GitHub plan issues using multi-agent debate workflow with optional inline refinement instructions
 - `sync-master.md`: Synchronizes local main/master branch with upstream (or origin) using rebase
 - `ultra-planner.md`: Multi-agent debate-based planning with /ultra-planner command
