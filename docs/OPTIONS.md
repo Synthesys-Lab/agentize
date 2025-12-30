@@ -46,7 +46,7 @@ lol init --name my-project --lang python --path /path/to/project
 
 ### `lol update`
 
-Updates the AI-related rules and files in an existing SDK structure without affecting user's custom rules.
+Updates the AI-related rules and files in an existing SDK structure without affecting user's custom rules. If `.claude/` directory is missing, it will be created automatically.
 
 **Optional flags:**
 - `--path` - Project path (defaults to searching for nearest `.claude/` directory)
@@ -54,7 +54,14 @@ Updates the AI-related rules and files in an existing SDK structure without affe
 **Behavior:**
 - Searches for nearest `.claude/` directory by traversing parent directories
 - If `--path` provided, uses that path directly
-- Aborts if no valid SDK structure found
+- If no `.claude/` directory found, creates it in the target path and proceeds with update
+- Creates `.claude/` backup before updates if the directory existed previously
+- Syncs AI configuration files and documentation from templates
+
+**Difference from `lol init`:**
+- `lol update` only creates the `.claude/` directory and syncs AI configuration files
+- It does NOT create language-specific project templates or scaffolding
+- For full project setup with language templates, use `lol init` instead
 
 **Example:**
 ```bash
@@ -88,7 +95,7 @@ Specifies the programming language of your project.
 Specifies the file system path where the SDK will be created or updated. Ensure you have write permissions.
 
 **Optional for:** `init`, `update`
-**Default:** Current directory for `init`, nearest `.claude/` directory for `update`
+**Default:** Current directory for `init`, nearest `.claude/` directory for `update` (falls back to current directory if none found)
 
 ### `--source <path>`
 

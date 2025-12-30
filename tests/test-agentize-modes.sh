@@ -97,23 +97,38 @@ else
 fi
 echo ""
 
-# Test 5: update mode with directory without SDK structure (should fail)
-echo ">>> Test 5: update mode with directory without SDK structure (should fail)"
+# Test 5: update mode with directory without SDK structure (should create .claude/)
+echo ">>> Test 5: update mode with directory without SDK structure (should create .claude/)"
 TMP_DIR_5="$PROJECT_ROOT/.tmp/mode-test-5"
 rm -rf "$TMP_DIR_5"
 mkdir -p "$TMP_DIR_5"
 touch "$TMP_DIR_5/some-file.txt"
 
-echo "Attempting to update directory without SDK structure (should fail)..."
-if (
+echo "Updating directory without SDK structure (should create .claude/)..."
+(
     export AGENTIZE_PROJECT_PATH="$TMP_DIR_5"
     "$PROJECT_ROOT/scripts/agentize-update.sh"
-) 2>&1 | grep -q "not a valid SDK structure"; then
-    echo "✓ Test 5 passed: update mode correctly rejects directory without SDK structure"
-else
-    echo "Error: update mode should have rejected directory without SDK structure!"
+)
+
+# Verify .claude/ was created
+if [ ! -d "$TMP_DIR_5/.claude" ]; then
+    echo "Error: .claude/ directory was not created!"
     exit 1
 fi
+
+# Verify docs/git-msg-tags.md was created
+if [ ! -f "$TMP_DIR_5/docs/git-msg-tags.md" ]; then
+    echo "Error: docs/git-msg-tags.md was not created!"
+    exit 1
+fi
+
+# Verify no backup was created (since .claude/ didn't exist before)
+if [ -d "$TMP_DIR_5/.claude.backup" ]; then
+    echo "Error: Backup should not be created when .claude/ is newly created!"
+    exit 1
+fi
+
+echo "✓ Test 5 passed: update mode creates .claude/ and syncs files when missing"
 echo ""
 
 # Test 6: update mode with valid SDK structure (should succeed)
