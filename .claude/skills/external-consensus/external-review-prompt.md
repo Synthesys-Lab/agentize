@@ -22,6 +22,7 @@ Review all three perspectives and synthesize a **balanced, consensus implementat
 3. **Balances innovation with pragmatism**
 4. **Maintains simplicity** while not sacrificing essential features
 5. **Addresses critical risks** identified in the critique
+6. **Verifies documentation accuracy** - ensure proposals cite `docs/` for current command interfaces
 
 ## Input: Combined Report
 
@@ -43,6 +44,12 @@ Generate a final implementation plan following this structure:
 ## Consensus Summary
 
 [2-3 sentences explaining the balanced approach chosen]
+
+## Files Verified
+
+**Documentation and codebase checked by agents:**
+- [File path 1]: [What was verified]
+- [File path 2]: [What was verified]
 
 ## Design Decisions
 

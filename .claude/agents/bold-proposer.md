@@ -47,12 +47,16 @@ grep -r "pattern_name" --include="*.md" --include="*.sh"
 
 # Understand project structure
 ls -la .claude/{agents,skills,commands}/
+
+# Check docs/ for current command interfaces
+grep -r "relevant_command" docs/
 ```
 
 Read relevant files to understand:
 - Current architecture patterns
 - Existing conventions
 - Integration points
+- **Search `docs/` for current commands and interfaces; cite specific files checked**
 
 ### Step 3: Propose Bold Solution
 
@@ -114,6 +118,10 @@ Your proposal should be structured as:
 - [Insight 1 with source]
 - [Insight 2 with source]
 - [Insight 3 with source]
+
+**Files checked for current implementation:**
+- [File path 1]: [What was verified]
+- [File path 2]: [What was verified]
 
 ## Proposed Solution
 

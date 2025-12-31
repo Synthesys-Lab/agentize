@@ -1,10 +1,10 @@
 # SDK Structure and Creation
 
-This document describes the file structure of SDKs created by `make agentize` and the behavior of initialization and update modes.
+This document describes the file structure of SDKs created by the `lol` CLI and the behavior of initialization and update modes.
 
 ## Created SDK File Structure
 
-When you run `make agentize` with `AGENTIZE_MODE=init`, the following structure is created in your target project:
+When you run `lol init`, the following structure is created in your target project:
 
 ```
 your-project/
@@ -55,18 +55,10 @@ The `init` mode creates a new SDK project from scratch. It validates directory s
 
 ```bash
 # Create new SDK in non-existent directory
-make agentize \
-   AGENTIZE_PROJECT_NAME="my_project" \
-   AGENTIZE_PROJECT_PATH="/path/to/my_project" \
-   AGENTIZE_PROJECT_LANG="python" \
-   AGENTIZE_MODE="init"
+lol init --name my_project --lang python --path /path/to/my_project
 
 # Error: Will fail if directory exists and contains files
-make agentize \
-   AGENTIZE_PROJECT_NAME="my_project" \
-   AGENTIZE_PROJECT_PATH="/existing/non-empty/dir" \
-   AGENTIZE_PROJECT_LANG="python" \
-   AGENTIZE_MODE="init"
+lol init --name my_project --lang python --path /existing/non-empty/dir
 # Output: Error: Directory '/existing/non-empty/dir' exists and is not empty.
 ```
 
@@ -106,19 +98,14 @@ The `update` mode refreshes the Claude Code configuration (`.claude/`) while pre
 ### Example
 
 ```bash
-# Update existing SDK
-make agentize \
-   AGENTIZE_PROJECT_NAME="my_project" \
-   AGENTIZE_PROJECT_PATH="/path/to/my_project" \
-   AGENTIZE_PROJECT_LANG="python" \
-   AGENTIZE_MODE="update"
+# Update existing SDK from project root or any subdirectory
+lol update
+
+# Or specify explicit path
+lol update --path /path/to/my_project
 
 # Error: Will fail if not a valid SDK
-make agentize \
-   AGENTIZE_PROJECT_NAME="my_project" \
-   AGENTIZE_PROJECT_PATH="/some/random/dir" \
-   AGENTIZE_PROJECT_LANG="python" \
-   AGENTIZE_MODE="update"
+lol update --path /some/random/dir
 # Output: Error: Directory '/some/random/dir' is not a valid SDK structure.
 #         Missing '.claude/' directory.
 ```
@@ -173,11 +160,7 @@ update .claude/ with latest files
 
 ```bash
 # 1. Initialize SDK for C project
-make agentize \
-   AGENTIZE_PROJECT_NAME="mylib" \
-   AGENTIZE_PROJECT_PATH="$HOME/projects/mylib" \
-   AGENTIZE_PROJECT_LANG="c" \
-   AGENTIZE_MODE="init"
+lol init --name mylib --lang c --path $HOME/projects/mylib
 
 # 2. Navigate to project
 cd $HOME/projects/mylib
@@ -193,15 +176,11 @@ claude code
 cd /path/to/agentize
 git pull origin main
 
-# Update your SDK project
-make agentize \
-   AGENTIZE_PROJECT_NAME="mylib" \
-   AGENTIZE_PROJECT_PATH="$HOME/projects/mylib" \
-   AGENTIZE_PROJECT_LANG="c" \
-   AGENTIZE_MODE="update"
+# Update your SDK project from project root or any subdirectory
+cd $HOME/projects/mylib
+lol update
 
 # Review changes
-cd $HOME/projects/mylib
 diff -r .claude .claude.backup  # See what changed
 
 # If you had customizations, selectively restore them
@@ -254,7 +233,7 @@ Error: Directory '/path/to/project' is not a valid SDK structure.
 Missing '.claude/' directory.
 ```
 
-**Solution:** This directory was not created with `make agentize`. Use `init` mode instead.
+**Solution:** This directory was not created with the `lol` CLI. Use `lol init` instead.
 
 ### Error: Project path does not exist
 
