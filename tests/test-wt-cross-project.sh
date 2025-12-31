@@ -162,25 +162,25 @@ echo "Test 4: wt spawn from linked worktree creates under main repo"
     cd "$TEST_AGENTIZE"
     source scripts/wt-cli.sh
 
-    wt spawn 50 first-worktree
+    wt spawn 50 first
 
     # Now cd into the linked worktree and create another worktree
-    cd trees/issue-50-first-worktree
+    cd trees/issue-50-first
 
     # Source again in linked worktree context
     source "$TEST_AGENTIZE/scripts/wt-cli.sh"
 
     # Create another worktree from inside the linked worktree
-    wt spawn 51 second-worktree
+    wt spawn 51 second
 
     # Verify the new worktree is created under AGENTIZE_HOME, not inside the linked worktree
-    if [ ! -d "$TEST_AGENTIZE/trees/issue-51-second-worktree" ]; then
+    if [ ! -d "$TEST_AGENTIZE/trees/issue-51-second" ]; then
       echo -e "${RED}FAIL: Worktree not created under main repo root${NC}"
       exit 1
     fi
 
     # Verify it's NOT created inside the linked worktree
-    if [ -d "trees/issue-51-second-worktree" ]; then
+    if [ -d "trees/issue-51-second" ]; then
       echo -e "${RED}FAIL: Worktree incorrectly created inside linked worktree${NC}"
       exit 1
     fi

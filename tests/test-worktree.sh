@@ -146,26 +146,26 @@ echo "=== Worktree Function Test ==="
   echo "Test 10: Linked worktree - create worktree from linked worktree"
 
   # Create first worktree
-  cmd_create 55 first-tree
+  cmd_create 55 first
 
   # cd into the linked worktree
-  cd trees/issue-55-first-tree
+  cd trees/issue-55-first
 
   # Source wt-cli.sh again in the linked worktree context
   source "$TEST_DIR/wt-cli.sh"
 
   # Try to create another worktree from inside the linked worktree
   # It should create the new worktree under the main repo root, not inside the linked worktree
-  cmd_create 56 second-tree
+  cmd_create 56 second
 
   # Verify the new worktree is created under main repo root
-  if [ ! -d "$TEST_DIR/trees/issue-56-second-tree" ]; then
+  if [ ! -d "$TEST_DIR/trees/issue-56-second" ]; then
       echo -e "${RED}FAIL: Worktree not created under main repo root${NC}"
       exit 1
   fi
 
   # Verify it's NOT created inside the linked worktree
-  if [ -d "trees/issue-56-second-tree" ]; then
+  if [ -d "trees/issue-56-second" ]; then
       echo -e "${RED}FAIL: Worktree incorrectly created inside linked worktree${NC}"
       exit 1
   fi
