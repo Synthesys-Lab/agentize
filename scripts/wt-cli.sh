@@ -117,11 +117,36 @@ cmd_create() {
         return 1
     fi
 
-    echo "Creating worktree: $worktree_path"
-    echo "Branch: $branch_name"
+    # Detect main branch (main or master)
+    local main_branch
+    if git -C "$repo_root" show-ref --verify --quiet refs/heads/main; then
+        main_branch="main"
+    elif git -C "$repo_root" show-ref --verify --quiet refs/heads/master; then
+        main_branch="master"
+    else
+        echo -e "${RED}Error: Cannot find main or master branch${NC}"
+        return 1
+    fi
 
-    # Create worktree using git -C to operate on main repo
-    git -C "$repo_root" worktree add -b "$branch_name" "$worktree_path"
+    echo "Updating $main_branch branch..."
+
+    # Checkout main branch in main repo
+    git -C "$repo_root" checkout "$main_branch" || {
+        echo -e "${RED}Error: Failed to checkout $main_branch${NC}"
+        return 1
+    }
+
+    # Pull latest changes from origin with rebase
+    git -C "$repo_root" pull origin "$main_branch" --rebase || {
+        echo -e "${YELLOW}Warning: Failed to pull from origin/$main_branch${NC}"
+        echo "Continuing with local $main_branch..."
+    }
+
+    echo "Creating worktree: $worktree_path"
+    echo "Branch: $branch_name (forked from $main_branch)"
+
+    # Create worktree from main branch using git -C to operate on main repo
+    git -C "$repo_root" worktree add -b "$branch_name" "$worktree_path" "$main_branch"
 
     # Bootstrap CLAUDE.md if it exists in main repo
     if [ -f "$repo_root/CLAUDE.md" ]; then
