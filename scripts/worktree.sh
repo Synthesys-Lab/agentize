@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Git worktree helper script for parallel agent development
 # Creates, lists, and removes worktrees following issue-<N>-<title> convention
 

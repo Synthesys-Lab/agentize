@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Cross-project lol shell function
 # Provides ergonomic init/update commands for AI-powered SDK operations
 

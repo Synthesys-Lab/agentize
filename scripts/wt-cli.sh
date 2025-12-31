@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Per-project wt shell function
 # Enables wt init/main/spawn/list/remove/prune from any directory within a git repo
 
