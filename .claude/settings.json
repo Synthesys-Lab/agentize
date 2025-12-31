@@ -16,6 +16,8 @@
       "Skill(external-consensus)",
       "Bash(.claude/skills/external-consensus/scripts/external-consensus.sh:*)",
       "Skill(milestone)",
+      "Skill(code-review)",
+      "Skill(pull-request)",
 
       "Bash(echo FILE OPERATIONS - Reading and viewing files)",
       "Read(//tmp/**)",

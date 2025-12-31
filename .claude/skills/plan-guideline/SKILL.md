@@ -224,10 +224,16 @@ Complexity guidelines:
 **MANDATORY ORDERING**: Implementation steps **MUST** follow this sequence:
 
 **Phase 1: Documentation (always first)**
-- Update interface documentation
-- Add/update design documents
-- Update API references
-- Add usage examples
+- Which documentation files should be changed, created, or deleted.
+- Include the specific changes to make in the plan so that we can better understand:
+  - 1. The scope of changes of this plan
+  - 2. The specific design decisions to be applied
+- The old ones should include the file name and the sections. **DO NOT** include the line numbers as multiple changes may be ongoing, which leads to different line numbers.
+- The new ones should include the specific description of what to add, not just vague "add documentation for X".
+  - **DO NOT**: Update the documentation of `lol` usage.
+  - **DO**: In `docs/lol.md` the old usage is in Section X, update it to the new usage for `--init` is for initialization and `--update` is for updating existing installations.
+- Documentation change should include both specific source files and high-level design documents.
+- If it is a user-exposed interfaces, update usage examples.
 
 **Phase 2: Test Cases (always second)**
 - Create new test files
