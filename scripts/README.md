@@ -23,8 +23,8 @@ This directory contains utility scripts and git hooks for the project.
   - Examples of usage and output
 
 ### Git Worktree Helper
-- `wt` - Executable CLI for worktree management
-  - Usage: `./scripts/wt <command> [args]`
+- `wt-cli.sh` - Worktree CLI and library (executable + sourceable)
+  - Usage: `./scripts/wt-cli.sh <command> [args]`
   - Commands:
     - `create <issue-number> [description]` - Create worktree with GitHub title fetch
     - `list` - Show all active worktrees
@@ -40,20 +40,19 @@ This directory contains utility scripts and git hooks for the project.
   - Examples:
     ```bash
     # Create worktree fetching title from GitHub issue #42
-    ./scripts/wt create 42
+    ./scripts/wt-cli.sh create 42
 
     # Create worktree with custom description
-    ./scripts/wt create 42 add-feature
+    ./scripts/wt-cli.sh create 42 add-feature
 
     # List all worktrees
-    ./scripts/wt list
+    ./scripts/wt-cli.sh list
 
     # Remove worktree (force removes with uncommitted changes)
-    ./scripts/wt remove 42
+    ./scripts/wt-cli.sh remove 42
     ```
 
-- `wt-cli.sh` - Worktree library (source-only, used by `wt` executable and tests)
-- `worktree.sh` - Legacy worktree management (use `wt` instead)
+- `worktree.sh` - Legacy worktree management (use `wt-cli.sh` instead)
 
 ### Makefile Utilities
 

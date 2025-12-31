@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Worktree management library (source-only)
-# Provides cmd_* functions for worktree operations and wt() shell function
+# Worktree management CLI and library
+# Can be executed directly or sourced for function access
 
 # Colors for output
 RED='\033[0;31m'
@@ -341,3 +341,9 @@ wt_cli_main() {
             ;;
     esac
 }
+
+# If script is executed (not sourced), run the CLI main function
+if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
+    wt_cli_main "$@"
+    exit $?
+fi
