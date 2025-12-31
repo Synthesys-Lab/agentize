@@ -38,6 +38,9 @@ Initializes an SDK structure in the specified project path and copies necessary 
 - If the project path exists and is empty, copies SDK template files
 - If the project path exists and is not empty, aborts with error
 - If the project path does not exist, creates it and copies template files
+- Creates `.agentize.yaml` with project metadata including:
+  - `project.name`, `project.lang`, `project.source`
+  - `git.default_branch` (if git repository is initialized)
 
 **Example:**
 ```bash
@@ -57,6 +60,11 @@ Updates the AI-related rules and files in an existing SDK structure without affe
 - If no `.claude/` directory found, creates it in the target path and proceeds with update
 - Creates `.claude/` backup before updates if the directory existed previously
 - Syncs AI configuration files and documentation from templates
+- Creates `.agentize.yaml` if missing, using best-effort detection for:
+  - `project.name` (from directory basename)
+  - `project.lang` (via `detect-lang.sh`)
+  - `git.default_branch` (if git repository exists)
+- Preserves existing `.agentize.yaml` without overwriting
 
 **Difference from `lol init`:**
 - `lol update` only creates the `.claude/` directory and syncs AI configuration files

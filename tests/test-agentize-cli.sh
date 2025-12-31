@@ -136,5 +136,101 @@ echo "Test 6: --path override works"
   rm -rf "$TEST_PROJECT"
 )
 
+# Test 7: lol init creates .agentize.yaml
+echo ""
+echo "Test 7: lol init creates .agentize.yaml"
+(
+  TEST_PROJECT=$(mktemp -d)
+  export AGENTIZE_HOME="$PROJECT_ROOT"
+  source "$LOL_CLI"
+
+  # Initialize a project
+  lol init --name test-project --lang python --path "$TEST_PROJECT" 2>/dev/null
+
+  # Verify .agentize.yaml was created
+  if [ ! -f "$TEST_PROJECT/.agentize.yaml" ]; then
+    echo -e "${RED}FAIL: .agentize.yaml was not created by lol init${NC}"
+    exit 1
+  fi
+
+  # Verify it contains expected project metadata
+  if ! grep -q "name: test-project" "$TEST_PROJECT/.agentize.yaml"; then
+    echo -e "${RED}FAIL: .agentize.yaml missing project name${NC}"
+    exit 1
+  fi
+
+  if ! grep -q "lang: python" "$TEST_PROJECT/.agentize.yaml"; then
+    echo -e "${RED}FAIL: .agentize.yaml missing project language${NC}"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: lol init creates .agentize.yaml with metadata${NC}"
+
+  rm -rf "$TEST_PROJECT"
+)
+
+# Test 8: lol update creates .agentize.yaml if missing
+echo ""
+echo "Test 8: lol update creates .agentize.yaml if missing"
+(
+  TEST_PROJECT=$(mktemp -d)
+  export AGENTIZE_HOME="$PROJECT_ROOT"
+  source "$LOL_CLI"
+
+  cd "$TEST_PROJECT"
+
+  # Run update (should create .agentize.yaml)
+  lol update 2>/dev/null
+
+  # Verify .agentize.yaml was created
+  if [ ! -f "$TEST_PROJECT/.agentize.yaml" ]; then
+    echo -e "${RED}FAIL: .agentize.yaml was not created by lol update${NC}"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: lol update creates .agentize.yaml when missing${NC}"
+
+  rm -rf "$TEST_PROJECT"
+)
+
+# Test 9: lol update preserves existing .agentize.yaml
+echo ""
+echo "Test 9: lol update preserves existing .agentize.yaml"
+(
+  TEST_PROJECT=$(mktemp -d)
+  export AGENTIZE_HOME="$PROJECT_ROOT"
+  source "$LOL_CLI"
+
+  cd "$TEST_PROJECT"
+
+  # Create a custom .agentize.yaml
+  cat > "$TEST_PROJECT/.agentize.yaml" <<EOF
+project:
+  name: custom-name
+  lang: cxx
+  source: custom/src
+git:
+  default_branch: trunk
+EOF
+
+  # Run update
+  lol update 2>/dev/null
+
+  # Verify custom values are preserved
+  if ! grep -q "name: custom-name" "$TEST_PROJECT/.agentize.yaml"; then
+    echo -e "${RED}FAIL: lol update overwrote custom project name${NC}"
+    exit 1
+  fi
+
+  if ! grep -q "default_branch: trunk" "$TEST_PROJECT/.agentize.yaml"; then
+    echo -e "${RED}FAIL: lol update overwrote custom default_branch${NC}"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: lol update preserves existing .agentize.yaml${NC}"
+
+  rm -rf "$TEST_PROJECT"
+)
+
 echo ""
 echo -e "${GREEN}=== All lol CLI tests passed ===${NC}"

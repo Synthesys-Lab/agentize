@@ -177,7 +177,63 @@ echo "=== Worktree Function Test ==="
   cmd_remove 55
   cmd_remove 56
 
-  # Cleanup
+  # Test 11: Metadata-driven default branch selection
+  echo ""
+  echo "Test 11: Metadata-driven default branch (trunk via .agentize.yaml)"
+
+  # Create a new test repo with non-standard default branch
+  TEST_DIR2=$(mktemp -d)
+  cd "$TEST_DIR2"
+  git init
+  git config user.email "test@example.com"
+  git config user.name "Test User"
+
+  # Create initial commit on trunk branch
+  git checkout -b trunk
+  echo "test" > README.md
+  git add README.md
+  git commit -m "Initial commit"
+
+  # Create .agentize.yaml specifying trunk as default
+  cat > .agentize.yaml <<EOF
+project:
+  name: test-project
+  lang: python
+git:
+  default_branch: trunk
+EOF
+
+  # Copy wt-cli.sh
+  cp "$WT_CLI" ./wt-cli.sh
+  echo "Test CLAUDE.md" > CLAUDE.md
+
+  # Source the library
+  source ./wt-cli.sh
+
+  # Create worktree (should use trunk, not main/master)
+  cmd_create 100 test-trunk
+
+  # Verify worktree was created
+  if [ ! -d "trees/issue-100-test-trunk" ]; then
+    echo -e "${RED}FAIL: Worktree not created with metadata-driven branch${NC}"
+    exit 1
+  fi
+
+  # Verify it's based on trunk branch
+  BRANCH_BASE=$(git -C "trees/issue-100-test-trunk" log --oneline -1)
+  TRUNK_COMMIT=$(git log trunk --oneline -1)
+  if [[ "$BRANCH_BASE" != "$TRUNK_COMMIT" ]]; then
+    echo -e "${RED}FAIL: Worktree not based on trunk branch${NC}"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: Metadata-driven default branch works${NC}"
+
+  # Cleanup test repo 2
+  cd /
+  rm -rf "$TEST_DIR2"
+
+  # Cleanup original test repo
   cd /
   rm -rf "$TEST_DIR"
 
