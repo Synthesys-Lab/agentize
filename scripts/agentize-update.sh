@@ -30,18 +30,20 @@ if [ ! -d "$AGENTIZE_PROJECT_PATH" ]; then
     exit 1
 fi
 
-# Validate .claude directory exists
+# Check if .claude directory exists, create if missing
+CLAUDE_EXISTED=true
 if [ ! -d "$AGENTIZE_PROJECT_PATH/.claude" ]; then
-    echo "Error: Directory '$AGENTIZE_PROJECT_PATH' is not a valid SDK structure."
-    echo "Missing '.claude/' directory."
-    echo "Please ensure this is an SDK created with 'make agentize' before using update mode."
-    exit 1
+    echo "  .claude/ directory not found, creating it..."
+    mkdir -p "$AGENTIZE_PROJECT_PATH/.claude"
+    CLAUDE_EXISTED=false
 fi
 
-# Backup existing .claude directory
+# Backup existing .claude directory (only if it existed before)
 echo "Updating Claude Code configuration..."
-echo "  Backing up existing .claude/ to .claude.backup/"
-cp -r "$AGENTIZE_PROJECT_PATH/.claude" "$AGENTIZE_PROJECT_PATH/.claude.backup"
+if [ "$CLAUDE_EXISTED" = true ]; then
+    echo "  Backing up existing .claude/ to .claude.backup/"
+    cp -r "$AGENTIZE_PROJECT_PATH/.claude" "$AGENTIZE_PROJECT_PATH/.claude.backup"
+fi
 
 # Update .claude contents with file-level copy to preserve user additions
 file_count=0
@@ -57,9 +59,14 @@ echo "  Updated .claude/ with file-level sync (preserves user-added files)"
 # Ensure docs/git-msg-tags.md exists
 if [ ! -f "$AGENTIZE_PROJECT_PATH/docs/git-msg-tags.md" ]; then
     echo "  Creating missing docs/git-msg-tags.md..."
-    DETECTED_LANG=$("$PROJECT_ROOT/scripts/detect-lang.sh" "$AGENTIZE_PROJECT_PATH" 2>&1)
 
-    if [ $? -eq 0 ]; then
+    # Try to detect language (allow failure)
+    set +e
+    DETECTED_LANG=$("$PROJECT_ROOT/scripts/detect-lang.sh" "$AGENTIZE_PROJECT_PATH" 2>/dev/null)
+    DETECT_EXIT_CODE=$?
+    set -e
+
+    if [ $DETECT_EXIT_CODE -eq 0 ]; then
         echo "    Detected language: $DETECTED_LANG"
         mkdir -p "$AGENTIZE_PROJECT_PATH/docs"
 
@@ -76,7 +83,13 @@ if [ ! -f "$AGENTIZE_PROJECT_PATH/docs/git-msg-tags.md" ]; then
         fi
         echo "    Created docs/git-msg-tags.md"
     else
-        echo "    $DETECTED_LANG"
+        echo "    Warning: Could not detect project language, using generic template"
+        mkdir -p "$AGENTIZE_PROJECT_PATH/docs"
+        # Use generic template with both sections removed
+        sed -e "/{{#if_python}}/,/{{\/if_python}}/d" \
+            -e "/{{#if_c_or_cxx}}/,/{{\/if_c_or_cxx}}/d" \
+            "$PROJECT_ROOT/templates/claude/docs/git-msg-tags.md.template" > "$AGENTIZE_PROJECT_PATH/docs/git-msg-tags.md"
+        echo "    Created docs/git-msg-tags.md (generic template)"
     fi
 else
     echo "  Existing CLAUDE.md and docs/git-msg-tags.md were preserved"

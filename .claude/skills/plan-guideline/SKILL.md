@@ -18,6 +18,7 @@ A good plan is:
 - **Design-first TDD**: Follows strict ordering: Documentation → Tests → Implementation
 - **Interface-driven**: Documents API/interface changes before implementation
 - **Actionable**: Can be directly used to create a GitHub issue with `open-issue` skill
+- **Bug-aware**: For bug fixes, includes reproduction attempts and observations before design
 
 ### Development Workflow Order
 
@@ -58,6 +59,43 @@ Output signals:
 - Clear problem statement in 1-2 sentences
 - Success criteria (what does "done" look like?)
 - Out of scope items (what are we explicitly NOT doing?)
+
+**Bug Fix-Specific Actions (conditional):**
+
+If the goal is a bug fix, attempt to reproduce the bug before designing a fix:
+
+**When to reproduce:**
+- Multi-file or unclear root cause bugs
+- Behavior-related bugs (crashes, incorrect output, unexpected state)
+- Bugs reported by users with reproduction steps
+
+**When to skip reproduction:**
+- Trivial single-file obvious fixes (e.g., typo, missing null check)
+- Bug already has a failing test case demonstrating the issue
+- Unsafe to run (e.g., requires production credentials, destructive commands)
+- User has already provided complete reproduction details with diagnosis
+
+**Reproduction process:**
+1. Review reported symptoms and any provided reproduction steps
+2. Identify minimal environment needed (files, dependencies, test data)
+3. Attempt safe, read-only or isolated reproduction steps (e.g., run tests, review logs)
+4. Document what was tried, what symptoms appeared, and environment snapshot
+5. Form hypothesis about root cause based on observations
+6. If unreproducible after reasonable attempts, document constraints and proceed with hypothesis
+
+**Safety rules:**
+- Only use read-only or safe commands (e.g., `cat`, `grep`, `git log`, `make test`)
+- Never run destructive commands without explicit user permission
+- Never access production systems or real user data
+- Ask user before running any command that modifies state or requires credentials
+
+**Output from reproduction (include in plan if attempted):**
+- Steps tried (commands run, files examined)
+- Observed symptoms (error messages, test failures, unexpected behavior)
+- Minimal environment snapshot (relevant file state, dependencies, configuration)
+- Root cause hypothesis based on observations
+- If skipped, document explicit skip reason
+- If unreproducible, document attempts and constraints
 
 ### 2. Codebase Audit Phase
 
@@ -136,12 +174,18 @@ Documentation updates:
 - Integration with existing functionality
 - Backward compatibility if applicable
 
+**Bug fix-specific guidance:**
+- If bug reproduction was attempted (see Goal Understanding Phase), translate reproduction steps into a failing test case when feasible
+- Adopt fail-to-pass test thinking: reproduction → failing test → implementation → passing test
+- If reproduction was unreproducible or skipped, document why a fail-to-pass test cannot be created
+
 Actions:
 - Identify existing test files that need updates
 - Design new test files for new functionality
 - Specify what each test validates
 - Consider test data requirements
 - Plan test execution order (unit -> integration -> e2e)
+- For bug fixes: map reproduction steps to test cases where possible
 
 Output:
 - Test files to modify (with specific test cases to add/update)
@@ -277,6 +321,29 @@ The final plan should be structured as follows:
 
 **Out of scope:**
 - [What we're not doing]
+
+## Bug Reproduction
+*(Optional - include only for bug fixes where reproduction was attempted)*
+
+**Steps tried:**
+- [Command or action performed]
+- [Files examined]
+
+**Observed symptoms:**
+- [Error messages, test failures, unexpected behavior]
+
+**Environment snapshot:**
+- [Relevant file state, dependencies, configuration]
+
+**Root cause hypothesis:**
+- [Diagnosis based on observations]
+
+**Skip reason** *(if reproduction not attempted)*:
+- [Why reproduction was skipped - e.g., trivial fix, already has failing test, unsafe to run]
+
+**Unreproducible constraints** *(if reproduction failed)*:
+- [What was tried and why it didn't reproduce]
+- [Hypothesis for proceeding without reproduction]
 
 ## Codebase Analysis
 
@@ -503,6 +570,93 @@ Dependencies: Step 3 (validation script must exist)
 **Note:** Follows Design-first TDD strictly: Docs (Step 1) → Tests (Step 2) → Implementation (Steps 3-4)
 Tests are run at each milestone; failing tests are accepted temporarily as progress checkpoints.
 ```
+
+### Example 3: Bug Fix with Reproduction
+
+**User request:** "Fix the bug where milestone commits fail on feature branches"
+
+**Plan excerpt:**
+```markdown
+# Implementation Plan: Fix Milestone Commit Branch Detection
+
+## Goal
+Fix bug where milestone commits incorrectly fail on valid feature branches due to
+overly strict branch name pattern matching.
+
+**Success criteria:**
+- Milestone commits succeed on all non-main branches
+- Branch name pattern accepts common formats (issue-*, feature/*, fix/*)
+- Clear error message when attempted on main/master
+
+## Bug Reproduction
+
+**Steps tried:**
+1. Created test branch: `git checkout -b issue-42-test-feature`
+2. Attempted milestone commit: `claude /commit-msg milestone`
+3. Observed error: "Milestone commits only allowed on development branches"
+
+**Observed symptoms:**
+- Error appears despite being on `issue-42-test-feature` branch
+- Review of `.claude/skills/commit-msg/SKILL.md:78` shows pattern: `^issue-[0-9]+-.*$`
+- Regex escaping issue: dash not escaped, matches any character instead of literal dash
+
+**Environment snapshot:**
+- Git branch: `issue-42-test-feature`
+- Skill version: commit `a1b2c3d` (2024-01-15)
+- Regex engine: bash `[[ =~ ]]` operator
+
+**Root cause hypothesis:**
+Unescaped dash in regex pattern causes false negative matches. Pattern should be
+`^issue-[0-9]+-.*$` with escaped dash: `^issue-[0-9]+\-.*$`.
+
+## Implementation Steps
+
+**Step 1: Update documentation** (Estimated: 20 LOC)
+- `docs/git-msg-tags.md:45-50` - Clarify supported branch name patterns
+Dependencies: None
+
+**Step 2: Create test case** (Estimated: 35 LOC)
+- `tests/test_milestone_branches.sh` - New test for branch pattern matching
+  - Test: `issue-N-*` branches accept milestone commits
+  - Test: `feature/*` branches accept milestone commits
+  - Test: `main` branch rejects milestone commits
+Dependencies: Step 1
+
+**Step 3: Fix regex pattern** (Estimated: 15 LOC)
+- `.claude/skills/commit-msg/SKILL.md:78` - Escape dash in regex pattern
+- `.claude/skills/commit-msg/SKILL.md:80` - Add `feature/*` and `fix/*` patterns
+Dependencies: Step 2
+
+**Total estimated complexity:** 70 LOC (Small bugfix)
+```
+
+## Validation Checklist
+
+Use this checklist to validate plan quality before presenting to user:
+
+**Required elements:**
+- [ ] Goal statement is 1-2 sentences, clear and specific
+- [ ] Success criteria are measurable and testable
+- [ ] Out of scope items are explicitly listed
+- [ ] All file paths include line ranges (where known)
+- [ ] LOC estimates provided for each step
+- [ ] Steps follow strict ordering: Docs → Tests → Implementation
+- [ ] Dependencies enforce the correct ordering
+- [ ] Test strategy includes specific test cases with descriptions
+- [ ] Total complexity estimate is provided
+
+**Bug fix plans only:**
+- [ ] Bug reproduction attempted or skip reason documented
+- [ ] Reproduction includes steps tried and symptoms observed
+- [ ] Root cause hypothesis is stated based on observations
+- [ ] If unreproducible, constraints and limitations documented
+
+**Quality checks:**
+- [ ] No vague "audit the codebase" steps (audit results included instead)
+- [ ] Implementation does not appear before documentation or tests
+- [ ] File paths are concrete, not generic placeholders
+- [ ] Test cases validate the actual success criteria
+- [ ] Complexity estimates are realistic (compare to similar past changes)
 
 ## Important Notes
 

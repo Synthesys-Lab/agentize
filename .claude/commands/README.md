@@ -25,5 +25,22 @@ Commands provide a simple interface to invoke complex workflows or skills. Each 
 - `open-issue.md`: Creates GitHub issues from conversation context with proper formatting and tag selection
 - `plan-an-issue.md`: Create GitHub [plan] issues from implementation plans with proper formatting
 - `pull-request.md`: Review code changes and optionally create a pull request with --open flag
+- `refine-issue.md`: Refine GitHub plan issues using multi-agent debate workflow with optional inline refinement instructions
 - `sync-master.md`: Synchronizes local main/master branch with upstream (or origin) using rebase
 - `ultra-planner.md`: Multi-agent debate-based planning with /ultra-planner command
+
+## Hands-Off Mode
+
+For ultra-planner and issue-to-impl workflows, you can enable hands-off mode to auto-approve safe operations and reduce manual permission prompts.
+
+**Enable:**
+```bash
+export CLAUDE_HANDSOFF=true
+```
+
+**Disable:**
+```bash
+export CLAUDE_HANDSOFF=false
+```
+
+See individual command docs (ultra-planner.md, issue-to-impl.md) for safety boundaries and troubleshooting.

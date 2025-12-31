@@ -3,7 +3,19 @@
     "allow": [
       "WebSearch",
       "WebFetch",
-      "Write(./.tmp/**)",
+      "Write(.tmp/**)",
+      "Edit(.tmp/**)",
+      "Bash(chmod +x:*)",
+
+      "Bash(echo SKILL - Agent skills)",
+      "Skill(open-pr)",
+      "Skill(open-issue)",
+      "Skill(fork-dev-branch)",
+      "Skill(commit-msg)",
+      "Skill(review-standard)",
+      "Skill(external-consensus)",
+      "Bash(.claude/skills/external-consensus/scripts/external-consensus.sh:*)",
+      "Skill(milestone)",
 
       "Bash(echo FILE OPERATIONS - Reading and viewing files)",
       "Read(//tmp/**)",
@@ -36,23 +48,21 @@
       "Bash(echo ENVIRONMENT - Module system and runtime)",
       "Bash(module load:*)",
 
-      "Bash(echo SKILL - Agent skills)",
-      "Skill(open-pr)",
-      "Skill(open-issue)",
-      "Skill(fork-dev-branch)",
-      "Skill(commit-msg)",
-      "Skill(review-standard)",
-
-      "Bash(echo Review plans using a external consensus source)",
-      "Skill(external-consensus)",
-      "Bash(.claude/skills/external-consensus/scripts/external-consensus.sh:*)",
-
       "Bash(echo GIT READ OPERATIONS - Non-destructive git commands)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git log:*)",
       "Bash(git show:*)",
       "Bash(git rev-parse:*)",
+
+      "Bash(echo GIT Rebase to merge)",
+      "Bash(git fetch origin:*)",
+      "Bash(git fetch upstream:*)",
+      "Bash(git rebase origin main)",
+      "Bash(git rebase upstream main)",
+      "Bash(git rebase origin master)",
+      "Bash(git rebase upstream master)",
+      "Bash(git rebase --continue:*)",
 
       "Bash(echo GITHUB READ OPERATIONS - Viewing GitHub resources)",
       "Bash(gh search:*)",
@@ -62,8 +72,10 @@
       "Bash(gh pr checks:*)",
       "Bash(gh pr list:*)",
       "Bash(gh pr diff:*)",
+      "Bash(gh pr create:*)",
       "Bash(gh issue list:*)",
       "Bash(gh issue view:*)",
+      "Bash(gh issue create:*)",
       "Bash(gh label list:*)",
       "Bash(gh project list:*)",
       "Bash(gh project field-list:*)",
@@ -124,6 +136,16 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/post-edit.sh"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/permission-request.sh"
           }
         ]
       }

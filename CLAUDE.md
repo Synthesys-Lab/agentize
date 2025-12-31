@@ -15,9 +15,14 @@
   - If not, please create one!
 - Keep in mind, all the rules developed in this project should be as project-neutral as possible.
 - Use `.tmp` to store your temporary plans or notes.
-- Focus on the rationale of the design itself. DO NOT mention any incremental changes of a history design!
+- Focus on the rationale of the design itself when documenting it.
+  DO NOT mention any incremental changes of a history design!
   - **DO NOT**: this design reduces 30% LoC compared to previous design.
   - **DO**: this design simplifies the architecture by providing a unified interface across the modules.
 - This project is still at its early stage.
   - Feel free to make breaking changes to the design.
   - Do not over-worry about backward compatibility.
+- When synthesizing any commandline commands including direct execution or in `.sh`, consider the following
+  to have better permission control:
+   - **BAD**: `ENV_VAR=xxx ./command` as such command will be regarded as a different command, which asks for human intervention to permit.
+   - **GOOD**: `./command --env-var xxx` where `./command` can be invoked as a allowed-tool in Claude Code.
