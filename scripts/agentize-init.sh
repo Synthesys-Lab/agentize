@@ -73,6 +73,26 @@ fi
 # Copy documentation templates
 cp -r "$PROJECT_ROOT/templates/claude/docs" "$AGENTIZE_PROJECT_PATH/"
 
+# Create .agentize.yaml with project metadata
+echo "Creating .agentize.yaml with project metadata..."
+cat > "$AGENTIZE_PROJECT_PATH/.agentize.yaml" <<EOF
+project:
+  name: $AGENTIZE_PROJECT_NAME
+  lang: $AGENTIZE_PROJECT_LANG
+  source: $SOURCE_PATH
+EOF
+
+# Optionally detect git default branch
+if [ -d "$AGENTIZE_PROJECT_PATH/.git" ]; then
+  if git -C "$AGENTIZE_PROJECT_PATH" show-ref --verify --quiet refs/heads/main; then
+    echo "git:" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
+    echo "  default_branch: main" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
+  elif git -C "$AGENTIZE_PROJECT_PATH" show-ref --verify --quiet refs/heads/master; then
+    echo "git:" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
+    echo "  default_branch: master" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
+  fi
+fi
+
 # Run bootstrap script if it exists
 if [ -f "$AGENTIZE_PROJECT_PATH/bootstrap.sh" ]; then
     echo "Running bootstrap script..."

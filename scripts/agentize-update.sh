@@ -95,4 +95,44 @@ else
     echo "  Existing CLAUDE.md and docs/git-msg-tags.md were preserved"
 fi
 
+# Create .agentize.yaml if missing
+if [ ! -f "$AGENTIZE_PROJECT_PATH/.agentize.yaml" ]; then
+    echo "  Creating .agentize.yaml with best-effort metadata..."
+
+    # Detect project name from directory basename
+    PROJECT_NAME=$(basename "$AGENTIZE_PROJECT_PATH")
+
+    # Try to detect language
+    set +e
+    DETECTED_LANG=$("$PROJECT_ROOT/scripts/detect-lang.sh" "$AGENTIZE_PROJECT_PATH" 2>/dev/null)
+    DETECT_EXIT_CODE=$?
+    set -e
+
+    # Start building .agentize.yaml
+    cat > "$AGENTIZE_PROJECT_PATH/.agentize.yaml" <<EOF
+project:
+  name: $PROJECT_NAME
+EOF
+
+    # Add language if detected
+    if [ $DETECT_EXIT_CODE -eq 0 ] && [ -n "$DETECTED_LANG" ]; then
+        echo "  lang: $DETECTED_LANG" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
+    fi
+
+    # Detect git default branch if git repository exists
+    if [ -d "$AGENTIZE_PROJECT_PATH/.git" ]; then
+        if git -C "$AGENTIZE_PROJECT_PATH" show-ref --verify --quiet refs/heads/main; then
+            echo "git:" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
+            echo "  default_branch: main" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
+        elif git -C "$AGENTIZE_PROJECT_PATH" show-ref --verify --quiet refs/heads/master; then
+            echo "git:" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
+            echo "  default_branch: master" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
+        fi
+    fi
+
+    echo "    Created .agentize.yaml"
+else
+    echo "  Existing .agentize.yaml preserved"
+fi
+
 echo "SDK updated successfully at $AGENTIZE_PROJECT_PATH"

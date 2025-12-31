@@ -65,14 +65,97 @@ truncate_suffix() {
     fi
 }
 
+# Locate .agentize.yaml metadata file
+# Prefer trees/main/.agentize.yaml, fallback to repo_root/.agentize.yaml
+locate_metadata() {
+    local repo_root="$1"
+
+    # Try trees/main/.agentize.yaml first (for worktree layout)
+    if [ -f "$repo_root/trees/main/.agentize.yaml" ]; then
+        echo "$repo_root/trees/main/.agentize.yaml"
+        return 0
+    fi
+
+    # Fallback to repo_root/.agentize.yaml
+    if [ -f "$repo_root/.agentize.yaml" ]; then
+        echo "$repo_root/.agentize.yaml"
+        return 0
+    fi
+
+    # Not found
+    return 1
+}
+
+# Parse YAML value for a given key (lightweight parser)
+# Usage: parse_yaml_value "git.default_branch" < .agentize.yaml
+parse_yaml_value() {
+    local key="$1"
+    local section="${key%%.*}"
+    local field="${key##*.}"
+
+    # Simple state machine: look for section, then field
+    local in_section=false
+
+    while IFS= read -r line; do
+        # Check for indentation before stripping whitespace
+        local is_indented=false
+        if [[ "$line" =~ ^[[:space:]]+ ]]; then
+            is_indented=true
+        fi
+
+        # Strip leading/trailing whitespace
+        line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+        # Skip empty lines and comments
+        [[ -z "$line" || "$line" =~ ^# ]] && continue
+
+        # Check if this is the section header (top-level, not indented)
+        if [[ "$line" =~ ^${section}:[[:space:]]*$ ]] && [ "$is_indented" = false ]; then
+            in_section=true
+            continue
+        fi
+
+        # Check if we've left the section (new top-level key, not indented)
+        if [[ "$line" =~ ^[a-z_]+:[[:space:]]* ]] && [ "$in_section" = true ] && [ "$is_indented" = false ]; then
+            in_section=false
+        fi
+
+        # If in section, look for field (must be indented)
+        if [ "$in_section" = true ] && [ "$is_indented" = true ] && [[ "$line" =~ ^${field}:[[:space:]]*(.+)$ ]]; then
+            echo "${BASH_REMATCH[1]}"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
 # Create worktree
 cmd_create() {
     local issue_number="$1"
     local description="$2"
+    local no_agent=false
+
+    # Parse flags
+    while [[ "$1" =~ ^-- ]]; do
+        case "$1" in
+            --no-agent)
+                no_agent=true
+                shift
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+
+    # Re-assign after flag parsing
+    issue_number="$1"
+    description="$2"
 
     if [ -z "$issue_number" ]; then
         echo -e "${RED}Error: Issue number required${NC}"
-        echo "Usage: cmd_create <issue-number> [description]"
+        echo "Usage: cmd_create [--no-agent] <issue-number> [description]"
         return 1
     fi
 
@@ -109,7 +192,29 @@ cmd_create() {
     description=$(truncate_suffix "$description")
 
     local branch_name="issue-${issue_number}-${description}"
-    local worktree_path="$repo_root/trees/${branch_name}"
+
+    # Try to read metadata for configuration
+    local metadata_file
+    local trees_dir="trees"
+    local main_branch=""
+    local metadata_missing=false
+
+    metadata_file=$(locate_metadata "$repo_root" || true)
+    if [ -n "$metadata_file" ] && [ -f "$metadata_file" ]; then
+        # Read trees directory from metadata (optional, defaults to "trees")
+        local meta_trees_dir
+        meta_trees_dir=$(parse_yaml_value "worktree.trees_dir" < "$metadata_file" 2>/dev/null || true)
+        if [ -n "$meta_trees_dir" ]; then
+            trees_dir="$meta_trees_dir"
+        fi
+
+        # Read default branch from metadata
+        main_branch=$(parse_yaml_value "git.default_branch" < "$metadata_file" 2>/dev/null || true)
+    else
+        metadata_missing=true
+    fi
+
+    local worktree_path="$repo_root/${trees_dir}/${branch_name}"
 
     # Check if worktree already exists
     if [ -d "$worktree_path" ]; then
@@ -117,29 +222,43 @@ cmd_create() {
         return 1
     fi
 
-    # Detect main branch (main or master)
-    local main_branch
-    if git -C "$repo_root" show-ref --verify --quiet refs/heads/main; then
-        main_branch="main"
-    elif git -C "$repo_root" show-ref --verify --quiet refs/heads/master; then
-        main_branch="master"
-    else
-        echo -e "${RED}Error: Cannot find main or master branch${NC}"
-        return 1
+    # If metadata didn't provide default branch, detect it (main or master)
+    if [ -z "$main_branch" ]; then
+        if git -C "$repo_root" show-ref --verify --quiet refs/heads/main; then
+            main_branch="main"
+        elif git -C "$repo_root" show-ref --verify --quiet refs/heads/master; then
+            main_branch="master"
+        else
+            echo -e "${RED}Error: Cannot find main or master branch${NC}"
+            if [ "$metadata_missing" = true ]; then
+                echo -e "${YELLOW}Hint: Run 'lol init' or 'lol update' to create .agentize.yaml with project metadata${NC}"
+            fi
+            return 1
+        fi
+
+        # Emit one-time hint if metadata is missing
+        if [ "$metadata_missing" = true ]; then
+            echo -e "${YELLOW}Hint: .agentize.yaml not found. Run 'lol init' or 'lol update' to create project metadata.${NC}"
+        fi
     fi
 
     echo "Updating $main_branch branch..."
 
-    local main_repo_dir="$repo_root"/trees/main
+    # Determine the working directory for git operations
+    # Prefer trees/main if it exists (worktree layout), otherwise use repo_root
+    local main_repo_dir="$repo_root/${trees_dir}/main"
+    if [ ! -d "$main_repo_dir" ]; then
+        main_repo_dir="$repo_root"
+    fi
 
     # Checkout main branch in main repo
-    git -C  $main_repo_dir checkout "$main_branch" || {
+    git -C  "$main_repo_dir" checkout "$main_branch" || {
         echo -e "${RED}Error: Failed to checkout $main_branch${NC}"
         return 1
     }
 
     # Pull latest changes from origin with rebase
-    git -C $main_repo_dir pull origin "$main_branch" --rebase || {
+    git -C "$main_repo_dir" pull origin "$main_branch" --rebase || {
         echo -e "${YELLOW}Warning: Failed to pull from origin/$main_branch${NC}"
         echo "Continuing with local $main_branch..."
     }
@@ -148,13 +267,16 @@ cmd_create() {
     echo "Branch: $branch_name (forked from $main_branch)"
 
     # Create worktree from main branch using git -C to operate on main repo
-    git -C $main_repo_dir worktree add -b "$branch_name" "$worktree_path" "$main_branch"
+    git -C "$main_repo_dir" worktree add -b "$branch_name" "$worktree_path" "$main_branch"
 
     echo -e "${GREEN}✓ Worktree created successfully${NC}"
     echo ""
 
-    cd $worktree_path
-    claude
+    # Launch claude unless --no-agent flag is set
+    if [ "$no_agent" = false ]; then
+        cd "$worktree_path"
+        claude
+    fi
 }
 
 # List worktrees

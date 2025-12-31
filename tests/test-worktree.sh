@@ -47,19 +47,14 @@ echo "=== Worktree Function Test ==="
   echo ""
   # Test 1: Create worktree with custom description (truncated to 10 chars)
   echo "Test 1: Create worktree with custom description"
-  cmd_create 42 test-feature
+  cmd_create --no-agent 42 test-feature
 
   if [ ! -d "trees/issue-42-test" ]; then
       echo -e "${RED}FAIL: Worktree directory not created (expected: issue-42-test)${NC}"
       exit 1
   fi
 
-  if [ ! -f "trees/issue-42-test/CLAUDE.md" ]; then
-      echo -e "${RED}FAIL: CLAUDE.md not bootstrapped${NC}"
-      exit 1
-  fi
-
-  echo -e "${GREEN}PASS: Worktree created and bootstrapped${NC}"
+  echo -e "${GREEN}PASS: Worktree created${NC}"
 
   echo ""
   # Test 2: List worktrees
@@ -100,7 +95,7 @@ echo "=== Worktree Function Test ==="
   echo ""
   # Test 6: Long title truncates to max length (default 10)
   echo "Test 6: Long title truncates to max length"
-  cmd_create 99 this-is-a-very-long-suffix-that-should-be-truncated
+  cmd_create --no-agent 99 this-is-a-very-long-suffix-that-should-be-truncated
   if [ ! -d "trees/issue-99-this-is-a" ]; then
       echo -e "${RED}FAIL: Long suffix not truncated to 10 chars${NC}"
       exit 1
@@ -111,7 +106,7 @@ echo "=== Worktree Function Test ==="
   echo ""
   # Test 7: Short title preserved
   echo "Test 7: Short title preserved"
-  cmd_create 88 short
+  cmd_create --no-agent 88 short
   if [ ! -d "trees/issue-88-short" ]; then
       echo -e "${RED}FAIL: Short suffix not preserved${NC}"
       exit 1
@@ -122,7 +117,7 @@ echo "=== Worktree Function Test ==="
   echo ""
   # Test 8: Word-boundary trimming
   echo "Test 8: Word-boundary trimming"
-  cmd_create 77 very-long-name
+  cmd_create --no-agent 77 very-long-name
   if [ ! -d "trees/issue-77-very-long" ]; then
       echo -e "${RED}FAIL: Word-boundary trim failed${NC}"
       exit 1
@@ -133,7 +128,7 @@ echo "=== Worktree Function Test ==="
   echo ""
   # Test 9: Env override changes limit
   echo "Test 9: Env override changes limit"
-  WORKTREE_SUFFIX_MAX_LENGTH=5 cmd_create 66 test-feature
+  WORKTREE_SUFFIX_MAX_LENGTH=5 cmd_create --no-agent 66 test-feature
   if [ ! -d "trees/issue-66-test" ]; then
       echo -e "${RED}FAIL: Env override not applied (expected: issue-66-test)${NC}"
       exit 1
@@ -146,7 +141,7 @@ echo "=== Worktree Function Test ==="
   echo "Test 10: Linked worktree - create worktree from linked worktree"
 
   # Create first worktree
-  cmd_create 55 first
+  cmd_create --no-agent 55 first
 
   # cd into the linked worktree
   cd trees/issue-55-first
@@ -156,7 +151,7 @@ echo "=== Worktree Function Test ==="
 
   # Try to create another worktree from inside the linked worktree
   # It should create the new worktree under the main repo root, not inside the linked worktree
-  cmd_create 56 second
+  cmd_create --no-agent 56 second
 
   # Verify the new worktree is created under main repo root
   if [ ! -d "$TEST_DIR/trees/issue-56-second" ]; then
@@ -211,7 +206,7 @@ EOF
   source ./wt-cli.sh
 
   # Create worktree (should use trunk, not main/master)
-  cmd_create 100 test-trunk
+  cmd_create --no-agent 100 test-trunk
 
   # Verify worktree was created
   if [ ! -d "trees/issue-100-test-trunk" ]; then
