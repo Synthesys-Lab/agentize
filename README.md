@@ -114,9 +114,8 @@ agentize/
 │   ├── draft/              # Draft documents for local development
 │   └── git-msg-tags.md     # Used by \commit-msg skill and command to write meaningful commit messages
 ├── scripts/                # Shell scripts and functions
-│   ├── wt-cli.sh           # Canonical worktree management (used by wt shell function)
-│   ├── lol-cli.sh          # CLI wrapper functions
-│   └── worktree.sh         # Compatibility shim forwarding to wt-cli.sh
+│   ├── wt-cli.sh           # Worktree management (used by wt shell function)
+│   └── lol-cli.sh          # CLI wrapper functions
 ├── templates/              # Templates for SDK generation
 ├── .claude/                # Core agent rules for Claude Code
 ├── tests/                  # Test cases

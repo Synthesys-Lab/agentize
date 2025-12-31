@@ -68,9 +68,8 @@ echo "Test 3: wt spawn creates worktree in correct location"
 
     # Copy scripts
     mkdir -p scripts
-    cp "$PROJECT_ROOT/scripts/worktree.sh" scripts/
     cp "$WT_CLI" scripts/
-    chmod +x scripts/worktree.sh
+    chmod +x scripts/wt-cli.sh
   )
 
   # Setup test project (different repo)
