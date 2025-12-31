@@ -108,25 +108,18 @@ test_handsoff_true_destructive() {
     unset CLAUDE_HANDSOFF
 }
 
-# Test 6: Unset env var + .claude/hands-off.json enabled → allow (backward compat)
-test_json_fallback() {
-    echo "Test 6: JSON fallback when env var is unset"
+# Test 6: Unset env var + safe read → ask (fail-closed)
+test_handsoff_unset() {
+    echo "Test 6: CLAUDE_HANDSOFF unset with safe read operation"
     unset CLAUDE_HANDSOFF
-
-    # Create temporary hands-off.json
-    local json_file="$PROJECT_ROOT/.claude/hands-off.json"
-    echo '{"enabled": true}' > "$json_file"
 
     local result
     result=$(run_hook "Read" "Read configuration file" '{"file_path": "/tmp/test.txt"}')
 
-    # Cleanup
-    rm -f "$json_file"
-
-    if [[ "$result" == "allow" ]]; then
-        echo "✓ PASS: JSON fallback works when env var is unset"
+    if [[ "$result" == "ask" ]]; then
+        echo "✓ PASS: Unset env var results in 'ask' (fail-closed)"
     else
-        echo "✗ FAIL: Expected 'allow', got '$result'"
+        echo "✗ FAIL: Expected 'ask', got '$result'"
         exit 1
     fi
 }
@@ -146,7 +139,7 @@ main() {
     echo
     test_handsoff_true_destructive
     echo
-    test_json_fallback
+    test_handsoff_unset
     echo
 
     echo "=== All tests passed ==="

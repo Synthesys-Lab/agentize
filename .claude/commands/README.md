@@ -35,12 +35,12 @@ For ultra-planner and issue-to-impl workflows, you can enable hands-off mode to 
 
 **Enable:**
 ```bash
-echo '{"enabled": true}' > .claude/hands-off.json
+export CLAUDE_HANDSOFF=true
 ```
 
 **Disable:**
 ```bash
-echo '{"enabled": false}' > .claude/hands-off.json
+export CLAUDE_HANDSOFF=false
 ```
 
 See individual command docs (ultra-planner.md, issue-to-impl.md) for safety boundaries and troubleshooting.

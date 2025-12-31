@@ -426,14 +426,12 @@ Stop execution.
 
 **To enable:**
 ```bash
-# Create or update .claude/hands-off.json
-echo '{"enabled": true}' > .claude/hands-off.json
+export CLAUDE_HANDSOFF=true
 ```
 
 **To disable:**
 ```bash
-# Set enabled to false
-echo '{"enabled": false}' > .claude/hands-off.json
+export CLAUDE_HANDSOFF=false
 ```
 
 **Safety boundaries:**
@@ -444,4 +442,4 @@ echo '{"enabled": false}' > .claude/hands-off.json
 
 **Troubleshooting:**
 - If workflow gets stuck: Check `.tmp/claude-hooks/auto-approvals.log` for decisions
-- To force manual mode: Set `enabled: false` in `.claude/hands-off.json`
+- To force manual mode: Set `CLAUDE_HANDSOFF=false`

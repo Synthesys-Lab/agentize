@@ -5,7 +5,7 @@
 
 # Check if hands-off mode is enabled
 is_hands_off_enabled() {
-    # Check CLAUDE_HANDSOFF environment variable first
+    # Check CLAUDE_HANDSOFF environment variable
     if [[ -n "${CLAUDE_HANDSOFF}" ]]; then
         local value
         value=$(echo "${CLAUDE_HANDSOFF}" | tr '[:upper:]' '[:lower:]')
@@ -18,17 +18,7 @@ is_hands_off_enabled() {
         fi
     fi
 
-    # Fallback to .claude/hands-off.json if env var is unset
-    local json_file=".claude/hands-off.json"
-    if [[ -f "$json_file" ]]; then
-        local enabled
-        enabled=$(grep -o '"enabled"[[:space:]]*:[[:space:]]*true' "$json_file")
-        if [[ -n "$enabled" ]]; then
-            return 0  # enabled via JSON
-        fi
-    fi
-
-    return 1  # disabled by default
+    return 1  # disabled by default (fail-closed)
 }
 
 # Determine permission decision based on tool and operation
