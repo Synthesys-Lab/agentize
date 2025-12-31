@@ -139,6 +139,22 @@ echo "=== Worktree Smoke Test ==="
   ./worktree.sh remove 66
   echo -e "${GREEN}PASS: Env override works${NC}"
 
+  echo ""
+  # Test 10: Double-dash slugification regression test
+  echo "Test 10: Double-dash slugification (issue #142 regression)"
+  ./worktree.sh create 131 fix--print-path
+  if [ -d "trees/issue-131---print" ]; then
+      echo -e "${RED}FAIL: Triple hyphen created (bug present)${NC}"
+      ./worktree.sh remove 131 || true
+      exit 1
+  fi
+  if [ ! -d "trees/issue-131-fix-print" ]; then
+      echo -e "${RED}FAIL: Expected issue-131-fix-print directory${NC}"
+      exit 1
+  fi
+  ./worktree.sh remove 131
+  echo -e "${GREEN}PASS: Double-dash normalized to single hyphen${NC}"
+
   # Cleanup
   cd /
   rm -rf "$TEST_DIR"
