@@ -149,7 +149,7 @@ echo "Test 4: wt spawn creates worktree in correct location"
     wt init
 
     # Create worktree using wt spawn
-    wt spawn 42 test-cross
+    wt spawn --no-agent 42 test-cross
 
     # Verify worktree created in agentize repo, not current project
     if [ ! -d "$TEST_AGENTIZE/trees/issue-42-test-cross" ]; then
@@ -221,7 +221,7 @@ echo "Test 5: wt spawn from linked worktree creates under main repo"
     # Initialize first
     wt init
 
-    wt spawn 50 first
+    wt spawn --no-agent 50 first
 
     # Now cd into the linked worktree and create another worktree
     cd trees/issue-50-first
@@ -230,7 +230,7 @@ echo "Test 5: wt spawn from linked worktree creates under main repo"
     source "$TEST_AGENTIZE/scripts/wt-cli.sh"
 
     # Create another worktree from inside the linked worktree
-    wt spawn 51 second
+    wt spawn --no-agent 51 second
 
     # Verify the new worktree is created under AGENTIZE_HOME, not inside the linked worktree
     if [ ! -d "$TEST_AGENTIZE/trees/issue-51-second" ]; then

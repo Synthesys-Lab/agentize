@@ -239,6 +239,9 @@ EOF
   # Source the library
   source ./wt-cli.sh
 
+  # Initialize first
+  cmd_init
+
   # Create worktree (should use trunk, not main/master)
   cmd_create --no-agent 100 test-trunk
 

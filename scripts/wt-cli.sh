@@ -130,6 +130,166 @@ parse_yaml_value() {
     return 1
 }
 
+# Initialize worktree environment by creating trees/main
+cmd_init() {
+    # Resolve repo root
+    local repo_root
+    repo_root=$(wt_resolve_repo_root)
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+
+    # Try to read metadata for configuration
+    local metadata_file
+    local trees_dir="trees"
+    local main_branch=""
+
+    metadata_file=$(locate_metadata "$repo_root" || true)
+    if [ -n "$metadata_file" ] && [ -f "$metadata_file" ]; then
+        # Read trees directory from metadata (optional, defaults to "trees")
+        local meta_trees_dir
+        meta_trees_dir=$(parse_yaml_value "worktree.trees_dir" < "$metadata_file" 2>/dev/null || true)
+        if [ -n "$meta_trees_dir" ]; then
+            trees_dir="$meta_trees_dir"
+        fi
+
+        # Read default branch from metadata
+        main_branch=$(parse_yaml_value "git.default_branch" < "$metadata_file" 2>/dev/null || true)
+    fi
+
+    # If metadata didn't provide default branch, detect it (main or master)
+    if [ -z "$main_branch" ]; then
+        if git -C "$repo_root" show-ref --verify --quiet refs/heads/main; then
+            main_branch="main"
+        elif git -C "$repo_root" show-ref --verify --quiet refs/heads/master; then
+            main_branch="master"
+        else
+            echo -e "${RED}Error: Cannot find main or master branch${NC}"
+            return 1
+        fi
+    fi
+
+    local main_worktree_path="$repo_root/${trees_dir}/main"
+
+    # Check if trees/main already exists
+    if [ -d "$main_worktree_path" ]; then
+        echo -e "${YELLOW}Worktree already exists at ${main_worktree_path}${NC}"
+        echo "Initialization already complete."
+        return 0
+    fi
+
+    # Prune stale worktree metadata in case trees/main was manually deleted
+    git -C "$repo_root" worktree prune >/dev/null 2>&1
+
+    echo "Initializing worktree environment..."
+    echo "Creating main worktree from branch: $main_branch"
+
+    # Check if we're currently on the main branch in the repo root
+    local current_branch
+    current_branch=$(git -C "$repo_root" branch --show-current 2>/dev/null)
+
+    if [ "$current_branch" = "$main_branch" ]; then
+        # We need to move off the main branch first
+        # Create a temporary detached HEAD state
+        echo "Moving repository root off $main_branch branch..."
+        git -C "$repo_root" checkout --detach HEAD >/dev/null 2>&1
+    fi
+
+    # Create trees/main worktree
+    git -C "$repo_root" worktree add "$main_worktree_path" "$main_branch"
+
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}Error: Failed to create main worktree${NC}"
+        # Try to restore the original branch if we detached
+        if [ "$current_branch" = "$main_branch" ]; then
+            git -C "$repo_root" checkout "$main_branch" >/dev/null 2>&1
+        fi
+        return 1
+    fi
+
+    echo -e "${GREEN}✓ Initialization complete${NC}"
+    echo "Main worktree created at: $main_worktree_path"
+    echo ""
+    echo "You can now use 'wt spawn <issue-number>' to create feature worktrees."
+}
+
+# Switch to main worktree
+cmd_main() {
+    # This function is designed to be used when sourced
+    # When executed directly, it just shows a message
+
+    # Resolve repo root
+    local repo_root
+    repo_root=$(wt_resolve_repo_root)
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+
+    # Try to read metadata for trees directory
+    local metadata_file
+    local trees_dir="trees"
+
+    metadata_file=$(locate_metadata "$repo_root" || true)
+    if [ -n "$metadata_file" ] && [ -f "$metadata_file" ]; then
+        local meta_trees_dir
+        meta_trees_dir=$(parse_yaml_value "worktree.trees_dir" < "$metadata_file" 2>/dev/null || true)
+        if [ -n "$meta_trees_dir" ]; then
+            trees_dir="$meta_trees_dir"
+        fi
+    fi
+
+    local main_worktree_path="$repo_root/${trees_dir}/main"
+
+    # Check if trees/main exists
+    if [ ! -d "$main_worktree_path" ]; then
+        echo -e "${RED}Error: Main worktree not found at ${main_worktree_path}${NC}"
+        echo "Run 'wt init' first to create the main worktree."
+        return 1
+    fi
+
+    # Check if we're being sourced or executed
+    if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
+        # Direct execution - cannot change directory
+        echo "Note: This command works only when sourced (via 'source setup.sh' and using 'wt main')."
+        echo "To switch to main worktree: cd $main_worktree_path"
+        return 0
+    else
+        # Sourced - can change directory
+        cd "$main_worktree_path"
+        echo "Switched to main worktree: $main_worktree_path"
+        return 0
+    fi
+}
+
+# Display help information
+cmd_help() {
+    cat <<'EOF'
+Git Worktree Helper
+
+Usage:
+  wt init                          Initialize worktree environment (creates trees/main)
+  wt main                          Switch to main worktree (when sourced)
+  wt spawn <issue-number> [desc]   Create worktree for an issue
+  wt list                          List all worktrees
+  wt remove <issue-number>         Remove worktree for an issue
+  wt prune                         Clean up stale worktree metadata
+  wt help                          Display this help message
+
+Examples:
+  wt init                     # Initialize worktree environment
+  wt main                     # Switch to main worktree
+  wt spawn 42                 # Create worktree for issue #42 (fetches title from GitHub)
+  wt spawn 42 add-feature     # Create worktree with custom description
+  wt list                     # Show all worktrees
+  wt remove 42                # Remove worktree for issue #42
+
+Notes:
+  - Run 'wt init' once before using 'wt spawn'
+  - 'wt main' only works when sourced (via 'source setup.sh')
+  - Worktrees are created in the 'trees/' directory
+EOF
+}
+
 # Create worktree
 cmd_create() {
     local issue_number="$1"
@@ -163,6 +323,27 @@ cmd_create() {
     local repo_root
     repo_root=$(wt_resolve_repo_root)
     if [ $? -ne 0 ]; then
+        return 1
+    fi
+
+    # Try to read metadata for trees directory
+    local metadata_file
+    local trees_dir="trees"
+
+    metadata_file=$(locate_metadata "$repo_root" || true)
+    if [ -n "$metadata_file" ] && [ -f "$metadata_file" ]; then
+        local meta_trees_dir
+        meta_trees_dir=$(parse_yaml_value "worktree.trees_dir" < "$metadata_file" 2>/dev/null || true)
+        if [ -n "$meta_trees_dir" ]; then
+            trees_dir="$meta_trees_dir"
+        fi
+    fi
+
+    # Check if trees/main exists (guard - init must be run first)
+    local main_worktree_path="$repo_root/${trees_dir}/main"
+    if [ ! -d "$main_worktree_path" ]; then
+        echo -e "${RED}Error: Main worktree not found${NC}"
+        echo "Please run 'wt init' first to initialize the worktree environment."
         return 1
     fi
 
@@ -381,6 +562,17 @@ wt() {
     shift || true
 
     case "$subcommand" in
+        init)
+            cmd_init
+            local exit_code=$?
+            cd "$original_dir"
+            return $exit_code
+            ;;
+        main)
+            # Special case: main changes directory and should NOT restore
+            cmd_main
+            return $?
+            ;;
         spawn)
             # wt spawn <issue-number> [description]
             cmd_create "$@"
@@ -394,20 +586,14 @@ wt() {
         prune)
             cmd_prune
             ;;
+        help|--help|-h)
+            cmd_help
+            local exit_code=$?
+            cd "$original_dir"
+            return $exit_code
+            ;;
         *)
-            echo "wt: Git worktree helper (cross-project)"
-            echo ""
-            echo "Usage:"
-            echo "  wt spawn <issue-number> [description]"
-            echo "  wt list"
-            echo "  wt remove <issue-number>"
-            echo "  wt prune"
-            echo ""
-            echo "Examples:"
-            echo "  wt spawn 42              # Fetch title from GitHub"
-            echo "  wt spawn 42 add-feature  # Use custom description"
-            echo "  wt list                  # Show all worktrees"
-            echo "  wt remove 42             # Remove worktree for issue 42"
+            cmd_help
             cd "$original_dir"
             return 1
             ;;
@@ -415,7 +601,7 @@ wt() {
 
     local exit_code=$?
 
-    # Return to original directory
+    # Return to original directory (except for main command, handled above)
     cd "$original_dir"
 
     return $exit_code
@@ -434,7 +620,17 @@ wt_cli_main() {
     shift || true
 
     case "$cmd" in
+        init)
+            cmd_init
+            ;;
+        main)
+            cmd_main
+            ;;
+        spawn)
+            cmd_create "$@"
+            ;;
         create)
+            # Legacy support for 'create' command
             cmd_create "$@"
             ;;
         list)
@@ -446,20 +642,11 @@ wt_cli_main() {
         prune)
             cmd_prune
             ;;
+        help|--help|-h)
+            cmd_help
+            ;;
         *)
-            echo "Git Worktree Helper"
-            echo ""
-            echo "Usage:"
-            echo "  $(basename "$0") create <issue-number> [description]"
-            echo "  $(basename "$0") list"
-            echo "  $(basename "$0") remove <issue-number>"
-            echo "  $(basename "$0") prune"
-            echo ""
-            echo "Examples:"
-            echo "  $(basename "$0") create 42              # Fetch title from GitHub"
-            echo "  $(basename "$0") create 42 add-feature  # Use custom description"
-            echo "  $(basename "$0") list                   # Show all worktrees"
-            echo "  $(basename "$0") remove 42              # Remove worktree for issue 42"
+            cmd_help
             return 1
             ;;
     esac
