@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Test for cross-project wt shell function
-# Verifies wt spawn works from any directory
+# Verifies wt spawn works from any directory, including linked worktrees
 
 set -e
 
@@ -68,9 +68,9 @@ echo "Test 3: wt spawn creates worktree in correct location"
 
     # Copy scripts
     mkdir -p scripts
-    cp "$PROJECT_ROOT/scripts/worktree.sh" scripts/
+    cp "$PROJECT_ROOT/scripts/worktree.sh" scripts/ 2>/dev/null || true
     cp "$WT_CLI" scripts/
-    chmod +x scripts/worktree.sh
+    chmod +x scripts/wt-cli.sh
   )
 
   # Setup test project (different repo)
@@ -126,6 +126,70 @@ echo "Test 3: wt spawn creates worktree in correct location"
 
   # Cleanup
   rm -rf "$TEST_AGENTIZE" "$TEST_PROJECT"
+)
+
+# Test 4: wt spawn from linked worktree creates under main repo
+echo ""
+echo "Test 4: wt spawn from linked worktree creates under main repo"
+(
+  # Unset all git environment variables to ensure clean test environment
+  unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+  unset GIT_INDEX_VERSION GIT_COMMON_DIR
+
+  # Create temporary agentize repo
+  TEST_AGENTIZE=$(mktemp -d)
+  echo "Test agentize repo: $TEST_AGENTIZE"
+
+  # Setup test agentize repo
+  (
+    cd "$TEST_AGENTIZE"
+    git init
+    git config user.email "test@example.com"
+    git config user.name "Test User"
+    echo "test" > README.md
+    git add README.md
+    git commit -m "Initial commit"
+
+    # Copy scripts
+    mkdir -p scripts
+    cp "$WT_CLI" scripts/
+    chmod +x scripts/wt-cli.sh
+  )
+
+  # Create first worktree
+  (
+    export AGENTIZE_HOME="$TEST_AGENTIZE"
+    cd "$TEST_AGENTIZE"
+    source scripts/wt-cli.sh
+
+    wt spawn 50 first-worktree
+
+    # Now cd into the linked worktree and create another worktree
+    cd trees/issue-50-first-worktree
+
+    # Source again in linked worktree context
+    source "$TEST_AGENTIZE/scripts/wt-cli.sh"
+
+    # Create another worktree from inside the linked worktree
+    wt spawn 51 second-worktree
+
+    # Verify the new worktree is created under AGENTIZE_HOME, not inside the linked worktree
+    if [ ! -d "$TEST_AGENTIZE/trees/issue-51-second-worktree" ]; then
+      echo -e "${RED}FAIL: Worktree not created under main repo root${NC}"
+      exit 1
+    fi
+
+    # Verify it's NOT created inside the linked worktree
+    if [ -d "trees/issue-51-second-worktree" ]; then
+      echo -e "${RED}FAIL: Worktree incorrectly created inside linked worktree${NC}"
+      exit 1
+    fi
+
+    echo -e "${GREEN}PASS: wt spawn from linked worktree creates under AGENTIZE_HOME${NC}"
+  )
+
+  # Cleanup
+  rm -rf "$TEST_AGENTIZE"
 )
 
 echo ""

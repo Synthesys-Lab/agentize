@@ -91,20 +91,20 @@ Worktrees share the `.git` directory while providing isolated working directorie
 
 ### Setup
 
-Use the helper script:
+Use the `wt` CLI:
 
 ```bash
 # Create worktree (fetches title from GitHub)
-scripts/worktree.sh create 42
+scripts/wt create 42
 
 # Or specify custom description
-scripts/worktree.sh create 42 add-feature
+scripts/wt create 42 add-feature
 
 # Creates: trees/issue-42-add-feature/
 # Branch: issue-42-add-feature
 ```
 
-The script automatically:
+The CLI automatically:
 - Creates `trees/issue-<N>-<title>/` (gitignored)
 - Creates branch following naming convention
 - Bootstraps `CLAUDE.md` and `.claude/` into worktree
@@ -114,7 +114,7 @@ The script automatically:
 **Terminal 1 (Issue #45):**
 ```bash
 cd ~/projects/my-project
-scripts/worktree.sh create 45
+scripts/wt create 45
 cd trees/issue-45-add-rust-support
 claude-code
 # /issue-to-impl 45
@@ -123,7 +123,7 @@ claude-code
 **Terminal 2 (Issue #46):**
 ```bash
 cd ~/projects/my-project
-scripts/worktree.sh create 46
+scripts/wt create 46
 cd trees/issue-46-update-documentation
 claude-code
 # /issue-to-impl 46
@@ -143,13 +143,13 @@ The `CLAUDE.md` rule "DO NOT use `cd`" applies within each worktree individually
 
 ```bash
 # Remove specific worktree
-scripts/worktree.sh remove 42
+scripts/wt remove 42
 
 # List all worktrees
-scripts/worktree.sh list
+scripts/wt list
 
 # Clean up stale metadata
-scripts/worktree.sh prune
+scripts/wt prune
 ```
 
 ## Managing Progress

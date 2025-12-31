@@ -61,6 +61,8 @@ Agentize provides shell functions that work from any directory:
 
 For persistence, add `source /path/to/agentize/setup.sh` to your shell RC file (`~/.bashrc`, `~/.zshrc`, etc.).
 
+**Direct execution:** Use `scripts/wt` as the executable entrypoint. The `scripts/wt-cli.sh` file is source-only (used internally by the `wt` function and tests).
+
 ### Worktree Management (`wt`)
 
 Manage git worktrees from any directory:
@@ -114,7 +116,8 @@ agentize/
 │   ├── draft/              # Draft documents for local development
 │   └── git-msg-tags.md     # Used by \commit-msg skill and command to write meaningful commit messages
 ├── scripts/                # Shell scripts and functions
-│   ├── wt-cli.sh           # Cross-project wt shell function
+│   ├── wt                  # Worktree CLI executable entrypoint
+│   ├── wt-cli.sh           # Worktree library (source-only)
 │   ├── lol-cli.sh          # CLI wrapper functions
 │   └── worktree.sh         # Core worktree management
 ├── templates/              # Templates for SDK generation
