@@ -11,11 +11,7 @@ This tutorial shows you how to set up the Agentize framework in your project.
 For a fresh project starting with the Agentize framework:
 
 ```bash
-make agentize \
-   AGENTIZE_PROJECT_NAME="my_project" \
-   AGENTIZE_PROJECT_PATH="/path/to/new/project" \
-   AGENTIZE_PROJECT_LANG="c" \
-   AGENTIZE_MODE="init"
+lol init --name my_project --lang c --path /path/to/new/project
 ```
 
 This creates the initial SDK structure with:
@@ -29,11 +25,11 @@ This creates the initial SDK structure with:
 To add Agentize to your existing codebase or update the framework rules:
 
 ```bash
-make agentize \
-   AGENTIZE_PROJECT_NAME="existing_project" \
-   AGENTIZE_PROJECT_PATH="/path/to/existing/project" \
-   AGENTIZE_PROJECT_LANG="python" \
-   AGENTIZE_MODE="update"
+# From project root or any subdirectory
+lol update
+
+# Or specify explicit path
+lol update --path /path/to/existing/project
 ```
 
 This mode:

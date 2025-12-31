@@ -2,7 +2,7 @@
 
 This document defines the tags to be used in git commit messages.
 
-## Tags
+## Commit Tags
 
 - `feat`: A new feature has been added.
 - `sdk`: The SDK template to be modified or created.
@@ -21,3 +21,10 @@ This document defines the tags to be used in git commit messages.
 - `review`: If this code change is driven by a code review comment.
   - Use this tag in addition before any other tags.
   - This typically cannot be a standalone tag.
+
+## Issue Tags
+
+- `plan`: A plan that is created by `/plan-an-issue` (simple) or `/ultra-planner` (complicated) commands.
+  - `draft`: A plan is a draft (not reviewed and approved by a human yet).
+- `discussion`: An issue is created from a summary of a disccussion.
+- `roadmap`: An issue is created from `/roadmapper` command by feeding a `discussion` issue.

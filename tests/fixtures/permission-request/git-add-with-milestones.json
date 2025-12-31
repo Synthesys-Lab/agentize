@@ -1,0 +1,6 @@
+{
+  "tool": "Bash",
+  "parameters": {
+    "command": "git add -A"
+  }
+}

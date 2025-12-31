@@ -18,7 +18,7 @@ Learn Agentize step-by-step in 15 minutes total (3-5 min per tutorial):
 
 - `git-msg-tags.md` - Git commit message tag standards
 - `milestone-workflow.md` - Milestone-based implementation workflow
-- `options.md` - Configuration options for `make agentize`
+- `options.md` - Configuration options for the `lol` CLI
 - `sdk.md` - SDK generation and template system
 - `test.md` - Testing framework and validation
 

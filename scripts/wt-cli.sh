@@ -48,12 +48,31 @@ truncate_suffix() {
 
 # Create worktree
 cmd_create() {
-    local issue_number="$1"
-    local description="$2"
+    local issue_number=""
+    local description=""
+    local print_path=false
+
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --print-path)
+                print_path=true
+                shift
+                ;;
+            *)
+                if [ -z "$issue_number" ]; then
+                    issue_number="$1"
+                elif [ -z "$description" ]; then
+                    description="$1"
+                fi
+                shift
+                ;;
+        esac
+    done
 
     if [ -z "$issue_number" ]; then
         echo -e "${RED}Error: Issue number required${NC}"
-        echo "Usage: $0 create <issue-number> [description]"
+        echo "Usage: $0 create <issue-number> [description] [--print-path]"
         exit 1
     fi
 
@@ -106,7 +125,28 @@ cmd_create() {
         echo "Bootstrapped CLAUDE.md"
     fi
 
+    # Install pre-commit hook fallback if core.hooksPath is not configured
+    local hooks_path
+    hooks_path=$(git config --get core.hooksPath || true)
+
+    if [ -z "$hooks_path" ] && [ -f "scripts/pre-commit" ]; then
+        local git_dir
+        git_dir=$(git -C "$worktree_path" rev-parse --git-dir)
+        local hooks_dir="$git_dir/hooks"
+
+        mkdir -p "$hooks_dir"
+        cp "scripts/pre-commit" "$hooks_dir/pre-commit"
+        chmod +x "$hooks_dir/pre-commit"
+        echo "Installed pre-commit hook (fallback mode)"
+    fi
+
     echo -e "${GREEN}✓ Worktree created successfully${NC}"
+
+    # Emit machine-readable path marker if requested
+    if [ "$print_path" = true ]; then
+        echo "__WT_WORKTREE_PATH__=$worktree_path"
+    fi
+
     echo ""
     echo "To start working:"
     echo "  cd $worktree_path"

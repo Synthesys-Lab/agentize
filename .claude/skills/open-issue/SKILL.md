@@ -85,9 +85,37 @@ The open-issue skill takes the following inputs:
    - Steps to reproduce (for bugs)
    - General requirements (for feature requests)
 
+3. **Optional flags** (via arguments):
+   - `--draft`: Prepend `[draft]` to the title for plan issues (e.g., `[draft][plan][tag]: Title`)
+   - `--auto`: Skip user confirmation and create issue automatically (only used by ultra-planner)
+
 ## Workflow for AI Agents
 
 When this skill is invoked, the AI agent **MUST** follow these steps:
+
+### 0. Parse Arguments
+
+Check if optional flags are provided in arguments:
+
+```bash
+DRAFT_MODE=false
+AUTO_MODE=false
+PLAN_FILE=""
+
+for arg in $@; do
+  if [ "$arg" = "--draft" ]; then
+    DRAFT_MODE=true
+  elif [ "$arg" = "--auto" ]; then
+    AUTO_MODE=true
+  elif [ -f "$arg" ]; then
+    PLAN_FILE="$arg"
+  fi
+done
+```
+
+- `DRAFT_MODE=true`: Prepend `[draft]` to title for plan issues
+- `AUTO_MODE=true`: Skip confirmation in Step 4
+- `PLAN_FILE`: Path to plan file (if provided as argument)
 
 ### 1. Context Analysis Phase
 
@@ -122,6 +150,7 @@ Build the issue following the format specification:
 
 **Title:**
 - Format: `[prefix][tag]: Brief Summary`
+- If `DRAFT_MODE=true` and this is a `[plan]` issue, prepend `[draft]`: `[draft][plan][tag]: Brief Summary`
 - Keep summary concise (max 80 characters for the summary portion)
 - Ensure the summary clearly describes the issue
 
@@ -157,7 +186,9 @@ Build the issue following the format specification:
 ### 4. User Confirmation Phase
 
 **CRITICAL:** The AI agent **MUST** display the complete issue draft to the user
-and wait for explicit confirmation before creating the issue.
+and wait for explicit confirmation before creating the issue, **UNLESS** `AUTO_MODE=true`.
+
+**If `AUTO_MODE=false` (default):**
 
 Present the draft in a clear format:
 ```
@@ -173,6 +204,12 @@ Should I create this issue?
 - Wait for explicit "yes", "confirm", "create it", or similar affirmative response
 - If the user requests modifications, update the draft and present again
 - If the user declines, abort issue creation gracefully
+
+**If `AUTO_MODE=true` (ultra-planner only):**
+
+- Skip user confirmation
+- Proceed directly to Step 5 (GitHub Issue Creation)
+- Display a brief summary instead of asking for confirmation
 
 ### 5. GitHub Issue Creation
 

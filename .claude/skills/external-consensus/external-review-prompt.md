@@ -9,9 +9,9 @@ Three specialized agents have analyzed the following requirement:
 **Feature Request**: {{FEATURE_DESCRIPTION}}
 
 Each agent provided a different perspective:
-1. **Bold Proposer**: Innovative, SOTA-driven approach
-2. **Critique Agent**: Feasibility analysis and risk assessment
-3. **Reducer Agent**: Simplified, "less is more" approach
+1. **Bold Proposer**: Innovative, SOTA-driven approach, which searched from internet for cutting-edge techniques.
+2. **Critique Agent**: Feasibility analysis and risk assessment for the aggressive solution from the **Bold Proposer**.
+3. **Reducer Agent**: Simplified, "less is more" approach focusing on the core functionality from a minimalistic standpoint, by simplifying the **Bold Proposer**'s design.
 
 ## Your Task
 
@@ -22,6 +22,7 @@ Review all three perspectives and synthesize a **balanced, consensus implementat
 3. **Balances innovation with pragmatism**
 4. **Maintains simplicity** while not sacrificing essential features
 5. **Addresses critical risks** identified in the critique
+6. **Verifies documentation accuracy** - ensure proposals cite `docs/` for current command interfaces
 
 ## Input: Combined Report
 
@@ -43,6 +44,12 @@ Generate a final implementation plan following this structure:
 ## Consensus Summary
 
 [2-3 sentences explaining the balanced approach chosen]
+
+## Files Verified
+
+**Documentation and codebase checked by agents:**
+- [File path 1]: [What was verified]
+- [File path 2]: [What was verified]
 
 ## Design Decisions
 
@@ -136,5 +143,6 @@ Your consensus plan should:
 ✅ **Be clear**: Unambiguous implementation steps
 ✅ **Address risks**: Mitigate critical concerns from critique
 ✅ **Stay simple**: Remove unnecessary complexity per reducer
+✅ **Correct measurement**: DO NOT use time to estimate the effort as this is plan is for AI agents to execute! Use Lines of Code (LOC) instead!
 
 ❌ **Avoid**: Over-engineering, ignoring risks, excessive scope creep, vague specifications

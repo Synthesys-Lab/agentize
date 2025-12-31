@@ -39,20 +39,26 @@ When you run `/issue-to-impl`:
 - Creates: `issue-42-brief-description`
 - Switches to that branch
 
-**2. Documentation (from plan)**
+**2. Sync with origin/<default>**
+- Ensures clean working directory
+- Fetches latest from `origin/main` or `origin/master`
+- Rebases current branch onto `origin/<default>`
+- Stops with guidance if rebase conflicts occur
+
+**3. Documentation (from plan)**
 - Creates/updates documentation files
 - Adds README files as needed
 
-**3. Test Cases (from plan)**
+**4. Test Cases (from plan)**
 - Creates test files
 - Implements test cases from Test Strategy
 
-**4. Milestone 1 Commit**
+**5. Milestone 1 Commit**
 - Commits docs + tests
 - Status: 0/N tests passing (expected)
 - Uses `--no-verify` (tests not implemented yet)
 
-**5. Implementation Loop**
+**6. Implementation Loop**
 - Implements code in chunks (~100-200 LOC)
 - Runs tests after each chunk
 - Tracks total LOC with `git diff --stat`
@@ -66,6 +72,9 @@ When you run `/issue-to-impl`:
 User: /issue-to-impl 42
 
 Agent: Creating branch issue-42-add-typescript-support...
+Agent: Syncing with origin/main...
+  - Fetched latest changes
+  - Rebased onto origin/main (clean)
 Agent: Updating documentation...
   - docs/typescript-support.md created
   - README.md updated
@@ -235,7 +244,7 @@ See `docs/milestone-workflow.md` for complete documentation.
 2. **Review milestones**: Check `.milestones/` files to understand progress
 3. **Always sync**: Run `/sync-master` before creating PRs to avoid conflicts
 4. **Fix review issues**: Address `/code-review` findings before merging
-5. **Clean working directory**: Commit changes before `/sync-master` or `/miles2miles`
+5. **Clean working directory**: Commit changes before `/sync-master`, `/miles2miles`, or `/issue-to-impl` (all require clean working tree for rebasing)
 
 ## Next Steps
 

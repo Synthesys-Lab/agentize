@@ -43,6 +43,15 @@ echo "=== Worktree Smoke Test ==="
   # Copy CLAUDE.md for bootstrap testing
   echo "Test CLAUDE.md" > CLAUDE.md
 
+  # Create scripts directory and pre-commit hook for hook installation testing
+  cat > scripts/pre-commit << 'EOF'
+#!/usr/bin/env bash
+# Test pre-commit hook
+echo "Pre-commit hook executed"
+exit 0
+EOF
+  chmod +x scripts/pre-commit
+
   echo ""
   # Test 1: Create worktree with custom description (truncated to 10 chars)
   echo "Test 1: Create worktree with custom description"
@@ -141,8 +150,46 @@ echo "=== Worktree Smoke Test ==="
   echo -e "${GREEN}PASS: Env override works${NC}"
 
   echo ""
-  # Test 10: Double-dash slugification regression test
-  echo "Test 10: Double-dash slugification (issue #142 regression)"
+  # Test 10: --print-path flag emits machine-readable marker
+  echo "Test 10: --print-path flag emits machine-readable marker"
+  OUTPUT=$(./scripts/wt-cli.sh create 55 test --print-path 2>&1)
+  if [[ ! "$OUTPUT" =~ __WT_WORKTREE_PATH__=trees/issue-55-test ]]; then
+      echo -e "${RED}FAIL: --print-path did not emit marker${NC}"
+      echo "Output: $OUTPUT"
+      exit 1
+  fi
+  if [ ! -d "trees/issue-55-test" ]; then
+      echo -e "${RED}FAIL: Worktree not created with --print-path${NC}"
+      exit 1
+  fi
+  ./scripts/wt-cli.sh remove 55
+  echo -e "${GREEN}PASS: --print-path emits marker and creates worktree${NC}"
+
+  echo ""
+  # Test 11: Pre-commit hook installed in new worktree (when core.hooksPath not set)
+  echo "Test 11: Pre-commit hook installed in new worktree"
+  ./scripts/wt-cli.sh create 56 hook-test
+
+  # Compute worktree git dir
+  WORKTREE_GIT_DIR=$(git -C "trees/issue-56-hook-test" rev-parse --git-dir)
+  HOOK_PATH="$WORKTREE_GIT_DIR/hooks/pre-commit"
+
+  if [ ! -f "$HOOK_PATH" ]; then
+      echo -e "${RED}FAIL: Pre-commit hook not installed in worktree${NC}"
+      exit 1
+  fi
+
+  if [ ! -x "$HOOK_PATH" ]; then
+      echo -e "${RED}FAIL: Pre-commit hook not executable${NC}"
+      exit 1
+  fi
+
+  ./scripts/wt-cli.sh remove 56
+  echo -e "${GREEN}PASS: Pre-commit hook installed and executable${NC}"
+
+  echo ""
+  # Test 12: Double-dash slugification regression test
+  echo "Test 12: Double-dash slugification (issue #142 regression)"
   ./scripts/wt-cli.sh create 131 fix--print-path
   if [ -d "trees/issue-131---print" ]; then
       echo -e "${RED}FAIL: Triple hyphen created (bug present)${NC}"

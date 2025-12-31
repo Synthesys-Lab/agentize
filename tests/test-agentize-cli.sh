@@ -90,9 +90,9 @@ echo "Test 4: update finds nearest .claude/ directory"
   rm -rf "$TEST_PROJECT"
 )
 
-# Test 5: update fails when no .claude/ found
+# Test 5: update creates .claude/ when not found
 echo ""
-echo "Test 5: update fails when no .claude/ found"
+echo "Test 5: update creates .claude/ when not found"
 (
   TEST_PROJECT=$(mktemp -d)
   export AGENTIZE_HOME="$PROJECT_ROOT"
@@ -100,13 +100,19 @@ echo "Test 5: update fails when no .claude/ found"
 
   cd "$TEST_PROJECT"
 
-  # Should fail since no .claude/ exists
-  if lol update 2>/dev/null; then
-    echo -e "${RED}FAIL: Should fail when .claude/ not found${NC}"
+  # Should succeed and create .claude/
+  if ! lol update 2>/dev/null; then
+    echo -e "${RED}FAIL: Should succeed and create .claude/${NC}"
     exit 1
   fi
 
-  echo -e "${GREEN}PASS: Correctly fails when .claude/ not found${NC}"
+  # Verify .claude/ was created
+  if [ ! -d "$TEST_PROJECT/.claude" ]; then
+    echo -e "${RED}FAIL: .claude/ directory was not created${NC}"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: Correctly creates .claude/ when not found${NC}"
 
   rm -rf "$TEST_PROJECT"
 )

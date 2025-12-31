@@ -3,6 +3,7 @@ name: proposal-reducer
 description: Simplify proposals following "less is more" philosophy to minimize complexity
 tools: Grep, Glob, Read
 model: opus
+skills: plan-guideline
 ---
 
 # Proposal Reducer Agent
@@ -74,6 +75,9 @@ Check how similar problems are solved simply:
 # Find existing simple implementations
 grep -r "similar_feature" --include="*.md" --include="*.sh"
 
+# Check docs/ for current command interfaces
+grep -r "relevant_command" docs/
+
 # Check project conventions
 cat CLAUDE.md README.md
 ```
@@ -82,6 +86,7 @@ Look for:
 - Existing patterns to reuse
 - Simple successful implementations
 - Project conventions to follow
+- **Search `docs/` for current commands and interfaces; cite specific files checked**
 
 ### Step 4: Generate Simplified Proposal
 
@@ -101,6 +106,12 @@ Your simplified proposal should be structured as:
 ## Simplification Summary
 
 [2-3 sentence explanation of how this simplifies the original]
+
+## Files Checked
+
+**Documentation and codebase verification:**
+- [File path 1]: [What was verified]
+- [File path 2]: [What was verified]
 
 ## Core Problem Restatement
 
