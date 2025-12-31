@@ -45,8 +45,42 @@ echo "=== Worktree Function Test ==="
   source ./wt-cli.sh
 
   echo ""
-  # Test 1: Create worktree with custom description (truncated to 10 chars)
-  echo "Test 1: Create worktree with custom description"
+  # Test 1: init creates trees/main worktree
+  echo "Test 1: init creates trees/main worktree"
+  cmd_init
+
+  if [ ! -d "trees/main" ]; then
+      echo -e "${RED}FAIL: trees/main directory not created${NC}"
+      exit 1
+  fi
+
+  # Verify it's on main branch
+  BRANCH=$(git -C trees/main branch --show-current)
+  if [[ "$BRANCH" != "main" ]] && [[ "$BRANCH" != "master" ]]; then
+      echo -e "${RED}FAIL: trees/main not on main/master branch (got: $BRANCH)${NC}"
+      exit 1
+  fi
+
+  echo -e "${GREEN}PASS: init created trees/main${NC}"
+
+  echo ""
+  # Test 2: spawn fails without init (cleanup trees/main first)
+  echo "Test 2: spawn requires init (trees/main must exist)"
+  rm -rf trees/main
+
+  if cmd_create --no-agent 99 test-fail 2>/dev/null; then
+      echo -e "${RED}FAIL: spawn should fail when trees/main is missing${NC}"
+      exit 1
+  fi
+
+  echo -e "${GREEN}PASS: spawn correctly requires init${NC}"
+
+  # Re-initialize for remaining tests
+  cmd_init
+
+  echo ""
+  # Test 3: Create worktree with custom description (truncated to 10 chars)
+  echo "Test 3: Create worktree with custom description"
   cmd_create --no-agent 42 test-feature
 
   if [ ! -d "trees/issue-42-test" ]; then
@@ -57,8 +91,8 @@ echo "=== Worktree Function Test ==="
   echo -e "${GREEN}PASS: Worktree created${NC}"
 
   echo ""
-  # Test 2: List worktrees
-  echo "Test 2: List worktrees"
+  # Test 4: List worktrees
+  echo "Test 4: List worktrees"
   OUTPUT=$(cmd_list)
   if [[ ! "$OUTPUT" =~ "issue-42-test" ]]; then
       echo -e "${RED}FAIL: Worktree not listed${NC}"
@@ -67,8 +101,8 @@ echo "=== Worktree Function Test ==="
   echo -e "${GREEN}PASS: Worktree listed${NC}"
 
   echo ""
-  # Test 3: Verify branch exists
-  echo "Test 3: Verify branch exists"
+  # Test 5: Verify branch exists
+  echo "Test 5: Verify branch exists"
   if ! git branch | grep -q "issue-42-test"; then
       echo -e "${RED}FAIL: Branch not created${NC}"
       exit 1
@@ -76,8 +110,8 @@ echo "=== Worktree Function Test ==="
   echo -e "${GREEN}PASS: Branch created${NC}"
 
   echo ""
-  # Test 4: Remove worktree
-  echo "Test 4: Remove worktree"
+  # Test 6: Remove worktree
+  echo "Test 6: Remove worktree"
   cmd_remove 42
 
   if [ -d "trees/issue-42-test" ]; then
@@ -87,14 +121,14 @@ echo "=== Worktree Function Test ==="
   echo -e "${GREEN}PASS: Worktree removed${NC}"
 
   echo ""
-  # Test 5: Prune stale metadata
-  echo "Test 5: Prune stale metadata"
+  # Test 7: Prune stale metadata
+  echo "Test 7: Prune stale metadata"
   cmd_prune
   echo -e "${GREEN}PASS: Prune completed${NC}"
 
   echo ""
-  # Test 6: Long title truncates to max length (default 10)
-  echo "Test 6: Long title truncates to max length"
+  # Test 8: Long title truncates to max length (default 10)
+  echo "Test 8: Long title truncates to max length"
   cmd_create --no-agent 99 this-is-a-very-long-suffix-that-should-be-truncated
   if [ ! -d "trees/issue-99-this-is-a" ]; then
       echo -e "${RED}FAIL: Long suffix not truncated to 10 chars${NC}"
@@ -104,8 +138,8 @@ echo "=== Worktree Function Test ==="
   echo -e "${GREEN}PASS: Long suffix truncated${NC}"
 
   echo ""
-  # Test 7: Short title preserved
-  echo "Test 7: Short title preserved"
+  # Test 9: Short title preserved
+  echo "Test 9: Short title preserved"
   cmd_create --no-agent 88 short
   if [ ! -d "trees/issue-88-short" ]; then
       echo -e "${RED}FAIL: Short suffix not preserved${NC}"
@@ -115,8 +149,8 @@ echo "=== Worktree Function Test ==="
   echo -e "${GREEN}PASS: Short suffix preserved${NC}"
 
   echo ""
-  # Test 8: Word-boundary trimming
-  echo "Test 8: Word-boundary trimming"
+  # Test 10: Word-boundary trimming
+  echo "Test 10: Word-boundary trimming"
   cmd_create --no-agent 77 very-long-name
   if [ ! -d "trees/issue-77-very-long" ]; then
       echo -e "${RED}FAIL: Word-boundary trim failed${NC}"
@@ -126,8 +160,8 @@ echo "=== Worktree Function Test ==="
   echo -e "${GREEN}PASS: Word-boundary trim works${NC}"
 
   echo ""
-  # Test 9: Env override changes limit
-  echo "Test 9: Env override changes limit"
+  # Test 11: Env override changes limit
+  echo "Test 11: Env override changes limit"
   WORKTREE_SUFFIX_MAX_LENGTH=5 cmd_create --no-agent 66 test-feature
   if [ ! -d "trees/issue-66-test" ]; then
       echo -e "${RED}FAIL: Env override not applied (expected: issue-66-test)${NC}"
@@ -137,8 +171,8 @@ echo "=== Worktree Function Test ==="
   echo -e "${GREEN}PASS: Env override works${NC}"
 
   echo ""
-  # Test 10: Linked worktree regression - create worktree from linked worktree
-  echo "Test 10: Linked worktree - create worktree from linked worktree"
+  # Test 12: Linked worktree regression - create worktree from linked worktree
+  echo "Test 12: Linked worktree - create worktree from linked worktree"
 
   # Create first worktree
   cmd_create --no-agent 55 first
@@ -172,9 +206,9 @@ echo "=== Worktree Function Test ==="
   cmd_remove 55
   cmd_remove 56
 
-  # Test 11: Metadata-driven default branch selection
+  # Test 13: Metadata-driven default branch selection
   echo ""
-  echo "Test 11: Metadata-driven default branch (trunk via .agentize.yaml)"
+  echo "Test 13: Metadata-driven default branch (trunk via .agentize.yaml)"
 
   # Create a new test repo with non-standard default branch
   TEST_DIR2=$(mktemp -d)

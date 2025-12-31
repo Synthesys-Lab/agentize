@@ -517,7 +517,7 @@ initialization in invalid locations and provide clear error messages.
 
 **Files to modify:**
 - `Makefile:45-67` - Add validation before template copying
-- `docs/OPTIONS.md:25-40` - Document validation behavior
+- `docs/lol.md:25-40` - Document validation behavior
 
 **Files to create:**
 - `scripts/validate_target_dir.sh` - Directory validation logic (Est: 120 LOC)
@@ -536,8 +536,8 @@ initialization in invalid locations and provide clear error messages.
 ## Implementation Steps
 
 **Step 1: Update documentation** (Estimated: 60 LOC)
-- `docs/OPTIONS.md:25-40` - Document validation behavior and error messages
-- `docs/OPTIONS.md:50-65` - Add examples of valid/invalid target directories
+- `docs/lol.md:25-40` - Document validation behavior and error messages
+- `docs/lol.md:50-65` - Add examples of valid/invalid target directories
 Dependencies: None
 
 **Step 2: Create test cases** (Estimated: 180 LOC)

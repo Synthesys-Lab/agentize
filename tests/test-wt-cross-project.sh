@@ -39,9 +39,62 @@ echo "Test 2: Invalid AGENTIZE_HOME produces error"
   echo -e "${GREEN}PASS: Errors correctly on invalid AGENTIZE_HOME${NC}"
 ) || echo -e "${GREEN}PASS: Errors correctly on invalid AGENTIZE_HOME${NC}"
 
-# Test 3: wt spawn creates worktree in correct location (cross-project)
+# Test 3: wt init creates trees/main worktree
 echo ""
-echo "Test 3: wt spawn creates worktree in correct location"
+echo "Test 3: wt init creates trees/main worktree"
+
+(
+  # Unset all git environment variables
+  unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+  unset GIT_INDEX_VERSION GIT_COMMON_DIR
+
+  # Create temporary agentize repo
+  TEST_AGENTIZE=$(mktemp -d)
+  echo "Test agentize repo: $TEST_AGENTIZE"
+
+  # Setup test agentize repo
+  (
+    cd "$TEST_AGENTIZE"
+    git init
+    git config user.email "test@example.com"
+    git config user.name "Test User"
+    echo "test" > README.md
+    git add README.md
+    git commit -m "Initial commit"
+
+    # Copy scripts
+    mkdir -p scripts
+    cp "$WT_CLI" scripts/
+    chmod +x scripts/wt-cli.sh
+  )
+
+  # Test wt init
+  (
+    export AGENTIZE_HOME="$TEST_AGENTIZE"
+    cd "$TEST_AGENTIZE"
+
+    # Source wt functions
+    source scripts/wt-cli.sh
+
+    # Run init
+    wt init
+
+    # Verify trees/main created
+    if [ ! -d "$TEST_AGENTIZE/trees/main" ]; then
+      echo -e "${RED}FAIL: wt init did not create trees/main${NC}"
+      exit 1
+    fi
+
+    echo -e "${GREEN}PASS: wt init creates trees/main${NC}"
+  )
+
+  # Cleanup
+  rm -rf "$TEST_AGENTIZE"
+)
+
+# Test 4: wt spawn creates worktree in correct location (cross-project)
+echo ""
+echo "Test 4: wt spawn creates worktree in correct location"
 
 # Run in subshell with unset git environment variables
 (
@@ -92,6 +145,9 @@ echo "Test 3: wt spawn creates worktree in correct location"
     # Source wt functions
     source "$TEST_AGENTIZE/scripts/wt-cli.sh"
 
+    # Initialize first
+    wt init
+
     # Create worktree using wt spawn
     wt spawn 42 test-cross
 
@@ -128,9 +184,9 @@ echo "Test 3: wt spawn creates worktree in correct location"
   rm -rf "$TEST_AGENTIZE" "$TEST_PROJECT"
 )
 
-# Test 4: wt spawn from linked worktree creates under main repo
+# Test 5: wt spawn from linked worktree creates under main repo
 echo ""
-echo "Test 4: wt spawn from linked worktree creates under main repo"
+echo "Test 5: wt spawn from linked worktree creates under main repo"
 (
   # Unset all git environment variables to ensure clean test environment
   unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
@@ -161,6 +217,9 @@ echo "Test 4: wt spawn from linked worktree creates under main repo"
     export AGENTIZE_HOME="$TEST_AGENTIZE"
     cd "$TEST_AGENTIZE"
     source scripts/wt-cli.sh
+
+    # Initialize first
+    wt init
 
     wt spawn 50 first
 

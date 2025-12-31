@@ -68,10 +68,13 @@ For persistence, add `source /path/to/agentize/setup.sh` to your shell RC file (
 Manage git worktrees from any directory:
 
 ```bash
+wt init                  # Initialize worktree environment (run once)
+wt main                  # Switch to main worktree
 wt spawn 42              # Create worktree for issue #42
 wt list                  # List all worktrees
 wt remove 42             # Remove worktree for issue #42
 wt prune                 # Clean up stale worktree metadata
+wt help                  # Display help information
 ```
 
 Worktrees are always created under `$AGENTIZE_HOME/trees/`, regardless of your current directory.

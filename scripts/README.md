@@ -26,10 +26,13 @@ This directory contains utility scripts and git hooks for the project.
 - `wt-cli.sh` - Worktree CLI and library (executable + sourceable)
   - Usage: `./scripts/wt-cli.sh <command> [args]`
   - Commands:
-    - `create <issue-number> [description]` - Create worktree with GitHub title fetch
+    - `init` - Initialize worktree environment (creates trees/main)
+    - `main` - Switch to main worktree (when sourced)
+    - `spawn <issue-number> [description]` - Create worktree with GitHub title fetch
     - `list` - Show all active worktrees
     - `remove <issue-number>` - Remove worktree by issue number
     - `prune` - Clean up stale worktree metadata
+    - `help` - Display help information
   - Features:
     - Automatically fetches issue titles from GitHub via `gh` CLI
     - Creates branches following `issue-<N>-<title>` convention
@@ -39,11 +42,14 @@ This directory contains utility scripts and git hooks for the project.
   - Exit codes: 0 (success), 1 (error)
   - Examples:
     ```bash
+    # Initialize worktree environment
+    ./scripts/wt-cli.sh init
+
     # Create worktree fetching title from GitHub issue #42
-    ./scripts/wt-cli.sh create 42
+    ./scripts/wt-cli.sh spawn 42
 
     # Create worktree with custom description
-    ./scripts/wt-cli.sh create 42 add-feature
+    ./scripts/wt-cli.sh spawn 42 add-feature
 
     # List all worktrees
     ./scripts/wt-cli.sh list

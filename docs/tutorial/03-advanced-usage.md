@@ -94,11 +94,14 @@ Worktrees share the `.git` directory while providing isolated working directorie
 Use the `wt-cli.sh` script:
 
 ```bash
+# First-time setup: Initialize worktree environment
+scripts/wt-cli.sh init
+
 # Create worktree (fetches title from GitHub)
-scripts/wt-cli.sh create 42
+scripts/wt-cli.sh spawn 42
 
 # Or specify custom description
-scripts/wt-cli.sh create 42 add-feature
+scripts/wt-cli.sh spawn 42 add-feature
 
 # Creates: trees/issue-42-add-feature/
 # Branch: issue-42-add-feature
@@ -114,7 +117,7 @@ The script automatically:
 **Terminal 1 (Issue #45):**
 ```bash
 cd ~/projects/my-project
-scripts/wt-cli.sh create 45
+scripts/wt-cli.sh spawn 45
 cd trees/issue-45-add-rust-support
 claude-code
 # /issue-to-impl 45
@@ -123,7 +126,7 @@ claude-code
 **Terminal 2 (Issue #46):**
 ```bash
 cd ~/projects/my-project
-scripts/wt-cli.sh create 46
+scripts/wt-cli.sh spawn 46
 cd trees/issue-46-update-documentation
 claude-code
 # /issue-to-impl 46
