@@ -48,7 +48,13 @@ TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 # Extract feature name and description from debate report if not provided
 if [ -z "$FEATURE_NAME" ]; then
-    FEATURE_NAME=$(grep "^\*\*Feature\*\*:" "$DEBATE_REPORT_PATH" | head -1 | sed 's/^\*\*Feature\*\*: //' || echo "Unknown Feature")
+    # Try to extract from **Feature**: line (standard debate reports)
+    FEATURE_NAME=$(grep "^\*\*Feature\*\*:" "$DEBATE_REPORT_PATH" | head -1 | sed 's/^\*\*Feature\*\*: //' || echo "")
+
+    # If not found, try **Title**: line (refinement debate reports)
+    if [ -z "$FEATURE_NAME" ]; then
+        FEATURE_NAME=$(grep "^\*\*Title\*\*:" "$DEBATE_REPORT_PATH" | head -1 | sed 's/^\*\*Title\*\*: //' | sed 's/^\[draft\]\[plan\]\[[^]]*\]: //' || echo "Unknown Feature")
+    fi
 fi
 
 if [ -z "$FEATURE_DESCRIPTION" ]; then
