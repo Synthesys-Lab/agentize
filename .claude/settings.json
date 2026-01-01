@@ -3,8 +3,8 @@
     "allow": [
       "WebSearch",
       "WebFetch",
-      "Write(.tmp/**)",
-      "Edit(.tmp/**)",
+      "Write",
+      "Edit",
       "Bash(chmod +x:*)",
 
       "Bash(echo SKILL - Agent skills)",
