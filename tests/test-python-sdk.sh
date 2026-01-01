@@ -17,12 +17,7 @@ TMP_DIR="$PROJECT_ROOT/.tmp/python-sdk-test"
 rm -rf "$TMP_DIR"
 
 echo "Creating Python SDK..."
-(
-    export AGENTIZE_PROJECT_NAME="test_python_sdk"
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR"
-    export AGENTIZE_PROJECT_LANG="python"
-    "$PROJECT_ROOT/scripts/agentize-init.sh"
-)
+"$PROJECT_ROOT/scripts/lol-cli.sh" init --name "test_python_sdk" --path "$TMP_DIR" --lang python
 
 # Verify test_python_sdk/ directory exists (project_name renamed)
 if [ ! -d "$TMP_DIR/test_python_sdk" ]; then

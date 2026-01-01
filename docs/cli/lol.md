@@ -79,11 +79,12 @@ Updates the AI-related rules and files in an existing SDK structure without affe
 - If no `.claude/` directory found, creates it in the target path and proceeds with update
 - Creates `.claude/` backup before updates if the directory existed previously
 - Syncs AI configuration files and documentation from templates
-- Creates `.agentize.yaml` if missing, using best-effort detection for:
-  - `project.name` (from directory basename)
-  - `project.lang` (via `detect-lang.sh`)
-  - `git.default_branch` (if git repository exists)
-- Preserves existing `.agentize.yaml` without overwriting
+- Creates `.agentize.yaml` if missing, using metadata-first resolution:
+  - Reads `project.lang` from existing `.agentize.yaml` if present
+  - Falls back to internal heuristic detection if missing or invalid
+  - `project.name` from directory basename
+  - `git.default_branch` from repository detection if git exists
+- Preserves existing `.agentize.yaml` without overwriting valid fields
 - Installs pre-commit hook from `scripts/pre-commit` if available and `.git` directory exists (unless `pre_commit.enabled: false` in metadata)
 
 **Difference from `lol init`:**

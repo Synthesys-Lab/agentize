@@ -60,23 +60,24 @@ This directory contains utility scripts and git hooks for the project.
 
 - `worktree.sh` - Legacy worktree management (use `wt-cli.sh` instead)
 
-### Makefile Utilities
+### CLI Utilities
 
-#### Agentize Mode Scripts
-- `agentize-init.sh` - Initialize new project with agentize templates
-  - Usage: Called by `lol init` command
-  - Environment variables: `AGENTIZE_PROJECT_PATH`, `AGENTIZE_PROJECT_NAME`, `AGENTIZE_PROJECT_LANG`
-  - Creates language template structure, copies `.claude/` content, applies substitutions
-  - Executes `bootstrap.sh` if present in project directory
+#### lol CLI
+- `lol-cli.sh` - Project SDK initialization and update entrypoint
+  - Usage: `lol init --name <name> --lang <lang> [--path <path>] [--metadata-only]`
+  - Usage: `lol update [--path <path>]`
+  - Handles:
+    - `init`: Creates project structure with templates and `.agentize.yaml`
+    - `update`: Syncs `.claude/` configuration and ensures metadata exists (metadata-first language resolution with internal detection fallback)
+  - Internal functions: initialization, update workflows, metadata handling, pre-commit hook installation
   - Exit codes: 0 (success), 1 (failure)
 
-- `agentize-update.sh` - Update existing project with latest agentize configs
-  - Usage: Called by `lol update` command
-  - Environment variables: `AGENTIZE_PROJECT_PATH`
-  - Backs up existing `.claude/` directory, refreshes configurations with file-level synchronization
-  - File-level copy preserves user-added files (e.g., custom skills, commands, agents) while updating template files
-  - Ensures `docs/git-msg-tags.md` exists using language detection
-  - Exit codes: 0 (success), 1 (failure)
+#### YAML Parsing Utility
+- `yaml-parser.sh` - Shared YAML value extraction utility
+  - Usage: `source scripts/yaml-parser.sh; parse_yaml_value <file> <section.field>`
+  - Provides: `parse_yaml_value` function for nested YAML field parsing
+  - Used by: `lol-cli.sh`, `wt-cli.sh`
+  - Exit codes: 0 (value found), 1 (not found or file missing)
 
 #### Parameter Validation
 - `check-parameter.sh` - Mode-based parameter validation for agentize target
@@ -88,25 +89,6 @@ This directory contains utility scripts and git hooks for the project.
   - Example:
     ```bash
     ./scripts/check-parameter.sh "init" "/path/to/project" "my_project" "python"
-    ```
-
-#### Language Detection
-- `detect-lang.sh` - Automatic language detection for projects
-  - Usage: `./scripts/detect-lang.sh <project_path>`
-  - Detects project language based on file structure
-  - Detection rules:
-    - **Python**: Looks for requirements.txt, pyproject.toml, or *.py files
-    - **C**: Looks for CMakeLists.txt without CXX language
-    - **C++**: Looks for CMakeLists.txt with CXX language
-  - Outputs detected language to stdout: "python", "c", or "cxx"
-  - Writes warnings to stderr if unable to detect
-  - Exit codes: 0 (detected), 1 (unable to detect)
-  - Example:
-    ```bash
-    LANG=$(./scripts/detect-lang.sh "/path/to/project")
-    if [ $? -eq 0 ]; then
-        echo "Detected language: $LANG"
-    fi
     ```
 
 ## Usage

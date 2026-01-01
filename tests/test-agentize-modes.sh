@@ -17,12 +17,7 @@ TMP_DIR_1="$PROJECT_ROOT/.tmp/mode-test-1"
 rm -rf "$TMP_DIR_1"
 
 echo "Creating SDK in non-existent directory..."
-(
-    export AGENTIZE_PROJECT_NAME="test_mode_1"
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR_1"
-    export AGENTIZE_PROJECT_LANG="python"
-    "$PROJECT_ROOT/scripts/agentize-init.sh"
-)
+"$PROJECT_ROOT/scripts/lol-cli.sh" init --name "test_mode_1" --path "$TMP_DIR_1" --lang python
 
 if [ ! -d "$TMP_DIR_1" ]; then
     echo "Error: Directory was not created!"
@@ -44,12 +39,7 @@ rm -rf "$TMP_DIR_2"
 mkdir -p "$TMP_DIR_2"
 
 echo "Creating SDK in empty existing directory..."
-(
-    export AGENTIZE_PROJECT_NAME="test_mode_2"
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR_2"
-    export AGENTIZE_PROJECT_LANG="python"
-    "$PROJECT_ROOT/scripts/agentize-init.sh"
-)
+"$PROJECT_ROOT/scripts/lol-cli.sh" init --name "test_mode_2" --path "$TMP_DIR_2" --lang python
 
 if [ ! -d "$TMP_DIR_2/.claude" ]; then
     echo "Error: SDK structure not created!"
@@ -67,12 +57,7 @@ mkdir -p "$TMP_DIR_3"
 touch "$TMP_DIR_3/existing-file.txt"
 
 echo "Attempting to create SDK in non-empty directory (should fail)..."
-if (
-    export AGENTIZE_PROJECT_NAME="test_mode_3"
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR_3"
-    export AGENTIZE_PROJECT_LANG="python"
-    "$PROJECT_ROOT/scripts/agentize-init.sh"
-) 2>&1 | grep -q "exists and is not empty"; then
+if "$PROJECT_ROOT/scripts/lol-cli.sh" init --name "test_mode_3" --path "$TMP_DIR_3" --lang python 2>&1 | grep -q "exists and is not empty"; then
     echo "✓ Test 3 passed: init mode correctly rejects non-empty directory"
 else
     echo "Error: init mode should have rejected non-empty directory!"
@@ -86,10 +71,7 @@ TMP_DIR_4="$PROJECT_ROOT/.tmp/mode-test-4"
 rm -rf "$TMP_DIR_4"
 
 echo "Attempting to update non-existent directory (should fail)..."
-if (
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR_4"
-    "$PROJECT_ROOT/scripts/agentize-update.sh"
-) 2>&1 | grep -q "does not exist"; then
+if "$PROJECT_ROOT/scripts/lol-cli.sh" update --path "$TMP_DIR_4" 2>&1 | grep -q "does not exist"; then
     echo "✓ Test 4 passed: update mode correctly rejects non-existent directory"
 else
     echo "Error: update mode should have rejected non-existent directory!"
@@ -105,10 +87,7 @@ mkdir -p "$TMP_DIR_5"
 touch "$TMP_DIR_5/some-file.txt"
 
 echo "Updating directory without SDK structure (should create .claude/)..."
-(
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR_5"
-    "$PROJECT_ROOT/scripts/agentize-update.sh"
-)
+"$PROJECT_ROOT/scripts/lol-cli.sh" update --path "$TMP_DIR_5"
 
 # Verify .claude/ was created
 if [ ! -d "$TMP_DIR_5/.claude" ]; then
@@ -137,21 +116,13 @@ TMP_DIR_6="$PROJECT_ROOT/.tmp/mode-test-6"
 rm -rf "$TMP_DIR_6"
 
 echo "First creating a valid SDK..."
-(
-    export AGENTIZE_PROJECT_NAME="test_mode_6"
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR_6"
-    export AGENTIZE_PROJECT_LANG="python"
-    "$PROJECT_ROOT/scripts/agentize-init.sh"
-)
+"$PROJECT_ROOT/scripts/lol-cli.sh" init --name "test_mode_6" --path "$TMP_DIR_6" --lang python
 
 # Modify a file in .claude/ to verify backup
 echo "# Modified by test" >> "$TMP_DIR_6/.claude/settings.json"
 
 echo "Now updating the SDK..."
-(
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR_6"
-    "$PROJECT_ROOT/scripts/agentize-update.sh"
-)
+"$PROJECT_ROOT/scripts/lol-cli.sh" update --path "$TMP_DIR_6"
 
 # Verify backup was created
 if [ ! -d "$TMP_DIR_6/.claude.backup" ]; then
@@ -180,12 +151,7 @@ TMP_DIR_7="$PROJECT_ROOT/.tmp/mode-test-7"
 rm -rf "$TMP_DIR_7"
 
 echo "First creating a valid SDK..."
-(
-    export AGENTIZE_PROJECT_NAME="test_mode_7"
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR_7"
-    export AGENTIZE_PROJECT_LANG="python"
-    "$PROJECT_ROOT/scripts/agentize-init.sh"
-)
+"$PROJECT_ROOT/scripts/lol-cli.sh" init --name "test_mode_7" --path "$TMP_DIR_7" --lang python
 
 # Add custom user files
 mkdir -p "$TMP_DIR_7/.claude/skills/my-custom-skill"
@@ -194,10 +160,7 @@ mkdir -p "$TMP_DIR_7/.claude/commands/my-custom-command"
 echo "# My Custom Command" > "$TMP_DIR_7/.claude/commands/my-custom-command/COMMAND.md"
 
 echo "Running update to sync template files..."
-(
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR_7"
-    "$PROJECT_ROOT/scripts/agentize-update.sh"
-)
+"$PROJECT_ROOT/scripts/lol-cli.sh" update --path "$TMP_DIR_7"
 
 # Verify custom user files still exist
 if [ ! -f "$TMP_DIR_7/.claude/skills/my-custom-skill/SKILL.md" ]; then
@@ -217,6 +180,45 @@ if [ ! -f "$TMP_DIR_7/.claude/settings.json" ]; then
 fi
 
 echo "✓ Test 7 passed: update mode preserves user-added files while updating templates"
+echo ""
+
+# Test 8: metadata-first language resolution
+echo ">>> Test 8: update mode uses metadata-first language resolution"
+TMP_DIR_8="$PROJECT_ROOT/.tmp/mode-test-8"
+rm -rf "$TMP_DIR_8"
+
+echo "Creating SDK with Python..."
+"$PROJECT_ROOT/scripts/lol-cli.sh" init --name "test_mode_8" --path "$TMP_DIR_8" --lang python
+
+# Verify .agentize.yaml was created with project.lang: python
+if ! grep -q "lang: python" "$TMP_DIR_8/.agentize.yaml"; then
+    echo "Error: .agentize.yaml doesn't contain 'lang: python'!"
+    exit 1
+fi
+
+# Remove git-msg-tags.md to trigger recreation
+rm -f "$TMP_DIR_8/docs/git-msg-tags.md"
+
+echo "Running update to recreate git-msg-tags.md using metadata..."
+"$PROJECT_ROOT/scripts/lol-cli.sh" update --path "$TMP_DIR_8"
+
+# Verify git-msg-tags.md was recreated with Python template (has deps, no build)
+if [ ! -f "$TMP_DIR_8/docs/git-msg-tags.md" ]; then
+    echo "Error: git-msg-tags.md was not recreated!"
+    exit 1
+fi
+
+if ! grep -q "deps" "$TMP_DIR_8/docs/git-msg-tags.md"; then
+    echo "Error: git-msg-tags.md should have Python-specific 'deps' tag!"
+    exit 1
+fi
+
+if grep -q "build.*CMakeLists" "$TMP_DIR_8/docs/git-msg-tags.md"; then
+    echo "Error: git-msg-tags.md should not have C/C++-specific 'build' tag!"
+    exit 1
+fi
+
+echo "✓ Test 8 passed: update mode uses metadata-first language resolution"
 echo ""
 
 echo "======================================"
