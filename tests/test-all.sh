@@ -118,6 +118,18 @@ else
 fi
 echo ""
 
+# Test BASH_SOURCE Removal
+echo ">>> Testing BASH_SOURCE removal..."
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+if bash "$SCRIPT_DIR/test-bash-source-removal.sh"; then
+    echo "✓ BASH_SOURCE removal tests passed"
+    PASSED_TESTS=$((PASSED_TESTS + 1))
+else
+    echo "✗ BASH_SOURCE removal tests failed"
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+fi
+echo ""
+
 # Print summary
 echo "======================================"
 echo "Test Summary"
