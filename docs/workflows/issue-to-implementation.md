@@ -25,3 +25,9 @@ graph TD
     style H fill:#ccddff
     style I fill:#ccddff
 ```
+
+## Hands-Off Mode
+
+Enable automated execution without manual permission prompts by setting `CLAUDE_HANDSOFF=true`. This auto-approves safe local operations (file edits, test runs, local commits) while maintaining safety boundaries for destructive or publish actions.
+
+See [Hands-Off Mode Documentation](../handsoff.md) for complete details.

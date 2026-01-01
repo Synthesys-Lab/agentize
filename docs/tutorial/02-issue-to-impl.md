@@ -238,6 +238,19 @@ Each milestone contains:
 
 See `docs/milestone-workflow.md` for complete documentation.
 
+## Hands-Off Mode
+
+Enable automated workflows without manual permission prompts:
+
+```bash
+export CLAUDE_HANDSOFF=true
+/issue-to-impl 42
+```
+
+With hands-off mode, the entire local workflow (docs, tests, implementation, commits) proceeds automatically. Publish operations (like `git push` and PR creation) still require confirmation.
+
+See [Hands-Off Mode Documentation](../handsoff.md) for complete details on auto-approved operations and safety boundaries.
+
 ## Tips
 
 1. **Let it run**: `/issue-to-impl` works automatically - let it complete or reach a milestone
@@ -245,6 +258,7 @@ See `docs/milestone-workflow.md` for complete documentation.
 3. **Always sync**: Run `/sync-master` before creating PRs to avoid conflicts
 4. **Fix review issues**: Address `/code-review` findings before merging
 5. **Clean working directory**: Commit changes before `/sync-master`, `/miles2miles`, or `/issue-to-impl` (all require clean working tree for rebasing)
+6. **Use hands-off mode**: Set `CLAUDE_HANDSOFF=true` to reduce permission prompts for local workflows
 
 ## Next Steps
 

@@ -195,3 +195,17 @@ Implements approved plan (after removing `[draft]` prefix).
 | **Workflow** | Approval → Issue → Impl | Draft → Refine* → Approve → Impl |
 
 *Refinement is optional and can be done multiple times
+
+## Hands-Off Mode
+
+Enable automated planning workflows without manual permission prompts:
+
+```bash
+export CLAUDE_HANDSOFF=true
+/ultra-planner "implement user authentication"
+/refine-issue 42
+```
+
+This auto-approves file reads, exploration, and local file writes during the planning process.
+
+See [Hands-Off Mode Documentation](../handsoff.md) for complete details.
