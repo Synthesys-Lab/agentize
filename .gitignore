@@ -1,6 +1,5 @@
 .DS_Store
 .tmp/*
 .milestones/*
-docs/draft/
 trees/
 setup.sh

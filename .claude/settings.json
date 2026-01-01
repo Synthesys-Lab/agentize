@@ -82,7 +82,12 @@
       "Bash(gh project list:*)",
       "Bash(gh project field-list:*)",
       "Bash(gh project view:*)",
-      "Bash(gh project item-list:*)"
+      "Bash(gh project item-list:*)",
+
+      "Bash(echo More agressive GIT HANDSOFF)",
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [
       "Bash(echo BAN cd command saves your token usage)",
@@ -102,10 +107,7 @@
     ],
     "ask": [
       "Bash(echo GIT WRITE OPERATIONS - Modifying git state)",
-      "Bash(git add:*)",
       "Bash(git checkout:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
 
       "Bash(echo KIND OF TOO GENERAL COMMANDS)",
       "Bash(python3:*)",
