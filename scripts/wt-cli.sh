@@ -546,11 +546,25 @@ cmd_list() {
 
 # Remove worktree
 cmd_remove() {
+    # Parse force flag
+    local force_delete=false
+    while [[ "$1" =~ ^- ]]; do
+        case "$1" in
+            -D|--force)
+                force_delete=true
+                shift
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+
     local issue_number="$1"
 
     if [ -z "$issue_number" ]; then
         echo -e "${RED}Error: Issue number required${NC}"
-        echo "Usage: cmd_remove <issue-number>"
+        echo "Usage: cmd_remove [-D|--force] <issue-number>"
         return 1
     fi
 
@@ -572,10 +586,36 @@ cmd_remove() {
 
     echo "Removing worktree: $worktree_path"
 
+    # Extract branch name from worktree metadata before removal
+    local branch_name
+    branch_name=$(git -C "$repo_root" worktree list --porcelain | grep -A2 "^worktree $worktree_path\$" | grep "^branch " | cut -d' ' -f2 | sed 's#^refs/heads/##')
+
     # Remove worktree (force to handle untracked/uncommitted files)
     git -C "$repo_root" worktree remove --force "$worktree_path"
 
-    echo -e "${GREEN}✓ Worktree removed successfully${NC}"
+    # Delete branch if found
+    if [ -n "$branch_name" ]; then
+        echo "Deleting branch: $branch_name"
+
+        if [ "$force_delete" = true ]; then
+            git -C "$repo_root" branch -D "$branch_name"
+            if [ $? -eq 0 ]; then
+                echo -e "${GREEN}✓ Branch force-deleted successfully${NC}"
+            else
+                echo -e "${RED}Error: Failed to delete branch${NC}" >&2
+                return 1
+            fi
+        else
+            if git -C "$repo_root" branch -d "$branch_name" 2>/dev/null; then
+                echo -e "${GREEN}✓ Branch deleted successfully${NC}"
+            else
+                echo -e "${YELLOW}Warning: Branch not fully merged. Use -D to force delete.${NC}" >&2
+                return 1
+            fi
+        fi
+    else
+        echo -e "${GREEN}✓ Worktree removed successfully${NC}"
+    fi
 }
 
 # Prune stale worktree metadata
