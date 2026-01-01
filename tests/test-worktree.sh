@@ -431,6 +431,45 @@ EOF
 
   echo -e "${GREEN}PASS: --force flag works for branch deletion${NC}"
 
+  # Test 18: wt spawn with --yolo --no-agent creates worktree
+  echo ""
+  echo "Test 18: wt spawn with --yolo --no-agent creates worktree"
+
+  TEST_DIR5=$(mktemp -d)
+  cd "$TEST_DIR5"
+  git init
+  git config user.email "test@example.com"
+  git config user.name "Test User"
+
+  # Create initial commit
+  echo "test" > README.md
+  git add README.md
+  git commit -m "Initial commit"
+
+  # Copy wt-cli.sh
+  cp "$WT_CLI" ./wt-cli.sh
+  echo "Test CLAUDE.md" > CLAUDE.md
+
+  # Source the library
+  source ./wt-cli.sh
+
+  # Initialize first
+  cmd_init
+
+  # Create worktree with --yolo --no-agent (should create worktree without invoking Claude)
+  cmd_create --yolo --no-agent 300 test-yolo
+
+  # Verify worktree was created
+  if [ ! -d "trees/issue-300-test-yolo" ]; then
+    echo -e "${RED}FAIL: Worktree not created with --yolo --no-agent${NC}"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: --yolo --no-agent creates worktree${NC}"
+
+  cd /
+  rm -rf "$TEST_DIR5"
+
   # Cleanup original test repo
   cd /
   rm -rf "$TEST_DIR"

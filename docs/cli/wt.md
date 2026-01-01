@@ -26,12 +26,14 @@ When `.agentize.yaml` is missing, `wt` falls back to automatic detection (main/m
   - Changes directory to `trees/main`
   - Only works when sourced (via `source setup.sh`)
   - Direct script execution shows an informational message
-- `wt spawn <issue-no>`: Create a new worktree for the given issue number from the default branch.
+- `wt spawn [--yolo] [--no-agent] <issue-no> [desc]`: Create a new worktree for the given issue number from the default branch.
   - Uses `git.default_branch` from `.agentize.yaml` if available
   - Falls back to detecting `main` or `master` branch
   - Creates worktree in `{trees_dir}/issue-{N}-{title}` format
   - Installs pre-commit hook in the new worktree if available (unless `pre_commit.enabled: false`)
   - Requires `wt init` to be run first (trees/main must exist)
+  - `--yolo`: Skip permission prompts by passing `--dangerously-skip-permissions` to Claude (use only in isolated containers/VMs)
+  - `--no-agent`: Skip automatic Claude invocation after worktree creation
 - `wt remove [-D|--force] <issue-no>`: Removes the worktree for the given issue number and deletes the corresponding branch.
   - Uses safe deletion by default (`git branch -d`), which prevents deletion of unmerged branches
   - Use `-D` or `--force` to force-delete unmerged branches (`git branch -D`)
