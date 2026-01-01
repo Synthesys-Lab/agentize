@@ -6,6 +6,7 @@ This document defines the tags to be used in git commit messages.
 
 - `feat`: A new feature has been added.
 - `sdk`: The SDK template to be modified or created.
+- `cli`: The command line interface related changes.
 - `bugfix`: A bug has been fixed.
 - `docs`: Documentation has been updated or added.
 - `test`: Test cases as well as test related infras have been added or modified.
