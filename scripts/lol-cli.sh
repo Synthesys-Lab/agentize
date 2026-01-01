@@ -45,14 +45,15 @@ lol() {
             echo "lol: AI-powered SDK CLI"
             echo ""
             echo "Usage:"
-            echo "  lol init --name <name> --lang <lang> [--path <path>] [--source <path>]"
+            echo "  lol init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]"
             echo "  lol update [--path <path>]"
             echo ""
             echo "Flags:"
-            echo "  --name <name>     Project name (required for init)"
-            echo "  --lang <lang>     Programming language: c, cxx, python (required for init)"
-            echo "  --path <path>     Project path (optional, defaults to current directory)"
-            echo "  --source <path>   Source code path relative to project root (optional)"
+            echo "  --name <name>       Project name (required for init)"
+            echo "  --lang <lang>       Programming language: c, cxx, python (required for init)"
+            echo "  --path <path>       Project path (optional, defaults to current directory)"
+            echo "  --source <path>     Source code path relative to project root (optional)"
+            echo "  --metadata-only     Create only .agentize.yaml without SDK templates (optional, init only)"
             echo ""
             echo "Examples:"
             echo "  lol init --name my-project --lang python --path /path/to/project"
@@ -68,6 +69,7 @@ _agentize_init() {
     local lang=""
     local path=""
     local source=""
+    local metadata_only="0"
 
     # Parse arguments
     while [ $# -gt 0 ]; do
@@ -88,9 +90,13 @@ _agentize_init() {
                 source="$2"
                 shift 2
                 ;;
+            --metadata-only)
+                metadata_only="1"
+                shift
+                ;;
             *)
                 echo "Error: Unknown option '$1'"
-                echo "Usage: lol init --name <name> --lang <lang> [--path <path>] [--source <path>]"
+                echo "Usage: lol init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]"
                 return 1
                 ;;
         esac
@@ -99,13 +105,13 @@ _agentize_init() {
     # Validate required flags
     if [ -z "$name" ]; then
         echo "Error: --name is required"
-        echo "Usage: lol init --name <name> --lang <lang> [--path <path>] [--source <path>]"
+        echo "Usage: lol init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]"
         return 1
     fi
 
     if [ -z "$lang" ]; then
         echo "Error: --lang is required"
-        echo "Usage: lol init --name <name> --lang <lang> [--path <path>] [--source <path>]"
+        echo "Usage: lol init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]"
         return 1
     fi
 
@@ -120,12 +126,19 @@ _agentize_init() {
         return 1
     }
 
-    echo "Initializing SDK:"
+    if [ "$metadata_only" = "1" ]; then
+        echo "Initializing metadata only:"
+    else
+        echo "Initializing SDK:"
+    fi
     echo "  Name: $name"
     echo "  Language: $lang"
     echo "  Path: $path"
     if [ -n "$source" ]; then
         echo "  Source: $source"
+    fi
+    if [ "$metadata_only" = "1" ]; then
+        echo "  Mode: Metadata only (no templates)"
     fi
     echo ""
 
@@ -136,6 +149,9 @@ _agentize_init() {
         export AGENTIZE_PROJECT_LANG="$lang"
         if [ -n "$source" ]; then
             export AGENTIZE_SOURCE_PATH="$source"
+        fi
+        if [ "$metadata_only" = "1" ]; then
+            export AGENTIZE_METADATA_ONLY="1"
         fi
 
         "$AGENTIZE_HOME/scripts/agentize-init.sh"
