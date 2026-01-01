@@ -218,6 +218,12 @@ cmd_main() {
     # This function is designed to be used when sourced
     # When executed directly, it just shows a message
 
+    # Parse flags
+    local path_only=false
+    if [[ "$1" == "--path" ]]; then
+        path_only=true
+    fi
+
     # Resolve repo root
     local repo_root
     repo_root=$(wt_resolve_repo_root)
@@ -247,6 +253,12 @@ cmd_main() {
         return 1
     fi
 
+    # If --path flag is set, output path and exit
+    if [ "$path_only" = true ]; then
+        echo "$main_worktree_path"
+        return 0
+    fi
+
     # Check if we're being sourced or executed
     if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
         # Direct execution - cannot change directory
@@ -269,6 +281,7 @@ Git Worktree Helper
 Usage:
   wt init                          Initialize worktree environment (creates trees/main)
   wt main                          Switch to main worktree (when sourced)
+  wt main --path                   Output main worktree path (for Claude Code)
   wt spawn <issue-number> [desc]   Create worktree for an issue
   wt list                          List all worktrees
   wt remove <issue-number>         Remove worktree for an issue
@@ -278,6 +291,7 @@ Usage:
 Examples:
   wt init                     # Initialize worktree environment
   wt main                     # Switch to main worktree
+  wt main --path              # Output main worktree path (for scripts/Claude Code)
   wt spawn 42                 # Create worktree for issue #42 (fetches title from GitHub)
   wt spawn 42 add-feature     # Create worktree with custom description
   wt list                     # Show all worktrees
@@ -286,6 +300,7 @@ Examples:
 Notes:
   - Run 'wt init' once before using 'wt spawn'
   - 'wt main' only works when sourced (via 'source setup.sh')
+  - 'wt main --path' outputs absolute path for use in scripts and Claude Code
   - Worktrees are created in the 'trees/' directory
 EOF
 }
@@ -570,7 +585,7 @@ wt() {
             ;;
         main)
             # Special case: main changes directory and should NOT restore
-            cmd_main
+            cmd_main "$@"
             return $?
             ;;
         spawn)
@@ -624,7 +639,7 @@ wt_cli_main() {
             cmd_init
             ;;
         main)
-            cmd_main
+            cmd_main "$@"
             ;;
         spawn)
             cmd_create "$@"
