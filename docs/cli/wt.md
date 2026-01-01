@@ -20,6 +20,7 @@ When `.agentize.yaml` is missing, `wt` falls back to automatic detection (main/m
   - Detects default branch (main or master)
   - Creates `trees/main` worktree from the detected branch
   - Moves repository root off main/master to enable worktree-based development
+  - Installs pre-commit hook if available (unless `pre_commit.enabled: false`)
   - Must be run before `wt spawn`
 - `wt main`: Switch current directory to the main worktree.
   - Changes directory to `trees/main`
@@ -29,6 +30,7 @@ When `.agentize.yaml` is missing, `wt` falls back to automatic detection (main/m
   - Uses `git.default_branch` from `.agentize.yaml` if available
   - Falls back to detecting `main` or `master` branch
   - Creates worktree in `{trees_dir}/issue-{N}-{title}` format
+  - Installs pre-commit hook in the new worktree if available (unless `pre_commit.enabled: false`)
   - Requires `wt init` to be run first (trees/main must exist)
 - `wt remove <issue-no>`: Removes the worktree for the given issue number and deletes the corresponding branch.
 - `wt list`: List all existing worktrees.

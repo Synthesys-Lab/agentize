@@ -16,9 +16,13 @@ your-project/
 │   │   ├── commit-msg/
 │   │   └── open-issue/
 │   └── hooks/                 # Git and event hooks
+├── .git/hooks/
+│   └── pre-commit             # Symlink to scripts/pre-commit (auto-installed)
 ├── CLAUDE.md                  # Project-specific instructions for Claude
 ├── docs/
 │   └── git-msg-tags.md        # Git commit message tag definitions
+├── scripts/
+│   └── pre-commit             # Pre-commit hook script
 ├── src/                       # Source code (or custom path via AGENTIZE_SOURCE_PATH)
 ├── tests/                     # Test files
 └── [language-specific files]  # Makefile, CMakeLists.txt, setup.sh, etc.
@@ -78,7 +82,12 @@ lol init --name my_project --lang python --path /existing/non-empty/dir
    - `CLAUDE.md` from template (parameterized with project name)
    - `docs/git-msg-tags.md` from template (parameterized for language)
 
-4. **Bootstrap script execution** (if present)
+4. **Pre-commit hook** (if `.git` directory exists and `scripts/pre-commit` available)
+   - Creates symlink from `.git/hooks/pre-commit` to `scripts/pre-commit`
+   - Skipped if `pre_commit.enabled: false` in `.agentize.yaml`
+   - Preserves existing custom hooks (no overwrite)
+
+5. **Bootstrap script execution** (if present)
    - Renames directories (e.g., `project_name/` → `{your_project_name}/`)
    - Updates imports and references
    - Removes itself after completion

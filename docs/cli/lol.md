@@ -45,6 +45,7 @@ Initializes an SDK structure in the specified project path and copies necessary 
 - Creates `.agentize.yaml` with project metadata including:
   - `project.name`, `project.lang`, `project.source`
   - `git.default_branch` (if git repository is initialized)
+- Installs pre-commit hook from `scripts/pre-commit` if available and `.git` directory exists (unless `pre_commit.enabled: false` in metadata)
 
 *Metadata-only mode (with `--metadata-only`):*
 - Creates only `.agentize.yaml` file
@@ -83,6 +84,7 @@ Updates the AI-related rules and files in an existing SDK structure without affe
   - `project.lang` (via `detect-lang.sh`)
   - `git.default_branch` (if git repository exists)
 - Preserves existing `.agentize.yaml` without overwriting
+- Installs pre-commit hook from `scripts/pre-commit` if available and `.git` directory exists (unless `pre_commit.enabled: false` in metadata)
 
 **Difference from `lol init`:**
 - `lol update` only creates the `.claude/` directory and syncs AI configuration files

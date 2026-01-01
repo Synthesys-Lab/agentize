@@ -339,5 +339,109 @@ echo "Test 12: lol init --metadata-only still requires --name and --lang"
   echo -e "${GREEN}PASS: metadata-only mode correctly requires --name and --lang${NC}"
 )
 
+# Test 13: lol init installs pre-commit hook when scripts/pre-commit exists
+echo ""
+echo "Test 13: lol init installs pre-commit hook"
+(
+  TEST_PROJECT=$(mktemp -d)
+  export AGENTIZE_HOME="$PROJECT_ROOT"
+  source "$LOL_CLI"
+
+  # Initialize git repo first
+  cd "$TEST_PROJECT"
+  git init
+  git config user.email "test@example.com"
+  git config user.name "Test User"
+  echo "test" > README.md
+  git add README.md
+  git commit -m "Initial commit"
+
+  # Initialize project (should install hook)
+  lol init --name test-project --lang python --path "$TEST_PROJECT" 2>/dev/null
+
+  # Verify hook was installed
+  if [ ! -L "$TEST_PROJECT/.git/hooks/pre-commit" ]; then
+    echo -e "${RED}FAIL: pre-commit hook symlink not created${NC}"
+    exit 1
+  fi
+
+  # Verify it points to scripts/pre-commit
+  HOOK_TARGET=$(readlink "$TEST_PROJECT/.git/hooks/pre-commit")
+  if [[ ! "$HOOK_TARGET" =~ scripts/pre-commit ]]; then
+    echo -e "${RED}FAIL: pre-commit hook doesn't point to scripts/pre-commit (got: $HOOK_TARGET)${NC}"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: lol init installs pre-commit hook${NC}"
+
+  rm -rf "$TEST_PROJECT"
+)
+
+# Test 14: lol init skips hook when pre_commit.enabled is false
+echo ""
+echo "Test 14: lol init skips hook when pre_commit.enabled is false"
+(
+  TEST_PROJECT=$(mktemp -d)
+  export AGENTIZE_HOME="$PROJECT_ROOT"
+  source "$LOL_CLI"
+
+  # Initialize git repo
+  cd "$TEST_PROJECT"
+  git init
+  git config user.email "test@example.com"
+  git config user.name "Test User"
+
+  # Create .agentize.yaml with pre_commit.enabled: false BEFORE lol init
+  cat > "$TEST_PROJECT/.agentize.yaml" <<EOF
+project:
+  name: test-project
+  lang: python
+pre_commit:
+  enabled: false
+EOF
+
+  # Initialize project (should NOT install hook due to metadata)
+  lol init --name test-project --lang python --path "$TEST_PROJECT" 2>/dev/null
+
+  # Verify hook was NOT installed
+  if [ -f "$TEST_PROJECT/.git/hooks/pre-commit" ] || [ -L "$TEST_PROJECT/.git/hooks/pre-commit" ]; then
+    echo -e "${RED}FAIL: pre-commit hook should not be installed when disabled in metadata${NC}"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: lol init respects pre_commit.enabled: false${NC}"
+
+  rm -rf "$TEST_PROJECT"
+)
+
+# Test 15: lol update installs pre-commit hook
+echo ""
+echo "Test 15: lol update installs pre-commit hook"
+(
+  TEST_PROJECT=$(mktemp -d)
+  export AGENTIZE_HOME="$PROJECT_ROOT"
+  source "$LOL_CLI"
+
+  # Initialize git repo and create .claude/
+  cd "$TEST_PROJECT"
+  git init
+  git config user.email "test@example.com"
+  git config user.name "Test User"
+  mkdir -p .claude
+
+  # Run update (should install hook)
+  lol update 2>/dev/null
+
+  # Verify hook was installed
+  if [ ! -L "$TEST_PROJECT/.git/hooks/pre-commit" ]; then
+    echo -e "${RED}FAIL: pre-commit hook symlink not created by lol update${NC}"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: lol update installs pre-commit hook${NC}"
+
+  rm -rf "$TEST_PROJECT"
+)
+
 echo ""
 echo -e "${GREEN}=== All lol CLI tests passed ===${NC}"

@@ -265,6 +265,101 @@ EOF
   cd /
   rm -rf "$TEST_DIR2"
 
+  # Test 14: wt init installs pre-commit hook
+  echo ""
+  echo "Test 14: wt init installs pre-commit hook"
+
+  TEST_DIR3=$(mktemp -d)
+  cd "$TEST_DIR3"
+  git init
+  git config user.email "test@example.com"
+  git config user.name "Test User"
+
+  # Create initial commit
+  echo "test" > README.md
+  git add README.md
+  git commit -m "Initial commit"
+
+  # Create scripts/pre-commit
+  mkdir -p scripts
+  cat > scripts/pre-commit <<'EOF'
+#!/usr/bin/env bash
+echo "Pre-commit hook running"
+exit 0
+EOF
+  chmod +x scripts/pre-commit
+
+  # Copy wt-cli.sh
+  cp "$WT_CLI" ./wt-cli.sh
+  echo "Test CLAUDE.md" > CLAUDE.md
+
+  # Source the library
+  source ./wt-cli.sh
+
+  # Run init (should install hook)
+  cmd_init
+
+  # Verify hook was installed in main worktree
+  HOOKS_DIR=$(git -C trees/main rev-parse --git-path hooks)
+  if [ ! -L "$HOOKS_DIR/pre-commit" ]; then
+    echo -e "${RED}FAIL: pre-commit hook not installed in wt init${NC}"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: wt init installs pre-commit hook${NC}"
+
+  cd /
+  rm -rf "$TEST_DIR3"
+
+  # Test 15: wt spawn installs pre-commit hook in new worktree
+  echo ""
+  echo "Test 15: wt spawn installs pre-commit hook in worktree"
+
+  TEST_DIR4=$(mktemp -d)
+  cd "$TEST_DIR4"
+  git init
+  git config user.email "test@example.com"
+  git config user.name "Test User"
+
+  # Create initial commit
+  echo "test" > README.md
+  git add README.md
+  git commit -m "Initial commit"
+
+  # Create scripts/pre-commit
+  mkdir -p scripts
+  cat > scripts/pre-commit <<'EOF'
+#!/usr/bin/env bash
+echo "Pre-commit hook running"
+exit 0
+EOF
+  chmod +x scripts/pre-commit
+
+  # Copy wt-cli.sh
+  cp "$WT_CLI" ./wt-cli.sh
+  echo "Test CLAUDE.md" > CLAUDE.md
+
+  # Source the library
+  source ./wt-cli.sh
+
+  # Initialize first
+  cmd_init
+
+  # Create worktree (should install hook)
+  cmd_create --no-agent 200 test-hook
+
+  # Verify hook was installed in the new worktree
+  HOOKS_DIR=$(git -C trees/issue-200-test-hook rev-parse --git-path hooks)
+  if [ ! -L "$HOOKS_DIR/pre-commit" ]; then
+    echo -e "${RED}FAIL: pre-commit hook not installed in wt spawn${NC}"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: wt spawn installs pre-commit hook${NC}"
+
+  cd /
+  rm -rf "$TEST_DIR4"
+
   # Cleanup original test repo
   cd /
   rm -rf "$TEST_DIR"

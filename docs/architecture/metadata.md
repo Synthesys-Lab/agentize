@@ -24,6 +24,9 @@ git:
 
 worktree:
   trees_dir: trees            # Worktree directory (optional, defaults to "trees")
+
+pre_commit:
+  enabled: true               # Enable pre-commit hook installation (optional, defaults to true)
 ```
 
 ## Fields
@@ -75,6 +78,15 @@ Directory where worktrees are created.
 **Example:** `worktrees`, `branches`, `trees`
 
 **Usage:** Allows customizing worktree organization.
+
+### pre_commit.enabled (optional)
+Controls automatic installation of the pre-commit hook during SDK and worktree initialization.
+
+**Default:** `true` (hook is installed when missing)
+
+**Example:** `true`, `false`
+
+**Usage:** Set to `false` to prevent automatic hook installation. When `true` or unset, `lol init`, `lol update`, `wt init`, and `wt spawn` will install `scripts/pre-commit` into `.git/hooks/pre-commit` if the hook script exists and no custom hook is already present.
 
 ## Creation
 
