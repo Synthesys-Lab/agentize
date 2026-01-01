@@ -12,7 +12,7 @@ This directory contains utility scripts and git hooks for the project.
 
 ### Documentation Linter
 - `lint-documentation.sh` - Pre-commit documentation linter
-  - Validates folder README.md existence
+  - Validates folder documentation (README.md, or SKILL.md for skill directories)
   - Validates source code .md file correspondence
   - Validates test documentation presence
   - Exit codes: 0 (pass), 1 (fail)

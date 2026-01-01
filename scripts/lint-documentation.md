@@ -40,9 +40,10 @@ Checking test documentation...
 
 ✗ Documentation linting failed!
 
-Missing folder README.md files:
+Missing folder documentation:
   - scripts/README.md
   - src/utils/README.md
+  - .claude/skills/custom/SKILL.md or README.md
 
 Missing source code documentation files:
   - src/core.py.md -> src/core.md
@@ -109,7 +110,8 @@ Check if a test file has inline documentation comments.
 1. Extract unique directories from staged/tracked files
 2. For each directory:
    - Skip if excluded (hidden or generated directories)
-   - Check if `README.md` exists
+   - For skill directories (`.claude/skills/*`, `.codex/skills/*`): check if `SKILL.md` or `README.md` exists
+   - For all other directories: check if `README.md` exists
    - Add to errors if missing
 
 ### Check 2: Source Code .md File Validation
