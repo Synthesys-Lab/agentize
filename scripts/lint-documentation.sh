@@ -30,9 +30,26 @@ file_exists() {
     [ -f "$1" ]
 }
 
+# Function to check if directory is a skill directory
+is_skill_dir() {
+    local dir="$1"
+
+    # Check if directory is under .claude/skills/ or .codex/skills/
+    if [[ "$dir" == .claude/skills/* ]] || [[ "$dir" == .codex/skills/* ]]; then
+        return 0  # true, is a skill directory
+    fi
+
+    return 1  # false, not a skill directory
+}
+
 # Function to check if directory should be excluded
 should_exclude_dir() {
     local dir="$1"
+
+    # Skill directories should NOT be excluded even though they start with .
+    if is_skill_dir "$dir"; then
+        return 1  # false, should NOT exclude skill directories
+    fi
 
     # Exclude hidden directories (starting with .)
     if [[ "$dir" == .* ]]; then
@@ -126,10 +143,19 @@ for dir in $DIRECTORIES; do
         continue
     fi
 
-    # Check if README.md exists
-    if ! file_exists "$REPO_ROOT/$dir/README.md"; then
-        MISSING_FOLDER_READMES+=("$dir/README.md")
-        ERRORS_FOUND=1
+    # Check documentation requirements based on directory type
+    if is_skill_dir "$dir"; then
+        # Skill directories accept either SKILL.md or README.md
+        if ! file_exists "$REPO_ROOT/$dir/SKILL.md" && ! file_exists "$REPO_ROOT/$dir/README.md"; then
+            MISSING_FOLDER_READMES+=("$dir/SKILL.md or README.md")
+            ERRORS_FOUND=1
+        fi
+    else
+        # Non-skill directories require README.md
+        if ! file_exists "$REPO_ROOT/$dir/README.md"; then
+            MISSING_FOLDER_READMES+=("$dir/README.md")
+            ERRORS_FOUND=1
+        fi
     fi
 done
 
@@ -204,7 +230,7 @@ echo -e "${RED}✗ Documentation linting failed!${NC}"
 echo ""
 
 if [ ${#MISSING_FOLDER_READMES[@]} -gt 0 ]; then
-    echo -e "${YELLOW}Missing folder README.md files:${NC}"
+    echo -e "${YELLOW}Missing folder documentation:${NC}"
     for readme in "${MISSING_FOLDER_READMES[@]}"; do
         echo "  - $readme"
     done
