@@ -110,15 +110,21 @@ echo "=== Worktree Function Test ==="
   echo -e "${GREEN}PASS: Branch created${NC}"
 
   echo ""
-  # Test 6: Remove worktree
-  echo "Test 6: Remove worktree"
+  # Test 6: Remove worktree and verify branch deletion (safe delete)
+  echo "Test 6: Remove worktree and verify branch deletion"
   cmd_remove 42
 
   if [ -d "trees/issue-42-test" ]; then
       echo -e "${RED}FAIL: Worktree directory still exists${NC}"
       exit 1
   fi
-  echo -e "${GREEN}PASS: Worktree removed${NC}"
+
+  # Verify branch was deleted
+  if git branch | grep -q "issue-42-test"; then
+      echo -e "${RED}FAIL: Branch still exists after removal${NC}"
+      exit 1
+  fi
+  echo -e "${GREEN}PASS: Worktree and branch removed${NC}"
 
   echo ""
   # Test 7: Prune stale metadata
@@ -359,6 +365,71 @@ EOF
 
   cd /
   rm -rf "$TEST_DIR4"
+
+  # Back to original test repo for branch deletion tests
+  cd "$TEST_DIR"
+
+  # Test 16: Force delete unmerged branch
+  echo ""
+  echo "Test 16: Force delete unmerged branch with -D flag"
+
+  # Create a worktree with an unmerged commit
+  cmd_create --no-agent 210 unmerged-test
+
+  # Create an unmerged commit in the worktree
+  cd "trees/issue-210-unmerged"
+  echo "unmerged content" > unmerged.txt
+  git add unmerged.txt
+  git commit -m "Unmerged commit"
+  cd "$TEST_DIR"
+
+  # Try force delete with -D flag
+  cmd_remove -D 210
+
+  # Verify worktree was removed
+  if [ -d "trees/issue-210-unmerged" ]; then
+      echo -e "${RED}FAIL: Worktree still exists after force removal${NC}"
+      exit 1
+  fi
+
+  # Verify branch was force-deleted
+  if git branch | grep -q "issue-210-unmerged"; then
+      echo -e "${RED}FAIL: Branch still exists after force removal${NC}"
+      exit 1
+  fi
+
+  echo -e "${GREEN}PASS: Force delete removed unmerged branch${NC}"
+
+  # Test 17: Force delete with --force flag (alternative syntax)
+  echo ""
+  echo "Test 17: Force delete with --force flag"
+
+  # Create another worktree with an unmerged commit
+  cmd_create --no-agent 211 force-test
+
+  # Create an unmerged commit
+  cd "trees/issue-211-force-test"
+  echo "force test content" > force.txt
+  git add force.txt
+  git commit -m "Force test commit"
+  cd "$TEST_DIR"
+
+  # Try force delete with --force flag
+  cmd_remove --force 211
+
+  # Verify worktree was removed
+  if [ -d "trees/issue-211-force-test" ]; then
+      echo -e "${RED}FAIL: Worktree still exists after --force removal${NC}"
+      exit 1
+  fi
+
+  # Verify branch was force-deleted
+  if git branch | grep -q "issue-211-force-test"; then
+      echo -e "${RED}FAIL: Branch still exists after --force removal${NC}"
+      exit 1
+  fi
+
+  echo -e "${GREEN}PASS: --force flag works for branch deletion${NC}"
 
   # Cleanup original test repo
   cd /

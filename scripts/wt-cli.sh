@@ -307,7 +307,7 @@ Usage:
   wt main                          Switch to main worktree (when sourced)
   wt spawn <issue-number> [desc]   Create worktree for an issue
   wt list                          List all worktrees
-  wt remove <issue-number>         Remove worktree for an issue
+  wt remove [-D|--force] <issue-number>  Remove worktree and delete branch for an issue
   wt prune                         Clean up stale worktree metadata
   wt help                          Display this help message
 
@@ -317,7 +317,8 @@ Examples:
   wt spawn 42                 # Create worktree for issue #42 (fetches title from GitHub)
   wt spawn 42 add-feature     # Create worktree with custom description
   wt list                     # Show all worktrees
-  wt remove 42                # Remove worktree for issue #42
+  wt remove 42                # Remove worktree and branch for issue #42 (safe)
+  wt remove -D 42             # Force-remove worktree and branch (even if unmerged)
 
 Notes:
   - Run 'wt init' once before using 'wt spawn'

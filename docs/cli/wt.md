@@ -32,7 +32,9 @@ When `.agentize.yaml` is missing, `wt` falls back to automatic detection (main/m
   - Creates worktree in `{trees_dir}/issue-{N}-{title}` format
   - Installs pre-commit hook in the new worktree if available (unless `pre_commit.enabled: false`)
   - Requires `wt init` to be run first (trees/main must exist)
-- `wt remove <issue-no>`: Removes the worktree for the given issue number and deletes the corresponding branch.
+- `wt remove [-D|--force] <issue-no>`: Removes the worktree for the given issue number and deletes the corresponding branch.
+  - Uses safe deletion by default (`git branch -d`), which prevents deletion of unmerged branches
+  - Use `-D` or `--force` to force-delete unmerged branches (`git branch -D`)
 - `wt list`: List all existing worktrees.
 - `wt prune`: Remove stale worktree metadata.
 - `wt help`: Display help information about available commands.
