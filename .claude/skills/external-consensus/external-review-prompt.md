@@ -146,3 +146,14 @@ Your consensus plan should:
 ✅ **Correct measurement**: DO NOT use time to estimate the effort as this is plan is for AI agents to execute! Use Lines of Code (LOC) instead!
 
 ❌ **Avoid**: Over-engineering, ignoring risks, excessive scope creep, vague specifications
+
+## Final Privacy Note
+
+As this plan will be published in a Github Issue, ensure no sensitive or proprietary information is included.
+
+- No absolute paths from `/` or `~` or some other user-specific directories included
+  - Use relative path from the root of the repo instead
+- No API keys, tokens, or credentials
+- No internal project names or codenames
+- No personal data of any kind of users or developers
+- No confidential business information
