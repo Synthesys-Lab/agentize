@@ -210,8 +210,8 @@ Implementation complete:
 
 Next steps:
 1. Create a delivery commit (without [milestone] tag)
-2. Review the changes with /code-review
-3. Create PR with /open-pr
+2. Review and create PR with /pull-request --open
+   - Or use /code-review then /open-pr for manual workflow
 ```
 
 **CRITICAL - Create delivery commit on completion:**

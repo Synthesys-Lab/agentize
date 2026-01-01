@@ -481,8 +481,8 @@ Next steps:
    - Stage all changes: git add .
    - Create commit with purpose=delivery (runs pre-commit hooks)
    - All tests must pass for commit to succeed
-2. Review the changes with /code-review
-3. Create PR with /open-pr
+2. Review and create PR with /pull-request --open
+   - Or use /code-review then /open-pr for manual workflow
 ```
 
 **CRITICAL - Completion requires a delivery commit:**
