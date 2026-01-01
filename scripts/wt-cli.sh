@@ -2,6 +2,13 @@
 # Worktree management CLI and library
 # Can be executed directly or sourced for function access
 
+# Detect if script is being sourced or executed
+if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
+    WT_CLI_SOURCED=false
+else
+    WT_CLI_SOURCED=true
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -277,7 +284,7 @@ cmd_main() {
     fi
 
     # Check if we're being sourced or executed
-    if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
+    if [ "$WT_CLI_SOURCED" = false ]; then
         # Direct execution - cannot change directory
         echo "Note: This command works only when sourced (via 'source setup.sh' and using 'wt main')."
         echo "To switch to main worktree: cd $main_worktree_path"
@@ -711,7 +718,7 @@ wt_cli_main() {
 }
 
 # If script is executed (not sourced), run the CLI main function
-if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
+if [ "$WT_CLI_SOURCED" = false ]; then
     wt_cli_main "$@"
     exit $?
 fi
