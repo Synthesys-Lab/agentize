@@ -135,4 +135,39 @@ else
     echo "  Existing .agentize.yaml preserved"
 fi
 
+# Copy scripts/pre-commit if missing (for older SDKs)
+if [ ! -f "$AGENTIZE_PROJECT_PATH/scripts/pre-commit" ] && [ -f "$PROJECT_ROOT/scripts/pre-commit" ]; then
+    echo "  Copying missing scripts/pre-commit..."
+    mkdir -p "$AGENTIZE_PROJECT_PATH/scripts"
+    cp "$PROJECT_ROOT/scripts/pre-commit" "$AGENTIZE_PROJECT_PATH/scripts/pre-commit"
+    chmod +x "$AGENTIZE_PROJECT_PATH/scripts/pre-commit"
+fi
+
+# Install pre-commit hook if conditions are met
+if [ -d "$AGENTIZE_PROJECT_PATH/.git" ] && [ -f "$AGENTIZE_PROJECT_PATH/scripts/pre-commit" ]; then
+    # Check if pre_commit.enabled is set to false in metadata
+    PRE_COMMIT_ENABLED=true
+    if [ -f "$AGENTIZE_PROJECT_PATH/.agentize.yaml" ]; then
+        if grep -q "pre_commit:" "$AGENTIZE_PROJECT_PATH/.agentize.yaml"; then
+            if grep -A1 "pre_commit:" "$AGENTIZE_PROJECT_PATH/.agentize.yaml" | grep -q "enabled: false"; then
+                PRE_COMMIT_ENABLED=false
+            fi
+        fi
+    fi
+
+    if [ "$PRE_COMMIT_ENABLED" = true ]; then
+        # Check if hook already exists and is not ours
+        if [ -f "$AGENTIZE_PROJECT_PATH/.git/hooks/pre-commit" ] && [ ! -L "$AGENTIZE_PROJECT_PATH/.git/hooks/pre-commit" ]; then
+            echo "  Warning: Custom pre-commit hook detected, skipping installation"
+        else
+            echo "  Installing pre-commit hook..."
+            mkdir -p "$AGENTIZE_PROJECT_PATH/.git/hooks"
+            ln -sf ../../scripts/pre-commit "$AGENTIZE_PROJECT_PATH/.git/hooks/pre-commit"
+            echo "  Pre-commit hook installed"
+        fi
+    else
+        echo "  Skipping pre-commit hook installation (disabled in metadata)"
+    fi
+fi
+
 echo "SDK updated successfully at $AGENTIZE_PROJECT_PATH"

@@ -207,6 +207,35 @@ cmd_init() {
         return 1
     fi
 
+    # Install pre-commit hook if conditions are met
+    if [ -f "$repo_root/scripts/pre-commit" ]; then
+        # Check if pre_commit.enabled is set to false in metadata
+        local pre_commit_enabled=true
+        if [ -n "$metadata_file" ] && [ -f "$metadata_file" ]; then
+            if grep -q "pre_commit:" "$metadata_file"; then
+                if grep -A1 "pre_commit:" "$metadata_file" | grep -q "enabled: false"; then
+                    pre_commit_enabled=false
+                fi
+            fi
+        fi
+
+        if [ "$pre_commit_enabled" = true ]; then
+            # Get worktree-aware hooks directory
+            local hooks_dir
+            hooks_dir=$(git -C "$main_worktree_path" rev-parse --git-path hooks)
+
+            # Check if hook already exists and is not ours
+            if [ -f "$hooks_dir/pre-commit" ] && [ ! -L "$hooks_dir/pre-commit" ]; then
+                echo "  Warning: Custom pre-commit hook detected, skipping installation"
+            else
+                echo "  Installing pre-commit hook..."
+                mkdir -p "$hooks_dir"
+                ln -sf "$repo_root/scripts/pre-commit" "$hooks_dir/pre-commit"
+                echo "  Pre-commit hook installed"
+            fi
+        fi
+    fi
+
     echo -e "${GREEN}✓ Initialization complete${NC}"
     echo "Main worktree created at: $main_worktree_path"
     echo ""
@@ -453,6 +482,35 @@ cmd_create() {
     if [ $? -ne 0 ]; then
         echo -e "${RED}Error: Failed to create worktree${NC}"
         return 1
+    fi
+
+    # Install pre-commit hook if conditions are met
+    if [ -f "$repo_root/scripts/pre-commit" ]; then
+        # Check if pre_commit.enabled is set to false in metadata
+        local pre_commit_enabled=true
+        if [ -n "$metadata_file" ] && [ -f "$metadata_file" ]; then
+            if grep -q "pre_commit:" "$metadata_file"; then
+                if grep -A1 "pre_commit:" "$metadata_file" | grep -q "enabled: false"; then
+                    pre_commit_enabled=false
+                fi
+            fi
+        fi
+
+        if [ "$pre_commit_enabled" = true ]; then
+            # Get worktree-aware hooks directory
+            local hooks_dir
+            hooks_dir=$(git -C "$worktree_path" rev-parse --git-path hooks)
+
+            # Check if hook already exists and is not ours
+            if [ -f "$hooks_dir/pre-commit" ] && [ ! -L "$hooks_dir/pre-commit" ]; then
+                echo "  Warning: Custom pre-commit hook detected, skipping installation"
+            else
+                echo "  Installing pre-commit hook..."
+                mkdir -p "$hooks_dir"
+                ln -sf "$repo_root/scripts/pre-commit" "$hooks_dir/pre-commit"
+                echo "  Pre-commit hook installed"
+            fi
+        fi
     fi
 
     echo -e "${GREEN}✓ Worktree created successfully${NC}"

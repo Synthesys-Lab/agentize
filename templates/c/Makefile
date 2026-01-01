@@ -1,4 +1,15 @@
-.PHONY: setup build clean test
+.PHONY: setup build clean test pre-commit
+
+pre-commit:
+	@if [ -f scripts/pre-commit ]; then \
+		HOOKS_DIR=$$(git rev-parse --git-path hooks 2>/dev/null || echo ".git/hooks"); \
+		mkdir -p "$$HOOKS_DIR"; \
+		ln -sf ../../scripts/pre-commit "$$HOOKS_DIR/pre-commit"; \
+		echo "✓ Pre-commit hook installed"; \
+	else \
+		echo "Error: scripts/pre-commit not found"; \
+		exit 1; \
+	fi
 
 setup:
 	@echo "Generating setup.sh script..."

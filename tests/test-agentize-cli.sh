@@ -347,14 +347,11 @@ echo "Test 13: lol init installs pre-commit hook"
   export AGENTIZE_HOME="$PROJECT_ROOT"
   source "$LOL_CLI"
 
-  # Initialize git repo first
+  # Initialize git repo first (lol init now allows directories with only .git)
   cd "$TEST_PROJECT"
   git init
   git config user.email "test@example.com"
   git config user.name "Test User"
-  echo "test" > README.md
-  git add README.md
-  git commit -m "Initial commit"
 
   # Initialize project (should install hook)
   lol init --name test-project --lang python --path "$TEST_PROJECT" 2>/dev/null

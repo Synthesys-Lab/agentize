@@ -54,9 +54,11 @@ if [ "${AGENTIZE_METADATA_ONLY:-0}" = "1" ]; then
 else
     echo "Initializing SDK structure..."
 
-    # Standard mode: Check if directory exists and is not empty
+    # Standard mode: Check if directory exists and is not empty (excluding .git and .agentize.yaml)
     if [ -d "$AGENTIZE_PROJECT_PATH" ]; then
-        if [ -n "$(ls -A "$AGENTIZE_PROJECT_PATH" 2>/dev/null)" ]; then
+        # Count files excluding .git directory and .agentize.yaml file
+        file_count=$(find "$AGENTIZE_PROJECT_PATH" -maxdepth 1 -mindepth 1 ! -name '.git' ! -name '.agentize.yaml' 2>/dev/null | wc -l)
+        if [ "$file_count" -gt 0 ]; then
             echo "Error: Directory '$AGENTIZE_PROJECT_PATH' exists and is not empty."
             echo "Please use an empty directory or a non-existent path for init mode."
             exit 1
@@ -126,6 +128,33 @@ if [ "${AGENTIZE_METADATA_ONLY:-0}" != "1" ]; then
          AGENTIZE_PROJECT_PATH="$AGENTIZE_PROJECT_PATH" \
          AGENTIZE_SOURCE_PATH="$SOURCE_PATH" \
          ./bootstrap.sh)
+    fi
+fi
+
+# Install pre-commit hook if conditions are met
+if [ -d "$AGENTIZE_PROJECT_PATH/.git" ] && [ -f "$AGENTIZE_PROJECT_PATH/scripts/pre-commit" ]; then
+    # Check if pre_commit.enabled is set to false in metadata
+    PRE_COMMIT_ENABLED=true
+    if [ -f "$AGENTIZE_PROJECT_PATH/.agentize.yaml" ]; then
+        if grep -q "pre_commit:" "$AGENTIZE_PROJECT_PATH/.agentize.yaml"; then
+            if grep -A1 "pre_commit:" "$AGENTIZE_PROJECT_PATH/.agentize.yaml" | grep -q "enabled: false"; then
+                PRE_COMMIT_ENABLED=false
+            fi
+        fi
+    fi
+
+    if [ "$PRE_COMMIT_ENABLED" = true ]; then
+        # Check if hook already exists and is not ours
+        if [ -f "$AGENTIZE_PROJECT_PATH/.git/hooks/pre-commit" ] && [ ! -L "$AGENTIZE_PROJECT_PATH/.git/hooks/pre-commit" ]; then
+            echo "  Warning: Custom pre-commit hook detected, skipping installation"
+        else
+            echo "  Installing pre-commit hook..."
+            mkdir -p "$AGENTIZE_PROJECT_PATH/.git/hooks"
+            ln -sf ../../scripts/pre-commit "$AGENTIZE_PROJECT_PATH/.git/hooks/pre-commit"
+            echo "  Pre-commit hook installed"
+        fi
+    else
+        echo "  Skipping pre-commit hook installation (disabled in metadata)"
     fi
 fi
 
