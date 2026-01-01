@@ -35,17 +35,60 @@ make_decision() {
 
     # Hands-off mode is enabled, apply rules
     case "$tool" in
-        "Read")
-            # Safe read operations are auto-allowed in hands-off mode
+        "Read"|"Edit"|"Write"|"Glob"|"Grep")
+            # File operations are auto-allowed in hands-off mode
             echo "allow"
             ;;
         "Bash")
-            # Check for destructive commands
-            if echo "$args" | grep -qE '(rm|delete|drop|truncate|format|mkfs|dd|>|>>|\||&)'; then
-                echo "ask"  # Destructive operations always ask
-            else
-                echo "allow"
+            # Extract command from args JSON if present
+            local command=""
+            if [[ -n "$args" ]]; then
+                # Try to extract command field from JSON (portable sed approach)
+                command=$(echo "$args" | sed -n 's/.*"command"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+                # If extraction failed, use args as-is
+                if [[ -z "$command" ]]; then
+                    command="$args"
+                fi
             fi
+
+            # Check for publish operations (must ask even in hands-off mode)
+            if echo "$command" | grep -qE '^(git push|gh (pr|issue) create)'; then
+                echo "ask"
+                return
+            fi
+
+            # Check for destructive operations (deny or ask)
+            if echo "$command" | grep -qE '(rm -rf|git clean|git reset --hard|git push --force)'; then
+                echo "ask"
+                return
+            fi
+
+            # Check for safe git commands
+            if echo "$command" | grep -qE '^git (status|diff|log|show|rev-parse|checkout|switch|branch|add|commit|fetch|rebase)'; then
+                echo "allow"
+                return
+            fi
+
+            # Check for safe GitHub read operations
+            if echo "$command" | grep -qE '^gh (issue view|pr view|pr list|issue list|search|run view|run list|pr diff|pr checks)'; then
+                echo "allow"
+                return
+            fi
+
+            # Check for test/build commands
+            if echo "$command" | grep -qE '^(make (test|check|build|all|lint|setup)|npm test|pytest|ninja|cmake)'; then
+                echo "allow"
+                return
+            fi
+
+            # Check for test scripts in tests/ directory
+            if echo "$command" | grep -qE '^(bash |sh |\./)tests/'; then
+                echo "allow"
+                return
+            fi
+
+            # Default for bash: ask
+            echo "ask"
             ;;
         *)
             # Default: ask for other tools
