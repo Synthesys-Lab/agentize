@@ -303,19 +303,27 @@ cmd_help() {
 Git Worktree Helper
 
 Usage:
-  wt init                          Initialize worktree environment (creates trees/main)
-  wt main                          Switch to main worktree (when sourced)
-  wt spawn <issue-number> [desc]   Create worktree for an issue
-  wt list                          List all worktrees
-  wt remove [-D|--force] <issue-number>  Remove worktree and delete branch for an issue
-  wt prune                         Clean up stale worktree metadata
-  wt help                          Display this help message
+  wt init                                    Initialize worktree environment (creates trees/main)
+  wt main                                    Switch to main worktree (when sourced)
+  wt spawn [--yolo] [--no-agent] <issue-no> [desc]
+                                             Create worktree for an issue
+  wt list                                    List all worktrees
+  wt remove [-D|--force] <issue-number>      Remove worktree and delete branch for an issue
+  wt prune                                   Clean up stale worktree metadata
+  wt help                                    Display this help message
+
+Flags:
+  --yolo        Skip permission prompts (passes --dangerously-skip-permissions to Claude)
+                WARNING: Use only in isolated containers/VMs
+  --no-agent    Skip automatic Claude invocation after worktree creation
 
 Examples:
   wt init                     # Initialize worktree environment
   wt main                     # Switch to main worktree
   wt spawn 42                 # Create worktree for issue #42 (fetches title from GitHub)
   wt spawn 42 add-feature     # Create worktree with custom description
+  wt spawn --yolo 42          # Create worktree with YOLO mode (skip permissions)
+  wt spawn --no-agent 42      # Create worktree without launching Claude
   wt list                     # Show all worktrees
   wt remove 42                # Remove worktree and branch for issue #42 (safe)
   wt remove -D 42             # Force-remove worktree and branch (even if unmerged)
@@ -332,12 +340,17 @@ cmd_create() {
     local issue_number="$1"
     local description="$2"
     local no_agent=false
+    local yolo_mode=false
 
     # Parse flags
     while [[ "$1" =~ ^-- ]]; do
         case "$1" in
             --no-agent)
                 no_agent=true
+                shift
+                ;;
+            --yolo)
+                yolo_mode=true
                 shift
                 ;;
             *)
@@ -352,7 +365,7 @@ cmd_create() {
 
     if [ -z "$issue_number" ]; then
         echo -e "${RED}Error: Issue number required${NC}"
-        echo "Usage: cmd_create [--no-agent] <issue-number> [description]"
+        echo "Usage: cmd_create [--yolo] [--no-agent] <issue-number> [description]"
         return 1
     fi
 
@@ -527,7 +540,14 @@ cmd_create() {
     # Launch claude unless --no-agent flag is set
     if [ "$no_agent" = false ]; then
         cd "$worktree_path"
-        claude "/issue-to-impl ${issue_number}"
+
+        # Build Claude command with optional --dangerously-skip-permissions flag
+        local claude_cmd="claude"
+        if [ "$yolo_mode" = true ]; then
+            claude_cmd="claude --dangerously-skip-permissions"
+        fi
+
+        $claude_cmd "/issue-to-impl ${issue_number}"
     fi
 }
 
