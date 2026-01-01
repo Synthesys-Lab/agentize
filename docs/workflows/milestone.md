@@ -314,7 +314,7 @@ Implementation is complete when all tests pass. At this point:
 
 ### 7. Review and PR Workflow
 
-After implementation completes with all tests passing, follow this workflow:
+After implementation completes with all tests passing (when `/miles2miles` signals completion), follow this workflow:
 
 **Option A: Manual workflow (recommended for control)**
 ```
@@ -323,7 +323,7 @@ After implementation completes with all tests passing, follow this workflow:
 3. /open-pr              # Create pull request
 ```
 
-**Option B: Convenience wrapper**
+**Option B: Convenience wrapper (recommended after `/miles2miles` completion)**
 ```
 /pull-request --open     # Review + create PR in one step
 ```
