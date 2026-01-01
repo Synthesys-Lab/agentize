@@ -187,9 +187,17 @@ Milestone {M+1} created at {new-LOC} LOC ({passed}/{total} tests passed).
 
 Work remaining: ~{estimated} LOC
 Tests failing: {list}
-
-Next Step: /miles2miles .milestones/issue-{N}-milestone-{M+1}.md
 ```
+
+**Next Steps:**
+
+To continue implementation from this checkpoint:
+```
+/miles2miles .milestones/issue-{N}-milestone-{M+1}.md
+```
+
+Or run `/miles2miles` without arguments to auto-detect the latest milestone on the current branch.
+
 Command outputs the new milestone file path for next invocation.
 
 **Output B: All tests pass (completion)**

@@ -451,12 +451,17 @@ Display message to user:
 ```
 Milestone {M} created at {cumulative_loc} LOC ({passed}/{total} tests passed).
 
-Next steps:
-1. Start a new session
-2. Run /miles2miles to resume implementation from this checkpoint
-
 Work remaining: ~{estimated_remaining_loc} LOC
 ```
+
+**Next Steps:**
+
+To resume implementation from this checkpoint:
+```
+/miles2miles .milestones/issue-{N}-milestone-{M}.md
+```
+
+Or run `/miles2miles` without arguments to auto-detect the latest milestone on the current branch
 
 ---
 
