@@ -88,6 +88,12 @@ lol init --name my-project --lang python
 ```
 Creates `.agentize.yaml` with provided name, language, and detected git branch.
 
+**`lol init --metadata-only`:**
+```bash
+lol init --name my-project --lang python --metadata-only
+```
+Creates only `.agentize.yaml` without SDK templates or `.claude/` configuration. This is useful for adding metadata to existing projects.
+
 **`lol update`:**
 ```bash
 lol update
@@ -111,6 +117,20 @@ git:
   default_branch: main
 EOF
 ```
+
+### Metadata-Only Mode
+
+For existing projects that need only `.agentize.yaml` without full SDK initialization:
+
+```bash
+# Add metadata to existing project
+lol init --name my-project --lang python --metadata-only
+
+# Allows non-empty directories
+lol init --name existing-app --lang cxx --path /path/to/existing-app --metadata-only
+```
+
+This creates only the metadata file, enabling worktree operations (`wt` command) without SDK template overhead.
 
 ## Usage
 

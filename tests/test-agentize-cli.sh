@@ -232,5 +232,112 @@ EOF
   rm -rf "$TEST_PROJECT"
 )
 
+# Test 10: lol init --metadata-only creates .agentize.yaml in non-empty directory without .claude
+echo ""
+echo "Test 10: lol init --metadata-only in non-empty directory"
+(
+  TEST_PROJECT=$(mktemp -d)
+  export AGENTIZE_HOME="$PROJECT_ROOT"
+  source "$LOL_CLI"
+
+  # Create a non-empty directory
+  echo "existing content" > "$TEST_PROJECT/existing-file.txt"
+
+  # Run init with --metadata-only
+  lol init --name test-project --lang python --path "$TEST_PROJECT" --metadata-only 2>/dev/null
+
+  # Verify .agentize.yaml was created
+  if [ ! -f "$TEST_PROJECT/.agentize.yaml" ]; then
+    echo -e "${RED}FAIL: .agentize.yaml was not created by metadata-only init${NC}"
+    exit 1
+  fi
+
+  # Verify .claude/ was NOT created
+  if [ -d "$TEST_PROJECT/.claude" ]; then
+    echo -e "${RED}FAIL: .claude/ should not be created in metadata-only mode${NC}"
+    exit 1
+  fi
+
+  # Verify existing file is still present
+  if [ ! -f "$TEST_PROJECT/existing-file.txt" ]; then
+    echo -e "${RED}FAIL: Existing file was removed${NC}"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: metadata-only mode creates .agentize.yaml in non-empty dir without .claude${NC}"
+
+  rm -rf "$TEST_PROJECT"
+)
+
+# Test 11: lol init --metadata-only preserves existing .agentize.yaml
+echo ""
+echo "Test 11: lol init --metadata-only preserves existing .agentize.yaml"
+(
+  TEST_PROJECT=$(mktemp -d)
+  export AGENTIZE_HOME="$PROJECT_ROOT"
+  source "$LOL_CLI"
+
+  # Create existing .agentize.yaml with custom values
+  cat > "$TEST_PROJECT/.agentize.yaml" <<EOF
+project:
+  name: existing-project
+  lang: cxx
+  source: custom/path
+git:
+  default_branch: develop
+EOF
+
+  # Run init with --metadata-only
+  lol init --name new-project --lang python --path "$TEST_PROJECT" --metadata-only 2>/dev/null
+
+  # Verify existing values are preserved
+  if ! grep -q "name: existing-project" "$TEST_PROJECT/.agentize.yaml"; then
+    echo -e "${RED}FAIL: metadata-only init overwrote existing project name${NC}"
+    exit 1
+  fi
+
+  if ! grep -q "lang: cxx" "$TEST_PROJECT/.agentize.yaml"; then
+    echo -e "${RED}FAIL: metadata-only init overwrote existing language${NC}"
+    exit 1
+  fi
+
+  if ! grep -q "default_branch: develop" "$TEST_PROJECT/.agentize.yaml"; then
+    echo -e "${RED}FAIL: metadata-only init overwrote existing default_branch${NC}"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: metadata-only mode preserves existing .agentize.yaml${NC}"
+
+  rm -rf "$TEST_PROJECT"
+)
+
+# Test 12: lol init --metadata-only still requires --name and --lang
+echo ""
+echo "Test 12: lol init --metadata-only still requires --name and --lang"
+(
+  export AGENTIZE_HOME="$PROJECT_ROOT"
+  source "$LOL_CLI"
+
+  # Missing both flags
+  if lol init --metadata-only 2>/dev/null; then
+    echo -e "${RED}FAIL: metadata-only should require --name and --lang${NC}"
+    exit 1
+  fi
+
+  # Missing --lang
+  if lol init --name test --metadata-only 2>/dev/null; then
+    echo -e "${RED}FAIL: metadata-only should require --lang${NC}"
+    exit 1
+  fi
+
+  # Missing --name
+  if lol init --lang python --metadata-only 2>/dev/null; then
+    echo -e "${RED}FAIL: metadata-only should require --name${NC}"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: metadata-only mode correctly requires --name and --lang${NC}"
+)
+
 echo ""
 echo -e "${GREEN}=== All lol CLI tests passed ===${NC}"

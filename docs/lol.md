@@ -9,7 +9,7 @@ This document provides detailed reference documentation for the `lol` command us
 ### Commands
 
 ```bash
-lol init --name <name> --lang <lang> [--path <path>] [--source <path>]
+lol init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]
 lol update [--path <path>]
 ```
 
@@ -19,6 +19,7 @@ lol update [--path <path>]
 - `--lang <lang>` - Programming language: c, cxx, python (required for init)
 - `--path <path>` - Project path (optional, defaults to current directory)
 - `--source <path>` - Source code path relative to project root (optional)
+- `--metadata-only` - Create only .agentize.yaml without SDK templates (optional, init only)
 
 ## Commands
 
@@ -33,8 +34,11 @@ Initializes an SDK structure in the specified project path and copies necessary 
 **Optional flags:**
 - `--path` - Project path (defaults to current directory)
 - `--source` - Source code path relative to project root
+- `--metadata-only` - Create only `.agentize.yaml` without copying SDK templates or `.claude/` configuration
 
 **Behavior:**
+
+*Standard mode (without `--metadata-only`):*
 - If the project path exists and is empty, copies SDK template files
 - If the project path exists and is not empty, aborts with error
 - If the project path does not exist, creates it and copies template files
@@ -42,9 +46,23 @@ Initializes an SDK structure in the specified project path and copies necessary 
   - `project.name`, `project.lang`, `project.source`
   - `git.default_branch` (if git repository is initialized)
 
-**Example:**
+*Metadata-only mode (with `--metadata-only`):*
+- Creates only `.agentize.yaml` file
+- Does NOT copy SDK template files or `.claude/` directory
+- Allows non-empty directories (useful for adding metadata to existing projects)
+- Preserves existing `.agentize.yaml` if present
+- Still requires `--name` and `--lang` flags
+
+**Examples:**
+
+Standard initialization:
 ```bash
 lol init --name my-project --lang python --path /path/to/project
+```
+
+Metadata-only mode (for existing projects):
+```bash
+lol init --name my-project --lang python --path /path/to/existing-project --metadata-only
 ```
 
 ### `lol update`
@@ -115,4 +133,20 @@ Specifies the path to the source code of your project, relative to the project r
 **Example:** LLVM uses `lib/` directory for source code:
 ```bash
 lol init --name llvm-project --lang cxx --path /path/to/llvm --source lib
+```
+
+### `--metadata-only`
+
+Creates only the `.agentize.yaml` metadata file without copying SDK templates or `.claude/` configuration. This is useful for adding agentize metadata to existing projects without full SDK initialization overhead.
+
+**Optional for:** `init`
+
+**Use cases:**
+- Adding metadata to existing projects for worktree operations (`wt` command)
+- Projects that already have custom `.claude/` configurations
+- Lightweight metadata creation without template files
+
+**Example:**
+```bash
+lol init --name existing-project --lang python --metadata-only
 ```
