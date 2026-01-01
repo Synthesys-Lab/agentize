@@ -1,0 +1,70 @@
+# Development Architecture
+
+This document outlines the development architecture of the project to
+best fit in agentize's ecosystem. Although not strictly required, and
+are some common software engineering practices, it is highly recommended
+to follow, in local code structure, git, and GitHub usage.
+
+All the `sdk` created by `lol init` command shall follow this following architecture.
+
+
+## Local Code Base
+
+The code base shall follow the structure:
+
+```plaintext
+docs/                # High-level documentation files and design docs
+└── git-msg-tags.md  # Git commit message tags documentation
+scripts/             # CLI and utility scripts
+└── pre-commit       # Git pre-commit hook script
+src/                 # Source code files, which can also be `lib`
+tests/               # Test cases
+Makefile             # High-level entrance for this project
+README.md            # In almost every folder, a README.md should explain its purpose
+.gitignore           # Git ignore file
+```
+
+Refer to `./sdk.md` for more information about the SDK structure created by `lol init`.
+
+### Makefile Interfaces
+
+- `make test` - Run all test cases
+- `make setup` - Creates a `setup.sh` script to set up the development environment
+  - NOTE: This does not run the setup itself as it only affects the subshell
+  - To run the setup, use `source ./setup.sh`
+  - Of course, `setup.sh` should be in `.gitignore`
+  - This design decision is made because many projects rely on its repo path in `setup.sh`,
+  while hardcoding it in `setup.sh` is a bad practice.
+- `make pre-commit` - Installs the git pre-commit hook
+- `make clean` - Cleans up generated files
+- `make help` - Displays help information about available Makefile targets
+
+## Git Usage
+
+- This development workflow prefers to use bare repo for multiple worktrees.
+  - Clone your repo `git clone --bare <repo-url> <repo-name>.git`
+  - Initialize worktree environment `wt init` (run once)
+  - Switch to main worktree `wt main`
+  - Create worktree for issue `wt spawn <issue-number>`
+    - NOTE: `spawn` subcommand is now an all-in-one command that creates the worktree, `cd`s into this tree, and lauches Claude code with the issue implementation prompt.
+    - Example: `wt spawn 42`
+- Your git repo should look like this:
+
+```plaintext
+<repo-name>.git/      # Bare git repository
+├── trees/            # Worktrees directory
+│     ├── main/       # Main worktree
+│     ├── issue-42/   # Worktree for issue #42
+│     └── ...         # Other worktrees
+└── .../              # Other git internal files
+```
+
+## GitHub Usage
+
+It is preferred to associate each repo to a GitHub Project for better issue tracking and project management.
+- `lol project --create` - Create a GitHub Project for the current repo and associate it
+- `lol project --associate <org>/<proj-id>` - Associate the current repo to an existing GitHub Project
+- The project will be reflected in `.agentize.yaml` metadata file for future reference.
+  - Refer to `./metadata.md` for more information about `.agentize.yaml` structure.
+- Refer to `./project.md` for more information about the field design and project management.
+  - TODO: Write `project.md`
