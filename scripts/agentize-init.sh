@@ -33,9 +33,12 @@ fi
 # Set default source path if not specified
 SOURCE_PATH="${AGENTIZE_SOURCE_PATH:-src}"
 
-# Get script directory and project root
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# Get project root from AGENTIZE_HOME
+if [ -z "$AGENTIZE_HOME" ]; then
+    echo "Error: AGENTIZE_HOME not set. Run 'make setup && source setup.sh' first." >&2
+    exit 1
+fi
+PROJECT_ROOT="$AGENTIZE_HOME"
 
 echo "Creating SDK for project: $AGENTIZE_PROJECT_NAME"
 echo "Language: $AGENTIZE_PROJECT_LANG"
