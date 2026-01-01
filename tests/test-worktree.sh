@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Test for scripts/wt-cli.sh
-# Tests worktree creation, listing, and removal via sourced functions
+# Purpose: Test for scripts/wt-cli.sh worktree functionality
+# Expected: Validates worktree creation, listing, and removal via sourced functions
 
 set -e
 

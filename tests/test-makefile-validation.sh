@@ -1,7 +1,6 @@
 #!/bin/bash
-
-# Test suite for Makefile agentize target validation logic
-# Tests mode-specific parameter requirements and git-msg-tags.md handling
+# Purpose: Test suite for Makefile agentize target validation logic
+# Expected: Validates mode-specific parameter requirements and git-msg-tags.md handling
 
 set -e
 

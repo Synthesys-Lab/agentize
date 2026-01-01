@@ -1,4 +1,6 @@
 #!/bin/bash
+# Purpose: Master test runner that executes all Agentize test suites
+# Expected: All tests pass (exit 0) or report which tests failed (exit 1)
 
 set -e
 
