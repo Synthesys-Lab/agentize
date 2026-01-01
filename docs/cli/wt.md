@@ -22,9 +22,11 @@ When `.agentize.yaml` is missing, `wt` falls back to automatic detection (main/m
   - Moves repository root off main/master to enable worktree-based development
   - Must be run before `wt spawn`
 - `wt main`: Switch current directory to the main worktree.
-  - Changes directory to `trees/main`
-  - Only works when sourced (via `source setup.sh`)
-  - Direct script execution shows an informational message
+  - **Terminal usage (sourced)**: Changes directory to `trees/main` (requires `source setup.sh`)
+  - **Claude Code / non-sourced usage**: Use `wt main --path` to output the main worktree path
+    - Returns absolute path to `trees/main` (or custom `worktree.trees_dir` from `.agentize.yaml`)
+    - Use with absolute paths: `claude -C "$(wt main --path)" <command>`
+    - Does not change working directory (shell `cd` does not persist in Claude Code)
 - `wt spawn <issue-no>`: Create a new worktree for the given issue number from the default branch.
   - Uses `git.default_branch` from `.agentize.yaml` if available
   - Falls back to detecting `main` or `master` branch

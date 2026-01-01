@@ -265,6 +265,89 @@ EOF
   cd /
   rm -rf "$TEST_DIR2"
 
+  # Test 14: cmd_main --path returns absolute path to trees/main
+  echo ""
+  echo "Test 14: cmd_main --path returns absolute path to trees/main"
+
+  # Create fresh test repo
+  TEST_DIR3=$(mktemp -d)
+  cd "$TEST_DIR3"
+  git init
+  git config user.email "test@example.com"
+  git config user.name "Test User"
+
+  echo "test" > README.md
+  git add README.md
+  git commit -m "Initial commit"
+
+  cp "$WT_CLI" ./wt-cli.sh
+  source ./wt-cli.sh
+
+  # Initialize
+  cmd_init
+
+  # Test --path output
+  MAIN_PATH=$(cmd_main --path)
+  EXPECTED_PATH="$TEST_DIR3/trees/main"
+
+  if [[ "$MAIN_PATH" != "$EXPECTED_PATH" ]]; then
+    echo -e "${RED}FAIL: cmd_main --path returned wrong path${NC}"
+    echo "Expected: $EXPECTED_PATH"
+    echo "Got: $MAIN_PATH"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: cmd_main --path returns correct absolute path${NC}"
+
+  # Test 15: cmd_main --path respects worktree.trees_dir from .agentize.yaml
+  echo ""
+  echo "Test 15: cmd_main --path respects worktree.trees_dir override"
+
+  # Create .agentize.yaml with custom trees_dir
+  cat > .agentize.yaml <<EOF
+git:
+  default_branch: main
+worktree:
+  trees_dir: custom-trees
+EOF
+
+  # Initialize with custom trees_dir
+  rm -rf trees
+  cmd_init
+
+  # Test --path output with custom trees_dir
+  CUSTOM_PATH=$(cmd_main --path)
+  EXPECTED_CUSTOM_PATH="$TEST_DIR3/custom-trees/main"
+
+  if [[ "$CUSTOM_PATH" != "$EXPECTED_CUSTOM_PATH" ]]; then
+    echo -e "${RED}FAIL: cmd_main --path did not respect worktree.trees_dir${NC}"
+    echo "Expected: $EXPECTED_CUSTOM_PATH"
+    echo "Got: $CUSTOM_PATH"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: cmd_main --path respects worktree.trees_dir${NC}"
+
+  # Test 16: cmd_main --path fails when main worktree missing
+  echo ""
+  echo "Test 16: cmd_main --path fails when main worktree missing"
+
+  # Remove main worktree
+  rm -rf custom-trees/main
+  git worktree prune
+
+  # Test that --path fails with non-zero exit
+  if cmd_main --path >/dev/null 2>&1; then
+    echo -e "${RED}FAIL: cmd_main --path should fail when main worktree missing${NC}"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: cmd_main --path fails correctly when main worktree missing${NC}"
+
+  # Cleanup test repo 3
+  cd /
+  rm -rf "$TEST_DIR3"
+
   # Cleanup original test repo
   cd /
   rm -rf "$TEST_DIR"
