@@ -91,23 +91,25 @@ test_init_without_lang() {
 
     cleanup_test_dir "$test_dir"
 
-    # Run lol init without --lang parameter
+    # Run script without AGENTIZE_PROJECT_LANG in init mode
     set +e
-    "$PROJECT_ROOT/scripts/lol-cli.sh" init --name "test_proj" --path "$test_dir" > "$output_file" 2>&1
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-init.sh" \
+        AGENTIZE_PROJECT_NAME="test_proj" \
+        AGENTIZE_PROJECT_PATH="$test_dir"
     local exit_code=$?
     set -e
 
     # Verify it failed
     if [ $exit_code -ne 0 ]; then
         # Check error message mentions LANG requirement
-        if grep -qi "lang.*required\|--lang" "$output_file"; then
-            print_pass "Init mode correctly requires --lang parameter"
+        if grep -q "AGENTIZE_PROJECT_LANG" "$output_file"; then
+            print_pass "Init mode correctly requires AGENTIZE_PROJECT_LANG parameter"
         else
-            print_fail "Error message doesn't mention --lang requirement"
+            print_fail "Error message doesn't mention AGENTIZE_PROJECT_LANG requirement"
             cat "$output_file"
         fi
     else
-        print_fail "Init mode should fail without --lang, but succeeded"
+        print_fail "Init mode should fail without AGENTIZE_PROJECT_LANG, but succeeded"
         cat "$output_file"
     fi
 
@@ -129,7 +131,10 @@ test_update_without_lang() {
     # Setup: Create a valid SDK structure first
     print_info "Setting up: Creating initial SDK structure"
     set +e
-    "$PROJECT_ROOT/scripts/lol-cli.sh" init --name "test_proj" --path "$test_dir" --lang python > "$output_file" 2>&1
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-init.sh" \
+        AGENTIZE_PROJECT_NAME="test_proj" \
+        AGENTIZE_PROJECT_PATH="$test_dir" \
+        AGENTIZE_PROJECT_LANG="python"
     local setup_exit=$?
     set -e
 
@@ -144,7 +149,8 @@ test_update_without_lang() {
     # Test: Update without LANG or NAME
     print_info "Testing: Update mode without LANG or NAME parameters"
     set +e
-    "$PROJECT_ROOT/scripts/lol-cli.sh" update --path "$test_dir" > "$output_file" 2>&1
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-update.sh" \
+        AGENTIZE_PROJECT_PATH="$test_dir"
     local exit_code=$?
     set -e
 
@@ -174,7 +180,10 @@ test_update_creates_git_tags() {
     # Setup: Create SDK structure
     print_info "Setting up: Creating SDK with Python template"
     set +e
-    "$PROJECT_ROOT/scripts/lol-cli.sh" init --name "test_proj" --path "$test_dir" --lang python > "$output_file" 2>&1
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-init.sh" \
+        AGENTIZE_PROJECT_NAME="test_proj" \
+        AGENTIZE_PROJECT_PATH="$test_dir" \
+        AGENTIZE_PROJECT_LANG="python"
     local setup_exit=$?
     set -e
 
@@ -193,7 +202,8 @@ test_update_creates_git_tags() {
     # Test: Update should recreate the file
     print_info "Testing: Update mode recreates missing git-msg-tags.md"
     set +e
-    "$PROJECT_ROOT/scripts/lol-cli.sh" update --path "$test_dir" > "$output_file" 2>&1
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-update.sh" \
+        AGENTIZE_PROJECT_PATH="$test_dir"
     local exit_code=$?
     set -e
 
@@ -229,7 +239,10 @@ test_update_preserves_git_tags() {
     # Setup: Create SDK structure
     print_info "Setting up: Creating SDK with C template"
     set +e
-    "$PROJECT_ROOT/scripts/lol-cli.sh" init --name "test_proj" --path "$test_dir" --lang c > "$output_file" 2>&1
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-init.sh" \
+        AGENTIZE_PROJECT_NAME="test_proj" \
+        AGENTIZE_PROJECT_PATH="$test_dir" \
+        AGENTIZE_PROJECT_LANG="c"
     local setup_exit=$?
     set -e
 
@@ -249,7 +262,8 @@ test_update_preserves_git_tags() {
     # Test: Update should preserve custom content
     print_info "Testing: Update mode preserves existing git-msg-tags.md"
     set +e
-    "$PROJECT_ROOT/scripts/lol-cli.sh" update --path "$test_dir" > "$output_file" 2>&1
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-update.sh" \
+        AGENTIZE_PROJECT_PATH="$test_dir"
     local exit_code=$?
     set -e
 
@@ -284,9 +298,12 @@ test_init_invalid_lang() {
 
     cleanup_test_dir "$test_dir"
 
-    # Run lol init with invalid language
+    # Run make with invalid language
     set +e
-    "$PROJECT_ROOT/scripts/lol-cli.sh" init --name "test_proj" --path "$test_dir" --lang rust > "$output_file" 2>&1
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-init.sh" \
+        AGENTIZE_PROJECT_NAME="test_proj" \
+        AGENTIZE_PROJECT_PATH="$test_dir" \
+        AGENTIZE_PROJECT_LANG="rust"
     local exit_code=$?
     set -e
 
@@ -323,7 +340,10 @@ test_update_infers_lang() {
     # Setup: Create Python SDK
     print_info "Setting up: Creating Python SDK"
     set +e
-    "$PROJECT_ROOT/scripts/lol-cli.sh" init --name "test_proj" --path "$test_dir" --lang python > "$output_file" 2>&1
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-init.sh" \
+        AGENTIZE_PROJECT_NAME="test_proj" \
+        AGENTIZE_PROJECT_PATH="$test_dir" \
+        AGENTIZE_PROJECT_LANG="python"
     local setup_exit=$?
     set -e
 
@@ -339,10 +359,11 @@ test_update_infers_lang() {
     print_info "Removing git-msg-tags.md to trigger language detection"
     rm -f "$test_dir/docs/git-msg-tags.md"
 
-    # Test: Update without LANG should infer Python from metadata
-    print_info "Testing: Update mode infers Python from metadata"
+    # Test: Update without LANG should infer Python from structure
+    print_info "Testing: Update mode infers Python from project structure"
     set +e
-    "$PROJECT_ROOT/scripts/lol-cli.sh" update --path "$test_dir" > "$output_file" 2>&1
+    run_script "$output_file" "$PROJECT_ROOT/scripts/agentize-update.sh" \
+        AGENTIZE_PROJECT_PATH="$test_dir"
     local exit_code=$?
     set -e
 

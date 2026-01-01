@@ -110,10 +110,9 @@ Creates only `.agentize.yaml` without SDK templates or `.claude/` configuration.
 ```bash
 lol update
 ```
-Creates `.agentize.yaml` if missing, using metadata-first resolution:
-- Reads `project.lang` from existing `.agentize.yaml` if present
-- Falls back to internal heuristic detection if missing or invalid
+Creates `.agentize.yaml` if missing, using:
 - Project name from directory basename
+- Language from `detect-lang.sh` detection
 - Git branch from repository detection
 
 ### Manual Creation

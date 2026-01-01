@@ -17,7 +17,12 @@ TMP_DIR_SRC="$PROJECT_ROOT/.tmp/c-sdk-test-src"
 rm -rf "$TMP_DIR_SRC"
 
 echo "Creating C SDK with default source path..."
-"$PROJECT_ROOT/scripts/lol-cli.sh" init --name "test-c-sdk-src" --path "$TMP_DIR_SRC" --lang c
+(
+    export AGENTIZE_PROJECT_NAME="test-c-sdk-src"
+    export AGENTIZE_PROJECT_PATH="$TMP_DIR_SRC"
+    export AGENTIZE_PROJECT_LANG="c"
+    "$PROJECT_ROOT/scripts/agentize-init.sh"
+)
 
 # Verify src/ directory exists
 if [ ! -d "$TMP_DIR_SRC/src" ]; then
@@ -88,7 +93,13 @@ TMP_DIR_LIB="$PROJECT_ROOT/.tmp/c-sdk-test-lib"
 rm -rf "$TMP_DIR_LIB"
 
 echo "Creating C SDK with custom source path (lib/)..."
-"$PROJECT_ROOT/scripts/lol-cli.sh" init --name "test-c-sdk-lib" --path "$TMP_DIR_LIB" --lang c --source lib
+(
+    export AGENTIZE_PROJECT_NAME="test-c-sdk-lib"
+    export AGENTIZE_PROJECT_PATH="$TMP_DIR_LIB"
+    export AGENTIZE_PROJECT_LANG="c"
+    export AGENTIZE_SOURCE_PATH="lib"
+    "$PROJECT_ROOT/scripts/agentize-init.sh"
+)
 
 # Verify lib/ directory exists and src/ does not
 if [ -d "$TMP_DIR_LIB/src" ]; then
