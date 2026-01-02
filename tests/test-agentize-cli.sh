@@ -452,9 +452,9 @@ echo "Test 15: lol update installs pre-commit hook"
   rm -rf "$TEST_PROJECT"
 )
 
-# Test 16: lol update prints post-update setup hints
+# Test 16: lol update prints conditional post-update setup hints
 echo ""
-echo "Test 16: lol update prints post-update setup hints"
+echo "Test 16: lol update prints conditional post-update setup hints"
 (
   TEST_PROJECT=$(mktemp -d)
   export AGENTIZE_HOME="$PROJECT_ROOT"
@@ -462,17 +462,52 @@ echo "Test 16: lol update prints post-update setup hints"
 
   cd "$TEST_PROJECT"
 
-  # Capture update output
+  # Test 16a: No hints when Makefile/docs don't exist
   UPDATE_OUTPUT=$(lol update 2>&1)
-
-  # Verify hint block appears in output
-  if ! echo "$UPDATE_OUTPUT" | grep -q "Next steps"; then
-    echo -e "${RED}FAIL: 'Next steps' hint header not found in lol update output${NC}"
+  if echo "$UPDATE_OUTPUT" | grep -q "Next steps"; then
+    echo -e "${RED}FAIL: 'Next steps' should not appear when no Makefile/docs exist${NC}"
     echo "Output was: $UPDATE_OUTPUT"
     exit 1
   fi
 
-  echo -e "${GREEN}PASS: lol update prints post-update setup hints${NC}"
+  # Test 16b: Hints appear when Makefile with targets exists
+  cat > "$TEST_PROJECT/Makefile" <<'EOF'
+test:
+	echo "Running tests"
+
+setup:
+	echo "Running setup"
+EOF
+
+  mkdir -p "$TEST_PROJECT/docs/architecture"
+  echo "# Architecture" > "$TEST_PROJECT/docs/architecture/architecture.md"
+
+  UPDATE_OUTPUT=$(lol update 2>&1)
+
+  # Verify hints appear
+  if ! echo "$UPDATE_OUTPUT" | grep -q "Next steps"; then
+    echo -e "${RED}FAIL: 'Next steps' hint header not found when Makefile exists${NC}"
+    echo "Output was: $UPDATE_OUTPUT"
+    exit 1
+  fi
+
+  # Verify specific hints
+  if ! echo "$UPDATE_OUTPUT" | grep -q "make test"; then
+    echo -e "${RED}FAIL: 'make test' hint not found${NC}"
+    exit 1
+  fi
+
+  if ! echo "$UPDATE_OUTPUT" | grep -q "make setup"; then
+    echo -e "${RED}FAIL: 'make setup' hint not found${NC}"
+    exit 1
+  fi
+
+  if ! echo "$UPDATE_OUTPUT" | grep -q "docs/architecture/architecture.md"; then
+    echo -e "${RED}FAIL: architecture docs hint not found${NC}"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: lol update prints conditional post-update setup hints${NC}"
 
   rm -rf "$TEST_PROJECT"
 )

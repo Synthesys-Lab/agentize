@@ -85,7 +85,10 @@ Updates the AI-related rules and files in an existing SDK structure without affe
   - `git.default_branch` (if git repository exists)
 - Preserves existing `.agentize.yaml` without overwriting
 - Installs pre-commit hook from `scripts/pre-commit` if available and `.git` directory exists (unless `pre_commit.enabled: false` in metadata)
-- Prints post-update setup hints pointing to framework Makefile targets and documentation (see `docs/architecture/architecture.md` for details)
+- Prints conditional post-update hints based on available resources:
+  - `make test` (if Makefile has `test:` target)
+  - `make setup` (if Makefile has `setup:` target)
+  - Documentation link (if `docs/architecture/architecture.md` exists)
 
 **Difference from `lol init`:**
 - `lol update` only creates the `.claude/` directory and syncs AI configuration files

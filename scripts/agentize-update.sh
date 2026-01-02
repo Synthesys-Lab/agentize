@@ -174,8 +174,43 @@ if [ -d "$AGENTIZE_PROJECT_PATH/.git" ] && [ -f "$AGENTIZE_PROJECT_PATH/scripts/
 fi
 
 echo "SDK updated successfully at $AGENTIZE_PROJECT_PATH"
-echo ""
-echo "Next steps (if you initialized with 'lol init' or SDK Makefile):"
-echo "  - Run tests: make test"
-echo "  - Setup hooks: make setup"
-echo "  - See docs/architecture/architecture.md for details"
+
+# Print context-aware next steps hints
+HINTS_PRINTED=false
+
+# Check for Makefile targets and available resources
+if [ -f "$AGENTIZE_PROJECT_PATH/Makefile" ]; then
+    HAS_TEST_TARGET=$(grep -q '^test:' "$AGENTIZE_PROJECT_PATH/Makefile" && echo "true" || echo "false")
+    HAS_SETUP_TARGET=$(grep -q '^setup:' "$AGENTIZE_PROJECT_PATH/Makefile" && echo "true" || echo "false")
+else
+    HAS_TEST_TARGET=false
+    HAS_SETUP_TARGET=false
+fi
+
+HAS_ARCH_DOC=$([ -f "$AGENTIZE_PROJECT_PATH/docs/architecture/architecture.md" ] && echo "true" || echo "false")
+
+# Print hints header only if we have suggestions
+if [ "$HAS_TEST_TARGET" = "true" ] || [ "$HAS_SETUP_TARGET" = "true" ] || [ "$HAS_ARCH_DOC" = "true" ]; then
+    echo ""
+    echo "Next steps:"
+    HINTS_PRINTED=true
+fi
+
+# Suggest available make targets
+if [ "$HAS_TEST_TARGET" = "true" ]; then
+    echo "  - Run tests: make test"
+fi
+
+if [ "$HAS_SETUP_TARGET" = "true" ]; then
+    echo "  - Setup hooks: make setup"
+fi
+
+# Point to architecture docs if available
+if [ "$HAS_ARCH_DOC" = "true" ]; then
+    echo "  - See docs/architecture/architecture.md for details"
+fi
+
+# If no hints were printed, we're done
+if [ "$HINTS_PRINTED" = "false" ]; then
+    : # No-op, hints header wasn't printed
+fi
