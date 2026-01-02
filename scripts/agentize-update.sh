@@ -174,3 +174,8 @@ if [ -d "$AGENTIZE_PROJECT_PATH/.git" ] && [ -f "$AGENTIZE_PROJECT_PATH/scripts/
 fi
 
 echo "SDK updated successfully at $AGENTIZE_PROJECT_PATH"
+echo ""
+echo "Next steps (if you initialized with 'lol init' or SDK Makefile):"
+echo "  - Run tests: make test"
+echo "  - Setup hooks: make setup"
+echo "  - See docs/architecture/architecture.md for details"
