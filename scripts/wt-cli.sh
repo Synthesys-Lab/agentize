@@ -338,13 +338,12 @@ EOF
 
 # Create worktree
 cmd_create() {
-    local issue_number="$1"
-    local description="$2"
     local no_agent=false
     local yolo_mode=false
+    local positionals=()
 
-    # Parse flags
-    while [[ "$1" =~ ^-- ]]; do
+    # Scan all arguments for flags and collect positionals
+    while [[ $# -gt 0 ]]; do
         case "$1" in
             --no-agent)
                 no_agent=true
@@ -354,15 +353,21 @@ cmd_create() {
                 yolo_mode=true
                 shift
                 ;;
+            --*)
+                # Unknown flag - ignore (preserves current behavior)
+                shift
+                ;;
             *)
+                # Positional argument
+                positionals+=("$1")
                 shift
                 ;;
         esac
     done
 
-    # Re-assign after flag parsing
-    issue_number="$1"
-    description="$2"
+    # Assign issue_number and description from positionals
+    local issue_number="${positionals[0]}"
+    local description="${positionals[1]}"
 
     if [ -z "$issue_number" ]; then
         echo -e "${RED}Error: Issue number required${NC}"
