@@ -440,5 +440,30 @@ echo "Test 15: lol update installs pre-commit hook"
   rm -rf "$TEST_PROJECT"
 )
 
+# Test 16: lol update prints post-update setup hints
+echo ""
+echo "Test 16: lol update prints post-update setup hints"
+(
+  TEST_PROJECT=$(mktemp -d)
+  export AGENTIZE_HOME="$PROJECT_ROOT"
+  source "$LOL_CLI"
+
+  cd "$TEST_PROJECT"
+
+  # Capture update output
+  UPDATE_OUTPUT=$(lol update 2>&1)
+
+  # Verify hint block appears in output
+  if ! echo "$UPDATE_OUTPUT" | grep -q "Next steps"; then
+    echo -e "${RED}FAIL: 'Next steps' hint header not found in lol update output${NC}"
+    echo "Output was: $UPDATE_OUTPUT"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: lol update prints post-update setup hints${NC}"
+
+  rm -rf "$TEST_PROJECT"
+)
+
 echo ""
 echo -e "${GREEN}=== All lol CLI tests passed ===${NC}"
