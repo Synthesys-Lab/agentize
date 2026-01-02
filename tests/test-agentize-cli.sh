@@ -343,6 +343,10 @@ echo "Test 12: lol init --metadata-only still requires --name and --lang"
 echo ""
 echo "Test 13: lol init installs pre-commit hook"
 (
+  # Unset git environment variables to avoid interference from parent git process
+  unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+  unset GIT_INDEX_VERSION GIT_COMMON_DIR
+
   TEST_PROJECT=$(mktemp -d)
   export AGENTIZE_HOME="$PROJECT_ROOT"
   source "$LOL_CLI"
@@ -378,6 +382,10 @@ echo "Test 13: lol init installs pre-commit hook"
 echo ""
 echo "Test 14: lol init skips hook when pre_commit.enabled is false"
 (
+  # Unset git environment variables to avoid interference from parent git process
+  unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+  unset GIT_INDEX_VERSION GIT_COMMON_DIR
+
   TEST_PROJECT=$(mktemp -d)
   export AGENTIZE_HOME="$PROJECT_ROOT"
   source "$LOL_CLI"
@@ -415,6 +423,10 @@ EOF
 echo ""
 echo "Test 15: lol update installs pre-commit hook"
 (
+  # Unset git environment variables to avoid interference from parent git process
+  unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+  unset GIT_INDEX_VERSION GIT_COMMON_DIR
+
   TEST_PROJECT=$(mktemp -d)
   export AGENTIZE_HOME="$PROJECT_ROOT"
   source "$LOL_CLI"
