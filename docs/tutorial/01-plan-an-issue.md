@@ -103,7 +103,7 @@ For simple one-line fixes or trivial updates, you may skip planning and implemen
 - ✅ **Innovative solutions** where SOTA research adds value
 - ✅ **Trade-off analysis** between complexity and simplicity
 
-**When in doubt**: Start with `/plan-an-issue`. If the single-agent plan feels incomplete or you want deeper analysis, use `/ultra-planner --refine <plan-file>` to get multi-agent feedback on the existing plan.
+**When in doubt**: Start with `/plan-an-issue`. If the single-agent plan feels incomplete or you want deeper analysis, escalate to `/ultra-planner` for multi-agent debate-based planning.
 
 See [Tutorial 01b: Ultra Planner](./01b-ultra-planner.md) for details on multi-agent debate-based planning.
 

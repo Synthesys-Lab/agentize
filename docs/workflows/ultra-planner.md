@@ -10,32 +10,34 @@ The ultra-planner workflow creates implementation plans through multi-agent deba
 
 ```mermaid
 graph TD
-    A[User provides requirements] --> B
-    B[Bold-proposer: Research SOTA & propose innovation] --> C
-    B --> D
-    C[Critique: Validate assumptions & feasibility] --> E
-    D[Reducer: Simplify following 'less is more'] --> E
-    B --> E
-    E[Combined 3-perspective report] --> F
-    F[External consensus: Synthesize plan] --> G
-    G[Auto-create draft issue] --> H{User reviews draft}
-    H -->|Refine| I["/refine-issue command"]
-    I --> B
-    H -->|Approve| J["Remove draft prefix on GitHub"]
-    J --> K["/issue-to-impl for implementation"]
-    H -->|Abandon| Z(Close issue)
+    A[User provides requirements] --> B[Create placeholder draft issue]
+    B --> C[Bold-proposer: Research SOTA & propose innovation]
+    C --> D
+    C --> E
+    D[Critique: Validate assumptions & feasibility] --> F
+    E[Reducer: Simplify following 'less is more'] --> F
+    C --> F
+    F[Combined 3-perspective report] --> G
+    G[External consensus: Synthesize plan] --> H[Update draft issue with consensus plan]
+    H --> I{User reviews draft}
+    I -->|Refine| J["/refine-issue command"]
+    J --> C
+    I -->|Approve| K["Remove draft prefix on GitHub"]
+    K --> L["/issue-to-impl for implementation"]
+    I -->|Abandon| Z(Close issue)
 
     style A fill:#ffcccc
-    style H fill:#ffcccc
+    style I fill:#ffcccc
     style B fill:#ccddff
     style C fill:#ccddff
     style D fill:#ccddff
     style E fill:#ccddff
     style F fill:#ccddff
     style G fill:#ccddff
-    style I fill:#ccddff
-    style J fill:#aaffaa
-    style K fill:#ccddff
+    style H fill:#ccddff
+    style J fill:#ccddff
+    style K fill:#aaffaa
+    style L fill:#ccddff
     style Z fill:#dddddd
 ```
 
@@ -43,18 +45,24 @@ graph TD
 
 ### 1. Automatic Draft Creation
 
-After consensus synthesis, ultra-planner **unconditionally** creates a draft GitHub issue:
+Ultra-planner creates a draft GitHub issue **before** running the multi-agent debate workflow:
 
-- **No user confirmation required** - plan is immediately visible
+- **Placeholder created first** - draft issue established immediately after feature validation
+- **Issue-numbered artifacts** - all planning files use `issue-{N}-` prefix from the start
 - **Draft prefix** - title gets `[draft][plan][tag]` format
-- **Early collaboration** - stakeholders can see and comment on plans immediately
-- **Issue URL returned** - user gets direct link to draft issue
+- **Updated after consensus** - same issue is updated with final plan (no second issue created)
+- **Early collaboration** - stakeholders can see issue number and planning progress immediately
 
 **Example:**
 ```
-Draft GitHub issue created: #42
+Created placeholder draft issue: #42
 Title: [draft][plan][feat] Add user authentication
 URL: https://github.com/user/repo/issues/42
+
+Running multi-agent debate...
+[Bold proposer, Critique, Reducer agents execute]
+
+Issue #42 updated with consensus plan.
 
 To refine: /refine-issue 42
 To implement: Remove [draft] on GitHub, then /issue-to-impl 42

@@ -53,27 +53,29 @@ Consensus: JWT + basic roles (~280 LOC)
 - From Reducer: Removed OAuth2 complexity
 ```
 
-**5. You approve:**
+**5. Draft issue auto-updated:**
 ```
-Options:
-1. Approve and create GitHub issue
-2. Refine plan (/ultra-planner --refine <file>)
-3. Abandon
+Draft issue #42 updated with consensus plan.
+URL: https://github.com/user/repo/issues/42
 
-Your choice: 1
-
-GitHub issue created: #42
+To refine: /refine-issue 42
+To implement: Remove [draft] on GitHub, then /issue-to-impl 42
 ```
 
-## Refinement Mode
+## Refinement with `/refine-issue`
 
-Improve an existing plan by running the debate again:
+Improve an existing plan issue by running the debate again:
 
 ```
-/ultra-planner --refine .tmp/consensus-plan-20251225-160245.md
+/refine-issue 42
 ```
 
 The agents analyze the current plan and propose improvements. Useful when the initial consensus feels over-complicated or you want to explore simpler alternatives.
+
+**Optional refinement focus:**
+```
+/refine-issue 42 Focus on reducing complexity
+```
 
 ## Tips
 

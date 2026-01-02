@@ -26,7 +26,7 @@ EOF
 export GH_MOCK=true
 export GH_CAPTURE_FILE=".tmp/gh-capture-draft.txt"
 
-# Create a wrapper script for gh that captures the title
+# Create a wrapper script for gh that captures the title and operation
 mkdir -p .tmp
 cat > .tmp/gh-mock.sh <<'GHEOF'
 #!/bin/bash
@@ -34,8 +34,22 @@ if [ "$1" = "issue" ] && [ "$2" = "create" ]; then
     # Extract title from arguments
     while [ $# -gt 0 ]; do
         if [ "$1" = "--title" ]; then
-            echo "TITLE: $2" > "$GH_CAPTURE_FILE"
+            echo "OPERATION: create" > "$GH_CAPTURE_FILE"
+            echo "TITLE: $2" >> "$GH_CAPTURE_FILE"
             echo "{\"number\": 999, \"url\": \"https://github.com/test/repo/issues/999\"}"
+            exit 0
+        fi
+        shift
+    done
+elif [ "$1" = "issue" ] && [ "$2" = "edit" ]; then
+    # Extract issue number and title from arguments
+    ISSUE_NUM="$3"
+    while [ $# -gt 0 ]; do
+        if [ "$1" = "--title" ]; then
+            echo "OPERATION: edit" > "$GH_CAPTURE_FILE"
+            echo "ISSUE: $ISSUE_NUM" >> "$GH_CAPTURE_FILE"
+            echo "TITLE: $2" >> "$GH_CAPTURE_FILE"
+            echo "{\"number\": $ISSUE_NUM, \"url\": \"https://github.com/test/repo/issues/$ISSUE_NUM\"}"
             exit 0
         fi
         shift
@@ -88,6 +102,32 @@ if [ "$CAPTURED_TITLE" = "[bugfix]: Fix authentication error" ]; then
     echo "✓ Test 3 passed: Non-plan issues don't get [draft] prefix"
 else
     echo "✗ Test 3 failed: Expected '[bugfix]: Fix authentication error', got '$CAPTURED_TITLE'"
+    exit 1
+fi
+
+# Test --update mode uses gh issue edit (not create)
+echo "Test 4: --update mode uses gh issue edit"
+rm -f "$GH_CAPTURE_FILE"
+# Simulate open-issue --update behavior
+.tmp/gh-mock.sh issue edit 42 --title "[draft][plan][feat]: Updated feature title"
+OPERATION=$(grep "OPERATION:" "$GH_CAPTURE_FILE" | cut -d' ' -f2-)
+ISSUE_NUM=$(grep "ISSUE:" "$GH_CAPTURE_FILE" | cut -d' ' -f2-)
+if [ "$OPERATION" = "edit" ] && [ "$ISSUE_NUM" = "42" ]; then
+    echo "✓ Test 4 passed: --update uses gh issue edit with correct issue number"
+else
+    echo "✗ Test 4 failed: Expected 'edit' operation on issue 42, got operation='$OPERATION' issue='$ISSUE_NUM'"
+    exit 1
+fi
+
+# Test --update maintains [draft][plan] format
+echo "Test 5: --update maintains [draft][plan][tag] format"
+rm -f "$GH_CAPTURE_FILE"
+.tmp/gh-mock.sh issue edit 42 --title "[draft][plan][refactor]: Simplified implementation"
+CAPTURED_TITLE=$(grep "TITLE:" "$GH_CAPTURE_FILE" | cut -d' ' -f2-)
+if [[ "$CAPTURED_TITLE" == "[draft][plan][refactor]:"* ]]; then
+    echo "✓ Test 5 passed: --update maintains [draft][plan] prefix"
+else
+    echo "✗ Test 5 failed: Expected title starting with '[draft][plan][refactor]:', got '$CAPTURED_TITLE'"
     exit 1
 fi
 
