@@ -323,6 +323,7 @@ Examples:
   wt spawn 42                 # Create worktree for issue #42 (fetches title from GitHub)
   wt spawn 42 add-feature     # Create worktree with custom description
   wt spawn --yolo 42          # Create worktree with YOLO mode (skip permissions)
+  wt spawn 42 --yolo          # Flags can appear after issue number too
   wt spawn --no-agent 42      # Create worktree without launching Claude
   wt list                     # Show all worktrees
   wt remove 42                # Remove worktree and branch for issue #42 (safe)

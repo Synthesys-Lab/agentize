@@ -470,6 +470,52 @@ EOF
   cd /
   rm -rf "$TEST_DIR5"
 
+  # Test 19: Flag after issue number regression test
+  echo ""
+  echo "Test 19: Flag after issue number (--no-agent <issue> --yolo)"
+
+  TEST_DIR6=$(mktemp -d)
+  cd "$TEST_DIR6"
+  git init
+  git config user.email "test@example.com"
+  git config user.name "Test User"
+
+  # Create initial commit
+  echo "test" > README.md
+  git add README.md
+  git commit -m "Initial commit"
+
+  # Copy wt-cli.sh
+  cp "$WT_CLI" ./wt-cli.sh
+  echo "Test CLAUDE.md" > CLAUDE.md
+
+  # Source the library
+  source ./wt-cli.sh
+
+  # Initialize first
+  cmd_init
+
+  # Create worktree with --no-agent <issue> --yolo <desc>
+  # This should NOT create "issue-301---yolo" directory
+  cmd_create --no-agent 301 --yolo test-after
+
+  # Verify worktree was created with correct name
+  if [ ! -d "trees/issue-301-test-after" ]; then
+    echo -e "${RED}FAIL: Worktree not created with correct name (expected: issue-301-test-after)${NC}"
+    exit 1
+  fi
+
+  # Verify it did NOT create issue-301---yolo
+  if [ -d "trees/issue-301---yolo" ]; then
+    echo -e "${RED}FAIL: Created incorrect directory issue-301---yolo${NC}"
+    exit 1
+  fi
+
+  echo -e "${GREEN}PASS: Flag after issue number handled correctly${NC}"
+
+  cd /
+  rm -rf "$TEST_DIR6"
+
   # Cleanup original test repo
   cd /
   rm -rf "$TEST_DIR"

@@ -34,6 +34,7 @@ When `.agentize.yaml` is missing, `wt` falls back to automatic detection (main/m
   - Requires `wt init` to be run first (trees/main must exist)
   - `--yolo`: Skip permission prompts by passing `--dangerously-skip-permissions` to Claude (use only in isolated containers/VMs)
   - `--no-agent`: Skip automatic Claude invocation after worktree creation
+  - Note: Flags can appear before or after `<issue-no>` (e.g., `wt spawn 42 --yolo` or `wt spawn --yolo 42`)
 - `wt remove [-D|--force] <issue-no>`: Removes the worktree for the given issue number and deletes the corresponding branch.
   - Uses safe deletion by default (`git branch -d`), which prevents deletion of unmerged branches
   - Use `-D` or `--force` to force-delete unmerged branches (`git branch -D`)
