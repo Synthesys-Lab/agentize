@@ -135,7 +135,35 @@ Please provide more details:
 
 Ask user for clarification.
 
-### Step 3: Invoke Bold-Proposer Agent
+### Step 3: Create Placeholder Draft Issue
+
+**REQUIRED SKILL CALL (before agent execution):**
+
+Create a placeholder draft issue to obtain the issue number for artifact naming:
+
+```
+Skill tool parameters:
+  skill: "open-issue"
+  args: "--draft --auto"
+```
+
+**Provide context to open-issue skill:**
+- Feature description: `FEATURE_DESC`
+- Issue body: "Placeholder for multi-agent planning in progress. This will be updated with the consensus plan."
+
+**Extract issue number from response:**
+```bash
+# Expected output: "Draft GitHub issue created: #42"
+ISSUE_URL=$(echo "$OPEN_ISSUE_OUTPUT" | grep -o 'https://[^ ]*')
+ISSUE_NUMBER=$(echo "$ISSUE_URL" | grep -o '[0-9]*$')
+```
+
+**Use `ISSUE_NUMBER` for all artifact filenames going forward** (Steps 4-6).
+
+**Error handling:**
+- If placeholder creation fails, stop execution and report error (cannot proceed without issue number)
+
+### Step 4: Invoke Bold-Proposer Agent
 
 **REQUIRED TOOL CALL #1:**
 
@@ -149,14 +177,14 @@ Task tool parameters:
   model: "opus"
 ```
 
-**Wait for agent completion** (blocking operation, do not proceed to Step 4 until done).
+**Wait for agent completion** (blocking operation, do not proceed to Step 5 until done).
 
 **Extract output:**
-- Generate filename: `BOLD_FILE=".tmp/bold-proposal-$(date +%Y%m%d-%H%M%S).md"`
+- Generate filename: `BOLD_FILE=".tmp/issue-${ISSUE_NUMBER}-bold-proposal.md"`
 - Save the agent's full response to `$BOLD_FILE`
-- Also store in variable `BOLD_PROPOSAL` for passing to critique and reducer agents in Step 4
+- Also store in variable `BOLD_PROPOSAL` for passing to critique and reducer agents in Step 5
 
-### Step 4: Invoke Critique and Reducer Agents
+### Step 5: Invoke Critique and Reducer Agents
 
 **REQUIRED TOOL CALLS #2 & #3:**
 
@@ -197,9 +225,9 @@ Identify unnecessary complexity and propose simpler alternatives."
 **Wait for both agents to complete** (blocking operation).
 
 **Extract outputs:**
-- Generate filename: `CRITIQUE_FILE=".tmp/critique-output-$(date +%Y%m%d-%H%M%S).md"`
+- Generate filename: `CRITIQUE_FILE=".tmp/issue-${ISSUE_NUMBER}-critique.md"`
 - Save critique agent's response to `$CRITIQUE_FILE`
-- Generate filename: `REDUCER_FILE=".tmp/reducer-output-$(date +%Y%m%d-%H%M%S).md"`
+- Generate filename: `REDUCER_FILE=".tmp/issue-${ISSUE_NUMBER}-reducer.md"`
 - Save reducer agent's response to `$REDUCER_FILE`
 
 **Expected agent outputs:**
@@ -207,7 +235,7 @@ Identify unnecessary complexity and propose simpler alternatives."
 - Critique: Risk analysis and feasibility assessment of Bold's proposal
 - Reducer: Simplified version of Bold's proposal with complexity analysis
 
-### Step 5: Combine Agent Reports
+### Step 6: Combine Agent Reports
 
 After all three agents complete, **DO NOT** even try to read their outputs!
 Use `cat` and `heredoc` to combine their outputs into a single debate report
@@ -217,7 +245,7 @@ as below:
 ```bash
 FEATURE_NAME=$(echo "$FEATURE_DESC" | head -c 50)
 DATETIME=$(date +"%Y-%m-%d %H:%M")
-DEBATE_REPORT_FILE=".tmp/debate-report-$(date +%Y%m%d-%H%M%S).md"
+DEBATE_REPORT_FILE=".tmp/issue-${ISSUE_NUMBER}-debate.md"
 
 {
     echo "# Multi-Agent Debate Report"
@@ -257,9 +285,9 @@ DEBATE_REPORT_FILE=".tmp/debate-report-$(date +%Y%m%d-%H%M%S).md"
 mv "$DEBATE_REPORT_FILE.tmp" "$DEBATE_REPORT_FILE"
 ```
 
-**Note on filename consistency:** Each filename is generated once using inline `$(date ...)` and stored in a variable (`$BOLD_FILE`, `$CRITIQUE_FILE`, `$REDUCER_FILE`, `$DEBATE_REPORT_FILE`). These variables are reused in subsequent steps to ensure all references point to the same files, avoiding timestamp drift from multiple date command invocations.
+**Note on filename consistency:** All filenames use the `issue-${ISSUE_NUMBER}-` prefix to enable tracing of artifacts back to the GitHub issue. This also ensures all artifacts for a given issue are grouped together in `.tmp/` directory.
 
-### Step 6: Invoke External Consensus Skill
+### Step 7: Invoke External Consensus Skill
 
 **REQUIRED SKILL CALL:**
 
@@ -300,37 +328,37 @@ Consensus plan saved to: {CONSENSUS_PLAN_FILE}
 **Extract:**
 - Save the consensus plan file path as `CONSENSUS_PLAN_FILE`
 
-### Step 7: Create Draft GitHub Issue
+### Step 8: Update Placeholder Issue with Consensus Plan
 
 **REQUIRED SKILL CALL:**
 
-Use the Skill tool to invoke the open-issue skill with draft and auto flags:
+Use the Skill tool to invoke the open-issue skill with update, draft, and auto flags:
 
 ```
 Skill tool parameters:
   skill: "open-issue"
-  args: "--draft --auto {CONSENSUS_PLAN_FILE}"
+  args: "--update ${ISSUE_NUMBER} --draft --auto {CONSENSUS_PLAN_FILE}"
 ```
 
 **What this skill does:**
 1. Reads consensus plan from file
 2. Determines appropriate tag from `docs/git-msg-tags.md`
 3. Formats issue with `[draft]` prefix and Problem Statement/Proposed Solution sections
-4. Creates issue automatically (no user confirmation due to `--auto` flag)
+4. Updates existing issue #${ISSUE_NUMBER} (created in Step 3) using `gh issue edit`
 5. Returns issue number and URL
 
 **Expected output:**
 ```
-Draft GitHub issue created: #{issue_number}
+Draft issue #${ISSUE_NUMBER} updated with consensus plan.
 
 Title: [draft][plan][tag] {feature name}
 URL: {issue_url}
 
 This is a draft plan. To refine it, use:
-  /refine-issue {issue_number}
+  /refine-issue ${ISSUE_NUMBER}
 
 To approve and implement, remove [draft] from the issue title on GitHub, then:
-  /issue-to-impl {issue_number}
+  /issue-to-impl ${ISSUE_NUMBER}
 ```
 
 Display this output to the user. Command completes successfully.
@@ -427,24 +455,46 @@ The debate report contains all three perspectives.
 
 Offer manual review fallback.
 
-### GitHub Issue Creation Failure
+### Placeholder Issue Creation Failure (Step 3)
 
-open-issue skill fails.
+open-issue skill fails during placeholder creation.
 
 **Response:**
 ```
-Error: GitHub issue creation failed.
+Error: Failed to create placeholder draft issue.
+
+Error: {details}
+
+Cannot proceed without an issue number for artifact naming.
+
+Please ensure:
+1. GitHub CLI is authenticated: gh auth login
+2. Repository has issues enabled
+3. You have permission to create issues
+
+Then retry: /ultra-planner {feature-description}
+```
+
+Stop execution (cannot proceed without issue number).
+
+### Consensus Issue Update Failure (Step 8)
+
+open-issue skill fails during update.
+
+**Response:**
+```
+Error: Failed to update issue #${ISSUE_NUMBER} with consensus plan.
 
 Error: {details}
 
 The consensus plan is saved to: {consensus_plan_file}
 
 You can:
-1. Retry issue creation: /plan-an-issue {consensus_plan_file}
-2. Create issue manually using the plan file
+1. Manually update issue #${ISSUE_NUMBER} on GitHub using the plan file
+2. Create a new issue: /plan-an-issue {consensus_plan_file}
 ```
 
-Provide plan file for manual issue creation.
+Provide plan file for manual update.
 
 ## Usage Examples
 

@@ -88,6 +88,7 @@ The open-issue skill takes the following inputs:
 3. **Optional flags** (via arguments):
    - `--draft`: Prepend `[draft]` to the title for plan issues (e.g., `[draft][plan][tag]: Title`)
    - `--auto`: Skip user confirmation and create issue automatically (only used by ultra-planner)
+   - `--update <issue-number>`: Update an existing issue instead of creating a new one (e.g., `--update 42`)
 
 ## Workflow for AI Agents
 
@@ -100,21 +101,30 @@ Check if optional flags are provided in arguments:
 ```bash
 DRAFT_MODE=false
 AUTO_MODE=false
+UPDATE_MODE=false
+UPDATE_ISSUE_NUMBER=""
 PLAN_FILE=""
 
-for arg in $@; do
-  if [ "$arg" = "--draft" ]; then
+while [ $# -gt 0 ]; do
+  if [ "$1" = "--draft" ]; then
     DRAFT_MODE=true
-  elif [ "$arg" = "--auto" ]; then
+  elif [ "$1" = "--auto" ]; then
     AUTO_MODE=true
-  elif [ -f "$arg" ]; then
-    PLAN_FILE="$arg"
+  elif [ "$1" = "--update" ]; then
+    UPDATE_MODE=true
+    shift
+    UPDATE_ISSUE_NUMBER="$1"
+  elif [ -f "$1" ]; then
+    PLAN_FILE="$1"
   fi
+  shift
 done
 ```
 
 - `DRAFT_MODE=true`: Prepend `[draft]` to title for plan issues
 - `AUTO_MODE=true`: Skip confirmation in Step 4
+- `UPDATE_MODE=true`: Update existing issue instead of creating new one
+- `UPDATE_ISSUE_NUMBER`: The issue number to update (e.g., "42")
 - `PLAN_FILE`: Path to plan file (if provided as argument)
 
 ### 1. Context Analysis Phase
@@ -211,9 +221,11 @@ Should I create this issue?
 - Proceed directly to Step 5 (GitHub Issue Creation)
 - Display a brief summary instead of asking for confirmation
 
-### 5. GitHub Issue Creation
+### 5. GitHub Issue Creation or Update
 
-Once confirmed, create the issue using the GitHub CLI:
+Once confirmed, create or update the issue using the GitHub CLI:
+
+**If `UPDATE_MODE=false` (default - create new issue):**
 
 ```bash
 gh issue create --title "TITLE_HERE" --body-file - <<'EOF'
@@ -221,11 +233,20 @@ BODY_CONTENT_HERE
 EOF
 ```
 
+**If `UPDATE_MODE=true` (update existing issue):**
+
+```bash
+gh issue edit "$UPDATE_ISSUE_NUMBER" --title "TITLE_HERE" --body-file - <<'EOF'
+BODY_CONTENT_HERE
+EOF
+```
+
 **Important:**
 - Use `--body-file -` with heredoc to preserve markdown formatting and handle special characters safely
 - The body should include all sections from Description onwards (not the title)
-- After successful creation, display the issue URL to the user
-- Confirm: "GitHub issue created successfully: [URL]"
+- For updates: title formatting (including `[draft]` prefix) is applied the same way as for creates
+- After successful creation/update, display the issue URL to the user
+- Confirm: "GitHub issue created successfully: [URL]" or "GitHub issue #N updated successfully: [URL]"
 
 ### 6. Error Handling
 
@@ -255,6 +276,18 @@ I don't have enough context to create an issue. Could you please provide:
 ```
 Failed to create GitHub issue: [error message]
 Please check your GitHub CLI configuration and try again.
+```
+
+**Issue update failed (--update mode):**
+```
+Failed to update GitHub issue #N: [error message]
+
+Possible causes:
+- Issue #N does not exist
+- Insufficient permissions to edit the issue
+- Network or GitHub CLI configuration issues
+
+Please check the issue number and try again.
 ```
 
 ## Ownership
@@ -330,3 +363,18 @@ Add a plugin system that allows users to extend agentize functionality with
 custom plugins. This would enable community contributions and custom workflows
 without modifying core code.
 ```
+
+### Example 4: Update Existing Issue (--update mode)
+
+**Context:** Ultra-planner created a placeholder draft issue #42, then consensus plan is ready to update that same issue.
+
+**Invocation:**
+```bash
+open-issue --update 42 --draft <plan-file>
+```
+
+**Behavior:**
+- Uses `gh issue edit 42` instead of `gh issue create`
+- Applies same title formatting logic (includes `[draft][plan][tag]` prefix)
+- Updates issue body with final consensus plan
+- Preserves issue number (no duplicate issue created)
