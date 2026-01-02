@@ -16,6 +16,7 @@ This skill invokes an external AI reviewer (Codex or Claude Opus) to synthesize 
 ## CLI Tool Usage
 
 This skill uses external CLI tools for consensus review. The implementation pattern follows best practices for security, reasoning quality, and external research capabilities.
+NOTE: These tools may take long to execute, it is recommended to have 15-30 minutes of timeout for the entire skill execution when invoking this skill.
 
 ### Codex CLI (Preferred)
 
