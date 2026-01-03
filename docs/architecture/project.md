@@ -34,6 +34,96 @@ Generate an automation workflow template:
 lol project --automation [--write <path>]
 ```
 
+## Project Field Management
+
+Before configuring your Kanban board, you need to create custom fields in GitHub Projects v2 using the GraphQL API.
+
+### Converting Project Number to GraphQL ID
+
+Convert the project number (e.g., `3` from `.agentize.yaml`) to its GraphQL ID:
+
+```bash
+gh api graphql -f query='
+query {
+  organization(login: "Synthesys-Lab") {
+    projectV2(number: 3) {
+      id
+      title
+    }
+  }
+}'
+```
+
+### Creating Custom Fields
+
+Use the returned GraphQL ID (`PVT_xxx`) to create custom fields:
+
+```bash
+gh api graphql -f query='
+mutation {
+  createProjectV2Field(
+    input: {
+      projectId: "PVT_xxx"
+      dataType: SINGLE_SELECT
+      name: "Stage"
+      singleSelectOptions: [
+        { name: "proposed" }
+        { name: "accepted" }
+        { name: "wip" }
+        { name: "review" }
+        { name: "done" }
+        { name: "abandon" }
+      ]
+    }
+  ) {
+    projectV2Field {
+      id
+      name
+    }
+  }
+}'
+```
+
+### Querying Issue Project Fields
+
+Look up an issue's project field values (including Stage):
+
+```bash
+gh api graphql -f query='
+query($owner:String!, $repo:String!, $number:Int!) {
+  repository(owner:$owner, name:$repo) {
+    issue(number:$number) {
+      id
+      title
+      projectItems(first: 20) {
+        nodes {
+          id
+          project {
+            id
+            title
+            number
+          }
+          fieldValues(first: 50) {
+            nodes {
+              ... on ProjectV2ItemFieldSingleSelectValue {
+                field { ... on ProjectV2SingleSelectField { name } }
+                name
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}' -f owner='OWNER' -f repo='REPO' -F number=ISSUE_NUMBER
+```
+
+This returns all project associations and their field values, allowing you to index issues by their stage.
+
+### Dumping Project Configuration
+
+Automation workflows can dump and version control your project field configuration for reproducibility.
+
 ## Kanban Design [^1]
 
 We have two Kanban boards for plans (GitHub Issues) and implementations (Pull Requests).
