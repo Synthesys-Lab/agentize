@@ -130,6 +130,18 @@ else
 fi
 echo ""
 
+# Test lol project command
+echo ">>> Testing lol project command..."
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+if bash "$SCRIPT_DIR/test-lol-project.sh"; then
+    echo "✓ lol project tests passed"
+    PASSED_TESTS=$((PASSED_TESTS + 1))
+else
+    echo "✗ lol project tests failed"
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+fi
+echo ""
+
 # Print summary
 echo "======================================"
 echo "Test Summary"

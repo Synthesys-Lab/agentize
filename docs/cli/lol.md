@@ -11,6 +11,9 @@ This document provides detailed reference documentation for the `lol` command us
 ```bash
 lol init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]
 lol update [--path <path>]
+lol project --create [--org <org>] [--title <title>]
+lol project --associate <org>/<id>
+lol project --automation [--write <path>]
 ```
 
 ### Flags
@@ -100,6 +103,71 @@ Updates the AI-related rules and files in an existing SDK structure without affe
 lol update                      # From project root or subdirectory
 lol update --path /path/to/project
 ```
+
+### `lol project`
+
+Integrates your repository with GitHub Projects v2. This command creates or associates a project board, persists the association in `.agentize.yaml`, and can generate automation templates.
+
+**Subcommands:**
+
+**Create a new project:**
+```bash
+lol project --create [--org <org>] [--title <title>]
+```
+
+Creates a new GitHub Projects v2 board and associates it with the repository.
+
+- `--org` - GitHub organization (optional, defaults to repository owner)
+- `--title` - Project title (optional, defaults to repository name)
+
+**Associate an existing project:**
+```bash
+lol project --associate <org>/<id>
+```
+
+Associates an existing GitHub Projects v2 board with the repository.
+
+- `<org>/<id>` - Organization and project number (e.g., `Synthesys-Lab/3`)
+
+**Generate automation template:**
+```bash
+lol project --automation [--write <path>]
+```
+
+Prints or writes a GitHub Actions workflow template for automatically adding issues and PRs to the project.
+
+- `--write` - Write template to file (optional, defaults to stdout)
+
+**Behavior:**
+
+- All commands update `.agentize.yaml` with project metadata:
+  - `project.org` - GitHub organization
+  - `project.id` - Project number (not node_id)
+- Requires `gh` CLI to be installed and authenticated
+- `--create` and `--associate` validate project access via GraphQL
+- Automation setup is manual (see generated template or docs)
+
+**Examples:**
+
+Create a new project:
+```bash
+lol project --create --org Synthesys-Lab --title "Agentize Development"
+```
+
+Associate existing project:
+```bash
+lol project --associate Synthesys-Lab/3
+```
+
+Generate and save automation workflow:
+```bash
+lol project --automation --write .github/workflows/add-to-project.yml
+```
+
+**Related documentation:**
+- [GitHub Projects automation guide](../workflows/github-projects-automation.md)
+- [Metadata schema](../architecture/metadata.md)
+- [Project management](../architecture/project.md)
 
 ## Flag Details
 

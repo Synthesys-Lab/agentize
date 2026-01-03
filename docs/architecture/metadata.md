@@ -17,6 +17,8 @@ project:
   name: project-name           # Project identifier
   lang: python|bash|c|cxx      # Primary programming language
   source: src                  # Source code directory (optional)
+  org: organization-name       # GitHub organization (optional, for Projects v2)
+  id: 3                        # GitHub project number (optional, for Projects v2)
 
 git:
   remote_url: https://github.com/org/repo  # Git remote URL (optional)
@@ -78,6 +80,22 @@ Directory where worktrees are created.
 **Example:** `worktrees`, `branches`, `trees`
 
 **Usage:** Allows customizing worktree organization.
+
+### project.org (optional)
+GitHub organization name for Projects v2 integration.
+
+**Example:** `Synthesys-Lab`, `my-org`
+
+**Usage:** Set by `lol project --create` or `lol project --associate` to store the organization associated with the GitHub Projects v2 board.
+
+### project.id (optional)
+GitHub Projects v2 board number (the numeric ID visible in the project URL).
+
+**Example:** `3`, `42`
+
+**Usage:** Set by `lol project --create` or `lol project --associate` to store the project number. This is the project number shown in URLs like `https://github.com/orgs/my-org/projects/3`, NOT the GraphQL node_id.
+
+**Note:** The `project.org` and `project.id` fields work together to uniquely identify a GitHub Projects v2 board.
 
 ### pre_commit.enabled (optional)
 Controls automatic installation of the pre-commit hook during SDK and worktree initialization.
@@ -180,6 +198,8 @@ project:
   name: agentize
   lang: bash
   source: scripts
+  org: Synthesys-Lab
+  id: 3
 git:
   remote_url: https://github.com/synthesys-lab/agentize
   default_branch: main

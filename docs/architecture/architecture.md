@@ -61,10 +61,19 @@ Refer to `./sdk.md` for more information about the SDK structure created by `lol
 
 ## GitHub Usage
 
-It is preferred to associate each repo to a GitHub Project for better issue tracking and project management.
-- `lol project --create` - Create a GitHub Project for the current repo and associate it
-- `lol project --associate <org>/<proj-id>` - Associate the current repo to an existing GitHub Project
-- The project will be reflected in `.agentize.yaml` metadata file for future reference.
-  - Refer to `./metadata.md` for more information about `.agentize.yaml` structure.
-- Refer to `./project.md` for more information about the field design and project management.
-  - TODO: Write `project.md`
+It is preferred to associate each repository with a GitHub Projects v2 board for better issue tracking and project management.
+
+**Create or associate a project:**
+- `lol project --create [--org <org>] [--title <title>]` - Create a new GitHub Projects v2 board and associate it
+- `lol project --associate <org>/<id>` - Associate the current repo to an existing GitHub Projects v2 board
+
+**Generate automation template:**
+- `lol project --automation [--write <path>]` - Generate a GitHub Actions workflow for automatically adding issues/PRs to the project
+
+**Metadata storage:**
+- The project association is stored in `.agentize.yaml` with `project.org` and `project.id` fields
+- Refer to `./metadata.md` for more information about `.agentize.yaml` structure
+
+**Related documentation:**
+- Refer to `./project.md` for Kanban design and project management workflow
+- Refer to `../workflows/github-projects-automation.md` for automation setup

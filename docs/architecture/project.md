@@ -1,7 +1,7 @@
 # Project Management
 
 In `./metadata.md`, we discussed the metadata file `.agentize.yaml` that stores
-the Github Project associated information:
+the GitHub Projects v2 association information:
 
 ```yaml
 project:
@@ -9,42 +9,56 @@ project:
    id: 3
 ```
 
-This section discusses how to manage a Github Project with an `agentize`d project.
+This section discusses how to integrate GitHub Projects v2 with an `agentize`d project.
 
-## Create a Project
+## Creating or Associating a Project
 
-Create a new project and associate it with the current repo:
+Create a new GitHub Projects v2 board and associate it with the current repository:
 ```bash
-lol project --create
+lol project --create [--org <org>] [--title <title>]
 ```
 
-This will associate an existing project of a specific organization with the current repo:
+Associate an existing GitHub Projects v2 board with the current repository:
 ```bash
-lol project --associate Synthesys-Lab/3
+lol project --associate <org>/<id>
+```
+
+Both commands update `.agentize.yaml` with `project.org` and `project.id` fields.
+
+## Automation
+
+The `lol project` command provides project association but does not automatically install automation workflows. To automatically add issues and pull requests to your project board, see the [GitHub Projects automation guide](../workflows/github-projects-automation.md).
+
+Generate an automation workflow template:
+```bash
+lol project --automation [--write <path>]
 ```
 
 ## Kanban Design [^1]
 
-We have two Kanban for plans (i.e. Github Issues) and implementations (i.e. Pull Requests):
+We have two Kanban boards for plans (GitHub Issues) and implementations (Pull Requests).
 
-For issues, we additionally have one more column `Status` as a `Single Selection` field:
+### Issue Status Field
+
+For issues, we use a `Status` field (Single Selection) to track lifecycle:
 - `Proposed`: The issue is proposed but not yet approved.
-  - All the issues created by AI agents shall start with this status.
+  - All issues created by AI agents start with this status.
 - `Approved`: The issue is approved and ready for implementation.
-  - `\issue-to-impl` command will reject issues that are not `Approved`.
+  - `/issue-to-impl` command requires issues to be `Approved`.
 - `WIP`: The issue is being worked on.
-  - This is an overengineering for further tracking. We can avoid multiple workers working on the same issue.
+  - Prevents multiple workers from working on the same issue.
 - `PR Created`: A pull request has been created for the issue.
-- `Abandoned`: The issue has been abandoned, which can happen for two senarios:
-  - After careful consideration, this addition does not make sense at issue phase.
+- `Abandoned`: The issue has been abandoned for one of these reasons:
+  - After careful consideration, this addition does not make sense at the issue phase.
   - After implementation, we find it is not a good idea.
 - `Dependency`: The issue is blocked by other issues.
 - `Done`: The issue has been completed and merged.
 
-We use `Single Selection` field instead of labels because labels cannot be enforced strictly for mutual exclusivity.
-For example, all 6 labels can be added to one issue at the same time, which makes no sense.
+We use a `Single Selection` field instead of labels because labels cannot enforce mutual exclusivity.
 
-For pull requests, we use the default columns:
+### Pull Request Status
+
+For pull requests, we use the standard GitHub Projects workflow:
 - `Initial Review`: The PR is created and waiting for review.
 - `Changes Requested`: Changes are requested on the PR.
 - `Dependency`: This PR is blocked for merging because of dependencies on other PRs.

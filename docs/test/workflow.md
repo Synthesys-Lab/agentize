@@ -202,6 +202,29 @@ This document tracks the testing status of AI rules, skills, and commands in thi
 
 ---
 
+### lol project (command)
+**Status**: 🔄 In Progress
+
+**Implementation Status**:
+- Issue #179: Implementation started with docs and tests
+  - Documentation complete (lol.md, metadata.md, project.md, architecture.md)
+  - Automation template and guide created (github-projects-automation.md, project-auto-add.yml)
+  - Test suite created (test-lol-project.sh) with fixtures for mocked GraphQL
+  - Tests currently skip pending implementation of agentize-project.sh
+
+**Planned Features**:
+- `lol project --create [--org <org>] [--title <title>]` - Create new GitHub Projects v2 board
+- `lol project --associate <org>/<id>` - Associate existing project board
+- `lol project --automation [--write <path>]` - Generate automation workflow template
+
+**Notes**:
+- Design follows dogfooding-first approach with mocked GraphQL by default
+- Tests will validate metadata preservation and proper YAML updates
+- Needs implementation of agentize-project.sh and gh-graphql.sh wrappers
+- Awaiting milestone 1 completion and implementation loop
+
+---
+
 ## Integration Tests
 
 ### Full Workflow: Issue → Branch → Implementation → PR
