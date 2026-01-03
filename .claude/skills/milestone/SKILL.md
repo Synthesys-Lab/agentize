@@ -753,52 +753,19 @@ Implementation complete:
 
 ---
 
-## Integration with Other Skills
+## Next Steps
 
-### With `commit-msg` Skill
+If milestone checkpoint is created it should hint the user to resume later:
+```
+Next step: /miles2miles .milestones/issue-{N}-milestone-{M}.md
+```
 
-The milestone skill invokes the `commit-msg` skill for:
+If milestone successfully delivers its goal, it should direct user to opening a PR:
+```
+Next step: /pull-request --open
+```
+where `\pull-request` already have `/code-review` hooked, and will finally open the PR after review approval.
 
-**Milestone commits:**
-- Purpose: milestone
-- Test status: included in commit message
-- Uses `--no-verify` to bypass pre-commit hooks
-
-**Delivery commits:**
-- Purpose: delivery (when all tests pass)
-- No test status needed (all tests pass)
-- Normal pre-commit hooks run
-
-### With `fork-dev-branch` Skill
-
-The `/issue-to-impl` command uses `fork-dev-branch` to create the development branch before invoking the milestone skill.
-
-### With `open-pr` Skill
-
-After milestone skill signals completion, user can invoke `/open-pr` to create a pull request.
-
----
-
-## Important Notes
-
-1. **Always run tests**: Tests must be run after each chunk to track progress accurately
-
-2. **LOC is cumulative**: Track total LOC across all chunks, not just the current chunk
-
-3. **Milestone commits are temporary**: They allow bypassing hooks but should never be merged to main with incomplete tests
-
-4. **Chunk size matters**: Keep chunks at 100-200 LOC for manageable progress and frequent test validation
-
-5. **Parse test output carefully**: Accurate test status tracking is critical for milestone documents and decision-making
-
-6. **Handle errors gracefully**: If tests fail critically, create milestone with error notes rather than continuing blindly
-
-7. **Near-completion judgment**: Use discretion when close to 800 LOC with high test passage - sometimes better to finish than checkpoint
-
-8. **Milestone documents are immutable**: Once created, milestone documents are snapshots in time - never edit them, only create new ones
-
-9. **Trust the process**: The 800 LOC threshold is a guideline based on context window limits and maintainability - don't try to game it
-
-10. **Test status is gold**: Milestone documents exist primarily to track test progress toward completion
-
-11. **Milestone documents are local-only**: Milestone files in `.milestones/` are excluded from git (via `.gitignore`) and MUST NEVER be staged or committed. They exist only as local checkpoints for resuming work. Always verify staged files before committing.
+If milestone fails due to errors that cannot be fixed by AI alone, it should inform the user
+the phenomenon and suggest manual intervention to fix the issues before resuming, by creating
+a comment right below the Github issue.
