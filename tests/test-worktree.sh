@@ -41,53 +41,18 @@ echo "=== Worktree Function Test ==="
   # Copy CLAUDE.md for bootstrap testing
   echo "Test CLAUDE.md" > CLAUDE.md
 
-  # Create gh stub that returns deterministic titles
+  # Create gh stub that validates issue existence
   mkdir -p bin
   cat > bin/gh <<'GHSTUB'
 #!/usr/bin/env bash
 # Stub gh command for testing
 if [ "$1" = "issue" ] && [ "$2" = "view" ]; then
   issue_no="$3"
-  # Check if --json title --jq '.title' is requested
-  if [ "$4" = "--json" ] && [ "$5" = "title" ] && [ "$6" = "--jq" ] && [ "$7" = ".title" ]; then
-    # Return just the title (not JSON)
-    case "$issue_no" in
-      42) echo "Test feature" ;;
-      99) echo "Test fail" ;;
-      88) echo "Short" ;;
-      77) echo "Very long name" ;;
-      66) echo "Test feature" ;;
-      55) echo "First" ;;
-      56) echo "Second" ;;
-      100) echo "Test trunk" ;;
-      200) echo "Test hook" ;;
-      210) echo "Unmerged test" ;;
-      211) echo "Force test" ;;
-      300) echo "Test YOLO" ;;
-      301) echo "Test after" ;;
-      350) echo "Custom desc test" ;;
-      *) exit 1 ;;
-    esac
-  else
-    # Return JSON format for other queries
-    case "$issue_no" in
-      42) echo '{"title":"Test feature"}' ;;
-      99) echo '{"title":"Test fail"}' ;;
-      88) echo '{"title":"Short"}' ;;
-      77) echo '{"title":"Very long name"}' ;;
-      66) echo '{"title":"Test feature"}' ;;
-      55) echo '{"title":"First"}' ;;
-      56) echo '{"title":"Second"}' ;;
-      100) echo '{"title":"Test trunk"}' ;;
-      200) echo '{"title":"Test hook"}' ;;
-      210) echo '{"title":"Unmerged test"}' ;;
-      211) echo '{"title":"Force test"}' ;;
-      300) echo '{"title":"Test YOLO"}' ;;
-      301) echo '{"title":"Test after"}' ;;
-      350) echo '{"title":"Custom desc test"}' ;;
-      *) exit 1 ;;
-    esac
-  fi
+  # Valid issue numbers return exit code 0, invalid ones return 1
+  case "$issue_no" in
+    42|55|56|100|200|210|211|300|301|350) exit 0 ;;
+    *) exit 1 ;;
+  esac
 fi
 GHSTUB
   chmod +x bin/gh
@@ -131,12 +96,12 @@ GHSTUB
   cmd_init
 
   echo ""
-  # Test 3: Create worktree with fetched title from gh
-  echo "Test 3: Create worktree with fetched title from gh"
+  # Test 3: Create worktree with issue validation
+  echo "Test 3: Create worktree with issue validation"
   cmd_create --no-agent 42
 
-  if [ ! -d "trees/issue-42-test" ]; then
-      echo -e "${RED}FAIL: Worktree directory not created (expected: issue-42-test)${NC}"
+  if [ ! -d "trees/issue-42" ]; then
+      echo -e "${RED}FAIL: Worktree directory not created (expected: issue-42)${NC}"
       exit 1
   fi
 
@@ -146,7 +111,7 @@ GHSTUB
   # Test 4: List worktrees
   echo "Test 4: List worktrees"
   OUTPUT=$(cmd_list)
-  if [[ ! "$OUTPUT" =~ "issue-42-test" ]]; then
+  if [[ ! "$OUTPUT" =~ "issue-42" ]]; then
       echo -e "${RED}FAIL: Worktree not listed${NC}"
       exit 1
   fi
@@ -155,7 +120,7 @@ GHSTUB
   echo ""
   # Test 5: Verify branch exists
   echo "Test 5: Verify branch exists"
-  if ! git branch | grep -q "issue-42-test"; then
+  if ! git branch | grep -q "issue-42"; then
       echo -e "${RED}FAIL: Branch not created${NC}"
       exit 1
   fi
@@ -166,13 +131,13 @@ GHSTUB
   echo "Test 6: Remove worktree and verify branch deletion"
   cmd_remove 42
 
-  if [ -d "trees/issue-42-test" ]; then
+  if [ -d "trees/issue-42" ]; then
       echo -e "${RED}FAIL: Worktree directory still exists${NC}"
       exit 1
   fi
 
   # Verify branch was deleted
-  if git branch | grep -q "issue-42-test"; then
+  if git branch | grep -q "issue-42"; then
       echo -e "${RED}FAIL: Branch still exists after removal${NC}"
       exit 1
   fi
@@ -185,58 +150,52 @@ GHSTUB
   echo -e "${GREEN}PASS: Prune completed${NC}"
 
   echo ""
-  # Test 8: Long title truncates to max length (default 10)
-  echo "Test 8: Long title truncates to max length"
-  cmd_create --no-agent 99
-  if [ ! -d "trees/issue-99-test-fail" ]; then
-      echo -e "${RED}FAIL: Long suffix not truncated to 10 chars (expected: issue-99-test-fail)${NC}"
+  # Test 8: Invalid issue number fails validation
+  echo "Test 8: Invalid issue number fails validation"
+  if cmd_create --no-agent 999 2>/dev/null; then
+      echo -e "${RED}FAIL: Should fail for invalid issue number${NC}"
       exit 1
   fi
-  cmd_remove 99
-  echo -e "${GREEN}PASS: Long suffix truncated${NC}"
+  echo -e "${GREEN}PASS: Invalid issue validation works${NC}"
 
   echo ""
-  # Test 9: Short title preserved
-  echo "Test 9: Short title preserved"
-  cmd_create --no-agent 88
-  if [ ! -d "trees/issue-88-short" ]; then
-      echo -e "${RED}FAIL: Short suffix not preserved${NC}"
+  # Test 9: Legacy worktree removal (issue-{N}-{slug} format)
+  echo "Test 9: Legacy worktree removal"
+  # Manually create a legacy-named worktree
+  git worktree add trees/issue-88-legacy-name -b issue-88-legacy-name
+
+  # Verify it was created
+  if [ ! -d "trees/issue-88-legacy-name" ]; then
+      echo -e "${RED}FAIL: Failed to create legacy worktree for testing${NC}"
       exit 1
   fi
+
+  # Remove using cmd_remove with issue number
   cmd_remove 88
-  echo -e "${GREEN}PASS: Short suffix preserved${NC}"
 
-  echo ""
-  # Test 10: Word-boundary trimming
-  echo "Test 10: Word-boundary trimming"
-  cmd_create --no-agent 77
-  if [ ! -d "trees/issue-77-very-long" ]; then
-      echo -e "${RED}FAIL: Word-boundary trim failed${NC}"
+  # Verify legacy worktree was removed
+  if [ -d "trees/issue-88-legacy-name" ]; then
+      echo -e "${RED}FAIL: Legacy worktree not removed${NC}"
       exit 1
   fi
-  cmd_remove 77
-  echo -e "${GREEN}PASS: Word-boundary trim works${NC}"
 
-  echo ""
-  # Test 11: Env override changes limit
-  echo "Test 11: Env override changes limit"
-  WORKTREE_SUFFIX_MAX_LENGTH=5 cmd_create --no-agent 66
-  if [ ! -d "trees/issue-66-test" ]; then
-      echo -e "${RED}FAIL: Env override not applied (expected: issue-66-test)${NC}"
+  # Verify branch was deleted
+  if git branch | grep -q "issue-88-legacy-name"; then
+      echo -e "${RED}FAIL: Legacy branch not removed${NC}"
       exit 1
   fi
-  cmd_remove 66
-  echo -e "${GREEN}PASS: Env override works${NC}"
+
+  echo -e "${GREEN}PASS: Legacy worktree removal works${NC}"
 
   echo ""
-  # Test 12: Linked worktree regression - create worktree from linked worktree
-  echo "Test 12: Linked worktree - create worktree from linked worktree"
+  # Test 10: Linked worktree regression - create worktree from linked worktree
+  echo "Test 10: Linked worktree - create worktree from linked worktree"
 
   # Create first worktree
   cmd_create --no-agent 55
 
   # cd into the linked worktree
-  cd trees/issue-55-first
+  cd trees/issue-55
 
   # Source wt-cli.sh again in the linked worktree context
   source "$TEST_DIR/wt-cli.sh"
@@ -246,13 +205,13 @@ GHSTUB
   cmd_create --no-agent 56
 
   # Verify the new worktree is created under main repo root
-  if [ ! -d "$TEST_DIR/trees/issue-56-second" ]; then
+  if [ ! -d "$TEST_DIR/trees/issue-56" ]; then
       echo -e "${RED}FAIL: Worktree not created under main repo root${NC}"
       exit 1
   fi
 
   # Verify it's NOT created inside the linked worktree
-  if [ -d "trees/issue-56-second" ]; then
+  if [ -d "trees/issue-56" ]; then
       echo -e "${RED}FAIL: Worktree incorrectly created inside linked worktree${NC}"
       exit 1
   fi
@@ -264,9 +223,9 @@ GHSTUB
   cmd_remove 55
   cmd_remove 56
 
-  # Test 13: Metadata-driven default branch selection
+  # Test 11: Metadata-driven default branch selection
   echo ""
-  echo "Test 13: Metadata-driven default branch (trunk via .agentize.yaml)"
+  echo "Test 11: Metadata-driven default branch (trunk via .agentize.yaml)"
 
   # Create a new test repo with non-standard default branch
   TEST_DIR2=$(mktemp -d)
@@ -290,9 +249,12 @@ git:
   default_branch: trunk
 EOF
 
-  # Copy wt-cli.sh
+  # Copy wt-cli.sh and gh stub
   cp "$WT_CLI" ./wt-cli.sh
   echo "Test CLAUDE.md" > CLAUDE.md
+  mkdir -p bin
+  cp "$TEST_DIR/bin/gh" bin/gh
+  export PATH="$PWD/bin:$PATH"
 
   # Source the library
   source ./wt-cli.sh
@@ -304,13 +266,13 @@ EOF
   cmd_create --no-agent 100
 
   # Verify worktree was created
-  if [ ! -d "trees/issue-100-test-trunk" ]; then
+  if [ ! -d "trees/issue-100" ]; then
     echo -e "${RED}FAIL: Worktree not created with metadata-driven branch${NC}"
     exit 1
   fi
 
   # Verify it's based on trunk branch
-  BRANCH_BASE=$(git -C "trees/issue-100-test-trunk" log --oneline -1 2>/dev/null || echo "")
+  BRANCH_BASE=$(git -C "trees/issue-100" log --oneline -1 2>/dev/null || echo "")
   TRUNK_COMMIT=$(git log trunk --oneline -1 2>/dev/null || echo "")
   if [ -n "$BRANCH_BASE" ] && [ -n "$TRUNK_COMMIT" ] && [[ "$BRANCH_BASE" != "$TRUNK_COMMIT" ]]; then
     echo -e "${RED}FAIL: Worktree not based on trunk branch${NC}"
@@ -369,9 +331,9 @@ EOF
   cd /
   rm -rf "$TEST_DIR3"
 
-  # Test 15: wt spawn installs pre-commit hook in new worktree
+  # Test 13: wt spawn installs pre-commit hook in new worktree
   echo ""
-  echo "Test 15: wt spawn installs pre-commit hook in worktree"
+  echo "Test 13: wt spawn installs pre-commit hook in worktree"
 
   TEST_DIR4=$(mktemp -d)
   cd "$TEST_DIR4"
@@ -393,9 +355,12 @@ exit 0
 EOF
   chmod +x scripts/pre-commit
 
-  # Copy wt-cli.sh
+  # Copy wt-cli.sh and gh stub
   cp "$WT_CLI" ./wt-cli.sh
   echo "Test CLAUDE.md" > CLAUDE.md
+  mkdir -p bin
+  cp "$TEST_DIR/bin/gh" bin/gh
+  export PATH="$PWD/bin:$PATH"
 
   # Source the library
   source ./wt-cli.sh
@@ -407,7 +372,7 @@ EOF
   cmd_create --no-agent 200
 
   # Verify hook was installed in the new worktree
-  HOOKS_DIR=$(git -C trees/issue-200-test-hook rev-parse --git-path hooks)
+  HOOKS_DIR=$(git -C trees/issue-200 rev-parse --git-path hooks)
   if [ ! -L "$HOOKS_DIR/pre-commit" ]; then
     echo -e "${RED}FAIL: pre-commit hook not installed in wt spawn${NC}"
     exit 1
@@ -421,15 +386,15 @@ EOF
   # Back to original test repo for branch deletion tests
   cd "$TEST_DIR"
 
-  # Test 16: Force delete unmerged branch
+  # Test 14: Force delete unmerged branch
   echo ""
-  echo "Test 16: Force delete unmerged branch with -D flag"
+  echo "Test 14: Force delete unmerged branch with -D flag"
 
   # Create a worktree with an unmerged commit
   cmd_create --no-agent 210
 
   # Create an unmerged commit in the worktree
-  cd "trees/issue-210-unmerged"
+  cd "trees/issue-210"
   echo "unmerged content" > unmerged.txt
   git add unmerged.txt
   git commit -m "Unmerged commit"
@@ -439,28 +404,28 @@ EOF
   cmd_remove -D 210
 
   # Verify worktree was removed
-  if [ -d "trees/issue-210-unmerged" ]; then
+  if [ -d "trees/issue-210" ]; then
       echo -e "${RED}FAIL: Worktree still exists after force removal${NC}"
       exit 1
   fi
 
   # Verify branch was force-deleted
-  if git branch | grep -q "issue-210-unmerged"; then
+  if git branch | grep -q "issue-210"; then
       echo -e "${RED}FAIL: Branch still exists after force removal${NC}"
       exit 1
   fi
 
   echo -e "${GREEN}PASS: Force delete removed unmerged branch${NC}"
 
-  # Test 17: Force delete with --force flag (alternative syntax)
+  # Test 15: Force delete with --force flag (alternative syntax)
   echo ""
-  echo "Test 17: Force delete with --force flag"
+  echo "Test 15: Force delete with --force flag"
 
   # Create another worktree with an unmerged commit
   cmd_create --no-agent 211
 
   # Create an unmerged commit
-  cd "trees/issue-211-force-test"
+  cd "trees/issue-211"
   echo "force test content" > force.txt
   git add force.txt
   git commit -m "Force test commit"
@@ -470,22 +435,22 @@ EOF
   cmd_remove --force 211
 
   # Verify worktree was removed
-  if [ -d "trees/issue-211-force-test" ]; then
+  if [ -d "trees/issue-211" ]; then
       echo -e "${RED}FAIL: Worktree still exists after --force removal${NC}"
       exit 1
   fi
 
   # Verify branch was force-deleted
-  if git branch | grep -q "issue-211-force-test"; then
+  if git branch | grep -q "issue-211"; then
       echo -e "${RED}FAIL: Branch still exists after --force removal${NC}"
       exit 1
   fi
 
   echo -e "${GREEN}PASS: --force flag works for branch deletion${NC}"
 
-  # Test 18: wt spawn with --yolo --no-agent creates worktree
+  # Test 16: wt spawn with --yolo --no-agent creates worktree
   echo ""
-  echo "Test 18: wt spawn with --yolo --no-agent creates worktree"
+  echo "Test 16: wt spawn with --yolo --no-agent creates worktree"
 
   TEST_DIR5=$(mktemp -d)
   cd "$TEST_DIR5"
@@ -498,9 +463,12 @@ EOF
   git add README.md
   git commit -m "Initial commit"
 
-  # Copy wt-cli.sh
+  # Copy wt-cli.sh and gh stub
   cp "$WT_CLI" ./wt-cli.sh
   echo "Test CLAUDE.md" > CLAUDE.md
+  mkdir -p bin
+  cp "$TEST_DIR/bin/gh" bin/gh
+  export PATH="$PWD/bin:$PATH"
 
   # Source the library
   source ./wt-cli.sh
@@ -512,7 +480,7 @@ EOF
   cmd_create --yolo --no-agent 300
 
   # Verify worktree was created
-  if [ ! -d "trees/issue-300-test-yolo" ]; then
+  if [ ! -d "trees/issue-300" ]; then
     echo -e "${RED}FAIL: Worktree not created with --yolo --no-agent${NC}"
     exit 1
   fi
@@ -522,9 +490,9 @@ EOF
   cd /
   rm -rf "$TEST_DIR5"
 
-  # Test 19: Flag after issue number regression test
+  # Test 17: Flag after issue number regression test
   echo ""
-  echo "Test 19: Flag after issue number (--no-agent <issue> --yolo)"
+  echo "Test 17: Flag after issue number (--no-agent <issue> --yolo)"
 
   TEST_DIR6=$(mktemp -d)
   cd "$TEST_DIR6"
@@ -537,9 +505,12 @@ EOF
   git add README.md
   git commit -m "Initial commit"
 
-  # Copy wt-cli.sh
+  # Copy wt-cli.sh and gh stub
   cp "$WT_CLI" ./wt-cli.sh
   echo "Test CLAUDE.md" > CLAUDE.md
+  mkdir -p bin
+  cp "$TEST_DIR/bin/gh" bin/gh
+  export PATH="$PWD/bin:$PATH"
 
   # Source the library
   source ./wt-cli.sh
@@ -552,8 +523,8 @@ EOF
   cmd_create --no-agent 301 --yolo
 
   # Verify worktree was created with correct name
-  if [ ! -d "trees/issue-301-test-after" ]; then
-    echo -e "${RED}FAIL: Worktree not created with correct name (expected: issue-301-test-after)${NC}"
+  if [ ! -d "trees/issue-301" ]; then
+    echo -e "${RED}FAIL: Worktree not created with correct name (expected: issue-301)${NC}"
     exit 1
   fi
 
@@ -561,48 +532,6 @@ EOF
 
   cd /
   rm -rf "$TEST_DIR6"
-
-  # Test 20: Passing description argument should fail with clear error
-  echo ""
-  echo "Test 20: Passing description argument should fail with error"
-
-  TEST_DIR7=$(mktemp -d)
-  cd "$TEST_DIR7"
-  git init
-  git config user.email "test@example.com"
-  git config user.name "Test User"
-
-  # Create initial commit
-  echo "test" > README.md
-  git add README.md
-  git commit -m "Initial commit"
-
-  # Copy wt-cli.sh
-  cp "$WT_CLI" ./wt-cli.sh
-  echo "Test CLAUDE.md" > CLAUDE.md
-
-  # Source the library
-  source ./wt-cli.sh
-
-  # Initialize first
-  cmd_init
-
-  # Try to create worktree with description (should fail)
-  if cmd_create --no-agent 350 custom-desc 2>/dev/null; then
-    echo -e "${RED}FAIL: Should have rejected description argument${NC}"
-    exit 1
-  fi
-
-  # Verify no worktree was created
-  if [ -d "trees/issue-350-custom-desc" ] || [ -d "trees/issue-350"* ]; then
-    echo -e "${RED}FAIL: Worktree should not have been created${NC}"
-    exit 1
-  fi
-
-  echo -e "${GREEN}PASS: Description argument correctly rejected${NC}"
-
-  cd /
-  rm -rf "$TEST_DIR7"
 
   # Cleanup original test repo
   cd /

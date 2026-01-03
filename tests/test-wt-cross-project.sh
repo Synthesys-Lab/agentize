@@ -69,24 +69,11 @@ echo "Test 3: wt init creates trees/main worktree"
 # Stub gh command for testing
 if [ "$1" = "issue" ] && [ "$2" = "view" ]; then
   issue_no="$3"
-  # Check if --json title --jq '.title' is requested
-  if [ "$4" = "--json" ] && [ "$5" = "title" ] && [ "$6" = "--jq" ] && [ "$7" = ".title" ]; then
-    # Return just the title (not JSON)
-    case "$issue_no" in
-      42) echo "Test cross" ;;
-      50) echo "First" ;;
-      51) echo "Second" ;;
-      *) exit 1 ;;
-    esac
-  else
-    # Return JSON format for other queries
-    case "$issue_no" in
-      42) echo '{"title":"Test cross"}' ;;
-      50) echo '{"title":"First"}' ;;
-      51) echo '{"title":"Second"}' ;;
-      *) exit 1 ;;
-    esac
-  fi
+  # Valid issue numbers return exit code 0, invalid ones return 1
+  case "$issue_no" in
+    42|50|51) exit 0 ;;
+    *) exit 1 ;;
+  esac
 fi
 GHSTUB
     chmod +x bin/gh
@@ -156,24 +143,11 @@ echo "Test 4: wt spawn creates worktree in correct location"
 # Stub gh command for testing
 if [ "$1" = "issue" ] && [ "$2" = "view" ]; then
   issue_no="$3"
-  # Check if --json title --jq '.title' is requested
-  if [ "$4" = "--json" ] && [ "$5" = "title" ] && [ "$6" = "--jq" ] && [ "$7" = ".title" ]; then
-    # Return just the title (not JSON)
-    case "$issue_no" in
-      42) echo "Test cross" ;;
-      50) echo "First" ;;
-      51) echo "Second" ;;
-      *) exit 1 ;;
-    esac
-  else
-    # Return JSON format for other queries
-    case "$issue_no" in
-      42) echo '{"title":"Test cross"}' ;;
-      50) echo '{"title":"First"}' ;;
-      51) echo '{"title":"Second"}' ;;
-      *) exit 1 ;;
-    esac
-  fi
+  # Valid issue numbers return exit code 0, invalid ones return 1
+  case "$issue_no" in
+    42|50|51) exit 0 ;;
+    *) exit 1 ;;
+  esac
 fi
 GHSTUB
     chmod +x bin/gh
@@ -212,12 +186,12 @@ GHSTUB
     wt spawn --no-agent 42
 
     # Verify worktree created in agentize repo, not current project
-    if [ ! -d "$TEST_AGENTIZE/trees/issue-42-test-cross" ]; then
+    if [ ! -d "$TEST_AGENTIZE/trees/issue-42" ]; then
       echo -e "${RED}FAIL: Worktree not created in AGENTIZE_HOME${NC}"
       exit 1
     fi
 
-    if [ -d "$TEST_PROJECT/trees/issue-42-test-cross" ]; then
+    if [ -d "$TEST_PROJECT/trees/issue-42" ]; then
       echo -e "${RED}FAIL: Worktree incorrectly created in current project${NC}"
       exit 1
     fi
@@ -225,7 +199,7 @@ GHSTUB
     echo -e "${GREEN}PASS: Worktree created in correct location (AGENTIZE_HOME)${NC}"
 
     # Test wt list
-    if ! wt list | grep -q "issue-42-test-cross"; then
+    if ! wt list | grep -q "issue-42"; then
       echo -e "${RED}FAIL: wt list does not show worktree${NC}"
       exit 1
     fi
@@ -233,7 +207,7 @@ GHSTUB
 
     # Test wt remove
     wt remove 42
-    if [ -d "$TEST_AGENTIZE/trees/issue-42-test-cross" ]; then
+    if [ -d "$TEST_AGENTIZE/trees/issue-42" ]; then
       echo -e "${RED}FAIL: wt remove did not remove worktree${NC}"
       exit 1
     fi
@@ -273,24 +247,11 @@ echo "Test 5: wt spawn from linked worktree creates under main repo"
 # Stub gh command for testing
 if [ "$1" = "issue" ] && [ "$2" = "view" ]; then
   issue_no="$3"
-  # Check if --json title --jq '.title' is requested
-  if [ "$4" = "--json" ] && [ "$5" = "title" ] && [ "$6" = "--jq" ] && [ "$7" = ".title" ]; then
-    # Return just the title (not JSON)
-    case "$issue_no" in
-      42) echo "Test cross" ;;
-      50) echo "First" ;;
-      51) echo "Second" ;;
-      *) exit 1 ;;
-    esac
-  else
-    # Return JSON format for other queries
-    case "$issue_no" in
-      42) echo '{"title":"Test cross"}' ;;
-      50) echo '{"title":"First"}' ;;
-      51) echo '{"title":"Second"}' ;;
-      *) exit 1 ;;
-    esac
-  fi
+  # Valid issue numbers return exit code 0, invalid ones return 1
+  case "$issue_no" in
+    42|50|51) exit 0 ;;
+    *) exit 1 ;;
+  esac
 fi
 GHSTUB
     chmod +x bin/gh
@@ -314,7 +275,7 @@ GHSTUB
     wt spawn --no-agent 50
 
     # Now cd into the linked worktree and create another worktree
-    cd trees/issue-50-first
+    cd trees/issue-50
 
     # Source again in linked worktree context
     source "$TEST_AGENTIZE/scripts/wt-cli.sh"
@@ -323,13 +284,13 @@ GHSTUB
     wt spawn --no-agent 51
 
     # Verify the new worktree is created under AGENTIZE_HOME, not inside the linked worktree
-    if [ ! -d "$TEST_AGENTIZE/trees/issue-51-second" ]; then
+    if [ ! -d "$TEST_AGENTIZE/trees/issue-51" ]; then
       echo -e "${RED}FAIL: Worktree not created under main repo root${NC}"
       exit 1
     fi
 
     # Verify it's NOT created inside the linked worktree
-    if [ -d "trees/issue-51-second" ]; then
+    if [ -d "trees/issue-51" ]; then
       echo -e "${RED}FAIL: Worktree incorrectly created inside linked worktree${NC}"
       exit 1
     fi

@@ -28,33 +28,30 @@ This directory contains utility scripts and git hooks for the project.
   - Commands:
     - `init` - Initialize worktree environment (creates trees/main)
     - `main` - Switch to main worktree (when sourced)
-    - `spawn <issue-number> [description]` - Create worktree with GitHub title fetch
+    - `spawn <issue-number>` - Create worktree with GitHub validation
     - `list` - Show all active worktrees
     - `remove <issue-number>` - Remove worktree by issue number
     - `prune` - Clean up stale worktree metadata
     - `help` - Display help information
   - Features:
-    - Automatically fetches issue titles from GitHub via `gh` CLI
-    - Creates branches following `issue-<N>-<title>` convention
-    - Limits suffix length to 10 characters (configurable via `WORKTREE_SUFFIX_MAX_LENGTH`)
+    - Validates issue existence via `gh` CLI
+    - Creates branches following `issue-{N}` convention
     - Bootstraps `CLAUDE.md` into each worktree
     - Worktrees stored in `trees/` directory (gitignored)
+    - Backward compatible removal of legacy `issue-{N}-{slug}` worktrees
   - Exit codes: 0 (success), 1 (error)
   - Examples:
     ```bash
     # Initialize worktree environment
     ./scripts/wt-cli.sh init
 
-    # Create worktree fetching title from GitHub issue #42
+    # Create worktree for GitHub issue #42
     ./scripts/wt-cli.sh spawn 42
-
-    # Create worktree with custom description
-    ./scripts/wt-cli.sh spawn 42 add-feature
 
     # List all worktrees
     ./scripts/wt-cli.sh list
 
-    # Remove worktree (force removes with uncommitted changes)
+    # Remove worktree (supports both issue-42 and legacy issue-42-* formats)
     ./scripts/wt-cli.sh remove 42
     ```
 
