@@ -67,19 +67,27 @@ echo "Test 3: wt init creates trees/main worktree"
     cat > bin/gh <<'GHSTUB'
 #!/usr/bin/env bash
 # Stub gh command for testing
-case "$1" in
-  issue)
-    if [ "$2" = "view" ]; then
-      issue_no="$3"
-      case "$issue_no" in
-        42) echo '{"title":"Test cross"}' ;;
-        50) echo '{"title":"First"}' ;;
-        51) echo '{"title":"Second"}' ;;
-        *) exit 1 ;;
-      esac
-    fi
-    ;;
-esac
+if [ "$1" = "issue" ] && [ "$2" = "view" ]; then
+  issue_no="$3"
+  # Check if --json title --jq '.title' is requested
+  if [ "$4" = "--json" ] && [ "$5" = "title" ] && [ "$6" = "--jq" ] && [ "$7" = ".title" ]; then
+    # Return just the title (not JSON)
+    case "$issue_no" in
+      42) echo "Test cross" ;;
+      50) echo "First" ;;
+      51) echo "Second" ;;
+      *) exit 1 ;;
+    esac
+  else
+    # Return JSON format for other queries
+    case "$issue_no" in
+      42) echo '{"title":"Test cross"}' ;;
+      50) echo '{"title":"First"}' ;;
+      51) echo '{"title":"Second"}' ;;
+      *) exit 1 ;;
+    esac
+  fi
+fi
 GHSTUB
     chmod +x bin/gh
 
@@ -146,19 +154,27 @@ echo "Test 4: wt spawn creates worktree in correct location"
     cat > bin/gh <<'GHSTUB'
 #!/usr/bin/env bash
 # Stub gh command for testing
-case "$1" in
-  issue)
-    if [ "$2" = "view" ]; then
-      issue_no="$3"
-      case "$issue_no" in
-        42) echo '{"title":"Test cross"}' ;;
-        50) echo '{"title":"First"}' ;;
-        51) echo '{"title":"Second"}' ;;
-        *) exit 1 ;;
-      esac
-    fi
-    ;;
-esac
+if [ "$1" = "issue" ] && [ "$2" = "view" ]; then
+  issue_no="$3"
+  # Check if --json title --jq '.title' is requested
+  if [ "$4" = "--json" ] && [ "$5" = "title" ] && [ "$6" = "--jq" ] && [ "$7" = ".title" ]; then
+    # Return just the title (not JSON)
+    case "$issue_no" in
+      42) echo "Test cross" ;;
+      50) echo "First" ;;
+      51) echo "Second" ;;
+      *) exit 1 ;;
+    esac
+  else
+    # Return JSON format for other queries
+    case "$issue_no" in
+      42) echo '{"title":"Test cross"}' ;;
+      50) echo '{"title":"First"}' ;;
+      51) echo '{"title":"Second"}' ;;
+      *) exit 1 ;;
+    esac
+  fi
+fi
 GHSTUB
     chmod +x bin/gh
 
@@ -255,19 +271,27 @@ echo "Test 5: wt spawn from linked worktree creates under main repo"
     cat > bin/gh <<'GHSTUB'
 #!/usr/bin/env bash
 # Stub gh command for testing
-case "$1" in
-  issue)
-    if [ "$2" = "view" ]; then
-      issue_no="$3"
-      case "$issue_no" in
-        42) echo '{"title":"Test cross"}' ;;
-        50) echo '{"title":"First"}' ;;
-        51) echo '{"title":"Second"}' ;;
-        *) exit 1 ;;
-      esac
-    fi
-    ;;
-esac
+if [ "$1" = "issue" ] && [ "$2" = "view" ]; then
+  issue_no="$3"
+  # Check if --json title --jq '.title' is requested
+  if [ "$4" = "--json" ] && [ "$5" = "title" ] && [ "$6" = "--jq" ] && [ "$7" = ".title" ]; then
+    # Return just the title (not JSON)
+    case "$issue_no" in
+      42) echo "Test cross" ;;
+      50) echo "First" ;;
+      51) echo "Second" ;;
+      *) exit 1 ;;
+    esac
+  else
+    # Return JSON format for other queries
+    case "$issue_no" in
+      42) echo '{"title":"Test cross"}' ;;
+      50) echo '{"title":"First"}' ;;
+      51) echo '{"title":"Second"}' ;;
+      *) exit 1 ;;
+    esac
+  fi
+fi
 GHSTUB
     chmod +x bin/gh
 

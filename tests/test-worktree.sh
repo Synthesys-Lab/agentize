@@ -46,30 +46,49 @@ echo "=== Worktree Function Test ==="
   cat > bin/gh <<'GHSTUB'
 #!/usr/bin/env bash
 # Stub gh command for testing
-case "$1" in
-  issue)
-    if [ "$2" = "view" ]; then
-      issue_no="$3"
-      case "$issue_no" in
-        42) echo '{"title":"Test feature"}' ;;
-        99) echo '{"title":"Test fail"}' ;;
-        88) echo '{"title":"Short"}' ;;
-        77) echo '{"title":"Very long name"}' ;;
-        66) echo '{"title":"Test feature"}' ;;
-        55) echo '{"title":"First"}' ;;
-        56) echo '{"title":"Second"}' ;;
-        100) echo '{"title":"Test trunk"}' ;;
-        200) echo '{"title":"Test hook"}' ;;
-        210) echo '{"title":"Unmerged test"}' ;;
-        211) echo '{"title":"Force test"}' ;;
-        300) echo '{"title":"Test YOLO"}' ;;
-        301) echo '{"title":"Test after"}' ;;
-        350) echo '{"title":"Custom desc test"}' ;;
-        *) exit 1 ;;
-      esac
-    fi
-    ;;
-esac
+if [ "$1" = "issue" ] && [ "$2" = "view" ]; then
+  issue_no="$3"
+  # Check if --json title --jq '.title' is requested
+  if [ "$4" = "--json" ] && [ "$5" = "title" ] && [ "$6" = "--jq" ] && [ "$7" = ".title" ]; then
+    # Return just the title (not JSON)
+    case "$issue_no" in
+      42) echo "Test feature" ;;
+      99) echo "Test fail" ;;
+      88) echo "Short" ;;
+      77) echo "Very long name" ;;
+      66) echo "Test feature" ;;
+      55) echo "First" ;;
+      56) echo "Second" ;;
+      100) echo "Test trunk" ;;
+      200) echo "Test hook" ;;
+      210) echo "Unmerged test" ;;
+      211) echo "Force test" ;;
+      300) echo "Test YOLO" ;;
+      301) echo "Test after" ;;
+      350) echo "Custom desc test" ;;
+      *) exit 1 ;;
+    esac
+  else
+    # Return JSON format for other queries
+    case "$issue_no" in
+      42) echo '{"title":"Test feature"}' ;;
+      99) echo '{"title":"Test fail"}' ;;
+      88) echo '{"title":"Short"}' ;;
+      77) echo '{"title":"Very long name"}' ;;
+      66) echo '{"title":"Test feature"}' ;;
+      55) echo '{"title":"First"}' ;;
+      56) echo '{"title":"Second"}' ;;
+      100) echo '{"title":"Test trunk"}' ;;
+      200) echo '{"title":"Test hook"}' ;;
+      210) echo '{"title":"Unmerged test"}' ;;
+      211) echo '{"title":"Force test"}' ;;
+      300) echo '{"title":"Test YOLO"}' ;;
+      301) echo '{"title":"Test after"}' ;;
+      350) echo '{"title":"Custom desc test"}' ;;
+      *) exit 1 ;;
+    esac
+  fi
+fi
 GHSTUB
   chmod +x bin/gh
   export PATH="$PWD/bin:$PATH"
