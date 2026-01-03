@@ -3,7 +3,7 @@ name: code-quality-reviewer
 description: Comprehensive code review with enhanced quality standards using Opus for long context analysis
 tools: Read, Grep, Glob, Bash
 model: opus
-skills: review-standard
+skills: review-standard, shell-script-review
 ---
 
 # Code Quality Reviewer

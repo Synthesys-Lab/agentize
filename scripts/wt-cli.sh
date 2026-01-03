@@ -376,7 +376,7 @@ cmd_create() {
         return 1
     fi
 
-    issue_number="${positional_args[0]}"
+    issue_number="${positional_args[@]}"
 
     # Resolve repo root
     local repo_root
@@ -416,6 +416,8 @@ cmd_create() {
 
     local issue_title
     issue_title=$(gh issue view "$issue_number" --json title --jq '.title' 2>/dev/null)
+
+    echo "gh issue view "$issue_number" --json title --jq '.title' 2>/dev/null"
 
     if [ -z "$issue_title" ]; then
         echo -e "${RED}Error: Could not fetch issue #${issue_number}${NC}"
