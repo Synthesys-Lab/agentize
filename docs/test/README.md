@@ -35,6 +35,30 @@ The shell test suite supports running tests under multiple shells to ensure shel
 
 This enables early detection of shell-specific issues (e.g., bashisms) before users encounter them in different shell environments.
 
+## Test Structure
+
+Each test script represents a **single test case** and follows this pattern:
+
+1. Source the shared test helper: `source "$(dirname "$0")/common.sh"`
+2. Set up test environment (temporary directories via `make_temp_dir`)
+3. Execute the functionality being tested
+4. Validate expected outcomes (using `test_pass` or `test_fail`)
+5. Clean up test artifacts (using `cleanup_dir` or implicit cleanup)
+6. Exit with status code (0 = pass, 1 = fail)
+
+The shared helper `tests/common.sh` provides:
+- `PROJECT_ROOT` and `TESTS_DIR` variables
+- Color constants for terminal output
+- Test result helpers: `test_pass`, `test_fail`, `test_info`
+- Resource management: `make_temp_dir`, `cleanup_dir`
+
+## Running Tests
+
+All tests are executed via `tests/test-all.sh`, which maintains an explicit list of test files. The commands documented in `docs/architecture/architecture.md` remain unchanged:
+
+- `make test` - Run all tests under bash
+- `make test-shells` - Run all tests under bash and zsh
+
 ## Integration
 
 Testing documentation is referenced from:

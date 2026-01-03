@@ -1,13 +1,7 @@
 #!/bin/bash
 
-set -e
-
-# Get project root using shell-neutral approach
-PROJECT_ROOT="${AGENTIZE_HOME:-$(git rev-parse --show-toplevel 2>/dev/null)}"
-if [ -z "$PROJECT_ROOT" ]; then
-  echo "Error: Cannot determine project root. Set AGENTIZE_HOME or run from git repo."
-  exit 1
-fi
+# Source shared test helper
+source "$(dirname "$0")/common.sh"
 
 echo "======================================"
 echo "Testing Python SDK"
