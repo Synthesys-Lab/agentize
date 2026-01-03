@@ -8,6 +8,22 @@ set -e
 # Get the repository root directory
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 
+# CRITICAL: Set AGENTIZE_HOME to the current worktree
+# ====================================================
+# Without this, pre-commit hooks inherit AGENTIZE_HOME from the shell environment
+# (set by .claude/hooks/session-init.sh). In worktrees, this causes tests to run
+# against the WRONG codebase:
+#
+# Example failure scenario:
+#   - User is in worktree: /path/to/trees/issue-197-test
+#   - Shell has: AGENTIZE_HOME=/path/to/trees/main (from previous session)
+#   - Pre-commit runs: test-all.sh uses $AGENTIZE_HOME → runs tests from main!
+#   - Result: Tests from main run, which may have different code/failures
+#
+# Solution: Explicitly set AGENTIZE_HOME=$REPO_ROOT before running tests
+# This ensures test-all.sh and agentize-init.sh use the current worktree's code
+export AGENTIZE_HOME="$REPO_ROOT"
+
 # Run documentation linter first (skip if not available)
 if [ -f "$REPO_ROOT/scripts/lint-documentation.sh" ]; then
     echo "Running documentation linter..."

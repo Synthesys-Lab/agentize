@@ -78,8 +78,8 @@ should_exclude_file() {
         return 0  # true, should exclude
     fi
 
-    # Exclude files in templates and .milestones directories
-    if [[ "$file" == templates/* ]] || [[ "$file" == .milestones/* ]]; then
+    # Exclude files in templates, .milestones, and test fixtures directories
+    if [[ "$file" == templates/* ]] || [[ "$file" == .milestones/* ]] || [[ "$file" == tests/fixtures/* ]]; then
         return 0  # true, should exclude
     fi
 

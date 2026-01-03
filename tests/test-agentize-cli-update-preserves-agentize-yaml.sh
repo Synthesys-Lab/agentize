@@ -11,8 +11,6 @@ TEST_PROJECT=$(make_temp_dir "agentize-cli-update-preserves-agentize-yaml")
 export AGENTIZE_HOME="$PROJECT_ROOT"
 source "$LOL_CLI"
 
-cd "$TEST_PROJECT"
-
 # Create a custom .agentize.yaml
 cat > "$TEST_PROJECT/.agentize.yaml" <<EOF
 project:
@@ -24,7 +22,7 @@ git:
 EOF
 
 # Run update
-lol update 2>/dev/null
+lol update --path "$TEST_PROJECT" 2>/dev/null
 
 # Verify custom values are preserved
 if ! grep -q "name: custom-name" "$TEST_PROJECT/.agentize.yaml"; then

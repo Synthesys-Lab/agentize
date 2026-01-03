@@ -11,10 +11,8 @@ TEST_PROJECT=$(make_temp_dir "agentize-cli-update-creates-claude-dir")
 export AGENTIZE_HOME="$PROJECT_ROOT"
 source "$LOL_CLI"
 
-cd "$TEST_PROJECT"
-
 # Should succeed and create .claude/
-if ! lol update 2>/dev/null; then
+if ! lol update --path "$TEST_PROJECT" 2>/dev/null; then
   cleanup_dir "$TEST_PROJECT"
   test_fail "Should succeed and create .claude/"
 fi

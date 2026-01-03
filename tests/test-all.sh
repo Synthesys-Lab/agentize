@@ -56,11 +56,15 @@ for shell in $TEST_SHELLS; do
     FAILED_TESTS=0
 
     # Auto-discover and run all test-*.sh files (except test-all.sh and helpers-*.sh)
+    echo "[DEBUG] SCRIPT_DIR=$SCRIPT_DIR" >&2
+    echo "[DEBUG] Finding test files in $SCRIPT_DIR/test-*.sh" >&2
     for test_file in "$SCRIPT_DIR"/test-*.sh; do
         test_name=$(basename "$test_file")
+        echo "[DEBUG] Found test file: $test_file (name: $test_name)" >&2
 
         # Skip test-all.sh itself
         if [ "$test_name" = "test-all.sh" ]; then
+            echo "[DEBUG] Skipping test-all.sh" >&2
             continue
         fi
 

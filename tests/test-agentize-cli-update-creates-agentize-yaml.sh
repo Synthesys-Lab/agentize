@@ -11,10 +11,8 @@ TEST_PROJECT=$(make_temp_dir "agentize-cli-update-creates-agentize-yaml")
 export AGENTIZE_HOME="$PROJECT_ROOT"
 source "$LOL_CLI"
 
-cd "$TEST_PROJECT"
-
-# Run update (should create .agentize.yaml)
-lol update 2>/dev/null
+# Run update with explicit path (should create .agentize.yaml)
+lol update --path "$TEST_PROJECT" 2>/dev/null
 
 # Verify .agentize.yaml was created
 if [ ! -f "$TEST_PROJECT/.agentize.yaml" ]; then

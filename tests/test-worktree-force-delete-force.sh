@@ -7,7 +7,7 @@ source "$(dirname "$0")/helpers-worktree.sh"
 test_info "Flag after issue number (--no-agent <issue> --yolo)"
 
 setup_test_repo
-source ./wt-cli.sh"
+source ./wt-cli.sh
 
 cmd_init
 
