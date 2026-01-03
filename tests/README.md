@@ -30,6 +30,11 @@ Automated test scripts verify that SDK templates, CLI tools, and infrastructure 
 - `test-makefile-validation.sh` - Makefile parameter validation logic tests
 - `test-claude-permission-hook.sh` - Claude Code permission hook tests
 
+### Commands & Skills Tests
+
+- `test-refine-issue.sh` - `/refine-issue` command workflow tests
+- `test-open-issue-draft.sh` - `/open-issue` skill draft prefix tests
+
 ### Test Fixtures
 
 - `fixtures/` - Test data and mock files for permission request tests
@@ -59,6 +64,8 @@ Each test script follows this pattern:
 5. Exit with status code (0 = pass, 1 = fail)
 
 ## Adding New Tests
+
+All tests must live in the `tests/` directory. Do not create tests under `.claude/*/tests/` or other locations.
 
 1. Create a new test script: `tests/test-<feature>.sh`
 2. Add inline documentation using comments:

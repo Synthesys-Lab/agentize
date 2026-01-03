@@ -142,6 +142,29 @@ else
 fi
 echo ""
 
+# Commands & Skills Tests
+echo ">>> Testing /refine-issue command..."
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+if bash "$SCRIPT_DIR/test-refine-issue.sh"; then
+    echo "✓ /refine-issue command tests passed"
+    PASSED_TESTS=$((PASSED_TESTS + 1))
+else
+    echo "✗ /refine-issue command tests failed"
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+fi
+echo ""
+
+echo ">>> Testing open-issue --draft flag..."
+TOTAL_TESTS=$((TOTAL_TESTS + 1))
+if bash "$SCRIPT_DIR/test-open-issue-draft.sh"; then
+    echo "✓ open-issue --draft tests passed"
+    PASSED_TESTS=$((PASSED_TESTS + 1))
+else
+    echo "✗ open-issue --draft tests failed"
+    FAILED_TESTS=$((FAILED_TESTS + 1))
+fi
+echo ""
+
 # Print summary
 echo "======================================"
 echo "Test Summary"

@@ -11,6 +11,8 @@
       "Bash(tests/test-makefile-validation.sh)",
       "Bash(tests/test-python-sdk.sh)",
       "Bash(tests/test-wt-cross-project.sh)",
+      "Bash(tests/test-refine-issue.sh)",
+      "Bash(tests/test-open-issue-draft.sh)",
       "Bash(gh issue edit:*)",
       "Bash(gh issue create:*)",
       "Bash(gh pr create:*)",
