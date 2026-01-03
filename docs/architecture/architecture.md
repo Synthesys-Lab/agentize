@@ -28,7 +28,8 @@ Refer to `./sdk.md` for more information about the SDK structure created by `lol
 
 ### Makefile Interfaces
 
-- `make test` - Run all test cases
+- `make test` - Run all test cases (bash by default)
+- `make test-shells` - Run all test cases under multiple shells (bash and zsh)
 - `make setup` - Creates a `setup.sh` script to set up the development environment
   - NOTE: This does not run the setup itself as it only affects the subshell
   - To run the setup, use `source ./setup.sh`

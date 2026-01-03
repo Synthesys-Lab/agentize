@@ -41,17 +41,29 @@ Automated test scripts verify that SDK templates, CLI tools, and infrastructure 
 
 ## Running Tests
 
-Run all tests:
+Run all tests (bash only):
 ```bash
 make test
 # or
 bash tests/test-all.sh
 ```
 
+Run all tests under multiple shells (bash and zsh):
+```bash
+make test-shells
+# or
+TEST_SHELLS="bash zsh" tests/test-all.sh
+```
+
 Run a specific test suite:
 ```bash
 bash tests/test-c-sdk.sh
 bash tests/test-worktree.sh
+```
+
+Run a specific test under zsh:
+```bash
+zsh tests/test-c-sdk.sh
 ```
 
 ## Test Structure

@@ -25,6 +25,16 @@ Agentize follows a **dogfooding-first** testing approach:
 - Traditional unit tests complement but don't replace dogfooding
 - Validation status is tracked and documented for transparency
 
+## Shell Test Runner
+
+The shell test suite supports running tests under multiple shells to ensure shell-neutral compatibility:
+
+- **Default behavior**: Tests run under bash via `make test`
+- **Multi-shell testing**: Tests can run under bash and zsh via `make test-shells` or `TEST_SHELLS="bash zsh" ./tests/test-all.sh`
+- **Shell availability**: Missing shells are skipped with a warning; bash is always the default
+
+This enables early detection of shell-specific issues (e.g., bashisms) before users encounter them in different shell environments.
+
 ## Integration
 
 Testing documentation is referenced from:
