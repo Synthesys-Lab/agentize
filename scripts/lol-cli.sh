@@ -32,7 +32,7 @@ lol() {
 
     # Parse subcommand
     local subcommand="$1"
-    shift || true
+    [ $# -gt 0 ] && shift
 
     case "$subcommand" in
         init)
