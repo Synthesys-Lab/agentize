@@ -20,14 +20,11 @@ Automated test scripts verify that SDK templates, CLI tools, and infrastructure 
 
 Each test script follows the naming pattern `test-<feature>-<case>.sh` and represents a **single test case**. All test scripts source `common.sh` for shared functionality and maintain shell-neutral compatibility.
 
-Test files are organized by feature area:
-- **SDK template tests**: `test-{c,cxx,python}-sdk-*.sh`
-- **CLI tests**: `test-agentize-cli-*.sh`, `test-agentize-modes-*.sh`
-- **Worktree tests**: `test-worktree-*.sh`, `test-wt-cross-*.sh`
-- **Permission hook tests**: `test-permission-*.sh`
-- **Command/skill tests**: `test-refine-issue-*.sh`, `test-open-issue-*.sh`
-- **Validation tests**: `test-makefile-*.sh`
-- **Integration tests**: `test-lol-project-*.sh`, `test-bash-source-removal-*.sh`
+Test files are organized into categorical subdirectories:
+- **`tests/sdk/`** - SDK template tests (fast unit tests for SDK generation)
+- **`tests/cli/`** - CLI command and tool tests (unit tests for CLI tools)
+- **`tests/lint/`** - Validation and linting tests (static checks and makefile validation)
+- **`tests/handsoff/`** - End-to-end integration tests (slower tests with full workflows)
 
 ### Test Fixtures
 
@@ -49,15 +46,25 @@ make test-shells
 TEST_SHELLS="bash zsh" tests/test-all.sh
 ```
 
+Run tests by category:
+```bash
+make test-sdk        # Fast SDK unit tests
+make test-cli        # CLI tool tests
+make test-lint       # Validation and linting tests
+make test-handsoff   # End-to-end integration tests
+make test-fast       # Alias for sdk + cli + lint
+make test-e2e        # Alias for handsoff
+```
+
 Run a specific test suite:
 ```bash
-bash tests/test-c-sdk.sh
-bash tests/test-worktree.sh
+bash tests/sdk/test-c-sdk.sh
+bash tests/handsoff/test-worktree.sh
 ```
 
 Run a specific test under zsh:
 ```bash
-zsh tests/test-c-sdk.sh
+zsh tests/sdk/test-c-sdk.sh
 ```
 
 ## Test Structure
@@ -79,14 +86,20 @@ The shared helper `tests/common.sh` provides:
 
 ## Adding New Tests
 
-All tests must live in the `tests/` directory. Do not create tests under `.claude/*/tests/` or other locations.
+All tests must live in a categorized subdirectory under `tests/`. Do not create tests under `.claude/*/tests/` or other locations.
 
-1. Create a new test script: `tests/test-<feature>-<case>.sh`
-2. Source the common helper: `source "$(dirname "$0")/common.sh"`
-3. Implement a single test case with clear assertions
-4. Use helper functions from `common.sh` or feature-specific helpers
-5. Add the test to `test-all.sh` in the appropriate section
-6. Update `.claude/settings.local.json` to allow execution without permission prompts (see `tests/CLAUDE.md`)
+1. Choose the appropriate category directory:
+   - `tests/sdk/` for SDK template tests
+   - `tests/cli/` for CLI command tests
+   - `tests/lint/` for validation tests
+   - `tests/handsoff/` for end-to-end integration tests
+2. Create a new test script: `tests/<category>/test-<feature>-<case>.sh`
+3. Source the common helper: `source "$(dirname "$0")/../common.sh"`
+4. Source feature-specific helpers if needed: `source "$(dirname "$0")/../helpers-*.sh"`
+5. Implement a single test case with clear assertions
+6. Use helper functions from `common.sh` or feature-specific helpers
+7. The test will be automatically discovered by `test-all.sh` (no manual registration required)
+8. Update `.claude/settings.local.json` to allow execution without permission prompts (see `tests/CLAUDE.md`)
 
 ## Integration
 

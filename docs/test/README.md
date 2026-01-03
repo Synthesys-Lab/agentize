@@ -54,10 +54,16 @@ The shared helper `tests/common.sh` provides:
 
 ## Running Tests
 
-All tests are executed via `tests/test-all.sh`, which maintains an explicit list of test files. The commands documented in `docs/architecture/architecture.md` remain unchanged:
+All tests are executed via `tests/test-all.sh`, which automatically discovers tests in categorical subdirectories. The commands documented in `docs/architecture/architecture.md`:
 
 - `make test` - Run all tests under bash
 - `make test-shells` - Run all tests under bash and zsh
+- `make test-sdk` - Run SDK template tests
+- `make test-cli` - Run CLI command tests
+- `make test-lint` - Run validation tests
+- `make test-handsoff` - Run end-to-end integration tests
+- `make test-fast` - Run fast tests (sdk + cli + lint)
+- `make test-e2e` - Run end-to-end tests (alias for handsoff)
 
 ## Integration
 

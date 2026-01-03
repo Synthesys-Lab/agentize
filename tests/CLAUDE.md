@@ -2,13 +2,19 @@
 
 When adding a new test:
 
-1. Create the test file in `tests/test-<feature>-<case>.sh` (all tests live in `tests/` only)
-2. Source the shared test helper at the top: `source "$(dirname "$0")/common.sh"`
-3. Implement a single test case (one test file = one test case)
-4. Add the test invocation to `tests/test-all.sh` in the appropriate section
-5. Add the test to `.claude/settings.local.json` allowlist to enable execution without permission prompts:
+1. Choose the appropriate category directory:
+   - `tests/sdk/` for SDK template tests
+   - `tests/cli/` for CLI command tests
+   - `tests/lint/` for validation tests
+   - `tests/handsoff/` for end-to-end integration tests
+2. Create the test file in `tests/<category>/test-<feature>-<case>.sh`
+3. Source the shared test helper at the top: `source "$(dirname "$0")/../common.sh"`
+4. Source feature-specific helpers if needed: `source "$(dirname "$0")/../helpers-*.sh"`
+5. Implement a single test case (one test file = one test case)
+6. Tests are automatically discovered by `test-all.sh` (no manual registration required)
+7. Add the test to `.claude/settings.local.json` allowlist to enable execution without permission prompts:
    ```json
-   "Bash(tests/test-<feature>-<case>.sh)"
+   "Bash(tests/<category>/test-<feature>-<case>.sh)"
    ```
 
 ## Helper Scripts
