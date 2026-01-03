@@ -45,7 +45,7 @@ graph TD
     H -->|LOC < 800 AND all tests pass| I[Completion: Ready for PR]
     H -->|LOC >= 800 AND tests incomplete| J[Create Milestone N]
     J --> K[User starts new session]
-    K --> L[Resume with /miles2miles]
+    K --> L[Resume with natural language]
     L --> H
 
     style A fill:#ccddff
@@ -56,7 +56,7 @@ graph TD
     style I fill:#ccffcc
     style J fill:#ffffcc
     style K fill:#ffcccc
-    style L fill:#ccddff
+    style L fill:#ffddcc
 ```
 
 **Legend:**
@@ -140,7 +140,7 @@ If issue number is not provided, it will be extracted from conversation context.
    - Continues until all tests pass (completion)
 
 **Stopping conditions:**
-- **Milestone created**: Agent stops and informs user to run `/miles2miles` in next session
+- **Milestone created**: Agent stops and informs user to resume in next session
 - **Completion**: All tests pass, ready for PR creation
 
 **Example:**
@@ -151,42 +151,46 @@ Agent: Updating documentation...
 Agent: Creating test cases...
 Agent: Creating Milestone 1 (0/8 tests pass)...
 Agent: Implementing feature...
-Agent: Milestone 2 created at 850 LOC (3/8 tests pass). Please run /miles2miles to continue.
+Agent: Milestone 2 created at 850 LOC (3/8 tests pass).
+Agent: Resume with: "Continue from the latest milestone"
 ```
 
-### `/miles2miles` - Resume from Milestone
+### Resuming from Milestones
 
-Resumes implementation from the latest milestone on the current branch.
+When a milestone is created, use natural language to resume implementation.
 
 **Usage:**
 ```
-/miles2miles
+User: Resume from the latest milestone
+User: Continue implementation
+User: Continue from .milestones/issue-42-milestone-2.md
 ```
 
-No arguments needed - automatically detects branch and latest milestone.
+When hands-off mode is enabled (`CLAUDE_HANDSOFF=true`), session start automatically displays a hint when a milestone exists on the current branch.
 
-**What it does:**
+**What happens:**
 1. Validates you're on a development branch (issue-{N}-*)
 2. Finds the latest milestone file: `.milestones/issue-{N}-milestone-*.md`
 3. Loads context: work remaining, next file changes, test status
-4. Displays milestone summary to user
+4. Displays milestone summary
 5. Invokes the milestone skill to continue implementation
 6. Creates next milestone or completes if all tests pass
 
 **Example:**
 ```
-User: /miles2miles
+User: Continue from the latest milestone
 Agent: Resuming from Milestone 2 for Issue #42
 Agent: Test status: 3/8 tests passed
 Agent: Estimated work remaining: ~350 LOC
 Agent: Continuing implementation...
 Agent: [implements next chunk]
-Agent: Milestone 3 created at 780 LOC (6/8 tests pass). Please run /miles2miles to continue.
+Agent: Milestone 3 created at 780 LOC (6/8 tests pass).
+Agent: Resume with: "Continue from the latest milestone"
 ```
 
 ### `milestone` Skill - Implementation Driver
 
-The core skill that drives incremental implementation. Automatically invoked by `/issue-to-impl` and `/miles2miles`.
+The core skill that drives incremental implementation. Automatically invoked by `/issue-to-impl` and natural-language resume requests.
 
 **What it does:**
 - Reads the plan from issue or latest milestone document
@@ -227,12 +231,12 @@ Agent: Creating Milestone 1...
 Agent: Implementing feature...
   [works for ~45 minutes, implementing code]
 Agent: Milestone 2 created at 820 LOC (3/8 tests pass)
-Agent: Please start a new session and run /miles2miles to continue.
+Agent: Resume with: "Continue from the latest milestone"
 ```
 
 **Step 3: Resume (Next Session)**
 ```
-User: /miles2miles
+User: Continue from the latest milestone
 
 Agent: Resuming from Milestone 2 for Issue #42
 Agent: Test status: 3/8 tests passed
@@ -263,12 +267,15 @@ Don't manually create branches and implement - use `/issue-to-impl` which:
 - Creates the first milestone automatically
 - Starts implementation in the right order
 
-### 3. Resume with `/miles2miles` After Each Milestone
+### 3. Resume After Each Milestone
 
-When a milestone is created, the agent stops. To continue:
+When a milestone is created, the agent stops. To continue, use natural language:
 ```
-/miles2miles
+User: Resume from the latest milestone
+User: Continue implementation
 ```
+
+When hands-off mode is enabled (`CLAUDE_HANDSOFF=true`), session start automatically displays a hint showing which milestone to resume from.
 
 This loads the context and continues from where you left off.
 
@@ -314,7 +321,7 @@ Implementation is complete when all tests pass. At this point:
 
 ### 7. Review and PR Workflow
 
-After implementation completes with all tests passing (when `/miles2miles` signals completion), follow this workflow:
+After implementation completes with all tests passing, follow this workflow:
 
 **Option A: Manual workflow (recommended for control)**
 ```
@@ -323,7 +330,7 @@ After implementation completes with all tests passing (when `/miles2miles` signa
 3. /open-pr              # Create pull request
 ```
 
-**Option B: Convenience wrapper (recommended after `/miles2miles` completion)**
+**Option B: Convenience wrapper (recommended after implementation completion)**
 ```
 /pull-request --open     # Review + create PR in one step
 ```
@@ -338,7 +345,7 @@ The `/pull-request` command provides a streamlined workflow:
 
 ### "No milestone files found"
 
-You're trying to run `/miles2miles` on a branch without milestones.
+You're trying to resume from a milestone on a branch without milestones.
 
 **Solution**: Use `/issue-to-impl` to start implementation, which creates the first milestone.
 

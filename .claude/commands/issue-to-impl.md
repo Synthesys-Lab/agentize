@@ -287,8 +287,10 @@ Milestone {M} created at {LOC} LOC ({passed}/{total} tests passed).
 
 Work remaining: ~{estimated} LOC
 Tests failing: {list}
+
+Resume with: "Continue from the latest milestone"
 ```
-Command stops. User must run `/miles2miles` to resume.
+Command stops. User must resume with natural language (e.g., "Continue from the latest milestone").
 
 **Output B: All tests pass (completion)**
 ```
@@ -327,8 +329,10 @@ Critical errors detected. Milestone {M} created with error notes.
 
 Errors:
 - {error descriptions}
+
+Resume with: "Continue from the latest milestone"
 ```
-Command stops. User must fix errors and run `/miles2miles`.
+Command stops. User must fix errors and resume with natural language.
 
 ## Error Handling
 

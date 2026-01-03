@@ -14,3 +14,8 @@ make setup >/dev/null 2>&1
 if [ -f "$PROJECT_ROOT/setup.sh" ]; then
     source "$PROJECT_ROOT/setup.sh"
 fi
+
+# Show milestone resume hint if applicable
+if [ -f "$SCRIPT_DIR/milestone-resume-hint.sh" ]; then
+    bash "$SCRIPT_DIR/milestone-resume-hint.sh"
+fi

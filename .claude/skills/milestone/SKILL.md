@@ -5,9 +5,7 @@ description: Drive implementation forward incrementally with automatic progress 
 
 # Milestone Skill
 
-This skill is a core component for implementing large features incrementally, which aims
-at providing a transparent context compacting by tracking LOC count, running tests, and creating
-milestone checkpoints when the 800 LOC threshold is reached without completion.
+This skill is a core component for implementing large features incrementally, providing transparent context through LOC tracking, test execution, and milestone checkpoint creation when the 800 LOC threshold is reached without completion.
 
 ## Skill Purpose
 
@@ -471,12 +469,14 @@ Work remaining: ~{estimated_remaining_loc} LOC
 
 **Next Steps:**
 
-To resume implementation from this checkpoint:
+To resume implementation from this checkpoint, use natural language:
 ```
-/miles2miles .milestones/issue-{N}-milestone-{M}.md
+User: Resume from the latest milestone
+User: Continue implementation
+User: Continue from .milestones/issue-{N}-milestone-{M}.md
 ```
 
-Or run `/miles2miles` without arguments to auto-detect the latest milestone on the current branch
+The system will auto-detect the latest milestone on the current branch.
 
 ---
 
@@ -567,7 +567,7 @@ Checked:
 - Milestone files: No .milestones/issue-{N}-milestone-*.md found
 
 Please ensure:
-1. The issue has a plan created with /make-a-plan
+1. The issue has a plan
 2. You're running /issue-to-impl to start implementation
 
 Cannot proceed without a plan.
@@ -611,7 +611,7 @@ Errors:
 - Syntax error in src/core.py:45
 - Import error: module 'utils' not found
 
-Please fix these errors and run /miles2miles to resume.
+Please fix these errors and resume with: "Continue from the latest milestone"
 ```
 
 ### Milestone File Creation Fails
@@ -685,14 +685,12 @@ Milestone 2 created at 850 LOC (6/8 tests passed).
 Work remaining: ~100 LOC (Step 5 partial completion)
 Tests failing: Integration test, Performance test
 
-Next steps:
-1. Start a new session
-2. Run /miles2miles to resume from Milestone 2
+Resume with: "Continue from the latest milestone"
 ```
 
 ### Example 2: Resume from Milestone
 
-**Context:** User runs `/miles2miles` after Milestone 2 was created.
+**Context:** User resumes after Milestone 2 was created.
 
 **Agent behavior:**
 
@@ -772,7 +770,7 @@ Implementation complete:
 
 If milestone checkpoint is created it should hint the user to resume later:
 ```
-Next step: /miles2miles .milestones/issue-{N}-milestone-{M}.md
+Resume with: "Continue from the latest milestone"
 ```
 
 If milestone successfully delivers its goal, it should direct user to opening a PR:

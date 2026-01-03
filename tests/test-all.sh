@@ -78,6 +78,88 @@ for shell in $TEST_SHELLS; do
     done
 
     echo ""
+<<<<<<< HEAD
+=======
+
+    # Test Cross-Project wt Function
+    echo ">>> Testing Cross-Project wt function..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-wt-cross-project.sh" "Cross-project wt tests"; then
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    echo ""
+
+    # Test Agentize CLI Function
+    echo ">>> Testing Agentize CLI function..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-agentize-cli.sh" "Agentize CLI tests"; then
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    echo ""
+
+    # Test BASH_SOURCE Removal
+    echo ">>> Testing BASH_SOURCE removal..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-bash-source-removal.sh" "BASH_SOURCE removal tests"; then
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    echo ""
+
+    # Test lol project command
+    echo ">>> Testing lol project command..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-lol-project.sh" "lol project tests"; then
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    echo ""
+
+    # Commands & Skills Tests
+    echo ">>> Testing /refine-issue command..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-refine-issue.sh" "/refine-issue command tests"; then
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    echo ""
+
+    echo ">>> Testing open-issue --draft flag..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-open-issue-draft.sh" "open-issue --draft tests"; then
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    echo ""
+
+    echo ">>> Testing Claude permission hook..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-claude-permission-hook.sh" "Claude permission hook tests"; then
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    echo ""
+
+    echo ">>> Testing milestone resume hint..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-milestone-resume-hint.sh" "Milestone resume hint tests"; then
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    echo ""
+
+    # Print summary for this shell
+>>>>>>> 4fe9162 ([milestone][agent.workflow]: Milestone 1 for issue #202)
     echo "======================================"
     echo "Test Summary for $shell"
     echo "======================================"

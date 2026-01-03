@@ -124,12 +124,12 @@ This document tracks the testing status of AI rules, skills, and commands in thi
 ---
 
 ### miles2miles
-**Status**: ❌ Untested
+**Status**: ❌ Removed
 
 **Notes**:
-- Not yet dogfed
-- Should test resuming from a milestone checkpoint
-- Critical for multi-session implementations
+- Command removed in favor of natural-language resume
+- Users now resume with: "Continue from the latest milestone"
+- Session-start hints provided when `CLAUDE_HANDSOFF=true`
 
 ---
 

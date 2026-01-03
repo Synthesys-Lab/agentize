@@ -79,7 +79,7 @@ export CLAUDE_HANDSOFF=true
 # - Creating milestone commits (git add/commit)
 
 # Resume from milestone
-/miles2miles
+User: Continue from the latest milestone
 
 # Review changes (still auto-approved for reads)
 /code-review

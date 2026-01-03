@@ -89,12 +89,12 @@ Agent: Milestone 2 created at 820 LOC (3/8 tests pass)
 Work remaining: ~380 LOC
 Tests failing: 5
 
-Run /miles2miles to continue in your next session.
+Resume with: "Continue from the latest milestone"
 ```
 
 **Step 2: Resume implementation (next session)**
 ```
-User: /miles2miles
+User: Continue from the latest milestone
 
 Agent: Resuming from Milestone 2 for Issue #42
 Agent: Test status: 3/8 tests passed
@@ -109,15 +109,19 @@ Implementation complete:
 Next step: Review with /code-review
 ```
 
-## Resuming with `/miles2miles`
+## Resuming from Milestones
 
-If implementation creates a milestone (doesn't complete), resume with:
+If implementation creates a milestone (doesn't complete), resume with natural language:
 
 ```
-/miles2miles
+User: Resume from the latest milestone
+User: Continue implementation
+User: Continue from .milestones/issue-42-milestone-2.md
 ```
 
-**How it works**: `/miles2miles` takes a milestone document as input - without a milestone document, there are no "miles" to continue to the next "miles". The command automatically:
+**Session-start hints**: When hands-off mode is enabled (`CLAUDE_HANDSOFF=true`), session start automatically displays a hint when a milestone exists on the current branch.
+
+**How it works**: The system automatically:
 1. Detects your current branch (issue-42-*)
 2. Finds the latest milestone file in `.milestones/`
 3. Loads context from the milestone (work remaining, test status)
@@ -195,7 +199,7 @@ Here's the full cycle for issue #42:
 [... Milestone 2 created at 820 LOC ...]
 
 # 2. Resume (next session)
-/miles2miles
+User: Continue from the latest milestone
 [... All tests pass! ...]
 
 # 3. Review code
@@ -257,7 +261,7 @@ See [Hands-Off Mode Documentation](../handsoff.md) for complete details on auto-
 2. **Review milestones**: Check `.milestones/` files to understand progress
 3. **Always sync**: Run `/sync-master` before creating PRs to avoid conflicts
 4. **Fix review issues**: Address `/code-review` findings before merging
-5. **Clean working directory**: Commit changes before `/sync-master`, `/miles2miles`, or `/issue-to-impl` (all require clean working tree for rebasing)
+5. **Clean working directory**: Commit changes before `/sync-master` or `/issue-to-impl` (require clean working tree for rebasing)
 6. **Use hands-off mode**: Set `CLAUDE_HANDSOFF=true` to reduce permission prompts for local workflows
 
 ## Next Steps

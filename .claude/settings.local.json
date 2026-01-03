@@ -13,6 +13,7 @@
       "Bash(tests/test-wt-cross-project.sh)",
       "Bash(tests/test-refine-issue.sh)",
       "Bash(tests/test-open-issue-draft.sh)",
+      "Bash(tests/test-milestone-resume-hint.sh)",
       "Bash(gh issue edit:*)",
       "Bash(gh issue create:*)",
       "Bash(gh pr create:*)",

@@ -72,7 +72,7 @@ claude-code
 # /issue-to-impl 47
 ```
 
-Each AI works independently. Resume milestones in the same clone with `/miles2miles`.
+Each AI works independently. Resume milestones in the same clone with natural language (e.g., "Continue from the latest milestone").
 
 ### Cleanup
 
@@ -175,12 +175,12 @@ If a worker creates a milestone, resume in the same location:
 # For clones
 cd ~/projects/my-project-worker-1
 claude-code
-# /miles2miles
+# User: Continue from the latest milestone
 
 # For worktrees
 cd ~/projects/my-project/trees/issue-45-*
 claude-code
-# /miles2miles
+# User: Continue from the latest milestone
 ```
 
 ## Avoiding Conflicts
