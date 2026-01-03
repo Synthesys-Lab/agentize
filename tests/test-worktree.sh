@@ -223,9 +223,9 @@ GHSTUB
   cmd_remove 55
   cmd_remove 56
 
-  # Test 11: Metadata-driven default branch selection
+  # Test 10: Metadata-driven default branch selection
   echo ""
-  echo "Test 11: Metadata-driven default branch (trunk via .agentize.yaml)"
+  echo "Test 10: Metadata-driven default branch (trunk via .agentize.yaml)"
 
   # Create a new test repo with non-standard default branch
   TEST_DIR2=$(mktemp -d)
@@ -285,9 +285,9 @@ EOF
   cd /
   rm -rf "$TEST_DIR2"
 
-  # Test 14: wt init installs pre-commit hook
+  # Test 11: wt init installs pre-commit hook
   echo ""
-  echo "Test 14: wt init installs pre-commit hook"
+  echo "Test 11: wt init installs pre-commit hook"
 
   TEST_DIR3=$(mktemp -d)
   cd "$TEST_DIR3"
@@ -331,9 +331,9 @@ EOF
   cd /
   rm -rf "$TEST_DIR3"
 
-  # Test 13: wt spawn installs pre-commit hook in new worktree
+  # Test 12: wt spawn installs pre-commit hook in new worktree
   echo ""
-  echo "Test 13: wt spawn installs pre-commit hook in worktree"
+  echo "Test 12: wt spawn installs pre-commit hook in worktree"
 
   TEST_DIR4=$(mktemp -d)
   cd "$TEST_DIR4"
@@ -385,10 +385,11 @@ EOF
 
   # Back to original test repo for branch deletion tests
   cd "$TEST_DIR"
+  export PATH="$PWD/bin:$PATH"  # Re-export PATH to ensure gh stub is accessible
 
-  # Test 14: Force delete unmerged branch
+  # Test 13: Force delete unmerged branch
   echo ""
-  echo "Test 14: Force delete unmerged branch with -D flag"
+  echo "Test 13: Force delete unmerged branch with -D flag"
 
   # Create a worktree with an unmerged commit
   cmd_create --no-agent 210
@@ -417,9 +418,9 @@ EOF
 
   echo -e "${GREEN}PASS: Force delete removed unmerged branch${NC}"
 
-  # Test 15: Force delete with --force flag (alternative syntax)
+  # Test 14: Force delete with --force flag (alternative syntax)
   echo ""
-  echo "Test 15: Force delete with --force flag"
+  echo "Test 14: Force delete with --force flag"
 
   # Create another worktree with an unmerged commit
   cmd_create --no-agent 211
@@ -448,9 +449,9 @@ EOF
 
   echo -e "${GREEN}PASS: --force flag works for branch deletion${NC}"
 
-  # Test 16: wt spawn with --yolo --no-agent creates worktree
+  # Test 15: wt spawn with --yolo --no-agent creates worktree
   echo ""
-  echo "Test 16: wt spawn with --yolo --no-agent creates worktree"
+  echo "Test 15: wt spawn with --yolo --no-agent creates worktree"
 
   TEST_DIR5=$(mktemp -d)
   cd "$TEST_DIR5"
@@ -490,9 +491,9 @@ EOF
   cd /
   rm -rf "$TEST_DIR5"
 
-  # Test 17: Flag after issue number regression test
+  # Test 16: Flag after issue number regression test
   echo ""
-  echo "Test 17: Flag after issue number (--no-agent <issue> --yolo)"
+  echo "Test 16: Flag after issue number (--no-agent <issue> --yolo)"
 
   TEST_DIR6=$(mktemp -d)
   cd "$TEST_DIR6"

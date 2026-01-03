@@ -15,9 +15,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Max suffix length (configurable via env var)
-SUFFIX_MAX_LENGTH="${WORKTREE_SUFFIX_MAX_LENGTH:-10}"
-
 # Resolve the main repository root from git common dir
 # This works even when called from a linked worktree
 wt_resolve_repo_root() {
@@ -36,39 +33,6 @@ wt_resolve_repo_root() {
     else
         # We're in a linked worktree, resolve to absolute path
         cd "$git_common_dir/.." && pwd
-    fi
-}
-
-# Helper function to convert title to branch-safe format
-slugify() {
-    local input="$1"
-    # Remove tag prefixes like [plan][feat]: from issue titles
-    input=$(echo "$input" | sed 's/\[[^]]*\]//g' | sed 's/^[[:space:]]*://' | sed 's/^[[:space:]]*//')
-    # Convert to lowercase, replace spaces with hyphens, remove special chars
-    echo "$input" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g' | sed 's/--*/-/g' | sed 's/^-//' | sed 's/-$//'
-}
-
-# Truncate suffix to max length, preferring word boundaries
-truncate_suffix() {
-    local suffix="$1"
-    local max_len="$SUFFIX_MAX_LENGTH"
-
-    # If already short enough, return as-is
-    if [ ${#suffix} -le "$max_len" ]; then
-        echo "$suffix"
-        return
-    fi
-
-    # Try to find last hyphen within limit
-    local truncated="${suffix:0:$max_len}"
-    local last_hyphen="${truncated%-*}"
-
-    # If we found a hyphen and it's not empty, use word boundary
-    if [ -n "$last_hyphen" ] && [ "$last_hyphen" != "$truncated" ]; then
-        echo "$last_hyphen"
-    else
-        # Otherwise, hard truncate
-        echo "$truncated"
     fi
 }
 
@@ -306,7 +270,7 @@ Usage:
   wt init                                    Initialize worktree environment (creates trees/main)
   wt main                                    Switch to main worktree (when sourced)
   wt spawn [--yolo] [--no-agent] <issue-no>
-                                             Create worktree for an issue (fetches title from GitHub)
+                                             Create worktree for an issue (validates issue existence)
   wt list                                    List all worktrees
   wt remove [-D|--force] <issue-number>      Remove worktree and delete branch for an issue
   wt prune                                   Clean up stale worktree metadata
@@ -320,7 +284,7 @@ Flags:
 Examples:
   wt init                     # Initialize worktree environment
   wt main                     # Switch to main worktree
-  wt spawn 42                 # Create worktree for issue #42 (always fetches title from GitHub)
+  wt spawn 42                 # Create worktree for issue #42 (creates branch issue-42)
   wt spawn --yolo 42          # Create worktree with YOLO mode (skip permissions)
   wt spawn 42 --yolo          # Flags can appear after issue number too
   wt spawn --no-agent 42      # Create worktree without launching Claude
@@ -331,7 +295,8 @@ Examples:
 Notes:
   - Run 'wt init' once before using 'wt spawn'
   - 'wt main' only works when sourced (via 'source setup.sh')
-  - Worktrees are created in the 'trees/' directory
+  - Worktrees are created in the 'trees/' directory with naming format: trees/issue-{N}
+  - 'wt remove' supports both new (issue-{N}) and legacy (issue-{N}-{slug}) worktrees
 EOF
 }
 
@@ -406,31 +371,24 @@ cmd_create() {
         return 1
     fi
 
-    # Always fetch title from GitHub
-    echo "Fetching issue title from GitHub..."
+    # Validate issue existence via GitHub CLI
+    echo "Validating issue #${issue_number}..."
     if ! command -v gh &> /dev/null; then
         echo -e "${RED}Error: gh CLI not found${NC}"
         echo "Please install GitHub CLI: https://cli.github.com/"
         return 1
     fi
 
-    local issue_title
-    issue_title=$(gh issue view "$issue_number" --json title --jq '.title' 2>/dev/null)
-
-    echo "gh issue view "$issue_number" --json title --jq '.title' 2>/dev/null"
-
-    if [ -z "$issue_title" ]; then
-        echo -e "${RED}Error: Could not fetch issue #${issue_number}${NC}"
+    # Use exit code to validate issue existence (no title fetching needed)
+    if ! gh issue view "$issue_number" > /dev/null 2>&1; then
+        echo -e "${RED}Error: Issue #${issue_number} not found or inaccessible${NC}"
         echo "Please verify the issue number and your GitHub authentication."
         return 1
     fi
 
-    local description
-    description=$(slugify "$issue_title")
-    description=$(truncate_suffix "$description")
-    echo "Using title: $issue_title"
+    echo "Issue #${issue_number} validated successfully"
 
-    local branch_name="issue-${issue_number}-${description}"
+    local branch_name="issue-${issue_number}"
 
     # Try to read metadata for configuration
     local metadata_file
@@ -605,8 +563,14 @@ cmd_remove() {
     fi
 
     # Find worktree matching issue number
+    # Try exact match first (issue-{N}), then legacy format (issue-{N}-{slug})
     local worktree_path
-    worktree_path=$(git -C "$repo_root" worktree list --porcelain | grep "^worktree " | cut -d' ' -f2 | grep "trees/issue-${issue_number}-" | head -n1)
+    worktree_path=$(git -C "$repo_root" worktree list --porcelain | grep "^worktree " | cut -d' ' -f2 | grep -E "trees/issue-${issue_number}$" | head -n1)
+
+    # If not found, try legacy format
+    if [ -z "$worktree_path" ]; then
+        worktree_path=$(git -C "$repo_root" worktree list --porcelain | grep "^worktree " | cut -d' ' -f2 | grep "trees/issue-${issue_number}-" | head -n1)
+    fi
 
     if [ -z "$worktree_path" ]; then
         echo -e "${YELLOW}Warning: No worktree found for issue #${issue_number}${NC}"
