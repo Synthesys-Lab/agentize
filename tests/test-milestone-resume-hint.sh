@@ -68,13 +68,14 @@ test_handsoff_true_with_milestone() {
     local test_name="CLAUDE_HANDSOFF=true with milestone shows hint"
 
     local test_dir=$(mktemp -d)
-    trap "rm -rf '$test_dir'" EXIT
 
     local branch_name=$(create_test_repo "$test_dir" 42 2)
 
     export CLAUDE_HANDSOFF=true
     local output=$(run_resume_hint "$test_dir")
     unset CLAUDE_HANDSOFF
+
+    rm -rf "$test_dir"
 
     if echo "$output" | grep -q "milestone-2" && \
        echo "$output" | grep -q "issue-42" && \
@@ -94,13 +95,15 @@ test_handsoff_false_no_hint() {
     local test_name="CLAUDE_HANDSOFF=false shows no hint"
 
     local test_dir=$(mktemp -d)
-    trap "rm -rf '$test_dir'" EXIT
+    trap "rm -rf '$test_dir'" RETURN
 
-    create_test_repo "$test_dir" 42 2 > /dev/null
+    create_test_repo "$test_dir" 43 2 > /dev/null 2>&1
 
     export CLAUDE_HANDSOFF=false
     local output=$(run_resume_hint "$test_dir")
     unset CLAUDE_HANDSOFF
+
+    rm -rf "$test_dir"
 
     if [[ -z "$output" ]]; then
         TESTS_PASSED=$((TESTS_PASSED + 1))
@@ -118,12 +121,13 @@ test_handsoff_unset_no_hint() {
     local test_name="CLAUDE_HANDSOFF unset shows no hint"
 
     local test_dir=$(mktemp -d)
-    trap "rm -rf '$test_dir'" EXIT
 
-    create_test_repo "$test_dir" 42 2 > /dev/null
+    create_test_repo "$test_dir" 44 2 > /dev/null 2>&1
 
     unset CLAUDE_HANDSOFF
     local output=$(run_resume_hint "$test_dir")
+
+    rm -rf "$test_dir"
 
     if [[ -z "$output" ]]; then
         TESTS_PASSED=$((TESTS_PASSED + 1))
@@ -141,15 +145,16 @@ test_non_issue_branch_no_hint() {
     local test_name="Non-issue branch shows no hint"
 
     local test_dir=$(mktemp -d)
-    trap "rm -rf '$test_dir'" EXIT
 
-    create_test_repo "$test_dir" 42 2 > /dev/null
+    create_test_repo "$test_dir" 45 2 > /dev/null 2>&1
     cd "$test_dir"
     git checkout -q -b "feature-branch" 2>/dev/null || git checkout -q "feature-branch"
 
     export CLAUDE_HANDSOFF=true
     local output=$(run_resume_hint "$test_dir")
     unset CLAUDE_HANDSOFF
+
+    rm -rf "$test_dir"
 
     if [[ -z "$output" ]]; then
         TESTS_PASSED=$((TESTS_PASSED + 1))
@@ -167,20 +172,21 @@ test_multiple_milestones_latest() {
     local test_name="Multiple milestones selects latest"
 
     local test_dir=$(mktemp -d)
-    trap "rm -rf '$test_dir'" EXIT
 
-    create_test_repo "$test_dir" 42 2 > /dev/null
+    create_test_repo "$test_dir" 46 2 > /dev/null 2>&1
     cd "$test_dir"
 
     # Create additional milestones
-    cat > ".milestones/issue-42-milestone-3.md" <<EOF
-# Milestone 3 for Issue #42
+    cat > ".milestones/issue-46-milestone-3.md" <<EOF
+# Milestone 3 for Issue #46
 **LOC Implemented:** ~800 lines
 EOF
 
     export CLAUDE_HANDSOFF=true
     local output=$(run_resume_hint "$test_dir")
     unset CLAUDE_HANDSOFF
+
+    rm -rf "$test_dir"
 
     if echo "$output" | grep -q "milestone-3" && \
        ! echo "$output" | grep -q "milestone-2"; then
@@ -199,13 +205,14 @@ test_invalid_handsoff_no_hint() {
     local test_name="Invalid CLAUDE_HANDSOFF value shows no hint"
 
     local test_dir=$(mktemp -d)
-    trap "rm -rf '$test_dir'" EXIT
 
-    create_test_repo "$test_dir" 42 2 > /dev/null
+    create_test_repo "$test_dir" 47 2 > /dev/null 2>&1
 
     export CLAUDE_HANDSOFF=invalid
     local output=$(run_resume_hint "$test_dir")
     unset CLAUDE_HANDSOFF
+
+    rm -rf "$test_dir"
 
     if [[ -z "$output" ]]; then
         TESTS_PASSED=$((TESTS_PASSED + 1))
@@ -223,21 +230,23 @@ test_no_milestone_no_hint() {
     local test_name="No milestone files shows no hint"
 
     local test_dir=$(mktemp -d)
-    trap "rm -rf '$test_dir'" EXIT
 
     # Create repo without milestones
     cd "$test_dir"
     git init -q
     git config user.name "Test User"
     git config user.email "test@example.com"
+    git config core.hooksPath /dev/null  # Disable hooks
     echo "# Test" > README.md
     git add README.md
     git commit -q -m "Initial"
-    git checkout -q -b "issue-42-test"
+    git checkout -q -b "issue-48-test"
 
     export CLAUDE_HANDSOFF=true
     local output=$(run_resume_hint "$test_dir")
     unset CLAUDE_HANDSOFF
+
+    rm -rf "$test_dir"
 
     if [[ -z "$output" ]]; then
         TESTS_PASSED=$((TESTS_PASSED + 1))
