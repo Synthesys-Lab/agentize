@@ -41,12 +41,18 @@ lol() {
         update)
             _agentize_update "$@"
             ;;
+        project)
+            _agentize_project "$@"
+            ;;
         *)
             echo "lol: AI-powered SDK CLI"
             echo ""
             echo "Usage:"
             echo "  lol init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]"
             echo "  lol update [--path <path>]"
+            echo "  lol project --create [--org <org>] [--title <title>]"
+            echo "  lol project --associate <org>/<id>"
+            echo "  lol project --automation [--write <path>]"
             echo ""
             echo "Flags:"
             echo "  --name <name>       Project name (required for init)"
@@ -54,11 +60,20 @@ lol() {
             echo "  --path <path>       Project path (optional, defaults to current directory)"
             echo "  --source <path>     Source code path relative to project root (optional)"
             echo "  --metadata-only     Create only .agentize.yaml without SDK templates (optional, init only)"
+            echo "  --create            Create new GitHub Projects v2 board (project)"
+            echo "  --associate <org>/<id>  Associate existing project board (project)"
+            echo "  --automation        Generate automation workflow template (project)"
+            echo "  --write <path>      Write automation template to file (project)"
+            echo "  --org <org>         GitHub organization (project --create)"
+            echo "  --title <title>     Project title (project --create)"
             echo ""
             echo "Examples:"
             echo "  lol init --name my-project --lang python --path /path/to/project"
             echo "  lol update                    # From project root or subdirectory"
             echo "  lol update --path /path/to/project"
+            echo "  lol project --create --org Synthesys-Lab --title \"My Project\""
+            echo "  lol project --associate Synthesys-Lab/3"
+            echo "  lol project --automation --write .github/workflows/add-to-project.yml"
             return 1
             ;;
     esac
@@ -214,5 +229,101 @@ _agentize_update() {
     (
         export AGENTIZE_PROJECT_PATH="$path"
         "$AGENTIZE_HOME/scripts/agentize-update.sh"
+    )
+}
+
+_agentize_project() {
+    local mode=""
+    local org=""
+    local title=""
+    local associate_arg=""
+    local automation="0"
+    local write_path=""
+
+    # Parse arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --create)
+                if [ -n "$mode" ]; then
+                    echo "Error: Cannot use --create with --associate or --automation"
+                    echo "Usage: lol project --create [--org <org>] [--title <title>]"
+                    return 1
+                fi
+                mode="create"
+                shift
+                ;;
+            --associate)
+                if [ -n "$mode" ]; then
+                    echo "Error: Cannot use --associate with --create or --automation"
+                    echo "Usage: lol project --associate <org>/<id>"
+                    return 1
+                fi
+                mode="associate"
+                associate_arg="$2"
+                shift 2
+                ;;
+            --automation)
+                if [ -n "$mode" ]; then
+                    echo "Error: Cannot use --automation with --create or --associate"
+                    echo "Usage: lol project --automation [--write <path>]"
+                    return 1
+                fi
+                mode="automation"
+                automation="1"
+                shift
+                ;;
+            --org)
+                org="$2"
+                shift 2
+                ;;
+            --title)
+                title="$2"
+                shift 2
+                ;;
+            --write)
+                write_path="$2"
+                shift 2
+                ;;
+            *)
+                echo "Error: Unknown option '$1'"
+                echo "Usage:"
+                echo "  lol project --create [--org <org>] [--title <title>]"
+                echo "  lol project --associate <org>/<id>"
+                echo "  lol project --automation [--write <path>]"
+                return 1
+                ;;
+        esac
+    done
+
+    # Validate mode
+    if [ -z "$mode" ]; then
+        echo "Error: Must specify --create, --associate, or --automation"
+        echo "Usage:"
+        echo "  lol project --create [--org <org>] [--title <title>]"
+        echo "  lol project --associate <org>/<id>"
+        echo "  lol project --automation [--write <path>]"
+        return 1
+    fi
+
+    # Call agentize-project.sh with appropriate environment variables
+    (
+        export AGENTIZE_PROJECT_MODE="$mode"
+        if [ -n "$org" ]; then
+            export AGENTIZE_PROJECT_ORG="$org"
+        fi
+        if [ -n "$title" ]; then
+            export AGENTIZE_PROJECT_TITLE="$title"
+        fi
+        if [ -n "$associate_arg" ]; then
+            export AGENTIZE_PROJECT_ASSOCIATE="$associate_arg"
+        fi
+        if [ "$automation" = "1" ]; then
+            export AGENTIZE_PROJECT_AUTOMATION="1"
+        fi
+        if [ -n "$write_path" ]; then
+            export AGENTIZE_PROJECT_WRITE_PATH="$write_path"
+        fi
+
+        "$AGENTIZE_HOME/scripts/agentize-project.sh"
     )
 }
