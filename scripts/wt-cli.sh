@@ -337,13 +337,13 @@ EOF
 
 # Create worktree
 cmd_create() {
-    local issue_number="$1"
-    local description="$2"
+    local issue_number=""
     local no_agent=false
     local yolo_mode=false
+    local positional_args=()
 
-    # Parse flags
-    while [[ "$1" =~ ^-- ]]; do
+    # Parse all arguments (flags and positional)
+    while [ $# -gt 0 ]; do
         case "$1" in
             --no-agent)
                 no_agent=true
@@ -354,20 +354,29 @@ cmd_create() {
                 shift
                 ;;
             *)
+                # Collect positional arguments
+                positional_args+=("$1")
                 shift
                 ;;
         esac
     done
 
-    # Re-assign after flag parsing
-    issue_number="$1"
-    description="$2"
-
-    if [ -z "$issue_number" ]; then
+    # Get issue number (should be exactly one positional arg)
+    if [ ${#positional_args[@]} -eq 0 ]; then
         echo -e "${RED}Error: Issue number required${NC}"
-        echo "Usage: cmd_create [--yolo] [--no-agent] <issue-number> [description]"
+        echo "Usage: cmd_create [--yolo] [--no-agent] <issue-number>"
         return 1
     fi
+
+    if [ ${#positional_args[@]} -gt 1 ]; then
+        echo -e "${RED}Error: Too many arguments${NC}"
+        echo "Usage: cmd_create [--yolo] [--no-agent] <issue-number>"
+        echo ""
+        echo "Note: Description parameter has been removed. Issue title is always fetched from GitHub."
+        return 1
+    fi
+
+    issue_number="${positional_args[0]}"
 
     # Resolve repo root
     local repo_root
@@ -397,30 +406,27 @@ cmd_create() {
         return 1
     fi
 
-    # If no description provided, fetch from GitHub
-    if [ -z "$description" ]; then
-        echo "Fetching issue title from GitHub..."
-        if ! command -v gh &> /dev/null; then
-            echo -e "${RED}Error: gh CLI not found. Install it or provide a description${NC}"
-            echo "Usage: cmd_create <issue-number> <description>"
-            return 1
-        fi
-
-        local issue_title
-        issue_title=$(gh issue view "$issue_number" --json title --jq '.title' 2>/dev/null)
-
-        if [ -z "$issue_title" ]; then
-            echo -e "${RED}Error: Could not fetch issue #${issue_number}${NC}"
-            echo "Provide a description manually: cmd_create $issue_number <description>"
-            return 1
-        fi
-
-        description=$(slugify "$issue_title")
-        echo "Using title: $issue_title"
+    # Always fetch title from GitHub
+    echo "Fetching issue title from GitHub..."
+    if ! command -v gh &> /dev/null; then
+        echo -e "${RED}Error: gh CLI not found${NC}"
+        echo "Please install GitHub CLI: https://cli.github.com/"
+        return 1
     fi
 
-    # Apply suffix truncation
+    local issue_title
+    issue_title=$(gh issue view "$issue_number" --json title --jq '.title' 2>/dev/null)
+
+    if [ -z "$issue_title" ]; then
+        echo -e "${RED}Error: Could not fetch issue #${issue_number}${NC}"
+        echo "Please verify the issue number and your GitHub authentication."
+        return 1
+    fi
+
+    local description
+    description=$(slugify "$issue_title")
     description=$(truncate_suffix "$description")
+    echo "Using title: $issue_title"
 
     local branch_name="issue-${issue_number}-${description}"
 
@@ -700,7 +706,7 @@ wt() {
             return $?
             ;;
         spawn)
-            # wt spawn <issue-number> [description]
+            # wt spawn [--yolo] [--no-agent] <issue-number>
             cmd_create "$@"
             ;;
         list)
