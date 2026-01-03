@@ -48,14 +48,16 @@ For more control over automation (e.g., setting custom field values, complex fil
    lol project --automation --write .github/workflows/add-to-project.yml
    ```
 
-3. Commit and push:
+3. Set up the Personal Access Token (see [Security: Personal Access Token (PAT)](#security-personal-access-token-pat) section below)
+
+4. Commit and push:
    ```bash
    git add .github/workflows/add-to-project.yml
    git commit -m "Add GitHub Projects automation workflow"
    git push
    ```
 
-4. Verify the workflow runs on the **Actions** tab
+5. Verify the workflow runs on the **Actions** tab
 
 **Template reference:** See [`templates/github/project-auto-add.yml`](../../templates/github/project-auto-add.yml)
 
@@ -95,17 +97,27 @@ If using **Method 2**, the workflow requires a GitHub Personal Access Token (PAT
 
 **Create PAT:**
 
-1. Go to **Settings** > **Developer settings** > **Personal access tokens** > **Fine-grained tokens**
-2. Click **Generate new token**
-3. Set permissions:
+1. Go to `https://github.com/settings/personal-access-tokens/new` (or **Settings** > **Developer settings** > **Personal access tokens** > **Fine-grained tokens** > **Generate new token**)
+2. Configure token settings:
+   - **Token name:** e.g., "Add to Project Automation"
+   - **Expiration:** 90 days (recommended for security)
    - **Repository access:** Select your repository
+3. Set permissions:
    - **Permissions:**
-     - `project`: Read and write (required)
+     - `project`: **Read and write** (required for adding items to projects)
      - `metadata`: Read-only (automatically granted)
-4. Copy the token (you won't see it again)
+4. Click **Generate token**
+5. Copy the token (you won't see it again)
 
 **Add PAT to repository:**
 
+**Option A: Using GitHub CLI (recommended):**
+```bash
+gh secret set ADD_TO_PROJECT_PAT
+# Paste your token when prompted
+```
+
+**Option B: Using GitHub web interface:**
 1. Go to your repository **Settings** > **Secrets and variables** > **Actions**
 2. Click **New repository secret**
 3. Name: `ADD_TO_PROJECT_PAT`
