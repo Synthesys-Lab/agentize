@@ -1,183 +1,232 @@
 #!/bin/bash
 # Purpose: Master test runner that executes all Agentize test suites
 # Expected: All tests pass (exit 0) or report which tests failed (exit 1)
+# Supports: Multi-shell testing via TEST_SHELLS environment variable
 
 set -e
 
-# Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-echo "======================================"
-echo "Running all Agentize SDK tests"
-echo "======================================"
-echo ""
-
-# Track test results
-TOTAL_TESTS=0
-PASSED_TESTS=0
-FAILED_TESTS=0
-
-# Test Agentize mode validation
-echo ">>> Testing Agentize mode validation..."
-TOTAL_TESTS=$((TOTAL_TESTS + 1))
-if bash "$SCRIPT_DIR/test-agentize-modes.sh"; then
-    echo "✓ Agentize mode validation tests passed"
-    PASSED_TESTS=$((PASSED_TESTS + 1))
-else
-    echo "✗ Agentize mode validation tests failed"
-    FAILED_TESTS=$((FAILED_TESTS + 1))
+# Get project root using shell-neutral approach
+PROJECT_ROOT="${AGENTIZE_HOME:-$(git rev-parse --show-toplevel 2>/dev/null)}"
+if [ -z "$PROJECT_ROOT" ]; then
+  echo "Error: Cannot determine project root. Set AGENTIZE_HOME or run from git repo."
+  exit 1
 fi
-echo ""
+SCRIPT_DIR="$PROJECT_ROOT/tests"
 
-# Test Makefile parameter validation logic
-echo ">>> Testing Makefile parameter validation..."
-TOTAL_TESTS=$((TOTAL_TESTS + 1))
-if bash "$SCRIPT_DIR/test-makefile-validation.sh"; then
-    echo "✓ Makefile validation tests passed"
-    PASSED_TESTS=$((PASSED_TESTS + 1))
-else
-    echo "✗ Makefile validation tests failed"
-    FAILED_TESTS=$((FAILED_TESTS + 1))
-fi
-echo ""
+# Default to bash if TEST_SHELLS is not set
+TEST_SHELLS="${TEST_SHELLS:-bash}"
 
-# Test C SDK
-echo ">>> Testing C SDK..."
-TOTAL_TESTS=$((TOTAL_TESTS + 1))
-if bash "$SCRIPT_DIR/test-c-sdk.sh"; then
-    echo "✓ C SDK tests passed"
-    PASSED_TESTS=$((PASSED_TESTS + 1))
-else
-    echo "✗ C SDK tests failed"
-    FAILED_TESTS=$((FAILED_TESTS + 1))
-fi
-echo ""
+# List of all test scripts
+TEST_SCRIPTS=(
+    "test-agentize-modes.sh"
+    "test-makefile-validation.sh"
+    "test-c-sdk.sh"
+    "test-cxx-sdk.sh"
+    "test-python-sdk.sh"
+    "test-worktree.sh"
+    "test-wt-cross-project.sh"
+    "test-agentize-cli.sh"
+    "test-bash-source-removal.sh"
+    "test-lol-project.sh"
+    "test-refine-issue.sh"
+    "test-open-issue-draft.sh"
+    "test-claude-permission-hook.sh"
+)
 
-# Test C++ SDK
-echo ">>> Testing C++ SDK..."
-TOTAL_TESTS=$((TOTAL_TESTS + 1))
-if bash "$SCRIPT_DIR/test-cxx-sdk.sh"; then
-    echo "✓ C++ SDK tests passed"
-    PASSED_TESTS=$((PASSED_TESTS + 1))
-else
-    echo "✗ C++ SDK tests failed"
-    FAILED_TESTS=$((FAILED_TESTS + 1))
-fi
-echo ""
+# Function to run a test with a specific shell
+run_test() {
+    local shell="$1"
+    local test_script="$2"
+    local test_name="$3"
 
-# Test Python SDK (TODO)
-echo ">>> Testing Python SDK..."
-TOTAL_TESTS=$((TOTAL_TESTS + 1))
-if [ -s "$SCRIPT_DIR/test-python-sdk.sh" ]; then
-    if bash "$SCRIPT_DIR/test-python-sdk.sh"; then
-        echo "✓ Python SDK tests passed"
+    if "$shell" "$SCRIPT_DIR/$test_script"; then
+        echo "✓ $test_name passed"
+        return 0
+    else
+        echo "✗ $test_name failed"
+        return 1
+    fi
+}
+
+# Main execution
+GLOBAL_FAILED=0
+
+for shell in $TEST_SHELLS; do
+    # Check if shell is available
+    if ! command -v "$shell" >/dev/null 2>&1; then
+        echo "======================================"
+        echo "Warning: Shell '$shell' not found, skipping"
+        echo "======================================"
+        echo ""
+        continue
+    fi
+
+    echo "======================================"
+    echo "Running all Agentize SDK tests"
+    echo "Shell: $shell"
+    echo "======================================"
+    echo ""
+
+    # Track test results for this shell
+    TOTAL_TESTS=0
+    PASSED_TESTS=0
+    FAILED_TESTS=0
+
+    # Test Agentize mode validation
+    echo ">>> Testing Agentize mode validation..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-agentize-modes.sh" "Agentize mode validation tests"; then
         PASSED_TESTS=$((PASSED_TESTS + 1))
     else
-        echo "✗ Python SDK tests failed"
         FAILED_TESTS=$((FAILED_TESTS + 1))
     fi
-else
-    echo "⊘ Python SDK tests not yet implemented (skipping)"
-    TOTAL_TESTS=$((TOTAL_TESTS - 1))
-fi
-echo ""
+    echo ""
 
-# Test Worktree functionality
-echo ">>> Testing Worktree functionality..."
-TOTAL_TESTS=$((TOTAL_TESTS + 1))
-if bash "$SCRIPT_DIR/test-worktree.sh"; then
-    echo "✓ Worktree tests passed"
-    PASSED_TESTS=$((PASSED_TESTS + 1))
-else
-    echo "✗ Worktree tests failed"
-    FAILED_TESTS=$((FAILED_TESTS + 1))
-fi
-echo ""
+    # Test Makefile parameter validation logic
+    echo ">>> Testing Makefile parameter validation..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-makefile-validation.sh" "Makefile validation tests"; then
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    echo ""
 
-# Test Cross-Project wt Function
-echo ">>> Testing Cross-Project wt function..."
-TOTAL_TESTS=$((TOTAL_TESTS + 1))
-if bash "$SCRIPT_DIR/test-wt-cross-project.sh"; then
-    echo "✓ Cross-project wt tests passed"
-    PASSED_TESTS=$((PASSED_TESTS + 1))
-else
-    echo "✗ Cross-project wt tests failed"
-    FAILED_TESTS=$((FAILED_TESTS + 1))
-fi
-echo ""
+    # Test C SDK
+    echo ">>> Testing C SDK..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-c-sdk.sh" "C SDK tests"; then
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    echo ""
 
-# Test Agentize CLI Function
-echo ">>> Testing Agentize CLI function..."
-TOTAL_TESTS=$((TOTAL_TESTS + 1))
-if bash "$SCRIPT_DIR/test-agentize-cli.sh"; then
-    echo "✓ Agentize CLI tests passed"
-    PASSED_TESTS=$((PASSED_TESTS + 1))
-else
-    echo "✗ Agentize CLI tests failed"
-    FAILED_TESTS=$((FAILED_TESTS + 1))
-fi
-echo ""
+    # Test C++ SDK
+    echo ">>> Testing C++ SDK..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-cxx-sdk.sh" "C++ SDK tests"; then
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    echo ""
 
-# Test BASH_SOURCE Removal
-echo ">>> Testing BASH_SOURCE removal..."
-TOTAL_TESTS=$((TOTAL_TESTS + 1))
-if bash "$SCRIPT_DIR/test-bash-source-removal.sh"; then
-    echo "✓ BASH_SOURCE removal tests passed"
-    PASSED_TESTS=$((PASSED_TESTS + 1))
-else
-    echo "✗ BASH_SOURCE removal tests failed"
-    FAILED_TESTS=$((FAILED_TESTS + 1))
-fi
-echo ""
+    # Test Python SDK
+    echo ">>> Testing Python SDK..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if [ -s "$SCRIPT_DIR/test-python-sdk.sh" ]; then
+        if run_test "$shell" "test-python-sdk.sh" "Python SDK tests"; then
+            PASSED_TESTS=$((PASSED_TESTS + 1))
+        else
+            FAILED_TESTS=$((FAILED_TESTS + 1))
+        fi
+    else
+        echo "⊘ Python SDK tests not yet implemented (skipping)"
+        TOTAL_TESTS=$((TOTAL_TESTS - 1))
+    fi
+    echo ""
 
-# Test lol project command
-echo ">>> Testing lol project command..."
-TOTAL_TESTS=$((TOTAL_TESTS + 1))
-if bash "$SCRIPT_DIR/test-lol-project.sh"; then
-    echo "✓ lol project tests passed"
-    PASSED_TESTS=$((PASSED_TESTS + 1))
-else
-    echo "✗ lol project tests failed"
-    FAILED_TESTS=$((FAILED_TESTS + 1))
-fi
-echo ""
+    # Test Worktree functionality
+    echo ">>> Testing Worktree functionality..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-worktree.sh" "Worktree tests"; then
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    echo ""
 
-# Commands & Skills Tests
-echo ">>> Testing /refine-issue command..."
-TOTAL_TESTS=$((TOTAL_TESTS + 1))
-if bash "$SCRIPT_DIR/test-refine-issue.sh"; then
-    echo "✓ /refine-issue command tests passed"
-    PASSED_TESTS=$((PASSED_TESTS + 1))
-else
-    echo "✗ /refine-issue command tests failed"
-    FAILED_TESTS=$((FAILED_TESTS + 1))
-fi
-echo ""
+    # Test Cross-Project wt Function
+    echo ">>> Testing Cross-Project wt function..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-wt-cross-project.sh" "Cross-project wt tests"; then
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    echo ""
 
-echo ">>> Testing open-issue --draft flag..."
-TOTAL_TESTS=$((TOTAL_TESTS + 1))
-if bash "$SCRIPT_DIR/test-open-issue-draft.sh"; then
-    echo "✓ open-issue --draft tests passed"
-    PASSED_TESTS=$((PASSED_TESTS + 1))
-else
-    echo "✗ open-issue --draft tests failed"
-    FAILED_TESTS=$((FAILED_TESTS + 1))
-fi
-echo ""
+    # Test Agentize CLI Function
+    echo ">>> Testing Agentize CLI function..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-agentize-cli.sh" "Agentize CLI tests"; then
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    echo ""
 
-# Print summary
-echo "======================================"
-echo "Test Summary"
-echo "======================================"
-echo "Total:  $TOTAL_TESTS"
-echo "Passed: $PASSED_TESTS"
-echo "Failed: $FAILED_TESTS"
-echo "======================================"
+    # Test BASH_SOURCE Removal
+    echo ">>> Testing BASH_SOURCE removal..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-bash-source-removal.sh" "BASH_SOURCE removal tests"; then
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    echo ""
 
-if [ $FAILED_TESTS -gt 0 ]; then
-    echo "Some tests failed!"
+    # Test lol project command
+    echo ">>> Testing lol project command..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-lol-project.sh" "lol project tests"; then
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    echo ""
+
+    # Commands & Skills Tests
+    echo ">>> Testing /refine-issue command..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-refine-issue.sh" "/refine-issue command tests"; then
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    echo ""
+
+    echo ">>> Testing open-issue --draft flag..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-open-issue-draft.sh" "open-issue --draft tests"; then
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    echo ""
+
+    echo ">>> Testing Claude permission hook..."
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    if run_test "$shell" "test-claude-permission-hook.sh" "Claude permission hook tests"; then
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    echo ""
+
+    # Print summary for this shell
+    echo "======================================"
+    echo "Test Summary for $shell"
+    echo "======================================"
+    echo "Total:  $TOTAL_TESTS"
+    echo "Passed: $PASSED_TESTS"
+    echo "Failed: $FAILED_TESTS"
+    echo "======================================"
+    echo ""
+
+    if [ $FAILED_TESTS -gt 0 ]; then
+        echo "Some tests failed in $shell!"
+        GLOBAL_FAILED=1
+    else
+        echo "All tests passed in $shell!"
+    fi
+    echo ""
+done
+
+# Final exit status
+if [ $GLOBAL_FAILED -gt 0 ]; then
     exit 1
 else
-    echo "All tests passed!"
     exit 0
 fi

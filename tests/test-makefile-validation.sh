@@ -15,8 +15,12 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 TESTS_TOTAL=6
 
-# Root directory of the project
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Get project root using shell-neutral approach
+PROJECT_ROOT="${AGENTIZE_HOME:-$(git rev-parse --show-toplevel 2>/dev/null)}"
+if [ -z "$PROJECT_ROOT" ]; then
+  echo "Error: Cannot determine project root. Set AGENTIZE_HOME or run from git repo."
+  exit 1
+fi
 
 # Helper function to print test status
 print_test_header() {

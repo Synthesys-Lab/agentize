@@ -1,8 +1,11 @@
 # Default target
-.PHONY: test help setup pre-commit
+.PHONY: test test-shells help setup pre-commit
 
 test:
 	./tests/test-all.sh
+
+test-shells:
+	TEST_SHELLS="bash zsh" ./tests/test-all.sh
 
 pre-commit:
 	HOOKS_DIR=$$(git rev-parse --git-path hooks 2>/dev/null || echo ".git/hooks"); \
@@ -31,7 +34,8 @@ setup:
 
 help:
 	@echo "Available targets:"
-	@echo "  make test                - Run all tests"
+	@echo "  make test                - Run all tests (bash only)"
+	@echo "  make test-shells         - Run all tests under multiple shells (bash and zsh)"
 	@echo "  make setup               - Generate local setup.sh for development"
 	@echo ""
 	@echo "SDK usage:"

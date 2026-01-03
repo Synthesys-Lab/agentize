@@ -4,8 +4,12 @@ set -e
 # Test suite for .claude/hooks/permission-request.sh
 # Tests CLAUDE_HANDSOFF environment variable behavior
 
-SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# Get project root using shell-neutral approach
+PROJECT_ROOT="${AGENTIZE_HOME:-$(git rev-parse --show-toplevel 2>/dev/null)}"
+if [ -z "$PROJECT_ROOT" ]; then
+  echo "Error: Cannot determine project root. Set AGENTIZE_HOME or run from git repo."
+  exit 1
+fi
 HOOK_SCRIPT="$PROJECT_ROOT/.claude/hooks/permission-request.sh"
 
 # Test helper: run hook and capture decision
