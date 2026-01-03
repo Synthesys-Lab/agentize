@@ -62,6 +62,27 @@ echo "Test 3: wt init creates trees/main worktree"
     git add README.md
     git commit -m "Initial commit"
 
+    # Create gh stub for testing
+    mkdir -p bin
+    cat > bin/gh <<'GHSTUB'
+#!/usr/bin/env bash
+# Stub gh command for testing
+case "$1" in
+  issue)
+    if [ "$2" = "view" ]; then
+      issue_no="$3"
+      case "$issue_no" in
+        42) echo '{"title":"Test cross"}' ;;
+        50) echo '{"title":"First"}' ;;
+        51) echo '{"title":"Second"}' ;;
+        *) exit 1 ;;
+      esac
+    fi
+    ;;
+esac
+GHSTUB
+    chmod +x bin/gh
+
     # Copy scripts
     mkdir -p scripts
     cp "$WT_CLI" scripts/
@@ -71,6 +92,7 @@ echo "Test 3: wt init creates trees/main worktree"
   # Test wt init
   (
     export AGENTIZE_HOME="$TEST_AGENTIZE"
+    export PATH="$TEST_AGENTIZE/bin:$PATH"
     cd "$TEST_AGENTIZE"
 
     # Source wt functions
@@ -119,6 +141,27 @@ echo "Test 4: wt spawn creates worktree in correct location"
     git add README.md
     git commit -m "Initial commit"
 
+    # Create gh stub for testing
+    mkdir -p bin
+    cat > bin/gh <<'GHSTUB'
+#!/usr/bin/env bash
+# Stub gh command for testing
+case "$1" in
+  issue)
+    if [ "$2" = "view" ]; then
+      issue_no="$3"
+      case "$issue_no" in
+        42) echo '{"title":"Test cross"}' ;;
+        50) echo '{"title":"First"}' ;;
+        51) echo '{"title":"Second"}' ;;
+        *) exit 1 ;;
+      esac
+    fi
+    ;;
+esac
+GHSTUB
+    chmod +x bin/gh
+
     # Copy scripts
     mkdir -p scripts
     cp "$PROJECT_ROOT/scripts/worktree.sh" scripts/ 2>/dev/null || true
@@ -140,6 +183,7 @@ echo "Test 4: wt spawn creates worktree in correct location"
   # Test wt spawn from different project
   (
     export AGENTIZE_HOME="$TEST_AGENTIZE"
+    export PATH="$TEST_AGENTIZE/bin:$PATH"
     cd "$TEST_PROJECT"  # Run from different project
 
     # Source wt functions
@@ -149,7 +193,7 @@ echo "Test 4: wt spawn creates worktree in correct location"
     wt init
 
     # Create worktree using wt spawn
-    wt spawn --no-agent 42 test-cross
+    wt spawn --no-agent 42
 
     # Verify worktree created in agentize repo, not current project
     if [ ! -d "$TEST_AGENTIZE/trees/issue-42-test-cross" ]; then
@@ -206,6 +250,27 @@ echo "Test 5: wt spawn from linked worktree creates under main repo"
     git add README.md
     git commit -m "Initial commit"
 
+    # Create gh stub for testing
+    mkdir -p bin
+    cat > bin/gh <<'GHSTUB'
+#!/usr/bin/env bash
+# Stub gh command for testing
+case "$1" in
+  issue)
+    if [ "$2" = "view" ]; then
+      issue_no="$3"
+      case "$issue_no" in
+        42) echo '{"title":"Test cross"}' ;;
+        50) echo '{"title":"First"}' ;;
+        51) echo '{"title":"Second"}' ;;
+        *) exit 1 ;;
+      esac
+    fi
+    ;;
+esac
+GHSTUB
+    chmod +x bin/gh
+
     # Copy scripts
     mkdir -p scripts
     cp "$WT_CLI" scripts/
@@ -215,13 +280,14 @@ echo "Test 5: wt spawn from linked worktree creates under main repo"
   # Create first worktree
   (
     export AGENTIZE_HOME="$TEST_AGENTIZE"
+    export PATH="$TEST_AGENTIZE/bin:$PATH"
     cd "$TEST_AGENTIZE"
     source scripts/wt-cli.sh
 
     # Initialize first
     wt init
 
-    wt spawn --no-agent 50 first
+    wt spawn --no-agent 50
 
     # Now cd into the linked worktree and create another worktree
     cd trees/issue-50-first
@@ -230,7 +296,7 @@ echo "Test 5: wt spawn from linked worktree creates under main repo"
     source "$TEST_AGENTIZE/scripts/wt-cli.sh"
 
     # Create another worktree from inside the linked worktree
-    wt spawn --no-agent 51 second
+    wt spawn --no-agent 51
 
     # Verify the new worktree is created under AGENTIZE_HOME, not inside the linked worktree
     if [ ! -d "$TEST_AGENTIZE/trees/issue-51-second" ]; then

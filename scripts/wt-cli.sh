@@ -305,8 +305,8 @@ Git Worktree Helper
 Usage:
   wt init                                    Initialize worktree environment (creates trees/main)
   wt main                                    Switch to main worktree (when sourced)
-  wt spawn [--yolo] [--no-agent] <issue-no> [desc]
-                                             Create worktree for an issue
+  wt spawn [--yolo] [--no-agent] <issue-no>
+                                             Create worktree for an issue (fetches title from GitHub)
   wt list                                    List all worktrees
   wt remove [-D|--force] <issue-number>      Remove worktree and delete branch for an issue
   wt prune                                   Clean up stale worktree metadata
@@ -320,8 +320,7 @@ Flags:
 Examples:
   wt init                     # Initialize worktree environment
   wt main                     # Switch to main worktree
-  wt spawn 42                 # Create worktree for issue #42 (fetches title from GitHub)
-  wt spawn 42 add-feature     # Create worktree with custom description
+  wt spawn 42                 # Create worktree for issue #42 (always fetches title from GitHub)
   wt spawn --yolo 42          # Create worktree with YOLO mode (skip permissions)
   wt spawn 42 --yolo          # Flags can appear after issue number too
   wt spawn --no-agent 42      # Create worktree without launching Claude

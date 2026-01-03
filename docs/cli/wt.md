@@ -26,10 +26,11 @@ When `.agentize.yaml` is missing, `wt` falls back to automatic detection (main/m
   - Changes directory to `trees/main`
   - Only works when sourced (via `source setup.sh`)
   - Direct script execution shows an informational message
-- `wt spawn [--yolo] [--no-agent] <issue-no> [desc]`: Create a new worktree for the given issue number from the default branch.
+- `wt spawn [--yolo] [--no-agent] <issue-no>`: Create a new worktree for the given issue number from the default branch.
   - Uses `git.default_branch` from `.agentize.yaml` if available
   - Falls back to detecting `main` or `master` branch
-  - Creates worktree in `{trees_dir}/issue-{N}-{title}` format
+  - Creates worktree in `{trees_dir}/issue-{N}-{title}` format where title is fetched from GitHub
+  - Always fetches issue title from GitHub using `gh issue view` (requires GitHub CLI)
   - Installs pre-commit hook in the new worktree if available (unless `pre_commit.enabled: false`)
   - Requires `wt init` to be run first (trees/main must exist)
   - `--yolo`: Skip permission prompts by passing `--dangerously-skip-permissions` to Claude (use only in isolated containers/VMs)
