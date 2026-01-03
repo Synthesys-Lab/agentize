@@ -658,7 +658,7 @@ wt() {
 
     # Map wt subcommands to cmd_* functions
     local subcommand="$1"
-    shift || true
+    [ $# -gt 0 ] && shift
 
     case "$subcommand" in
         init)
@@ -716,7 +716,7 @@ wt_cli_main() {
     fi
 
     local cmd="$1"
-    shift || true
+    [ $# -gt 0 ] && shift
 
     case "$cmd" in
         init)
