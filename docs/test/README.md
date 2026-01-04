@@ -31,7 +31,8 @@ The shell test suite supports running tests under multiple shells to ensure shel
 
 - **Default behavior**: Tests run under bash via `make test`
 - **Multi-shell testing**: Tests can run under bash and zsh via `make test-shells` or `TEST_SHELLS="bash zsh" ./tests/test-all.sh`
-- **Shell availability**: Missing shells are skipped with a warning; bash is always the default
+- **Shell availability**: When `TEST_SHELLS` is explicitly set, all listed shells must be available or the test runner exits with an error. This ensures CI enforcement catches missing shell installations.
+- **CI enforcement**: GitHub Actions runs `make test-shells` on every push/PR with zsh installed, ensuring bash+zsh compatibility is maintained.
 
 This enables early detection of shell-specific issues (e.g., bashisms) before users encounter them in different shell environments.
 
@@ -57,13 +58,15 @@ The shared helper `tests/common.sh` provides:
 All tests are executed via `tests/test-all.sh`, which automatically discovers tests in categorical subdirectories. The commands documented in `docs/architecture/architecture.md`:
 
 - `make test` - Run all tests under bash
-- `make test-shells` - Run all tests under bash and zsh
+- `make test-shells` - Run all tests under bash and zsh (fails if zsh not installed)
 - `make test-sdk` - Run SDK template tests
 - `make test-cli` - Run CLI command tests
 - `make test-lint` - Run validation tests
 - `make test-handsoff` - Run end-to-end integration tests
 - `make test-fast` - Run fast tests (sdk + cli + lint)
 - `make test-e2e` - Run end-to-end tests (alias for handsoff)
+
+**Note**: When `TEST_SHELLS` is explicitly set (e.g., via `make test-shells`), the test runner enforces strict shell availability and exits with an error if any required shell is missing.
 
 ## Integration
 
