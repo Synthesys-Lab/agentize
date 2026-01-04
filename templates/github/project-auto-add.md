@@ -1,0 +1,330 @@
+# GitHub Projects Automation Workflow Template
+
+This document explains how the `project-auto-add.yml` workflow template works and how to configure it for your project.
+
+## Overview
+
+The workflow provides automated issue lifecycle management for GitHub Projects v2:
+
+1. **Auto-add**: Automatically adds new issues and PRs to your project board
+2. **Stage "proposed"**: Sets newly opened issues to Stage "proposed"
+3. **Auto-done**: Marks linked issues as Stage "done" when PRs are merged
+
+## Workflow Architecture
+
+The template defines two independent jobs:
+
+### Job 1: `add-to-project`
+
+Runs when issues or PRs are opened.
+
+**Trigger**: `issues.opened` or `pull_request.opened`
+
+**For issues**:
+- Adds issue to project board
+- Sets `Stage` field to `proposed` using the `actions/add-to-project` action's built-in parameters
+
+**For PRs**:
+- Adds PR to project board
+- Does not set any field values (PRs use separate status workflow)
+
+**Technology**: Uses the `actions/add-to-project@v1.0.2` GitHub Action
+
+### Job 2: `mark-linked-issues-done`
+
+Runs when PRs are closed and merged.
+
+**Trigger**: `pull_request.closed` with `merged == true`
+
+**Process**:
+1. **Query linked issues**: Uses `closingIssuesReferences` GraphQL field to find issues that this PR closes
+2. **Lookup project items**: For each linked issue, queries its project item ID
+3. **Update Stage field**: Uses `updateProjectV2ItemFieldValue` mutation to set Stage to "done"
+
+**Technology**: Uses GitHub CLI (`gh`) and GraphQL API directly
+
+## Configuration Requirements
+
+### Environment Variables
+
+You must configure these values in the `env:` section:
+
+```yaml
+env:
+  PROJECT_ORG: YOUR_ORG_HERE              # Your GitHub organization name
+  PROJECT_ID: YOUR_PROJECT_ID_HERE        # Project number (e.g., 3)
+  STAGE_FIELD_ID: YOUR_STAGE_FIELD_ID_HERE           # GraphQL ID of Stage field
+  STAGE_DONE_OPTION_ID: YOUR_STAGE_DONE_OPTION_ID_HERE  # GraphQL ID of "done" option
+```
+
+**How to find these values**:
+
+1. **PROJECT_ORG and PROJECT_ID**: These are substituted automatically by `lol project --automation` when you have project metadata in `.agentize.yaml`
+
+2. **STAGE_FIELD_ID and STAGE_DONE_OPTION_ID**: You must look these up manually using GraphQL queries (see next section)
+
+### Finding Field and Option IDs
+
+**Step 1: Get your project's GraphQL ID**
+
+```bash
+gh api graphql -f query='
+query {
+  organization(login: "YOUR_ORG") {
+    projectV2(number: YOUR_PROJECT_NUMBER) {
+      id
+      title
+    }
+  }
+}'
+```
+
+Save the `id` value (looks like `PVT_xxx`).
+
+**Step 2: List all fields and their option IDs**
+
+```bash
+gh api graphql -f query='
+query {
+  node(id: "PVT_xxx") {
+    ... on ProjectV2 {
+      fields(first: 20) {
+        nodes {
+          ... on ProjectV2SingleSelectField {
+            id
+            name
+            options {
+              id
+              name
+            }
+          }
+        }
+      }
+    }
+  }
+}'
+```
+
+From the output, find:
+- The `id` where `name` is `"Stage"` → This is your `STAGE_FIELD_ID`
+- Within that field's options, find the `id` where `name` is `"done"` → This is your `STAGE_DONE_OPTION_ID`
+
+### Repository Secret
+
+You must create a Personal Access Token (PAT) and store it as a repository secret:
+
+**Secret name**: `ADD_TO_PROJECT_PAT`
+
+**Required permissions**:
+- `project`: Read and write (for adding items and updating fields)
+- `metadata`: Read-only (automatically granted)
+
+**Creation**:
+```bash
+# Create the secret using GitHub CLI
+gh secret set ADD_TO_PROJECT_PAT
+# Paste your PAT when prompted
+```
+
+Or use the GitHub web interface: **Settings** > **Secrets and variables** > **Actions** > **New repository secret**
+
+## How It Works: Technical Details
+
+### Step 1: Add to Project (Issues)
+
+When an issue is opened, the workflow:
+
+1. Checks `github.event_name == 'issues'`
+2. Calls `actions/add-to-project` with:
+   - `project-url`: Constructed from `PROJECT_ORG` and `PROJECT_ID`
+   - `github-token`: Uses the `ADD_TO_PROJECT_PAT` secret
+   - `status-field: Stage`: Tells the action to set the Stage field
+   - `status-value: proposed`: Sets the value to "proposed"
+
+The action handles all the GraphQL complexity internally.
+
+### Step 2: Add to Project (PRs)
+
+When a PR is opened, the workflow:
+
+1. Checks `github.event_name == 'pull_request'`
+2. Calls `actions/add-to-project` with:
+   - `project-url`: Constructed from `PROJECT_ORG` and `PROJECT_ID`
+   - `github-token`: Uses the `ADD_TO_PROJECT_PAT` secret
+   - No `status-field`/`status-value` (PRs don't get initial Stage value)
+
+### Step 3: Mark Linked Issues Done (PR Merge)
+
+When a PR is merged, the workflow executes two bash script steps:
+
+#### 3.1: Get Linked Issues
+
+Queries GitHub's `closingIssuesReferences` field to find issues that this PR closes:
+
+```graphql
+query($owner: String!, $repo: String!, $prNumber: Int!) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $prNumber) {
+      closingIssuesReferences(first: 10) {
+        nodes {
+          number
+          id
+        }
+      }
+    }
+  }
+}
+```
+
+**Why this works**: GitHub automatically parses PR body and commits for phrases like "Closes #42" and populates the `closingIssuesReferences` field. This is the same mechanism that auto-closes issues when PRs merge.
+
+The script stores the result in `$GITHUB_OUTPUT` for the next step.
+
+#### 3.2: Update Linked Issues to Done
+
+For each linked issue, the script:
+
+1. **Gets project node ID**: Converts `PROJECT_ORG/PROJECT_ID` to GraphQL node ID
+2. **Finds project item ID**: Queries the issue's project items to find the one matching our project
+3. **Updates Stage field**: Uses `updateProjectV2ItemFieldValue` mutation to set Stage to "done"
+
+**GraphQL mutation**:
+```graphql
+mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $valueId: String!) {
+  updateProjectV2ItemFieldValue(
+    input: {
+      projectId: $projectId
+      itemId: $itemId
+      fieldId: $fieldId
+      value: { singleSelectOptionId: $valueId }
+    }
+  ) {
+    projectV2Item { id }
+  }
+}
+```
+
+**Error handling**: If an issue is not in the project, the script logs a warning and skips it (no failure).
+
+## Customization
+
+### Changing the Stage Field Name
+
+If your project uses a different field name (e.g., "Status" instead of "Stage"):
+
+1. Update the issue add step:
+   ```yaml
+   status-field: Status  # Changed from "Stage"
+   status-value: proposed
+   ```
+
+2. Look up the field ID for "Status" and update `STAGE_FIELD_ID` accordingly
+
+3. The mutation in the PR-merge job will use the correct field ID automatically
+
+### Changing the "Proposed" Value
+
+To set newly opened issues to a different initial value:
+
+```yaml
+status-field: Stage
+status-value: Backlog  # Changed from "proposed"
+```
+
+### Changing the "Done" Value
+
+To mark merged issues as something other than "done":
+
+1. Look up the option ID for your desired value (e.g., "Completed", "Merged")
+2. Update `STAGE_DONE_OPTION_ID` to that option's ID
+
+### Adding PR Status on Open
+
+To set a Stage value for newly opened PRs:
+
+```yaml
+- name: Add PR to project
+  if: github.event_name == 'pull_request'
+  uses: actions/add-to-project@v1.0.2
+  with:
+    project-url: https://github.com/orgs/${{ env.PROJECT_ORG }}/projects/${{ env.PROJECT_ID }}
+    github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+    status-field: Stage
+    status-value: In Review  # Add this
+```
+
+## Troubleshooting
+
+### "Field not found" errors
+
+**Symptom**: Workflow fails with error about field not found
+
+**Cause**: `STAGE_FIELD_ID` is incorrect or the field was deleted and recreated
+
+**Fix**: Re-run the GraphQL query to get the current field ID
+
+### "Option not found" errors
+
+**Symptom**: Workflow fails when updating to "done"
+
+**Cause**: `STAGE_DONE_OPTION_ID` is incorrect or the option was renamed/deleted
+
+**Fix**: Re-run the GraphQL query to get the current option ID for "done"
+
+### Issues not being marked done
+
+**Symptom**: PR merges but linked issues stay in their current Stage
+
+**Possible causes**:
+
+1. **Issue not in project**: The script skips issues not in the project board. Check if the issue was added to the project.
+
+2. **No "Closes #N" reference**: GitHub's `closingIssuesReferences` requires explicit closing keywords in the PR description or commits. Ensure your PR body includes "Closes #N" or similar.
+
+3. **PAT permissions**: Verify `ADD_TO_PROJECT_PAT` has `project` write permission.
+
+4. **Wrong project**: If the issue is in a different project, update that project's field instead.
+
+### Permission denied errors
+
+**Symptom**: Workflow fails with 403 or permission denied
+
+**Causes**:
+- PAT expired
+- PAT doesn't have `project` write permission
+- PAT's organization access was revoked
+
+**Fix**: Create a new PAT with correct permissions and update the `ADD_TO_PROJECT_PAT` secret
+
+### Rate limiting
+
+**Symptom**: Workflow fails with rate limit errors
+
+**Cause**: Too many GraphQL queries in short time (large batch of merged PRs)
+
+**Mitigation**: GitHub Actions have higher rate limits than user accounts. This is rare but can happen with rapid PR merges.
+
+**Fix**: Wait for rate limit to reset (typically 1 hour) or stagger PR merges
+
+## Limitations
+
+1. **10 linked issues maximum**: The `closingIssuesReferences` query uses `first: 10`. If a PR closes more than 10 issues, only the first 10 will be updated.
+
+2. **Organization projects only**: The template uses `organization(login:)` query. For user projects, modify the GraphQL queries to use `user(login:)` instead.
+
+3. **Single-select fields only**: The mutation uses `singleSelectOptionId`. For other field types (text, number, date), different mutation syntax is required.
+
+4. **No cross-repository support**: Issues must be in the same repository as the PR. Cross-repo closing is not supported by `closingIssuesReferences`.
+
+## Reference Links
+
+- [actions/add-to-project documentation](https://github.com/actions/add-to-project)
+- [GitHub GraphQL API - Projects v2](https://docs.github.com/en/graphql/reference/objects#projectv2)
+- [GitHub auto-linking issues](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue)
+- [GitHub Actions workflow syntax](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions)
+
+## See Also
+
+- [`docs/workflows/github-projects-automation.md`](../../docs/workflows/github-projects-automation.md) - Full automation setup guide
+- [`docs/architecture/project.md`](../../docs/architecture/project.md) - Project field management and GraphQL queries
+- [`docs/cli/lol.md`](../../docs/cli/lol.md) - CLI reference for `lol project` commands
