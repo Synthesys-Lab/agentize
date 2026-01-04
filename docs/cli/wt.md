@@ -20,7 +20,7 @@ When `.agentize.yaml` is missing, `wt` falls back to automatic detection (main/m
   - Detects default branch (main or master)
   - Creates `trees/main` worktree from the detected branch
   - Moves repository root off main/master to enable worktree-based development
-  - Installs pre-commit hook if available (unless `pre_commit.enabled: false`)
+  - Installs pre-commit hook if available (unless `pre_commit.enabled: false` or hooks disabled via `core.hooksPath`)
   - Must be run before `wt spawn`
 - `wt main`: Switch current directory to the main worktree.
   - Changes directory to `trees/main`
@@ -31,7 +31,7 @@ When `.agentize.yaml` is missing, `wt` falls back to automatic detection (main/m
   - Falls back to detecting `main` or `master` branch
   - Creates worktree in `{trees_dir}/issue-{N}` format
   - Validates issue existence using `gh issue view` (requires GitHub CLI)
-  - Installs pre-commit hook in the new worktree if available (unless `pre_commit.enabled: false`)
+  - Installs pre-commit hook in the new worktree if available (unless `pre_commit.enabled: false` or hooks disabled via `core.hooksPath`)
   - Requires `wt init` to be run first (trees/main must exist)
   - `--yolo`: Skip permission prompts by passing `--dangerously-skip-permissions` to Claude (use only in isolated containers/VMs)
   - `--no-agent`: Skip automatic Claude invocation after worktree creation

@@ -106,6 +106,8 @@ Controls automatic installation of the pre-commit hook during SDK and worktree i
 
 **Usage:** Set to `false` to prevent automatic hook installation. When `true` or unset, `lol init`, `lol update`, `wt init`, and `wt spawn` will install `scripts/pre-commit` into `.git/hooks/pre-commit` if the hook script exists and no custom hook is already present.
 
+**Note:** Hook installation is also skipped when Git hooks are globally disabled via `core.hooksPath` (e.g., `core.hooksPath=/dev/null`). This ensures the commands respect user intent to disable hooks system-wide.
+
 ## Creation
 
 ### Automatic Creation
