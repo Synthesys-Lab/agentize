@@ -42,6 +42,8 @@ Refer to `./sdk.md` for more information about the SDK structure created by `lol
   - Of course, `setup.sh` should be in `.gitignore`
   - This design decision is made because many projects rely on its repo path in `setup.sh`,
   while hardcoding it in `setup.sh` is a bad practice.
+  - The `.claude/hooks/session-init.sh` hook uses `make setup` and sources `setup.sh` to
+  export `AGENTIZE_HOME` for the active worktree (main or linked)
 - `make pre-commit` - Installs the git pre-commit hook
 - `make clean` - Cleans up generated files
 - `make help` - Displays help information about available Makefile targets
