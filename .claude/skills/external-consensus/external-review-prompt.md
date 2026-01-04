@@ -152,6 +152,13 @@ Correspondence:
 - Docs: [Which doc behaviors are implemented here]
 - Tests: [Which test cases this step satisfies]
 
+If is preffered to put some implementation snippets here, if it is less than 20 LoC, use this format:
+\`\`\`diff
+- the code to be modified
++ the modified code
+\`\`\`
+where gives plan reviewer a quick idea of the implementation.
+
 ...
 
 **Total estimated complexity:** X LOC ([Complexity level])
