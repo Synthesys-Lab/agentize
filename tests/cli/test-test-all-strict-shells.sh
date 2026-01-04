@@ -1,6 +1,11 @@
 #!/bin/bash
 # Test strict shell enforcement when TEST_SHELLS is explicitly set
 
+# Temporarily override AGENTIZE_HOME to ensure we test the current worktree version
+# (not the main branch version if AGENTIZE_HOME points there)
+SAVED_AGENTIZE_HOME="$AGENTIZE_HOME"
+unset AGENTIZE_HOME
+
 source "$(dirname "$0")/../common.sh"
 
 test_info "Testing strict shell enforcement for missing shells"
@@ -13,8 +18,11 @@ test_info "Running test-all.sh with TEST_SHELLS containing missing shell"
 
 # Use a non-existent category to avoid recursively running other tests
 # The strict shell check should fail before attempting to run tests
+# Temporarily disable set -e to capture exit code
+set +e
 TEST_SHELLS="bash definitely_missing_shell_xyz" "$PROJECT_ROOT/tests/test-all.sh" nonexistent_category > "$TMP_DIR/output.txt" 2>&1
 EXIT_CODE=$?
+set -e
 
 test_info "Exit code: $EXIT_CODE"
 test_info "Output:"
@@ -41,8 +49,10 @@ fi
 # Test 2: Verify bash-only (default) still works
 test_info "Verifying default bash-only behavior still works"
 unset TEST_SHELLS
+set +e
 "$PROJECT_ROOT/tests/test-all.sh" nonexistent_category > "$TMP_DIR/output2.txt" 2>&1
 EXIT_CODE2=$?
+set -e
 
 # Should exit cleanly (no tests found is OK, but shell validation should pass)
 # Exit code may be non-zero if no tests found, but should not be shell-related error

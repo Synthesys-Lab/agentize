@@ -14,8 +14,44 @@ if [ -z "$PROJECT_ROOT" ]; then
 fi
 SCRIPT_DIR="$PROJECT_ROOT/tests"
 
+# Detect if TEST_SHELLS was explicitly set (check BEFORE applying default)
+EXPLICIT_SHELLS=0
+if [ -n "${TEST_SHELLS+x}" ] && [ -n "$TEST_SHELLS" ]; then
+  EXPLICIT_SHELLS=1
+  EXPLICIT_SHELLS_VALUE="$TEST_SHELLS"
+fi
+
 # Default to bash if TEST_SHELLS is not set
 TEST_SHELLS="${TEST_SHELLS:-bash}"
+
+# Strict shell enforcement: if TEST_SHELLS was explicitly set, all shells must be available
+if [ $EXPLICIT_SHELLS -eq 1 ]; then
+  MISSING_SHELLS=""
+  for shell in $EXPLICIT_SHELLS_VALUE; do
+    if ! command -v "$shell" >/dev/null 2>&1; then
+      if [ -z "$MISSING_SHELLS" ]; then
+        MISSING_SHELLS="$shell"
+      else
+        MISSING_SHELLS="$MISSING_SHELLS, $shell"
+      fi
+    fi
+  done
+
+  if [ -n "$MISSING_SHELLS" ]; then
+    echo "======================================"
+    echo "Error: Required shells not found"
+    echo "======================================"
+    echo ""
+    echo "TEST_SHELLS was explicitly set to: $EXPLICIT_SHELLS_VALUE"
+    echo "Missing shells: $MISSING_SHELLS"
+    echo ""
+    echo "To fix this issue:"
+    echo "  - Install the missing shell(s)"
+    echo "  - Or unset TEST_SHELLS to use default (bash only)"
+    echo ""
+    exit 1
+  fi
+fi
 
 # Parse optional category arguments (sdk, cli, lint, handsoff)
 # If no arguments provided, run all categories
@@ -44,7 +80,8 @@ run_test() {
 GLOBAL_FAILED=0
 
 for shell in $TEST_SHELLS; do
-    # Check if shell is available
+    # Shell availability already validated in strict mode
+    # In non-strict mode (TEST_SHELLS not explicitly set), skip missing shells
     if ! command -v "$shell" >/dev/null 2>&1; then
         echo "======================================"
         echo "Warning: Shell '$shell' not found, skipping"
