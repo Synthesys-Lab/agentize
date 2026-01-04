@@ -134,7 +134,14 @@ Associates an existing GitHub Projects v2 board with the repository.
 lol project --automation [--write <path>]
 ```
 
-Prints or writes a GitHub Actions workflow template for automatically adding issues and PRs to the project.
+Prints or writes a GitHub Actions workflow template for project automation with lifecycle management.
+
+The generated template:
+- Automatically adds new issues and PRs to the project board
+- Sets Stage field to "proposed" for newly opened issues
+- Updates linked issues to Stage "done" when associated PRs are merged
+
+Configuration required: PAT with project permissions, field/option IDs for Stage updates.
 
 - `--write` - Write template to file (optional, defaults to stdout)
 

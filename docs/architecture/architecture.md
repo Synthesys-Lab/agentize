@@ -77,7 +77,7 @@ It is preferred to associate each repository with a GitHub Projects v2 board for
 - `lol project --associate <org>/<id>` - Associate the current repo to an existing GitHub Projects v2 board
 
 **Generate automation template:**
-- `lol project --automation [--write <path>]` - Generate a GitHub Actions workflow for automatically adding issues/PRs to the project
+- `lol project --automation [--write <path>]` - Generate a GitHub Actions workflow for project automation with lifecycle management (auto-add issues/PRs, set Stage "proposed" for issues, mark linked issues "done" on PR merge)
 
 **Metadata storage:**
 - The project association is stored in `.agentize.yaml` with `project.org` and `project.id` fields

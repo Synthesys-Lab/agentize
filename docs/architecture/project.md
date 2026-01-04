@@ -120,6 +120,36 @@ query($owner:String!, $repo:String!, $number:Int!) {
 
 This returns all project associations and their field values, allowing you to index issues by their stage.
 
+### Listing Field and Option IDs for Automation
+
+GitHub Actions workflows that update project fields require field and option IDs. To list all fields and their options for automation configuration:
+
+```bash
+gh api graphql -f query='
+query {
+  node(id: "PVT_xxx") {
+    ... on ProjectV2 {
+      fields(first: 20) {
+        nodes {
+          ... on ProjectV2SingleSelectField {
+            id
+            name
+            options {
+              id
+              name
+            }
+          }
+        }
+      }
+    }
+  }
+}'
+```
+
+Replace `PVT_xxx` with your project's GraphQL ID (obtained via the project number query in "Converting Project Number to GraphQL ID" section).
+
+This returns all single-select fields (like Stage, Status, Priority) along with their option IDs, which are needed for automation workflows that update field values via GraphQL mutations.
+
 ### Dumping Project Configuration
 
 Automation workflows can dump and version control your project field configuration for reproducibility.
