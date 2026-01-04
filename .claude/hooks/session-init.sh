@@ -4,7 +4,15 @@
 # This ensures all CLI tools and tests work correctly
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Resolve PROJECT_ROOT using git when available, fallback to path-based resolution
+if command -v git >/dev/null 2>&1 && PROJECT_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null)"; then
+    # Git-based resolution succeeded
+    :
+else
+    # Fallback to path-based resolution
+    PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+fi
 
 # Run make setup to ensure setup.sh exists
 cd "$PROJECT_ROOT"
