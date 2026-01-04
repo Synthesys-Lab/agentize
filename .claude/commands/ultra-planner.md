@@ -142,16 +142,16 @@ Please provide more details:
 
 Ask user for clarification.
 
-### Step 3: Create Placeholder Draft Issue
+### Step 3: Create Placeholder Issue
 
 **REQUIRED SKILL CALL (before agent execution):**
 
-Create a placeholder draft issue to obtain the issue number for artifact naming:
+Create a placeholder issue to obtain the issue number for artifact naming:
 
 ```
 Skill tool parameters:
   skill: "open-issue"
-  args: "--draft --auto"
+  args: "--auto"
 ```
 
 **Provide context to open-issue skill:**
@@ -160,7 +160,7 @@ Skill tool parameters:
 
 **Extract issue number from response:**
 ```bash
-# Expected output: "Draft GitHub issue created: #42"
+# Expected output: "GitHub issue created: #42"
 ISSUE_URL=$(echo "$OPEN_ISSUE_OUTPUT" | grep -o 'https://[^ ]*')
 ISSUE_NUMBER=$(echo "$ISSUE_URL" | grep -o '[0-9]*$')
 ```
@@ -342,33 +342,30 @@ Consensus plan saved to: {CONSENSUS_PLAN_FILE}
 
 **REQUIRED SKILL CALL:**
 
-Use the Skill tool to invoke the open-issue skill with update, draft, and auto flags:
+Use the Skill tool to invoke the open-issue skill with update and auto flags:
 
 ```
 Skill tool parameters:
   skill: "open-issue"
-  args: "--update ${ISSUE_NUMBER} --draft --auto {CONSENSUS_PLAN_FILE}"
+  args: "--update ${ISSUE_NUMBER} --auto {CONSENSUS_PLAN_FILE}"
 ```
 
 **What this skill does:**
 1. Reads consensus plan from file
 2. Determines appropriate tag from `docs/git-msg-tags.md`
-3. Formats issue with `[draft]` prefix and Problem Statement/Proposed Solution sections
+3. Formats issue with `[plan]` prefix and Problem Statement/Proposed Solution sections
 4. Updates existing issue #${ISSUE_NUMBER} (created in Step 3) using `gh issue edit`
 5. Returns issue number and URL
 
 **Expected output:**
 ```
-Draft issue #${ISSUE_NUMBER} updated with consensus plan.
+Plan issue #${ISSUE_NUMBER} updated with consensus plan.
 
-Title: [draft][plan][tag] {feature name}
+Title: [plan][tag] {feature name}
 URL: {issue_url}
 
-This is a draft plan. To refine it, use:
-  /refine-issue ${ISSUE_NUMBER}
-
-To approve and implement, remove [draft] from the issue title on GitHub, then:
-  /issue-to-impl ${ISSUE_NUMBER}
+To refine: /refine-issue ${ISSUE_NUMBER}
+To implement: /issue-to-impl ${ISSUE_NUMBER}
 ```
 
 Display this output to the user. Command completes successfully.

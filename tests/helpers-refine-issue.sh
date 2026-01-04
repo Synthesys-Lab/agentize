@@ -12,7 +12,7 @@ if [ "\$1" = "issue" ] && [ "\$2" = "view" ]; then
     # Return mock issue data
     cat <<'ISSUEEOF'
 {
-  "title": "[draft][plan][feat]: Add user authentication",
+  "title": "[plan][feat]: Add user authentication",
   "body": "## Description\\n\\nAdd user authentication with JWT tokens.\\n\\n## Proposed Solution\\n\\n### Implementation Steps\\n1. Add auth middleware\\n2. Create JWT utilities\\n3. Add login endpoint\\n\\nTotal LOC: ~150 (Medium)",
   "state": "OPEN"
 }

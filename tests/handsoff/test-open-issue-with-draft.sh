@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Test: With --draft flag
+# Test: Plan issue title format
 
 source "$(dirname "$0")/../common.sh"
 source "$(dirname "$0")/../helpers-open-issue.sh"
 
-test_info "With --draft flag"
+test_info "Plan issue title format"
 
-TMP_DIR=$(make_temp_dir "open-issue-with-draft")
+TMP_DIR=$(make_temp_dir "open-issue-plan-format")
 GH_CAPTURE_FILE="$TMP_DIR/gh-capture.txt"
 export GH_CAPTURE_FILE
 
@@ -14,15 +14,15 @@ export GH_CAPTURE_FILE
 setup_gh_mock_open_issue "$TMP_DIR"
 export PATH="$TMP_DIR:$PATH"
 
-# Test with --draft flag
-TITLE="[draft][plan][feat]: Add test feature"
+# Test plan issue title format (no [draft] prefix)
+TITLE="[plan][feat]: Add test feature"
 "$TMP_DIR/gh" issue create --title "$TITLE" --body "test"
 CAPTURED_TITLE=$(grep "TITLE:" "$GH_CAPTURE_FILE" | cut -d' ' -f2-)
 
-if [ "$CAPTURED_TITLE" = "[draft][plan][feat]: Add test feature" ]; then
+if [ "$CAPTURED_TITLE" = "[plan][feat]: Add test feature" ]; then
     cleanup_dir "$TMP_DIR"
-    test_pass "Title with --draft has [draft] prefix"
+    test_pass "Plan issue title has correct format (no [draft] prefix)"
 else
     cleanup_dir "$TMP_DIR"
-    test_fail "Expected '[draft][plan][feat]: Add test feature', got '$CAPTURED_TITLE'"
+    test_fail "Expected '[plan][feat]: Add test feature', got '$CAPTURED_TITLE'"
 fi

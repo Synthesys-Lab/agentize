@@ -15,7 +15,7 @@ setup_gh_mock_open_issue "$TMP_DIR"
 export PATH="$TMP_DIR:$PATH"
 
 # Simulate open-issue --update behavior
-"$TMP_DIR/gh" issue edit 42 --title "[draft][plan][feat]: Updated feature title"
+"$TMP_DIR/gh" issue edit 42 --title "[plan][feat]: Updated feature title"
 OPERATION=$(grep "OPERATION:" "$GH_CAPTURE_FILE" | cut -d' ' -f2-)
 ISSUE_NUM=$(grep "ISSUE:" "$GH_CAPTURE_FILE" | cut -d' ' -f2-)
 

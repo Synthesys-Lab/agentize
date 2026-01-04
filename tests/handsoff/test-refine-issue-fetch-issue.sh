@@ -16,7 +16,7 @@ export PATH="$TMP_DIR:$PATH"
 ISSUE_JSON=$("$TMP_DIR/gh" issue view 42 --json title,body,state)
 ISSUE_TITLE=$(echo "$ISSUE_JSON" | grep -o '"title": "[^"]*"' | cut -d'"' -f4)
 
-if echo "$ISSUE_TITLE" | grep -q "\[draft\]\[plan\]\[feat\]"; then
+if echo "$ISSUE_TITLE" | grep -q "\[plan\]\[feat\]"; then
     cleanup_dir "$TMP_DIR"
     test_pass "Issue fetched correctly"
 else

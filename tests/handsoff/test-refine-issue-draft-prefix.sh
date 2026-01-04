@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Test: Verify draft prefix is preserved
+# Test: Verify plan prefix is present
 
 source "$(dirname "$0")/../common.sh"
 source "$(dirname "$0")/../helpers-refine-issue.sh"
 
-test_info "Verify draft prefix is preserved"
+test_info "Verify plan prefix is present"
 
-TMP_DIR=$(make_temp_dir "refine-issue-draft")
+TMP_DIR=$(make_temp_dir "refine-issue-plan")
 
 # Setup gh mock
 setup_gh_mock_refine "$TMP_DIR" "$TMP_DIR"
@@ -16,11 +16,11 @@ export PATH="$TMP_DIR:$PATH"
 ISSUE_JSON=$("$TMP_DIR/gh" issue view 42 --json title,body,state)
 ISSUE_TITLE=$(echo "$ISSUE_JSON" | grep -o '"title": "[^"]*"' | cut -d'"' -f4)
 
-# The title should have [draft] prefix
-if echo "$ISSUE_TITLE" | grep -q "\[draft\]"; then
+# The title should have [plan] prefix (no [draft])
+if echo "$ISSUE_TITLE" | grep -q "\[plan\]" && ! echo "$ISSUE_TITLE" | grep -q "\[draft\]"; then
     cleanup_dir "$TMP_DIR"
-    test_pass "Draft prefix preserved in original issue"
+    test_pass "Plan prefix present in issue (no draft prefix)"
 else
     cleanup_dir "$TMP_DIR"
-    test_fail "Draft prefix missing"
+    test_fail "Expected [plan] prefix without [draft], got '$ISSUE_TITLE'"
 fi

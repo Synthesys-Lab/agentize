@@ -53,13 +53,13 @@ Consensus: JWT + basic roles (~280 LOC)
 - From Reducer: Removed OAuth2 complexity
 ```
 
-**5. Draft issue auto-updated:**
+**5. Plan issue auto-updated:**
 ```
-Draft issue #42 updated with consensus plan.
+Plan issue #42 updated with consensus plan.
 URL: https://github.com/user/repo/issues/42
 
 To refine: /refine-issue 42
-To implement: Remove [draft] on GitHub, then /issue-to-impl 42
+To implement: /issue-to-impl 42
 ```
 
 ## Refinement with `/refine-issue`

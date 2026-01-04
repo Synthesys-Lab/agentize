@@ -107,7 +107,7 @@ ISSUE_STATE=$(echo "$ISSUE_JSON" | jq -r '.state')
 
 **Validate:**
 - Issue exists (non-zero exit code from gh)
-- Issue is a plan issue (title contains `[plan]` or `[draft][plan]`)
+- Issue is a plan issue (title contains `[plan]`)
 - Issue state (warn if CLOSED)
 
 **Save original plan:**
@@ -291,10 +291,6 @@ Update the issue with the refined plan:
 gh issue edit "$ISSUE_NUMBER" --body-file "$CONSENSUS_PLAN_FILE"
 ```
 
-**Preserve draft status:**
-- If original title had `[draft]` prefix, keep it
-- If not, don't add it
-
 Display summary to user:
 ```
 Refinement complete!
@@ -346,7 +342,7 @@ Stop execution.
 
 ### Issue Not a Plan Issue
 
-Issue title doesn't contain `[plan]` or `[draft][plan]`.
+Issue title doesn't contain `[plan]`.
 
 **Response:**
 ```
@@ -441,7 +437,7 @@ Offer manual review fallback.
 ```
 Fetching issue #42...
 
-Title: [draft][plan][feat] Add user authentication
+Title: [plan][feat] Add user authentication
 Current plan size: 150 lines
 Refinement focus: General improvements
 
@@ -478,7 +474,7 @@ Summary of changes:
 ```
 Fetching issue #42...
 
-Title: [draft][plan][feat] Add user authentication
+Title: [plan][feat] Add user authentication
 Current plan size: 280 lines
 Refinement focus: Focus on reducing complexity
 
@@ -515,7 +511,7 @@ Summary of changes:
 ```
 Fetching issue #42...
 
-Title: [draft][plan][feat] Add user authentication
+Title: [plan][feat] Add user authentication
 Current plan size: 250 lines
 Refinement focus: Add more error handling and edge cases
 

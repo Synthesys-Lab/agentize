@@ -86,7 +86,6 @@ The open-issue skill takes the following inputs:
    - General requirements (for feature requests)
 
 3. **Optional flags** (via arguments):
-   - `--draft`: Prepend `[draft]` to the title for plan issues (e.g., `[draft][plan][tag]: Title`)
    - `--auto`: Skip user confirmation and create issue automatically (only used by ultra-planner)
    - `--update <issue-number>`: Update an existing issue instead of creating a new one (e.g., `--update 42`)
 
@@ -99,16 +98,13 @@ When this skill is invoked, the AI agent **MUST** follow these steps:
 Check if optional flags are provided in arguments:
 
 ```bash
-DRAFT_MODE=false
 AUTO_MODE=false
 UPDATE_MODE=false
 UPDATE_ISSUE_NUMBER=""
 PLAN_FILE=""
 
 while [ $# -gt 0 ]; do
-  if [ "$1" = "--draft" ]; then
-    DRAFT_MODE=true
-  elif [ "$1" = "--auto" ]; then
+  if [ "$1" = "--auto" ]; then
     AUTO_MODE=true
   elif [ "$1" = "--update" ]; then
     UPDATE_MODE=true
@@ -121,7 +117,6 @@ while [ $# -gt 0 ]; do
 done
 ```
 
-- `DRAFT_MODE=true`: Prepend `[draft]` to title for plan issues
 - `AUTO_MODE=true`: Skip confirmation in Step 4
 - `UPDATE_MODE=true`: Update existing issue instead of creating new one
 - `UPDATE_ISSUE_NUMBER`: The issue number to update (e.g., "42")
@@ -160,7 +155,7 @@ Build the issue following the format specification:
 
 **Title:**
 - Format: `[prefix][tag]: Brief Summary`
-- If `DRAFT_MODE=true` and this is a `[plan]` issue, prepend `[draft]`: `[draft][plan][tag]: Brief Summary`
+- For plan issues: `[plan][tag]: Brief Summary`
 - Keep summary concise (max 80 characters for the summary portion)
 - Ensure the summary clearly describes the issue
 
@@ -244,7 +239,7 @@ EOF
 **Important:**
 - Use `--body-file -` with heredoc to preserve markdown formatting and handle special characters safely
 - The body should include all sections from Description onwards (not the title)
-- For updates: title formatting (including `[draft]` prefix) is applied the same way as for creates
+- For updates: title formatting is applied the same way as for creates
 - After successful creation/update, display the issue URL to the user
 - Confirm: "GitHub issue created successfully: [URL]" or "GitHub issue #N updated successfully: [URL]"
 
@@ -366,15 +361,15 @@ without modifying core code.
 
 ### Example 4: Update Existing Issue (--update mode)
 
-**Context:** Ultra-planner created a placeholder draft issue #42, then consensus plan is ready to update that same issue.
+**Context:** Ultra-planner created a placeholder issue #42, then consensus plan is ready to update that same issue.
 
 **Invocation:**
 ```bash
-open-issue --update 42 --draft <plan-file>
+open-issue --update 42 <plan-file>
 ```
 
 **Behavior:**
 - Uses `gh issue edit 42` instead of `gh issue create`
-- Applies same title formatting logic (includes `[draft][plan][tag]` prefix)
+- Applies same title formatting logic (includes `[plan][tag]` prefix)
 - Updates issue body with final consensus plan
 - Preserves issue number (no duplicate issue created)

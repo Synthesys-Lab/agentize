@@ -49,8 +49,8 @@ export PATH="$TEST_TMP:$PATH"
 echo "Test 1: Placeholder creation extracts ISSUE_NUMBER from URL"
 rm -f "$GH_CAPTURE"
 # Simulate ultra-planner creating placeholder
-"$TEST_TMP/gh-mock.sh" issue create --title "[draft][plan][feat]: $MOCK_FEATURE" --body "Placeholder"
-ISSUE_URL_OUTPUT=$("$TEST_TMP/gh-mock.sh" issue create --title "[draft][plan][feat]: $MOCK_FEATURE" --body "Placeholder")
+"$TEST_TMP/gh-mock.sh" issue create --title "[plan][feat]: $MOCK_FEATURE" --body "Placeholder"
+ISSUE_URL_OUTPUT=$("$TEST_TMP/gh-mock.sh" issue create --title "[plan][feat]: $MOCK_FEATURE" --body "Placeholder")
 ISSUE_NUMBER=$(echo "$ISSUE_URL_OUTPUT" | grep -o '"number": [0-9]*' | grep -o '[0-9]*')
 
 if [ "$ISSUE_NUMBER" = "42" ]; then
@@ -92,10 +92,10 @@ echo "Test 3: Consensus updates existing issue (no second create)"
 rm -f "$GH_CAPTURE"
 
 # Simulate placeholder creation
-"$TEST_TMP/gh-mock.sh" issue create --title "[draft][plan][feat]: $MOCK_FEATURE" --body "Placeholder" > /dev/null
+"$TEST_TMP/gh-mock.sh" issue create --title "[plan][feat]: $MOCK_FEATURE" --body "Placeholder" > /dev/null
 
 # Simulate consensus updating the same issue
-"$TEST_TMP/gh-mock.sh" issue edit 42 --title "[draft][plan][feat]: $MOCK_FEATURE" --body "Final consensus plan" > /dev/null
+"$TEST_TMP/gh-mock.sh" issue edit 42 --title "[plan][feat]: $MOCK_FEATURE" --body "Final consensus plan" > /dev/null
 
 # Verify we have exactly 1 CREATE and 1 EDIT operation
 CREATE_COUNT=$(grep -c "^CREATE$" "$GH_CAPTURE" || true)
@@ -109,16 +109,16 @@ else
     exit 1
 fi
 
-# Test 4: Update preserves [draft] prefix
-echo "Test 4: Issue update preserves [draft][plan] prefix"
+# Test 4: Update preserves [plan] prefix
+echo "Test 4: Issue update preserves [plan] prefix"
 rm -f "$GH_CAPTURE"
-"$TEST_TMP/gh-mock.sh" issue edit 42 --title "[draft][plan][feat]: Updated consensus plan" > /dev/null
+"$TEST_TMP/gh-mock.sh" issue edit 42 --title "[plan][feat]: Updated consensus plan" > /dev/null
 
 UPDATED_TITLE=$(grep "TITLE:" "$GH_CAPTURE" | tail -1 | cut -d' ' -f2-)
-if [[ "$UPDATED_TITLE" == "[draft][plan][feat]:"* ]]; then
-    echo "✓ Test 4 passed: Updated title preserves [draft][plan] prefix"
+if [[ "$UPDATED_TITLE" == "[plan][feat]:"* ]]; then
+    echo "✓ Test 4 passed: Updated title preserves [plan] prefix"
 else
-    echo "✗ Test 4 failed: Expected [draft][plan] prefix, got '$UPDATED_TITLE'"
+    echo "✗ Test 4 failed: Expected [plan] prefix, got '$UPDATED_TITLE'"
     exit 1
 fi
 
