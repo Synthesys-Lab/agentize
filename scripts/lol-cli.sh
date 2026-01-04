@@ -82,7 +82,7 @@ lol() {
 _agentize_init() {
     local name=""
     local lang=""
-    local path=""
+    local project_path=""
     local source=""
     local metadata_only="0"
 
@@ -98,7 +98,7 @@ _agentize_init() {
                 shift 2
                 ;;
             --path)
-                path="$2"
+                project_path="$2"
                 shift 2
                 ;;
             --source)
@@ -131,13 +131,13 @@ _agentize_init() {
     fi
 
     # Use current directory if --path not provided
-    if [ -z "$path" ]; then
-        path="$PWD"
+    if [ -z "$project_path" ]; then
+        project_path="$PWD"
     fi
 
     # Convert to absolute path
-    path="$(cd "$path" 2>/dev/null && pwd)" || {
-        echo "Error: Invalid path '$path'"
+    project_path="$(cd "$project_path" 2>/dev/null && pwd)" || {
+        echo "Error: Invalid path '$project_path'"
         return 1
     }
 
@@ -148,7 +148,7 @@ _agentize_init() {
     fi
     echo "  Name: $name"
     echo "  Language: $lang"
-    echo "  Path: $path"
+    echo "  Path: $project_path"
     if [ -n "$source" ]; then
         echo "  Source: $source"
     fi
@@ -160,7 +160,7 @@ _agentize_init() {
     # Call agentize-init.sh directly with environment variables
     (
         export AGENTIZE_PROJECT_NAME="$name"
-        export AGENTIZE_PROJECT_PATH="$path"
+        export AGENTIZE_PROJECT_PATH="$project_path"
         export AGENTIZE_PROJECT_LANG="$lang"
         if [ -n "$source" ]; then
             export AGENTIZE_SOURCE_PATH="$source"
@@ -174,13 +174,13 @@ _agentize_init() {
 }
 
 _agentize_update() {
-    local path=""
+    local project_path=""
 
     # Parse arguments
     while [ $# -gt 0 ]; do
         case "$1" in
             --path)
-                path="$2"
+                project_path="$2"
                 shift 2
                 ;;
             *)
@@ -192,29 +192,29 @@ _agentize_update() {
     done
 
     # If no path provided, find nearest .claude/ directory
-    if [ -z "$path" ]; then
+    if [ -z "$project_path" ]; then
         local search_path="$PWD"
-        path=""
+        project_path=""
         while [ "$search_path" != "/" ]; do
             if [ -d "$search_path/.claude" ]; then
-                path="$search_path"
+                project_path="$search_path"
                 break
             fi
             search_path="$(dirname "$search_path")"
         done
 
         # If no .claude/ found, default to current directory with warning
-        if [ -z "$path" ]; then
-            path="$PWD"
+        if [ -z "$project_path" ]; then
+            project_path="$PWD"
             echo "Warning: No .claude/ directory found in current directory or parents"
-            echo "  Defaulting to: $path"
+            echo "  Defaulting to: $project_path"
             echo "  .claude/ will be created during update"
             echo ""
         fi
     else
         # Convert to absolute path
-        path="$(cd "$path" 2>/dev/null && pwd)" || {
-            echo "Error: Invalid path '$path'"
+        project_path="$(cd "$project_path" 2>/dev/null && pwd)" || {
+            echo "Error: Invalid path '$project_path'"
             return 1
         }
 
@@ -222,12 +222,12 @@ _agentize_update() {
     fi
 
     echo "Updating SDK:"
-    echo "  Path: $path"
+    echo "  Path: $project_path"
     echo ""
 
     # Call agentize-update.sh directly with environment variables
     (
-        export AGENTIZE_PROJECT_PATH="$path"
+        export AGENTIZE_PROJECT_PATH="$project_path"
         "$AGENTIZE_HOME/scripts/agentize-update.sh"
     )
 }
