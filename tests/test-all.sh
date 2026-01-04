@@ -7,11 +7,22 @@
 set -e
 
 # Get project root using shell-neutral approach
-PROJECT_ROOT="${AGENTIZE_HOME:-$(git rev-parse --show-toplevel 2>/dev/null)}"
+PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
 if [ -z "$PROJECT_ROOT" ]; then
-  echo "Error: Cannot determine project root. Set AGENTIZE_HOME or run from git repo."
+  echo "Error: Cannot determine project root. Run from git repo."
   exit 1
 fi
+
+# Source local setup.sh to ensure AGENTIZE_HOME points to current worktree
+# (overrides any inherited AGENTIZE_HOME from parent shell)
+if [ -f "$PROJECT_ROOT/setup.sh" ]; then
+  source "$PROJECT_ROOT/setup.sh"
+else
+  # If setup.sh doesn't exist, create it
+  (cd "$PROJECT_ROOT" && make setup >/dev/null 2>&1)
+  source "$PROJECT_ROOT/setup.sh"
+fi
+
 SCRIPT_DIR="$PROJECT_ROOT/tests"
 
 # Detect if TEST_SHELLS was explicitly set (check BEFORE applying default)

@@ -8,8 +8,14 @@ set -e
 # Project root detection
 # ============================================================
 
+# Helper function to get the current project root (current worktree being tested)
+# This is different from AGENTIZE_HOME which points to the agentize framework installation
+get_project_root() {
+    git rev-parse --show-toplevel 2>/dev/null
+}
+
 # Get project root using shell-neutral approach
-PROJECT_ROOT="${AGENTIZE_HOME:-$(git rev-parse --show-toplevel 2>/dev/null)}"
+PROJECT_ROOT="${AGENTIZE_HOME:-$(get_project_root)}"
 if [ -z "$PROJECT_ROOT" ]; then
   echo "Error: Cannot determine project root. Set AGENTIZE_HOME or run from git repo."
   exit 1
