@@ -7,17 +7,160 @@ on:
   pull_request:
     types:
       - opened
+      - closed
 
 env:
   PROJECT_ORG: YOUR_ORG_HERE  # Replace with your GitHub organization
   PROJECT_ID: YOUR_PROJECT_ID_HERE  # Replace with your project number (e.g., 3)
+  STAGE_FIELD_ID: YOUR_STAGE_FIELD_ID_HERE  # Replace with your Stage field ID (e.g., PVTSSF_xxx)
+  STAGE_DONE_OPTION_ID: YOUR_STAGE_DONE_OPTION_ID_HERE  # Replace with your "done" option ID (e.g., PVTSSO_xxx)
 
 jobs:
   add-to-project:
     name: Add to project
     runs-on: ubuntu-latest
+    if: github.event.action == 'opened'
     steps:
-      - uses: actions/add-to-project@v1.0.2
+      # Add issues to project with Stage "proposed"
+      - name: Add issue to project
+        if: github.event_name == 'issues'
+        uses: actions/add-to-project@v1.0.2
         with:
           project-url: https://github.com/orgs/${{ env.PROJECT_ORG }}/projects/${{ env.PROJECT_ID }}
           github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          status-field: Stage
+          status-value: proposed
+
+      # Add PRs to project without setting status
+      - name: Add PR to project
+        if: github.event_name == 'pull_request'
+        uses: actions/add-to-project@v1.0.2
+        with:
+          project-url: https://github.com/orgs/${{ env.PROJECT_ORG }}/projects/${{ env.PROJECT_ID }}
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
+
+  mark-linked-issues-done:
+    name: Mark linked issues as done
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+    steps:
+      - name: Get linked issues
+        id: get-issues
+        env:
+          GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}
+        run: |
+          # Query PR for linked issues using closingIssuesReferences
+          pr_number="${{ github.event.pull_request.number }}"
+          repo_owner="${{ github.repository_owner }}"
+          repo_name="${{ github.event.repository.name }}"
+
+          echo "Querying linked issues for PR #$pr_number..."
+
+          linked_issues=$(gh api graphql -f query='
+            query($owner: String!, $repo: String!, $prNumber: Int!) {
+              repository(owner: $owner, name: $repo) {
+                pullRequest(number: $prNumber) {
+                  closingIssuesReferences(first: 10) {
+                    nodes {
+                      number
+                      id
+                    }
+                  }
+                }
+              }
+            }
+          ' -f owner="$repo_owner" -f repo="$repo_name" -F prNumber="$pr_number" --jq '.data.repository.pullRequest.closingIssuesReferences.nodes')
+
+          echo "linked_issues<<EOF" >> $GITHUB_OUTPUT
+          echo "$linked_issues" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          echo "Found linked issues:"
+          echo "$linked_issues" | jq -r '.[] | "  - Issue #\(.number) (ID: \(.id))"'
+
+      - name: Update linked issues to done
+        if: steps.get-issues.outputs.linked_issues != '[]'
+        env:
+          GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}
+        run: |
+          linked_issues='${{ steps.get-issues.outputs.linked_issues }}'
+          project_org="${{ env.PROJECT_ORG }}"
+          project_id="${{ env.PROJECT_ID }}"
+          stage_field_id="${{ env.STAGE_FIELD_ID }}"
+          stage_done_option_id="${{ env.STAGE_DONE_OPTION_ID }}"
+
+          # Get project node ID
+          echo "Fetching project node ID for $project_org/$project_id..."
+          project_node_id=$(gh api graphql -f query='
+            query($org: String!, $projectNumber: Int!) {
+              organization(login: $org) {
+                projectV2(number: $projectNumber) {
+                  id
+                }
+              }
+            }
+          ' -f org="$project_org" -F projectNumber="$project_id" --jq '.data.organization.projectV2.id')
+
+          echo "Project node ID: $project_node_id"
+
+          # Process each linked issue
+          echo "$linked_issues" | jq -c '.[]' | while read -r issue; do
+            issue_number=$(echo "$issue" | jq -r '.number')
+            issue_node_id=$(echo "$issue" | jq -r '.id')
+
+            echo "Processing issue #$issue_number..."
+
+            # Find the project item for this issue
+            echo "  Looking up project item..."
+            project_item=$(gh api graphql -f query='
+              query($issueId: ID!, $projectId: ID!) {
+                node(id: $issueId) {
+                  ... on Issue {
+                    projectItems(first: 20) {
+                      nodes {
+                        id
+                        project {
+                          id
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ' -f issueId="$issue_node_id" -f projectId="$project_node_id" \
+              --jq ".data.node.projectItems.nodes[] | select(.project.id == \"$project_node_id\") | .id")
+
+            if [ -z "$project_item" ]; then
+              echo "  ⚠️  Issue #$issue_number is not in the project, skipping..."
+              continue
+            fi
+
+            echo "  Project item ID: $project_item"
+
+            # Update the Stage field to "done"
+            echo "  Updating Stage to 'done'..."
+            gh api graphql -f query='
+              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $valueId: String!) {
+                updateProjectV2ItemFieldValue(
+                  input: {
+                    projectId: $projectId
+                    itemId: $itemId
+                    fieldId: $fieldId
+                    value: { singleSelectOptionId: $valueId }
+                  }
+                ) {
+                  projectV2Item {
+                    id
+                  }
+                }
+              }
+            ' -f projectId="$project_node_id" \
+              -f itemId="$project_item" \
+              -f fieldId="$stage_field_id" \
+              -f valueId="$stage_done_option_id" > /dev/null
+
+            echo "  ✅ Issue #$issue_number marked as done"
+          done
+
+          echo ""
+          echo "All linked issues processed successfully!"
