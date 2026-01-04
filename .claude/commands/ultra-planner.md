@@ -246,7 +246,9 @@ Identify unnecessary complexity and propose simpler alternatives."
 
 After all three agents complete, **DO NOT** even try to read their outputs!
 Use `cat` and `heredoc` to combine their outputs into a single debate report
-as below:
+as below.
+
+**IMPORTANT:** Use `.tmp/issue-{N}-debate.md` naming for the debate report to enable issue-number invocation of external-consensus.
 
 **Generate combined report:**
 ```bash
@@ -298,13 +300,15 @@ mv "$DEBATE_REPORT_FILE.tmp" "$DEBATE_REPORT_FILE"
 
 **REQUIRED SKILL CALL:**
 
-Use the Skill tool to invoke the external-consensus skill:
+Use the Skill tool to invoke the external-consensus skill with issue number:
 
 ```
 Skill tool parameters:
   skill: "external-consensus"
-  args: "{DEBATE_REPORT_FILE}"
+  args: "{ISSUE_NUMBER}"
 ```
+
+Note: The skill will resolve `.tmp/issue-{N}-debate.md` from the issue number (created in Step 6).
 
 NOTE: This consensus synthesis can take long time depending on the complexity of the debate report.
 Give it 30 minutes timeout to complete, which is mandatory for **ALL DEBATES**!

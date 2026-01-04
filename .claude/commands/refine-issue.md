@@ -46,8 +46,8 @@ This command fetches an existing GitHub plan issue, runs its content through the
 
 **Files created:**
 - `.tmp/issue-{N}-original.md` - Original issue body
-- `.tmp/debate-report-{timestamp}.md` - Combined three-agent report
-- `.tmp/consensus-plan-{timestamp}.md` - Refined consensus plan
+- `.tmp/issue-{N}-debate.md` - Combined three-agent report
+- `.tmp/issue-{N}-consensus.md` - Refined consensus plan
 
 **GitHub issue:**
 - Updated via `gh issue edit {N} --body-file` with refined plan
@@ -209,12 +209,14 @@ Identify unnecessary complexity and propose simpler alternatives."
 
 ### Step 5: Combine Agent Reports
 
-After all three agents complete, combine their outputs into a single debate report:
+After all three agents complete, combine their outputs into a single debate report.
+
+**IMPORTANT:** Use `.tmp/issue-{N}-debate.md` naming for the debate report to enable issue-number invocation of external-consensus.
 
 **Generate combined report:**
 ```bash
 DATETIME=$(date +"%Y-%m-%d %H:%M")
-DEBATE_REPORT_FILE=".tmp/debate-report-$(date +%Y%m%d-%H%M%S).md"
+DEBATE_REPORT_FILE=".tmp/issue-${ISSUE_NUMBER}-debate.md"
 
 {
     echo "# Multi-Agent Debate Report (Refinement)"
@@ -258,19 +260,21 @@ DEBATE_REPORT_FILE=".tmp/debate-report-$(date +%Y%m%d-%H%M%S).md"
 mv "$DEBATE_REPORT_FILE.tmp" "$DEBATE_REPORT_FILE"
 ```
 
-**Note on filename consistency:** Each filename is generated once using inline `$(date ...)` and stored in a variable. These variables are reused in subsequent steps to ensure all references point to the same files.
+**Note on filename consistency:** The debate report uses `issue-${ISSUE_NUMBER}-debate.md` naming to enable issue-number invocation of external-consensus. Agent report files use timestamps to avoid conflicts across multiple refinements.
 
 ### Step 6: Invoke External Consensus Skill
 
 **REQUIRED SKILL CALL:**
 
-Use the Skill tool to invoke the external-consensus skill:
+Use the Skill tool to invoke the external-consensus skill with issue number:
 
 ```
 Skill tool parameters:
   skill: "external-consensus"
-  args: "{DEBATE_REPORT_FILE}"
+  args: "{ISSUE_NUMBER}"
 ```
+
+Note: The skill will resolve `.tmp/issue-{N}-debate.md` from the issue number (created in Step 5).
 
 **What this skill does:**
 1. Reads the combined debate report from `DEBATE_REPORT_FILE`

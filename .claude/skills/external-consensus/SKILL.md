@@ -114,10 +114,13 @@ When invoked, this skill:
 
 ## Inputs
 
-This skill expects:
-- **Combined report file**: Path to debate report (e.g., `.tmp/debate-report-20251225.md`)
-- **Feature name**: Short name for the feature
-- **Feature description**: Brief description of what user wants to build
+This skill accepts either:
+- **Issue number**: GitHub issue number (e.g., `42`). Resolves to `.tmp/issue-{N}-debate.md`
+- **Combined report file**: Path to debate report (e.g., `.tmp/issue-42-debate.md`)
+
+Optional arguments:
+- **Feature name**: Short name for the feature (auto-extracted if not provided)
+- **Feature description**: Brief description of what user wants to build (auto-extracted if not provided)
 
 ## Outputs
 
@@ -133,10 +136,19 @@ This skill expects:
 Direct invocation - the script handles everything and outputs summary:
 
 ```bash
-# Simple invocation: script auto-extracts feature info and outputs summary
+# Issue-number mode: script resolves .tmp/issue-{N}-debate.md
+.claude/skills/external-consensus/scripts/external-consensus.sh 42
+
+# Issue-number mode with explicit feature name and description (optional)
+.claude/skills/external-consensus/scripts/external-consensus.sh \
+    42 \
+    "Review-Standard Simplification" \
+    "Simplify skill while adding scoring"
+
+# Path mode: traditional invocation (backward compatible)
 .claude/skills/external-consensus/scripts/external-consensus.sh .tmp/issue-42-debate.md
 
-# With explicit feature name and description (optional)
+# Path mode with explicit feature name and description (optional)
 .claude/skills/external-consensus/scripts/external-consensus.sh \
     .tmp/issue-42-debate.md \
     "Review-Standard Simplification" \
@@ -158,7 +170,7 @@ Direct invocation - the script handles everything and outputs summary:
 10. Displays summary information on stderr for user review
 
 **Required inputs:**
-- Path to combined debate report (required)
+- Issue number OR path to combined debate report (required)
 - Feature name (optional, auto-extracted from report)
 - Feature description (optional, auto-extracted from report)
 
@@ -243,6 +255,12 @@ The `external-consensus.sh` script handles most error scenarios internally. Here
 
 The script validates that the debate report file exists. If not, it exits with:
 
+**Issue-number mode:**
+```
+Error: Debate report file not found: .tmp/issue-{N}-debate.md
+```
+
+**Path mode:**
 ```
 Error: Debate report file not found: {file_path}
 ```

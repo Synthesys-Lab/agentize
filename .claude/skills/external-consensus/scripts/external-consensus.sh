@@ -6,12 +6,12 @@
 # debate report using an external AI reviewer (Codex or Claude Opus).
 #
 # Usage:
-#   ./external-consensus.sh <debate-report-path> [feature-name] [feature-description]
+#   ./external-consensus.sh <issue-number|debate-report-path> [feature-name] [feature-description]
 #
 # Arguments:
-#   debate-report-path     Path to the debate report file (required)
-#   feature-name          Short name for the feature (optional, extracted from report if omitted)
-#   feature-description   Brief description (optional, extracted from report if omitted)
+#   issue-number|debate-report-path   Issue number (resolves to .tmp/issue-{N}-debate.md) OR path to debate report (required)
+#   feature-name                      Short name for the feature (optional, extracted from report if omitted)
+#   feature-description               Brief description (optional, extracted from report if omitted)
 #
 # Output:
 #   Prints the path to the generated consensus plan file on stdout
@@ -28,14 +28,25 @@ SKILL_DIR="$(dirname "$SCRIPT_DIR")"
 
 # Validate input arguments
 if [ $# -lt 1 ]; then
-    echo "Error: Debate report path is required" >&2
-    echo "Usage: $0 <debate-report-path> [feature-name] [feature-description]" >&2
+    echo "Error: Issue number or debate report path is required" >&2
+    echo "Usage: $0 <issue-number|debate-report-path> [feature-name] [feature-description]" >&2
     exit 1
 fi
 
-DEBATE_REPORT_PATH="$1"
-FEATURE_NAME="${2:-}"
-FEATURE_DESCRIPTION="${3:-}"
+# Detect issue-number mode vs path mode
+if [[ "$1" =~ ^[0-9]+$ ]]; then
+    # Issue-number mode: resolve to .tmp/issue-{N}-debate.md
+    ISSUE_NUMBER="$1"
+    DEBATE_REPORT_PATH=".tmp/issue-${ISSUE_NUMBER}-debate.md"
+    shift
+else
+    # Path mode: use provided path
+    DEBATE_REPORT_PATH="$1"
+    shift
+fi
+
+FEATURE_NAME="${1:-}"
+FEATURE_DESCRIPTION="${2:-}"
 
 # Validate debate report exists
 if [ ! -f "$DEBATE_REPORT_PATH" ]; then
@@ -46,11 +57,12 @@ fi
 # Generate timestamp for temp files
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
-# Extract issue number from debate report filename if it follows pattern issue-N-debate.md
-ISSUE_NUMBER=""
-DEBATE_REPORT_BASENAME=$(basename "$DEBATE_REPORT_PATH")
-if [[ "$DEBATE_REPORT_BASENAME" =~ ^issue-([0-9]+)- ]]; then
-    ISSUE_NUMBER="${BASH_REMATCH[1]}"
+# Extract issue number from debate report filename if not already set (path mode)
+if [ -z "$ISSUE_NUMBER" ]; then
+    DEBATE_REPORT_BASENAME=$(basename "$DEBATE_REPORT_PATH")
+    if [[ "$DEBATE_REPORT_BASENAME" =~ ^issue-([0-9]+)- ]]; then
+        ISSUE_NUMBER="${BASH_REMATCH[1]}"
+    fi
 fi
 
 # Extract feature name and description from debate report if not provided

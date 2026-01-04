@@ -99,15 +99,17 @@ claude -p \
 
 The skill uses a formalized script (`scripts/external-consensus.sh`) that:
 
-1. Validates the debate report file exists
-2. Extracts feature name/description from the report (if not provided)
-3. Loads and processes the prompt template with variable substitution
-4. Checks if Codex is available (prefers Codex, falls back to Claude Opus)
-5. Invokes external AI with appropriate configuration:
+1. Parses input to detect issue number or path mode
+2. Resolves debate report path (`.tmp/issue-{N}-debate.md` if issue number provided)
+3. Validates the debate report file exists
+4. Extracts feature name/description from the report (if not provided)
+5. Loads and processes the prompt template with variable substitution
+6. Checks if Codex is available (prefers Codex, falls back to Claude Opus)
+7. Invokes external AI with appropriate configuration:
    - **Codex**: gpt-5.2-codex, read-only sandbox, web search, xhigh reasoning
    - **Claude**: Opus model, read-only tools (Read, Grep, Glob, WebSearch, WebFetch)
-6. Saves consensus plan to `.tmp/consensus-plan-{timestamp}.md`
-7. Returns the consensus file path for validation and summary extraction
+8. Saves consensus plan to `.tmp/issue-{N}-consensus.md` (issue mode) or `.tmp/consensus-plan-{timestamp}.md` (path mode)
+9. Returns the consensus file path for validation and summary extraction
 
 ## Notes
 
