@@ -195,8 +195,11 @@ cmd_init() {
             local hooks_dir
             hooks_dir=$(git -C "$main_worktree_path" rev-parse --git-path hooks)
 
+            # Skip installation if hooks are disabled via core.hooksPath
+            if [ "$hooks_dir" = "/dev/null" ] || [ -z "$hooks_dir" ]; then
+                echo "  Skipping pre-commit hook installation (hooks disabled via core.hooksPath)"
             # Check if hook already exists and is not ours
-            if [ -f "$hooks_dir/pre-commit" ] && [ ! -L "$hooks_dir/pre-commit" ]; then
+            elif [ -f "$hooks_dir/pre-commit" ] && [ ! -L "$hooks_dir/pre-commit" ]; then
                 echo "  Warning: Custom pre-commit hook detected, skipping installation"
             else
                 echo "  Installing pre-commit hook..."
@@ -488,8 +491,11 @@ cmd_create() {
             local hooks_dir
             hooks_dir=$(git -C "$worktree_path" rev-parse --git-path hooks)
 
+            # Skip installation if hooks are disabled via core.hooksPath
+            if [ "$hooks_dir" = "/dev/null" ] || [ -z "$hooks_dir" ]; then
+                echo "  Skipping pre-commit hook installation (hooks disabled via core.hooksPath)"
             # Check if hook already exists and is not ours
-            if [ -f "$hooks_dir/pre-commit" ] && [ ! -L "$hooks_dir/pre-commit" ]; then
+            elif [ -f "$hooks_dir/pre-commit" ] && [ ! -L "$hooks_dir/pre-commit" ]; then
                 echo "  Warning: Custom pre-commit hook detected, skipping installation"
             else
                 echo "  Installing pre-commit hook..."
