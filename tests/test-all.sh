@@ -61,6 +61,24 @@ else
   CATEGORIES="$@"
 fi
 
+# Function to check if test should be skipped (hook tests skip in zsh)
+should_skip_test() {
+    local shell="$1"
+    local test_script="$2"
+    local test_name=$(basename "$test_script" .sh)
+
+    # Hook tests only run in bash (Claude Code invokes hooks with bash only)
+    if [ "$shell" = "zsh" ]; then
+        case "$test_name" in
+            test-hook-*|test-milestone-resume-hint|test-refine-issue-extract-plan|test-worktree-env-override-title-length)
+                return 0  # Should skip
+                ;;
+        esac
+    fi
+
+    return 1  # Should not skip
+}
+
 # Function to run a test with a specific shell
 run_test() {
     local shell="$1"
@@ -114,6 +132,15 @@ for shell in $TEST_SHELLS; do
         for test_file in "$category_dir"/test-*.sh; do
             # Skip if it doesn't exist (glob didn't match)
             if [ ! -f "$test_file" ]; then
+                continue
+            fi
+
+            # Skip hook tests when running in zsh
+            if should_skip_test "$shell" "$test_file"; then
+                test_name=$(basename "$test_file" .sh)
+                echo "✓ $test_name (skipped: hook tests only run in bash)"
+                TOTAL_TESTS=$((TOTAL_TESTS + 1))
+                PASSED_TESTS=$((PASSED_TESTS + 1))
                 continue
             fi
 
