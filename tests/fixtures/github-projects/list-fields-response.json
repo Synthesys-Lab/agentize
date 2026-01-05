@@ -1,0 +1,28 @@
+{
+  "data": {
+    "node": {
+      "fields": {
+        "nodes": [
+          {
+            "id": "PVTSSF_laDpZ4woBzA",
+            "name": "Status",
+            "options": [
+              {
+                "id": "f75ad846",
+                "name": "Todo"
+              },
+              {
+                "id": "47fc9ee4",
+                "name": "In Progress"
+              },
+              {
+                "id": "98236657",
+                "name": "Done"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

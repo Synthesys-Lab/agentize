@@ -38,30 +38,29 @@ For more control over automation (e.g., setting custom field values, complex fil
 
 **Setup steps:**
 
-1. Generate the workflow template:
-   ```bash
-   lol project --automation
-   ```
-
-2. Review the output and configure field IDs:
-   - Locate `STAGE_FIELD_ID` placeholder in the template
-   - See [Configuring Field IDs](#configuring-field-ids) below for lookup instructions
-
-3. Save the configured template to your repository:
+1. Generate and configure the workflow template:
    ```bash
    lol project --automation --write .github/workflows/add-to-project.yml
    ```
 
-4. Set up the Personal Access Token (see [Security: Personal Access Token (PAT)](#security-personal-access-token-pat) section below)
+   This command will:
+   - Automatically check if a "Stage" field exists in your project
+   - Create the "Stage" field with options (proposed, accepted) if it doesn't exist
+   - Auto-fill the `STAGE_FIELD_ID` in the generated workflow file
+   - Write the fully configured workflow to the specified path
 
-5. Commit and push:
+2. Set up the Personal Access Token (see [Security: Personal Access Token (PAT)](#security-personal-access-token-pat) section below)
+
+3. Commit and push:
    ```bash
    git add .github/workflows/add-to-project.yml
    git commit -m "Add GitHub Projects automation workflow"
    git push
    ```
 
-6. Verify the workflow runs on the **Actions** tab
+4. Verify the workflow runs on the **Actions** tab
+
+**Note:** If the command cannot access your project (e.g., not authenticated or project doesn't exist), it will generate a template with placeholder values that you'll need to configure manually. See [Manual Configuration](#manual-configuration) below.
 
 **Template reference:** See [`templates/github/project-auto-add.yml`](../../templates/github/project-auto-add.yml)
 
@@ -75,10 +74,10 @@ For more control over automation (e.g., setting custom field values, complex fil
 - Automatic lifecycle management (proposed → closed)
 - Native PR-to-issue linking via GitHub's closingIssuesReferences
 - Supports complex filtering conditions
+- **Automatic Stage field creation and configuration**
 
 **Limitations:**
 - Requires workflow file maintenance
-- Requires manual field/option ID configuration
 - Consumes GitHub Actions minutes
 - May hit API rate limits on large repos
 
@@ -105,9 +104,20 @@ The template also includes a PR-merge job that closes linked issues when PRs are
 
 See the [`actions/add-to-project` documentation](https://github.com/actions/add-to-project) for all available action parameters.
 
-## Configuring Field IDs
+## Manual Configuration
 
-The generated workflow template uses the `actions/add-to-project` action to set the Stage field to "proposed" for new issues. This requires you to look up the Stage field ID for your project.
+**When is manual configuration needed?**
+
+The `lol project --automation --write` command automatically configures the Stage field for you. However, manual configuration may be needed if:
+- You're not authenticated with GitHub CLI (`gh auth login`)
+- The project doesn't exist or you don't have access to it
+- You want to use a different field name (not "Stage")
+
+If automatic configuration fails, the command will generate a template with placeholder values and provide instructions for manual setup.
+
+### Manual Field ID Lookup
+
+The generated workflow template uses the `actions/add-to-project` action to set the Stage field to "proposed" for new issues. If you need to manually configure this, follow these steps to look up the Stage field ID for your project.
 
 **Step 1: Get your project's GraphQL ID**
 

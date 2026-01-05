@@ -141,7 +141,12 @@ The generated template:
 - Sets Stage field to "proposed" for newly opened issues
 - Closes linked issues when associated PRs are merged
 
-Configuration required: PAT with project permissions, Stage field ID for setting initial status.
+**Automatic configuration:**
+- Checks if "Stage" field exists in your project
+- Creates the "Stage" field (proposed, accepted) if it doesn't exist
+- Auto-fills `STAGE_FIELD_ID` in the generated workflow
+
+Configuration required: PAT with project permissions. Stage field is configured automatically if you have project access.
 
 - `--write` - Write template to file (optional, defaults to stdout)
 
