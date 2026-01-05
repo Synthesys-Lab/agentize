@@ -42,3 +42,52 @@ When `.agentize.yaml` is missing, `wt` falls back to automatic detection (main/m
 - `wt list`: List all existing worktrees.
 - `wt prune`: Remove stale worktree metadata.
 - `wt help`: Display help information about available commands.
+
+## Shell Completion (zsh)
+
+The `wt` command provides tab-completion support for zsh users. After running `make setup` and sourcing `setup.sh`, completions are automatically enabled.
+
+**Features:**
+- Subcommand completion (`wt <TAB>` shows: init, main, spawn, list, remove, prune, help)
+- Flag completion for `spawn` (`--yolo`, `--no-agent`)
+- Flag completion for `remove` (`-D`, `--force`)
+
+**Setup:**
+1. Run `make setup` to generate `setup.sh`
+2. Source `setup.sh` in your shell: `source setup.sh`
+3. Tab-completion will be available for `wt` commands
+
+**Note:** Completion setup only affects zsh users. Bash users can continue using `wt` without any changes.
+
+## Completion Helper Interface
+
+The `wt` command includes a shell-agnostic completion helper for use by completion systems:
+
+```bash
+wt --complete <topic>
+```
+
+**Topics:**
+- `commands` - List available subcommands (init, main, spawn, list, remove, prune, help)
+- `spawn-flags` - List flags for `wt spawn` (--yolo, --no-agent)
+- `remove-flags` - List flags for `wt remove` (-D, --force)
+
+**Output format:** Newline-delimited tokens, no descriptions.
+
+**Example:**
+```bash
+$ wt --complete commands
+init
+main
+spawn
+list
+remove
+prune
+help
+
+$ wt --complete spawn-flags
+--yolo
+--no-agent
+```
+
+This helper is used by the zsh completion system and can be used by other shells in the future.
