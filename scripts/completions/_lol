@@ -1,0 +1,136 @@
+#compdef lol
+
+# Zsh completion for lol (AI-powered SDK CLI)
+# This completion file provides interactive command-line hints for lol subcommands and flags
+
+_lol() {
+    local curcontext="$curcontext" state line
+    typeset -A opt_args
+
+    # Try to use lol --complete if available, fallback to static lists
+    local -a commands
+    if (( $+commands[lol] )); then
+        # Dynamically fetch commands from lol --complete
+        commands=( ${(f)"$(lol --complete commands 2>/dev/null)"} )
+    fi
+
+    # Fallback to static command list if dynamic fetch failed
+    if (( ${#commands} == 0 )); then
+        commands=(
+            'init:Initialize AI-powered SDK'
+            'update:Update SDK configuration'
+            'project:Manage GitHub Projects v2 integration'
+        )
+    else
+        # Add descriptions to dynamically fetched commands
+        local -a commands_with_desc
+        for cmd in $commands; do
+            case $cmd in
+                init) commands_with_desc+=('init:Initialize AI-powered SDK') ;;
+                update) commands_with_desc+=('update:Update SDK configuration') ;;
+                project) commands_with_desc+=('project:Manage GitHub Projects v2 integration') ;;
+            esac
+        done
+        commands=( $commands_with_desc )
+    fi
+
+    _arguments -C \
+        '1: :->command' \
+        '*::arg:->args'
+
+    case $state in
+        command)
+            _describe -t commands 'lol commands' commands
+            ;;
+        args)
+            case $line[1] in
+                init)
+                    _lol_init
+                    ;;
+                update)
+                    _lol_update
+                    ;;
+                project)
+                    _lol_project
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+# Completion for 'lol init' subcommand
+_lol_init() {
+    local -a init_flags lang_values
+
+    # Try dynamic fetch first
+    if (( $+commands[lol] )); then
+        init_flags=( ${(f)"$(lol --complete init-flags 2>/dev/null)"} )
+        lang_values=( ${(f)"$(lol --complete lang-values 2>/dev/null)"} )
+    fi
+
+    # Fallback to static flags
+    if (( ${#init_flags} == 0 )); then
+        init_flags=( '--name' '--lang' '--path' '--source' '--metadata-only' )
+    fi
+    if (( ${#lang_values} == 0 )); then
+        lang_values=( 'c' 'cxx' 'python' )
+    fi
+
+    _arguments \
+        '--name[Project name]:name:' \
+        '--lang[Programming language]:language:('$lang_values')' \
+        '--path[Project path]:path:_files -/' \
+        '--source[Source code path]:source path:_files -/' \
+        '--metadata-only[Create only .agentize.yaml]'
+}
+
+# Completion for 'lol update' subcommand
+_lol_update() {
+    local -a update_flags
+
+    # Try dynamic fetch first
+    if (( $+commands[lol] )); then
+        update_flags=( ${(f)"$(lol --complete update-flags 2>/dev/null)"} )
+    fi
+
+    # Fallback to static flags
+    if (( ${#update_flags} == 0 )); then
+        update_flags=( '--path' )
+    fi
+
+    _arguments \
+        '--path[Project path]:path:_files -/'
+}
+
+# Completion for 'lol project' subcommand
+_lol_project() {
+    local -a project_modes project_create_flags project_automation_flags
+
+    # Try dynamic fetch first
+    if (( $+commands[lol] )); then
+        project_modes=( ${(f)"$(lol --complete project-modes 2>/dev/null)"} )
+        project_create_flags=( ${(f)"$(lol --complete project-create-flags 2>/dev/null)"} )
+        project_automation_flags=( ${(f)"$(lol --complete project-automation-flags 2>/dev/null)"} )
+    fi
+
+    # Fallback to static flags
+    if (( ${#project_modes} == 0 )); then
+        project_modes=( '--create' '--associate' '--automation' )
+    fi
+    if (( ${#project_create_flags} == 0 )); then
+        project_create_flags=( '--org' '--title' )
+    fi
+    if (( ${#project_automation_flags} == 0 )); then
+        project_automation_flags=( '--write' )
+    fi
+
+    _arguments \
+        '--create[Create new GitHub Projects v2 board]' \
+        '--associate[Associate existing project board]:org/id:' \
+        '--automation[Generate automation workflow template]' \
+        '--org[GitHub organization]:organization:' \
+        '--title[Project title]:title:' \
+        '--write[Write automation template to file]:path:_files'
+}
+
+_lol "$@"

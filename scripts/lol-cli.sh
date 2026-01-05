@@ -2,7 +2,59 @@
 # Cross-project lol shell function
 # Provides ergonomic init/update commands for AI-powered SDK operations
 
+# Shell-agnostic completion helper
+# Returns newline-delimited lists for shell completion systems
+lol_complete() {
+    local topic="$1"
+
+    case "$topic" in
+        commands)
+            echo "init"
+            echo "update"
+            echo "project"
+            ;;
+        init-flags)
+            echo "--name"
+            echo "--lang"
+            echo "--path"
+            echo "--source"
+            echo "--metadata-only"
+            ;;
+        update-flags)
+            echo "--path"
+            ;;
+        project-modes)
+            echo "--create"
+            echo "--associate"
+            echo "--automation"
+            ;;
+        project-create-flags)
+            echo "--org"
+            echo "--title"
+            ;;
+        project-automation-flags)
+            echo "--write"
+            ;;
+        lang-values)
+            echo "c"
+            echo "cxx"
+            echo "python"
+            ;;
+        *)
+            # Unknown topic, return empty
+            return 0
+            ;;
+    esac
+}
+
 lol() {
+    # Handle completion helper before AGENTIZE_HOME validation
+    # This allows completion to work even outside agentize context
+    if [ "$1" = "--complete" ]; then
+        lol_complete "$2"
+        return 0
+    fi
+
     # Check if AGENTIZE_HOME is set
     if [ -z "$AGENTIZE_HOME" ]; then
         echo "Error: AGENTIZE_HOME environment variable is not set"
