@@ -157,6 +157,16 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/handsoff-auto-continue.sh"
+          }
+        ]
+      }
     ]
   }
 }

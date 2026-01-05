@@ -13,6 +13,11 @@ if [ -f setup.sh ]; then
     source setup.sh
 fi
 
+# Reset auto-continue counter on session start when hands-off mode is enabled
+if [[ "$CLAUDE_HANDSOFF" == "true" ]]; then
+    rm -f .tmp/claude-hooks/handsoff-sessions/continuation-count
+fi
+
 # Show milestone resume hint if applicable
 if [ -f .claude/hooks/milestone-resume-hint.sh ]; then
     bash .claude/hooks/milestone-resume-hint.sh
