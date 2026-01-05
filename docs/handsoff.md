@@ -50,6 +50,54 @@ issue-to-impl:implementation:3:10
 
 **Fail-closed**: Invalid state file content or missing workflow defaults to `ask` (manual intervention required).
 
+**Decision logic**: The Stop hook uses bash-based conditional logic to evaluate workflow state and continuation count. It does not invoke any LLM or API; all decisions are made locally based on state file contents.
+
+
+## Debug Logging
+
+When troubleshooting auto-continuation behavior, enable debug logging with `HANDSOFF_DEBUG=true`. This creates a per-session JSONL history file that records workflow state transitions, Stop decisions, and the reasons behind them.
+
+**Enable debug logging:**
+```bash
+export HANDSOFF_DEBUG=true
+```
+
+**History file location:**
+```
+.tmp/claude-hooks/handsoff-sessions/history/<session_id>.jsonl
+```
+
+**JSONL schema:**
+Each line is a JSON object with these fields:
+- `timestamp`: ISO 8601 timestamp
+- `session_id`: Session identifier
+- `event`: Hook event type (`UserPromptSubmit`, `PostToolUse`, `Stop`)
+- `workflow`: Workflow name (`ultra-planner`, `issue-to-impl`, or empty)
+- `state`: Current workflow state (e.g., `planning`, `implementation`, `done`)
+- `count`: Current continuation count
+- `max`: Maximum continuations allowed
+- `decision`: Hook decision (`allow`, `ask`, or empty for non-Stop events)
+- `reason`: Reason code for Stop decisions (see below)
+- `description`: Human-readable description from hook parameters
+- `tool_name`: Tool name for PostToolUse events (e.g., `Skill`, `Bash`)
+- `tool_args`: Tool arguments for PostToolUse events
+- `new_state`: New workflow state after PostToolUse transitions
+
+**Reason codes for Stop decisions:**
+- `handsoff_disabled`: `CLAUDE_HANDSOFF` not set to `"true"`
+- `no_state_file`: State file not found for session
+- `workflow_done`: Workflow state is `done` (completion reached)
+- `invalid_max`: `HANDSOFF_MAX_CONTINUATIONS` is non-numeric or ≤ 0
+- `over_limit`: Continuation count exceeds max limit
+- `under_limit`: Count ≤ max, auto-continue allowed
+
+**Example history entry (Stop event):**
+```json
+{"timestamp":"2026-01-05T10:23:45Z","session_id":"abc123","event":"Stop","workflow":"issue-to-impl","state":"implementation","count":"3","max":"10","decision":"allow","reason":"under_limit","description":"Milestone 2 created","tool_name":"","tool_args":"","new_state":""}
+```
+
+**Privacy note:** History logs contain tool arguments and descriptions from hook parameters, which may include user content. Logging is opt-in; disable by unsetting `HANDSOFF_DEBUG` or setting it to any value other than `"true"`.
+
 
 ## Related Documentation
 

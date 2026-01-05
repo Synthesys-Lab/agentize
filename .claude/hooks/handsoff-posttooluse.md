@@ -42,6 +42,7 @@ No direct output. Side effect: Updates state file when workflow transitions occu
 4. **Parse tool info**: Extract tool name and arguments from JSON params
 5. **Determine transition**: Call `handsoff_transition()` to compute new state
 6. **Update state**: If state changed, write updated state to file
+7. **Log transition** (if `HANDSOFF_DEBUG=true`): Append entry to history file
 
 ## Workflow Transitions
 
@@ -82,3 +83,21 @@ Registered in `.claude/settings.json`:
 Works with:
 - `handsoff-userpromptsubmit.sh` - Creates initial state
 - `handsoff-auto-continue.sh` - Reads state to decide continuation
+
+## Debug Logging
+
+When `HANDSOFF_DEBUG=true`, this hook appends a JSONL entry to `.tmp/claude-hooks/handsoff-sessions/history/<session_id>.jsonl` after updating workflow state.
+
+**Fields logged**:
+- `event`: `"PostToolUse"`
+- `tool_name`: Tool name from params (e.g., `"Skill"`, `"Bash"`)
+- `tool_args`: Tool arguments (e.g., skill name, command)
+- `new_state`: New workflow state after transition
+- `workflow`, `state`, `count`, `max`: State file values (state reflects new value)
+- `description`: Value from hook parameter `$2` (DESCRIPTION)
+- `decision`, `reason`: Empty strings
+
+**Example entry**:
+```json
+{"timestamp":"2026-01-05T10:22:30Z","session_id":"abc123","event":"PostToolUse","workflow":"issue-to-impl","state":"implementation","count":"0","max":"10","decision":"","reason":"","description":"Tool executed","tool_name":"Skill","tool_args":"milestone","new_state":"implementation"}
+```

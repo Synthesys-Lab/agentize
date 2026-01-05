@@ -47,6 +47,7 @@ No direct output. Side effect: Creates state file if workflow detected.
 5. **Skip if no workflow**: If workflow is empty/unknown, exit
 6. **Determine max**: Use `HANDSOFF_MAX_CONTINUATIONS` or default to 10
 7. **Write state**: Create state file with initial state for detected workflow
+8. **Log initialization** (if `HANDSOFF_DEBUG=true`): Append entry to history file
 
 ## Workflow Detection
 
@@ -68,3 +69,21 @@ Registered in `.claude/settings.json`:
 Works with:
 - `handsoff-posttooluse.sh` - Updates state based on tool usage
 - `handsoff-auto-continue.sh` - Checks state to decide continuation
+
+## Debug Logging
+
+When `HANDSOFF_DEBUG=true`, this hook appends a JSONL entry to `.tmp/claude-hooks/handsoff-sessions/history/<session_id>.jsonl` after creating the initial state file.
+
+**Fields logged**:
+- `event`: `"UserPromptSubmit"`
+- `workflow`: Detected workflow name
+- `state`: Initial workflow state
+- `count`: `"0"`
+- `max`: Configured max continuations
+- `description`: Value from hook parameter `$2` (DESCRIPTION)
+- `decision`, `reason`, `tool_name`, `tool_args`, `new_state`: Empty strings
+
+**Example entry**:
+```json
+{"timestamp":"2026-01-05T10:20:00Z","session_id":"abc123","event":"UserPromptSubmit","workflow":"issue-to-impl","state":"docs_tests","count":"0","max":"10","decision":"","reason":"","description":"User submitted prompt","tool_name":"","tool_args":"","new_state":""}
+```

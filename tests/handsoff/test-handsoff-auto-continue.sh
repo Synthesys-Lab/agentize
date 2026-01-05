@@ -157,11 +157,39 @@ TESTS_PASSED=$((TESTS_PASSED + 1))
 unset CLAUDE_HANDSOFF
 unset HANDSOFF_MAX_CONTINUATIONS
 
+# Test 7: No debug history created when HANDSOFF_DEBUG unset
+test_info "Test 7: No debug history when HANDSOFF_DEBUG unset"
+cleanup_state
+mkdir -p "$STATE_DIR"
+
+export CLAUDE_HANDSOFF=true
+export HANDSOFF_MAX_CONTINUATIONS=10
+unset HANDSOFF_DEBUG
+
+# Create initial state
+echo "issue-to-impl:implementation:0:10" > "$STATE_FILE"
+
+# Run Stop hook
+"$HOOK_SCRIPT" "Stop" "Agent completed milestone" '{}' >/dev/null 2>&1
+
+# Verify no history directory or file created
+HISTORY_DIR="$STATE_DIR/history"
+HISTORY_FILE="$HISTORY_DIR/${TEST_SESSION_ID}.jsonl"
+if [[ -f "$HISTORY_FILE" ]]; then
+    test_fail "Test 7 - History file should not be created when HANDSOFF_DEBUG unset"
+fi
+
+echo -e "${GREEN}✓ Test 7 passed: No debug history when debug disabled${NC}"
+TESTS_PASSED=$((TESTS_PASSED + 1))
+
+unset CLAUDE_HANDSOFF
+unset HANDSOFF_MAX_CONTINUATIONS
+
 # Clean up after all tests
 cleanup_state
 unset CLAUDE_SESSION_ID
 
 # Final summary
 echo ""
-echo -e "${GREEN}All tests passed! (${TESTS_PASSED}/6)${NC}"
+echo -e "${GREEN}All tests passed! (${TESTS_PASSED}/7)${NC}"
 exit 0

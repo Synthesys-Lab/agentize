@@ -96,6 +96,7 @@ Hooks enable automated behaviors and integrations at key points in the Claude Co
 **Inputs**:
 - `CLAUDE_HANDSOFF`: Enable/disable hands-off mode
 - `HANDSOFF_MAX_CONTINUATIONS`: Integer limit (default: 10, fail-closed on invalid values)
+- `HANDSOFF_DEBUG`: Enable debug history logging (set to `"true"` to enable)
 
 **Outputs**:
 - `allow`: Auto-continue (workflow not done, under limit)
@@ -103,6 +104,9 @@ Hooks enable automated behaviors and integrations at key points in the Claude Co
 
 **State file format**:
 - `.tmp/claude-hooks/handsoff-sessions/<session_id>.state`: Single-line format `workflow:state:count:max`
+
+**Debug logging** (when `HANDSOFF_DEBUG=true`):
+- `.tmp/claude-hooks/handsoff-sessions/history/<session_id>.jsonl`: JSONL history of state transitions, Stop decisions, and tool invocations
 
 ### post-edit.sh
 **Event**: After file edits via Edit tool

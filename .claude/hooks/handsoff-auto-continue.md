@@ -62,6 +62,9 @@ Returns one of:
 5. **Increment counter**: Add 1 to count field in state
 6. **Save state**: Write updated state to file
 7. **Decide**: Return `allow` if count ≤ max, otherwise `ask`
+8. **Log decision** (if `HANDSOFF_DEBUG=true`): Append decision and reason to history file
+
+**Decision logic**: All decisions are made using bash conditional logic based on state file contents. The hook does not invoke any LLM or API.
 
 ## Example Flow
 
@@ -113,3 +116,28 @@ State tracking coordinated across three hooks:
 - `handsoff-userpromptsubmit.sh` - Creates initial state
 - `handsoff-posttooluse.sh` - Updates state on workflow events
 - `handsoff-auto-continue.sh` - Checks state and decides on continuation
+
+## Debug Logging
+
+When `HANDSOFF_DEBUG=true`, this hook appends a JSONL entry to `.tmp/claude-hooks/handsoff-sessions/history/<session_id>.jsonl` after each Stop decision.
+
+**Fields logged**:
+- `event`: `"Stop"`
+- `decision`: `"allow"` or `"ask"`
+- `reason`: Reason code (see below)
+- `description`: Value from hook parameter `$2` (DESCRIPTION)
+- `workflow`, `state`, `count`, `max`: Current state file values
+- `timestamp`, `session_id`: Standard metadata
+
+**Reason codes**:
+- `handsoff_disabled`: `CLAUDE_HANDSOFF` not `"true"`
+- `no_state_file`: State file missing
+- `workflow_done`: State is `"done"`
+- `invalid_max`: `HANDSOFF_MAX_CONTINUATIONS` invalid
+- `over_limit`: Count > max
+- `under_limit`: Count ≤ max (allow)
+
+**Example entry**:
+```json
+{"timestamp":"2026-01-05T10:23:45Z","session_id":"abc123","event":"Stop","workflow":"issue-to-impl","state":"implementation","count":"3","max":"10","decision":"allow","reason":"under_limit","description":"Milestone 2 created","tool_name":"","tool_args":"","new_state":""}
+```
