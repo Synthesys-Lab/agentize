@@ -23,7 +23,8 @@ Instead, modify the CLI and SDK code or tests themselves to pass the tests.
 
 Keep in mind that `AGENTIZE_HOME` is set to point to the current work tree you are testing against!
 `PROJECT_ROOT` is set to the root of the repository using agentize CLI to initialize, update, and
-develop!
+develop! **NO TEST** shall modify these two variables using `export`. Just use them as they are.
+`PROJECT_ROOT` should be computed using the wrapper in `common.sh`.
 
 # Helper Scripts
 
