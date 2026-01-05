@@ -374,6 +374,8 @@ To implement: /issue-to-impl ${ISSUE_NUMBER}
 
 Display this output to the user. Command completes successfully.
 
+**Hands-off auto-continue note:** With `CLAUDE_HANDSOFF=true`, this workflow auto-continues through Stop events (e.g., placeholder creation, consensus completion) up to the configured limit (default: 10). See `docs/handsoff.md` for details.
+
 ## Usage Examples
 
 ### Example 1: Basic Feature Planning

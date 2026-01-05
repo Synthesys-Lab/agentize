@@ -207,6 +207,11 @@ export CLAUDE_HANDSOFF=true
 /refine-issue 42
 ```
 
-This auto-approves file reads, exploration, and local file writes during the planning process.
+This auto-approves file reads, exploration, and local file writes during the planning process. With hands-off mode enabled, workflows automatically continue after Stop events (e.g., when creating placeholder issues or updating with consensus plans) up to the configured limit (default: 10 continuations per session).
 
-See [Hands-Off Mode Documentation](../handsoff.md) for complete details.
+Once the auto-continue limit is reached, you can manually resume:
+```bash
+User: Continue from where you left off
+```
+
+See [Hands-Off Mode Documentation](../handsoff.md) for complete details on auto-continue limits and configuration.

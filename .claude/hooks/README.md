@@ -55,6 +55,29 @@ Hooks enable automated behaviors and integrations at key points in the Claude Co
 - Auto-approves safe, local operations (reads, writes, git commands on feature branches)
 - Always requires approval for destructive operations (push, force operations)
 
+### handsoff-auto-continue.sh
+**Event**: Stop (when agent completes a task/milestone checkpoint)
+
+**Purpose**: Auto-continue workflows in hands-off mode up to configured limit
+
+**Behavior**:
+- Only activates when `CLAUDE_HANDSOFF=true`
+- Checks continuation counter against `HANDSOFF_MAX_CONTINUATIONS` (default: 10)
+- Returns `allow` if under limit (auto-continues), `ask` if at/over limit (manual resume required)
+- Counter stored in `.tmp/claude-hooks/handsoff-sessions/continuation-count`
+- Counter resets on SessionStart when hands-off mode is enabled
+
+**Inputs**:
+- `CLAUDE_HANDSOFF`: Enable/disable hands-off mode
+- `HANDSOFF_MAX_CONTINUATIONS`: Integer limit (default: 10, fail-closed on invalid values)
+
+**Outputs**:
+- `allow`: Auto-continue (under limit)
+- `ask`: Require manual input (at/over limit or hands-off disabled)
+
+**State file**:
+- `.tmp/claude-hooks/handsoff-sessions/continuation-count`: Plain integer storing current count
+
 ### post-edit.sh
 **Event**: After file edits via Edit tool
 

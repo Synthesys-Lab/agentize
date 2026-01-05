@@ -109,6 +109,42 @@ Hands-off mode is designed for **local development workflows** on feature branch
 3. **No publish auto-approval**: Remote operations (push, PR creation) always require confirmation
 4. **Explicit denylists**: Destructive commands are explicitly blocked from auto-approval
 
+## Auto-Continue for Workflows
+
+When hands-off mode is enabled, long-running workflows like `/ultra-planner` and `/issue-to-impl` can automatically continue after reaching Stop events (when the agent completes a milestone or task checkpoint).
+
+### Auto-Continue Limit
+
+By default, workflows auto-continue up to **10 times** per session before requiring manual input. This prevents infinite loops while allowing multi-milestone implementations to proceed hands-free.
+
+**Configure the limit:**
+```bash
+export HANDSOFF_MAX_CONTINUATIONS=10  # Default
+export HANDSOFF_MAX_CONTINUATIONS=5   # Fewer continuations
+export HANDSOFF_MAX_CONTINUATIONS=20  # More continuations
+```
+
+**How it works:**
+1. When a workflow reaches a Stop event (e.g., "Milestone 2 created, resume to continue")
+2. The system checks the continuation counter
+3. If under the limit, automatically continues with "Continue from the latest milestone"
+4. If at/over the limit, waits for manual input
+5. Counter resets at the start of each new session
+
+**Manual resume after limit:**
+```bash
+# Once auto-continue limit is reached, resume manually:
+User: Continue from the latest milestone
+User: Resume implementation
+```
+
+### Supported Environment Variables
+
+- `CLAUDE_HANDSOFF`: Enable/disable hands-off mode (`true`/`false`)
+- `HANDSOFF_MAX_CONTINUATIONS`: Auto-continue limit (integer, default: 10)
+
+Invalid or non-positive values for `HANDSOFF_MAX_CONTINUATIONS` disable auto-continue (fail-closed).
+
 ## Disabling Hands-Off Mode
 
 ```bash

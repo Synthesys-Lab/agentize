@@ -279,6 +279,8 @@ Starting automatic implementation loop...
    - **LOC ≥ 800 AND tests incomplete** → Create Milestone {M+1}, inform user
    - **All tests pass** → Signal completion
 
+**Hands-off auto-continue note:** With `CLAUDE_HANDSOFF=true`, this workflow auto-continues when reaching milestones up to the configured limit (default: 10 continuations per session). This allows multi-milestone implementations to complete hands-free. Once the limit is reached, manual resume is required. See `docs/handsoff.md` for configuration details.
+
 **Handle milestone skill output:**
 
 **Output A: Milestone created**

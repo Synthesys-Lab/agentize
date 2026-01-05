@@ -42,4 +42,14 @@ export CLAUDE_HANDSOFF=true
 export CLAUDE_HANDSOFF=false
 ```
 
-See individual command docs (ultra-planner.md, issue-to-impl.md) for safety boundaries and troubleshooting.
+**Auto-Continue Configuration:**
+
+When hands-off mode is enabled, long-running workflows automatically continue after Stop events (e.g., milestone creation) up to a configured limit:
+
+```bash
+export HANDSOFF_MAX_CONTINUATIONS=10  # Default: 10 continuations per session
+```
+
+This allows multi-milestone implementations to proceed hands-free while preventing infinite loops. Once the limit is reached, manual resume is required.
+
+See individual command docs (ultra-planner.md, issue-to-impl.md) for safety boundaries and troubleshooting, or `docs/handsoff.md` for complete auto-continue documentation.
