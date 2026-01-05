@@ -49,13 +49,15 @@ The `wt` command provides tab-completion support for zsh users. After running `m
 
 **Features:**
 - Subcommand completion (`wt <TAB>` shows: init, main, spawn, list, remove, prune, help)
-- Flag completion for `spawn` (`--yolo`, `--no-agent`)
-- Flag completion for `remove` (`-D`, `--force`)
+- Flag completion for `spawn` (`--yolo`, `--no-agent`) — flags can appear before or after `<issue-no>`
+- Flag completion for `remove` (`-D`, `--force`) — flags can appear before or after `<issue-no>`
 
 **Setup:**
 1. Run `make setup` to generate `setup.sh`
 2. Source `setup.sh` in your shell: `source setup.sh`
 3. Tab-completion will be available for `wt` commands
+
+**Implementation:** The zsh completion system uses the `wt --complete` helper (see Completion Helper Interface) to dynamically fetch available flags and commands.
 
 **Note:** Completion setup only affects zsh users. Bash users can continue using `wt` without any changes.
 
