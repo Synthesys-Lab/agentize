@@ -13,9 +13,17 @@ if [ -f setup.sh ]; then
     source setup.sh
 fi
 
-# Reset auto-continue counter on session start when hands-off mode is enabled
+# Initialize hands-off session state when hands-off mode is enabled
 if [[ "$CLAUDE_HANDSOFF" == "true" ]]; then
-    rm -f .tmp/claude-hooks/handsoff-sessions/continuation-count
+    # Ensure state directory exists
+    mkdir -p .tmp/claude-hooks/handsoff-sessions
+
+    # Generate new session ID for this session
+    SESSION_ID="session-$(date +%s)-$$"
+    echo "$SESSION_ID" > .tmp/claude-hooks/handsoff-sessions/current-session-id
+
+    # Clean up old state files (keep only recent ones)
+    find .tmp/claude-hooks/handsoff-sessions -name "*.state" -mtime +7 -delete 2>/dev/null || true
 fi
 
 # Show milestone resume hint if applicable

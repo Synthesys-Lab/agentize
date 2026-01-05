@@ -1,0 +1,7 @@
+{
+  "tool": "Skill",
+  "args": {
+    "skill": "open-issue",
+    "args": "--auto"
+  }
+}

@@ -55,28 +55,54 @@ Hooks enable automated behaviors and integrations at key points in the Claude Co
 - Auto-approves safe, local operations (reads, writes, git commands on feature branches)
 - Always requires approval for destructive operations (push, force operations)
 
-### handsoff-auto-continue.sh
-**Event**: Stop (when agent completes a task/milestone checkpoint)
+### handsoff-userpromptsubmit.sh
+**Event**: UserPromptSubmit (when user submits a prompt)
 
-**Purpose**: Auto-continue workflows in hands-off mode up to configured limit
+**Purpose**: Initialize per-session workflow state for hands-off mode
 
 **Behavior**:
 - Only activates when `CLAUDE_HANDSOFF=true`
-- Checks continuation counter against `HANDSOFF_MAX_CONTINUATIONS` (default: 10)
-- Returns `allow` if under limit (auto-continues), `ask` if at/over limit (manual resume required)
-- Counter stored in `.tmp/claude-hooks/handsoff-sessions/continuation-count`
-- Counter resets on SessionStart when hands-off mode is enabled
+- Detects workflow from user prompt (`/ultra-planner` or `/issue-to-impl`)
+- Creates state file at `.tmp/claude-hooks/handsoff-sessions/<session_id>.state`
+- Initializes with: `workflow:initial_state:0:max`
+
+### handsoff-posttooluse.sh
+**Event**: PostToolUse (after tool execution)
+
+**Purpose**: Update workflow state based on tool invocations
+
+**Behavior**:
+- Only activates when `CLAUDE_HANDSOFF=true`
+- Tracks state transitions for `/ultra-planner` and `/issue-to-impl` workflows
+- Updates state file when key workflow milestones are reached
+- Example transitions:
+  - `open-issue` skill → updates ultra-planner state
+  - `milestone` skill → updates issue-to-impl state
+  - `open-pr` skill → marks workflow as done
+
+### handsoff-auto-continue.sh
+**Event**: Stop (when agent completes a task/milestone checkpoint)
+
+**Purpose**: Auto-continue workflows based on state and continuation limit
+
+**Behavior**:
+- Only activates when `CLAUDE_HANDSOFF=true`
+- Reads per-session state file to check workflow status
+- Returns `ask` if workflow state is `done` (workflow completion)
+- Otherwise checks continuation counter against `HANDSOFF_MAX_CONTINUATIONS` (default: 10)
+- Returns `allow` if under limit (auto-continues), `ask` if at/over limit
+- State stored in `.tmp/claude-hooks/handsoff-sessions/<session_id>.state`
 
 **Inputs**:
 - `CLAUDE_HANDSOFF`: Enable/disable hands-off mode
 - `HANDSOFF_MAX_CONTINUATIONS`: Integer limit (default: 10, fail-closed on invalid values)
 
 **Outputs**:
-- `allow`: Auto-continue (under limit)
-- `ask`: Require manual input (at/over limit or hands-off disabled)
+- `allow`: Auto-continue (workflow not done, under limit)
+- `ask`: Require manual input (workflow done, at/over limit, or hands-off disabled)
 
-**State file**:
-- `.tmp/claude-hooks/handsoff-sessions/continuation-count`: Plain integer storing current count
+**State file format**:
+- `.tmp/claude-hooks/handsoff-sessions/<session_id>.state`: Single-line format `workflow:state:count:max`
 
 ### post-edit.sh
 **Event**: After file edits via Edit tool

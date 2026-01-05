@@ -251,16 +251,14 @@ export CLAUDE_HANDSOFF=true
 /issue-to-impl 42
 ```
 
-With hands-off mode, the entire local workflow (docs, tests, implementation, commits) proceeds automatically. The workflow auto-continues through milestones up to the configured limit (default: 10 continuations per session), allowing multi-milestone implementations to complete without intervention.
+With hands-off mode, the entire local workflow (docs, tests, implementation, commits) proceeds automatically. The system tracks workflow state and automatically stops when the PR is created (workflow completion) or the continuation limit is reached (default: 10 per session), allowing multi-milestone implementations to complete with minimal intervention.
 
 **Auto-continue behavior:**
 - Workflow continues automatically when reaching milestones (e.g., "Milestone 2 created")
+- Stops automatically when PR is created (workflow completion detected)
 - Limit prevents infinite loops (default: 10 continuations)
-- Once limit is reached, manual resume is required:
-  ```bash
-  User: Continue from the latest milestone
-  ```
-- Counter resets at the start of each new session
+- Once limit is reached or workflow completes, manual resume may be required
+- State resets at the start of each new session
 
 **Configure the limit:**
 ```bash
@@ -269,7 +267,7 @@ export HANDSOFF_MAX_CONTINUATIONS=20  # Allow more auto-continuations
 
 Publish operations (like `git push` and PR creation) still require confirmation.
 
-See [Hands-Off Mode Documentation](../handsoff.md) for complete details on auto-approved operations, auto-continue limits, and safety boundaries.
+See [Hands-Off Mode Documentation](../handsoff.md) for complete details on workflow-aware stopping, auto-approved operations, auto-continue limits, and safety boundaries.
 
 ## Tips
 

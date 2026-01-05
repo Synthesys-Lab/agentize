@@ -1,10 +1,10 @@
 # Handsoff Auto-Continue Hook
 
-Stop hook that enables automatic workflow continuation in hands-off mode up to a configured limit.
+Stop hook that enables automatic workflow continuation in hands-off mode based on workflow state and continuation limit.
 
 ## Purpose
 
-When `CLAUDE_HANDSOFF=true`, this hook allows long-running workflows (like `/ultra-planner` and `/issue-to-impl`) to automatically continue after Stop events (milestone creation, task checkpoints) without manual intervention, up to a bounded limit.
+When `CLAUDE_HANDSOFF=true`, this hook allows long-running workflows (like `/ultra-planner` and `/issue-to-impl`) to automatically continue after Stop events (milestone creation, task checkpoints) without manual intervention. The hook tracks workflow state and stops auto-continuation when the workflow reaches completion (e.g., PR created, issue updated) or when the continuation limit is reached.
 
 ## Event
 
@@ -34,28 +34,52 @@ Returns one of:
 
 ## State File
 
-**Path**: `.tmp/claude-hooks/handsoff-sessions/continuation-count`
+**Path**: `.tmp/claude-hooks/handsoff-sessions/<session_id>.state`
 
-**Format**: Plain integer (e.g., `3`)
+**Format**: Single-line colon-separated values: `workflow:state:count:max`
+
+**Example**: `issue-to-impl:implementation:3:10`
+
+**Fields**:
+- `workflow`: Workflow name (`ultra-planner`, `issue-to-impl`, or `generic`)
+- `state`: Current workflow state (e.g., `planning`, `implementation`, `done`)
+- `count`: Current continuation count
+- `max`: Maximum continuations allowed (from `HANDSOFF_MAX_CONTINUATIONS`)
 
 **Lifecycle**:
-- Created on first Stop event when hands-off mode is enabled
-- Incremented on each Stop event
-- Reset to 0 on SessionStart (via session-init.sh) when hands-off mode is enabled
+- Created by UserPromptSubmit hook when workflow is detected
+- Updated by PostToolUse hook when workflow transitions occur
+- Read/updated by Stop hook on each Stop event
+- Reset at SessionStart for new sessions
 - Not committed to git (excluded by `.gitignore`)
 
 ## Behavior
 
 1. **Fail-closed**: If `CLAUDE_HANDSOFF` is not `"true"`, return `ask` immediately
-2. **Validate max**: If `HANDSOFF_MAX_CONTINUATIONS` is invalid (non-numeric or ≤ 0), return `ask`
-3. **Read counter**: Load current count from state file (default: 0 if file missing)
-4. **Increment**: Add 1 to counter
-5. **Save**: Write updated count to state file
-6. **Decide**: Return `allow` if count ≤ max, otherwise `ask`
+2. **Read state**: Load state file for current session
+3. **Check workflow completion**: If state is `done`, return `ask` (workflow complete)
+4. **Validate max**: If `HANDSOFF_MAX_CONTINUATIONS` is invalid (non-numeric or ≤ 0), return `ask`
+5. **Increment counter**: Add 1 to count field in state
+6. **Save state**: Write updated state to file
+7. **Decide**: Return `allow` if count ≤ max, otherwise `ask`
 
 ## Example Flow
 
-**Session 1: Auto-continue enabled**
+**Session 1: Auto-continue with workflow completion**
+```bash
+export CLAUDE_HANDSOFF=true
+export HANDSOFF_MAX_CONTINUATIONS=10
+
+# UserPromptSubmit: /issue-to-impl 42
+# State created: issue-to-impl:docs_tests:0:10
+
+# Stop event 1: state becomes issue-to-impl:docs_tests:1:10, returns "allow"
+# Stop event 2: state becomes issue-to-impl:implementation:2:10, returns "allow"
+# PostToolUse: open-pr detected, state becomes issue-to-impl:done:2:10
+# Stop event 3: state is "done", returns "ask" (workflow complete)
+```
+
+**Session 2: Auto-continue reaching limit**
 ```bash
 export CLAUDE_HANDSOFF=true
 export HANDSOFF_MAX_CONTINUATIONS=3
@@ -64,12 +88,6 @@ export HANDSOFF_MAX_CONTINUATIONS=3
 # Stop event 2: count becomes 2, returns "allow"
 # Stop event 3: count becomes 3, returns "allow"
 # Stop event 4: count becomes 4, returns "ask" (at limit)
-```
-
-**Session 2: Counter reset**
-```bash
-# SessionStart hook resets counter to 0
-# Stop event 1: count becomes 1, returns "allow" (fresh start)
 ```
 
 ## Integration
@@ -83,9 +101,15 @@ Registered in `.claude/settings.json`:
 }
 ```
 
-Counter reset in `.claude/hooks/session-init.sh`:
+Session state initialized in `.claude/hooks/session-init.sh`:
 ```bash
 if [[ "$CLAUDE_HANDSOFF" == "true" ]]; then
-    rm -f .tmp/claude-hooks/handsoff-sessions/continuation-count
+    # Generate/read session ID and prepare state directory
+    # State files from previous sessions are preserved but not active
 fi
 ```
+
+State tracking coordinated across three hooks:
+- `handsoff-userpromptsubmit.sh` - Creates initial state
+- `handsoff-posttooluse.sh` - Updates state on workflow events
+- `handsoff-auto-continue.sh` - Checks state and decides on continuation
