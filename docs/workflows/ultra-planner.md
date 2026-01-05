@@ -102,7 +102,31 @@ Issue #42 updated with refined plan.
 Summary: Reduced LOC 280→150, removed OAuth2, simplified middleware
 ```
 
-### 3. Review and Implementation
+### 3. Documentation Planning
+
+The external consensus process must explicitly identify documentation impacts and produce a **Documentation Planning** section in the final plan. This ensures all documentation changes are identified early and tracked through implementation.
+
+**Required format:**
+```markdown
+## Documentation Planning
+
+### High-level design docs (docs/)
+- `docs/workflows/feature-name.md` — create new workflow documentation
+- `docs/tutorial/XX-feature-name.md` — update tutorial with new feature
+
+### Folder READMEs
+- `src/feature/README.md` — update purpose and organization for new module
+
+### Interface docs
+- `src/api/endpoints.md` — update API interface documentation
+```
+
+The consensus plan references command interfaces by citing actual `docs/` files (e.g., `docs/workflows/ultra-planner.md`, `docs/tutorial/02-issue-to-impl.md`) to ensure accuracy and grounding.
+
+**Skill integration:**
+The `/doc-architect` skill can generate this checklist format for any feature, ensuring consistency across planning workflows.
+
+### 4. Review and Implementation
 
 After reviewing a plan issue:
 

@@ -51,6 +51,11 @@ Consensus: JWT + basic roles (~280 LOC)
 - From Bold: JWT tokens + role-based access
 - From Critique: httpOnly cookies for security
 - From Reducer: Removed OAuth2 complexity
+
+Documentation Planning:
+- docs/api/authentication.md — create JWT auth API docs
+- src/auth/README.md — create module overview
+- src/middleware/auth.js — add interface documentation
 ```
 
 **5. Plan issue auto-updated:**
