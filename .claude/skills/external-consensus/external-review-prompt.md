@@ -114,6 +114,37 @@ Generate a final implementation plan that follows the plan-guideline structure a
 **Documentation changes:**
 - [Doc files to update with sections]
 
+## Documentation Planning
+
+**REQUIRED**: Explicitly identify all documentation impacts using these categories:
+
+**High-level design docs (docs/):**
+- `docs/workflows/*.md` — workflow and process documentation
+- `docs/tutorial/*.md` — tutorial and getting-started guides
+- `docs/architecture/*.md` — architectural design docs
+
+**Folder READMEs:**
+- `path/to/module/README.md` — module purpose and organization
+
+**Interface docs:**
+- Source file companion `.md` files documenting interfaces
+
+**Format:**
+```markdown
+## Documentation Planning
+
+### High-level design docs (docs/)
+- `docs/path/to/doc.md` — create/update [brief rationale]
+
+### Folder READMEs
+- `path/to/README.md` — update [what aspect]
+
+### Interface docs
+- `src/module/component.md` — update [which interfaces]
+```
+
+**Citation requirement:** When referencing existing command interfaces (e.g., `/ultra-planner`, `/issue-to-impl`), cite the actual `docs/` files (e.g., `docs/workflows/ultra-planner.md`, `docs/tutorial/02-issue-to-impl.md`) to ensure accuracy.
+
 ## Test Strategy
 
 **Test modifications:**
