@@ -96,6 +96,9 @@ run_test() {
     local test_script="$2"
     local test_name=$(basename "$test_script" .sh)
 
+    OUTPUT=$("$shell" "$test_script" 2>&1)
+    echo "$OUTPUT"
+
     if "$shell" "$test_script" > /dev/null 2>&1; then
         echo "✓ $test_name"
         return 0
