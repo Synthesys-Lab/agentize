@@ -62,3 +62,14 @@ mkdir -p "$STATE_DIR"
 
 # Write initial state
 handsoff_write_state "$STATE_FILE" "$WORKFLOW" "$INITIAL_STATE" 0 "$MAX"
+
+# Log history entry if debug enabled
+# Set global variables for logging
+export SESSION_ID
+export WORKFLOW
+STATE="$INITIAL_STATE"
+COUNT=0
+export STATE COUNT MAX
+
+DESCRIPTION="$2"
+handsoff_log_history "UserPromptSubmit" "" "" "$DESCRIPTION" "" "" ""

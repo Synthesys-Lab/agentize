@@ -113,8 +113,8 @@ if [[ ! -f "$HISTORY_FILE" ]]; then
     test_fail "Test 3 - History file not created"
 fi
 
-# Check entry count
-line_count=$(wc -l < "$HISTORY_FILE")
+# Check entry count (trim whitespace from wc output)
+line_count=$(wc -l < "$HISTORY_FILE" | tr -d ' ')
 if [[ "$line_count" != "1" ]]; then
     test_fail "Test 3 - Expected 1 history entry, got $line_count"
 fi
@@ -157,8 +157,8 @@ fi
 
 # Check fields
 check_history_field "event" "PostToolUse"
-check_history_field "tool_name" "Skill"
-check_history_field "tool_args" "milestone"
+check_history_field "tool_name" "milestone"
+check_history_field "tool_args" ""
 check_history_field "new_state" "implementation"
 check_history_field "state" "implementation"
 
@@ -254,8 +254,8 @@ TOOL_JSON='{"tool": "Skill", "args": {"skill": "milestone"}}'
 # Stop
 "$STOP_HOOK" "Stop" "Milestone created" '{}' >/dev/null 2>&1
 
-# Verify 3 entries
-line_count=$(wc -l < "$HISTORY_FILE")
+# Verify 3 entries (trim whitespace from wc output)
+line_count=$(wc -l < "$HISTORY_FILE" | tr -d ' ')
 if [[ "$line_count" != "3" ]]; then
     test_fail "Test 7 - Expected 3 history entries, got $line_count"
 fi

@@ -62,7 +62,16 @@ fi
 # Determine if state transition should occur
 NEW_STATE=$(handsoff_transition "$WORKFLOW" "$STATE" "$TOOL_NAME" "$TOOL_ARGS")
 
-# If state changed, update file
+# If state changed, update file and log
 if [[ "$NEW_STATE" != "$STATE" ]]; then
     handsoff_write_state "$STATE_FILE" "$WORKFLOW" "$NEW_STATE" "$COUNT" "$MAX"
+
+    # Log history entry if debug enabled
+    # Update STATE to new value for logging
+    export SESSION_ID WORKFLOW COUNT MAX
+    STATE="$NEW_STATE"
+    export STATE
+
+    DESCRIPTION="$2"
+    handsoff_log_history "PostToolUse" "" "" "$DESCRIPTION" "$TOOL_NAME" "$TOOL_ARGS" "$NEW_STATE"
 fi

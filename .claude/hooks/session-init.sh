@@ -24,6 +24,11 @@ if [[ "$CLAUDE_HANDSOFF" == "true" ]]; then
 
     # Clean up old state files (keep only recent ones)
     find .tmp/claude-hooks/handsoff-sessions -name "*.state" -mtime +7 -delete 2>/dev/null || true
+
+    # Clean up old history files (same retention as state files)
+    if [ -d .tmp/claude-hooks/handsoff-sessions/history ]; then
+        find .tmp/claude-hooks/handsoff-sessions/history -name "*.jsonl" -mtime +7 -delete 2>/dev/null || true
+    fi
 fi
 
 # Show milestone resume hint if applicable
