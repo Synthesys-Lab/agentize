@@ -69,10 +69,6 @@ mutation {
       singleSelectOptions: [
         { name: "proposed" }
         { name: "accepted" }
-        { name: "wip" }
-        { name: "review" }
-        { name: "done" }
-        { name: "abandon" }
       ]
     }
   ) {
@@ -83,6 +79,12 @@ mutation {
   }
 }'
 ```
+
+**Note:** The Stage field uses a two-layer model for tracking work:
+- **Stage field (Approval tracking)**: `proposed` → `accepted`
+- **GitHub Issue status (Completion tracking)**: `Open` → `Closed`
+
+This design delegates completion tracking to GitHub's native issue lifecycle, keeping the custom Stage field focused solely on approval workflow.
 
 ### Querying Issue Project Fields
 
@@ -158,23 +160,38 @@ Automation workflows can dump and version control your project field configurati
 
 We have two Kanban boards for plans (GitHub Issues) and implementations (Pull Requests).
 
-### Issue Status Field
+### Issue Status: Two-Layer Model
 
-For issues, we use a `Status` field (Single Selection) to track lifecycle:
-- `Proposed`: The issue is proposed but not yet approved.
-  - All issues created by AI agents start with this status.
-- `Approved`: The issue is approved and ready for implementation.
-  - `/issue-to-impl` command requires issues to be `Approved`.
-- `WIP`: The issue is being worked on.
-  - Prevents multiple workers from working on the same issue.
-- `PR Created`: A pull request has been created for the issue.
-- `Abandoned`: The issue has been abandoned for one of these reasons:
-  - After careful consideration, this addition does not make sense at the issue phase.
-  - After implementation, we find it is not a good idea.
-- `Dependency`: The issue is blocked by other issues.
-- `Done`: The issue has been completed and merged.
+For issues, we use a **two-layer model** that separates approval tracking from completion tracking:
 
-We use a `Single Selection` field instead of labels because labels cannot enforce mutual exclusivity.
+**Layer 1: Stage Field (Approval Workflow)**
+
+A `Stage` custom field (Single Selection) tracks whether an issue is approved for implementation:
+- `proposed`: The issue is proposed but not yet approved for implementation.
+  - All issues created by AI agents start with this stage.
+  - Issues at this stage are under review or awaiting stakeholder approval.
+- `accepted`: The issue is approved and ready for implementation.
+  - `/issue-to-impl` command requires issues to be at `accepted` stage.
+  - Moving an issue to this stage signals green light for development work.
+
+**Layer 2: GitHub Issue Status (Completion Tracking)**
+
+GitHub's native issue status tracks implementation progress and completion:
+- `Open`: Issue is either awaiting implementation or currently in progress.
+  - Use **assignees** to indicate work-in-progress (assigned = someone is working on it).
+  - Use **linked PRs** to track implementation progress.
+- `Closed`: Issue implementation is complete or abandoned.
+  - Use close reason `completed` when PR is merged.
+  - Use close reason `not planned` when issue is abandoned or no longer relevant.
+
+**Why this design?**
+
+- **Simplicity**: Only 2 Stage options instead of 6, reducing cognitive overhead.
+- **Delegation**: Leverages GitHub's native issue lifecycle instead of duplicating it in custom fields.
+- **Clarity**: Separates "Is this approved?" (Stage) from "Is this done?" (Issue status).
+- **Automation**: GitHub automatically closes issues when linked PRs merge, no custom field updates needed.
+
+We use a `Single Selection` field for Stage instead of labels because labels cannot enforce mutual exclusivity.
 
 ### Pull Request Status
 

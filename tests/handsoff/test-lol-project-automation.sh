@@ -44,15 +44,16 @@ EOF
         test_fail "Automation template missing id substitution"
     fi
 
-    # Check for Stage field configuration (new env vars)
+    # Check for Stage field configuration (only STAGE_FIELD_ID needed)
     if ! echo "$output" | grep -q "STAGE_FIELD_ID:"; then
         cleanup_dir "$TMP_DIR"
         test_fail "Automation template missing STAGE_FIELD_ID env var"
     fi
 
-    if ! echo "$output" | grep -q "STAGE_DONE_OPTION_ID:"; then
+    # Verify STAGE_DONE_OPTION_ID is NOT present (simplified workflow)
+    if echo "$output" | grep -q "STAGE_DONE_OPTION_ID:"; then
         cleanup_dir "$TMP_DIR"
-        test_fail "Automation template missing STAGE_DONE_OPTION_ID env var"
+        test_fail "Automation template should not have STAGE_DONE_OPTION_ID (simplified to issue closing)"
     fi
 
     # Check for status-field/status-value in issue add step
@@ -77,15 +78,22 @@ EOF
         test_fail "Automation template missing closed event type"
     fi
 
-    # Check for GraphQL PR-merge automation
+    # Check for simplified PR-merge automation (issue closing instead of field updates)
     if ! echo "$output" | grep -q "closingIssuesReferences"; then
         cleanup_dir "$TMP_DIR"
         test_fail "Automation template missing closingIssuesReferences query"
     fi
 
-    if ! echo "$output" | grep -q "updateProjectV2ItemFieldValue"; then
+    # Verify workflow uses gh issue close instead of GraphQL mutations
+    if ! echo "$output" | grep -q "gh issue close"; then
         cleanup_dir "$TMP_DIR"
-        test_fail "Automation template missing updateProjectV2ItemFieldValue mutation"
+        test_fail "Automation template should use 'gh issue close' for lifecycle management"
+    fi
+
+    # Verify updateProjectV2ItemFieldValue is NOT present (simplified workflow)
+    if echo "$output" | grep -q "updateProjectV2ItemFieldValue"; then
+        cleanup_dir "$TMP_DIR"
+        test_fail "Automation template should not use updateProjectV2ItemFieldValue (simplified to issue closing)"
     fi
 
     cleanup_dir "$TMP_DIR"

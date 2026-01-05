@@ -43,9 +43,9 @@ For more control over automation (e.g., setting custom field values, complex fil
    lol project --automation
    ```
 
-2. Review the output and configure field/option IDs:
-   - Locate `STAGE_FIELD_ID` and `STAGE_DONE_OPTION_ID` placeholders in the template
-   - See [Configuring Field and Option IDs](#configuring-field-and-option-ids) below for lookup instructions
+2. Review the output and configure field IDs:
+   - Locate `STAGE_FIELD_ID` placeholder in the template
+   - See [Configuring Field IDs](#configuring-field-ids) below for lookup instructions
 
 3. Save the configured template to your repository:
    ```bash
@@ -68,12 +68,12 @@ For more control over automation (e.g., setting custom field values, complex fil
 **Automation capabilities:**
 - Automatically adds new issues and PRs to the project board
 - Sets Stage field to "proposed" for newly opened issues
-- Updates linked issues to Stage "done" when associated PRs are merged (using GitHub's `closingIssuesReferences`)
+- Closes linked issues when associated PRs are merged (using GitHub's `closingIssuesReferences`)
 
 **Advantages:**
 - Fine-grained control over automation logic
-- Automatic lifecycle management (proposed → done)
-- Native PR-to-issue linking via GraphQL
+- Automatic lifecycle management (proposed → closed)
+- Native PR-to-issue linking via GitHub's closingIssuesReferences
 - Supports complex filtering conditions
 
 **Limitations:**
@@ -101,13 +101,13 @@ Edit the generated workflow to change field names or values:
 
 **For advanced lifecycle automation:**
 
-The template also includes a PR-merge job that uses GraphQL to update linked issues to "done" when PRs are merged. This requires configuring field/option IDs (see next section).
+The template also includes a PR-merge job that closes linked issues when PRs are merged. This uses GitHub CLI's `gh issue close` command, which is simpler than GraphQL mutations and doesn't require option IDs.
 
 See the [`actions/add-to-project` documentation](https://github.com/actions/add-to-project) for all available action parameters.
 
-## Configuring Field and Option IDs
+## Configuring Field IDs
 
-The generated workflow template uses GraphQL to update project field values (e.g., marking issues as "done" when PRs merge). This requires you to look up and configure field and option IDs for your project.
+The generated workflow template uses the `actions/add-to-project` action to set the Stage field to "proposed" for new issues. This requires you to look up the Stage field ID for your project.
 
 **Step 1: Get your project's GraphQL ID**
 
@@ -127,9 +127,9 @@ query {
 
 Save the `id` value (e.g., `PVT_xxx`) for the next step.
 
-**Step 2: List all fields and their option IDs**
+**Step 2: List all fields**
 
-Query all single-select fields (like Stage/Status) and their option values:
+Query all single-select fields (like Stage/Status):
 
 ```bash
 gh api graphql -f query='
@@ -153,11 +153,9 @@ query {
 }'
 ```
 
-**Step 3: Identify the IDs you need**
+**Step 3: Identify the Stage field ID**
 
-From the query output, locate:
-- `STAGE_FIELD_ID`: The `id` of your Stage (or Status) field
-- `STAGE_DONE_OPTION_ID`: The `id` of the "done" option within that field
+From the query output, locate the `id` of your Stage field (e.g., `PVTSSF_xxx`).
 
 **Step 4: Update the workflow environment variables**
 
@@ -167,11 +165,12 @@ Replace the placeholder values in your workflow file:
 env:
   PROJECT_ORG: YOUR_ORG_HERE
   PROJECT_ID: YOUR_PROJECT_ID_HERE
-  STAGE_FIELD_ID: PVTSSF_xxx  # From Step 2
-  STAGE_DONE_OPTION_ID: PVTSSO_xxx  # From Step 2
+  STAGE_FIELD_ID: PVTSSF_xxx  # From Step 3
 ```
 
-**Note:** Field and option IDs are stable and don't change unless you delete and recreate the field. You only need to look them up once during initial configuration.
+**Note:** The `STAGE_FIELD_ID` is only used by the `actions/add-to-project` action to set the initial "proposed" status. The workflow no longer requires option IDs since issue closing is handled via `gh issue close` instead of GraphQL field mutations.
+
+Field IDs are stable and don't change unless you delete and recreate the field. You only need to look them up once during initial configuration.
 
 ## Security: Personal Access Token (PAT)
 

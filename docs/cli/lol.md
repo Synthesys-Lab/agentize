@@ -139,9 +139,9 @@ Prints or writes a GitHub Actions workflow template for project automation with 
 The generated template:
 - Automatically adds new issues and PRs to the project board
 - Sets Stage field to "proposed" for newly opened issues
-- Updates linked issues to Stage "done" when associated PRs are merged
+- Closes linked issues when associated PRs are merged
 
-Configuration required: PAT with project permissions, field/option IDs for Stage updates.
+Configuration required: PAT with project permissions, Stage field ID for setting initial status.
 
 - `--write` - Write template to file (optional, defaults to stdout)
 

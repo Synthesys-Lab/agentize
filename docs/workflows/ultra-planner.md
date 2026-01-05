@@ -168,8 +168,9 @@ After reviewing a plan issue:
    - Can be implemented via `/issue-to-impl`
 
 2. **Closed/Abandoned** - Issue closed on GitHub
-   - Plan not pursued
-   - Can be reopened later if needed
+   - Plan completed (close reason: `completed`) or not pursued (close reason: `not planned`)
+   - Closed issues can be reopened later if needed
+   - Use GitHub's close reason to distinguish between completed work vs abandoned ideas
 
 ## Commands Summary
 
