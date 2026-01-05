@@ -1,5 +1,5 @@
 ---
-skill: doc-architect
+name: doc-architect
 description: Generate comprehensive documentation checklist for feature implementation
 ---
 
