@@ -17,6 +17,9 @@ METADATA_FILE="$PROJECT_ROOT/.agentize.yaml"
 
 # Preflight check: ensure gh CLI is installed and authenticated
 preflight_check() {
+    # Skip preflight in fixture mode (tests use fixtures, not live gh auth)
+    [ "$AGENTIZE_GH_API" = "fixture" ] && return 0
+
     if ! command -v gh &> /dev/null; then
         echo "Error: GitHub CLI (gh) is not installed"
         echo ""

@@ -60,4 +60,4 @@ Tests should set `AGENTIZE_GH_API` environment variable to use fixtures instead 
 export AGENTIZE_GH_API=fixture
 ```
 
-The `scripts/gh-graphql.sh` wrapper checks this variable and returns fixture data when set.
+The `scripts/gh-graphql.sh` wrapper checks this variable and returns fixture data when set. Additionally, fixture mode bypasses the `gh auth status` preflight check in `scripts/agentize-project.sh`, allowing tests to run in CI environments without GitHub authentication.
