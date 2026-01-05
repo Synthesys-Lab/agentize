@@ -1,0 +1,104 @@
+#compdef wt
+
+# Zsh completion for wt (Git Worktree Helper)
+# This completion file provides interactive command-line hints for wt subcommands and flags
+
+_wt() {
+    local curcontext="$curcontext" state line
+    typeset -A opt_args
+
+    # Try to use wt --complete if available, fallback to static lists
+    local -a commands
+    if (( $+commands[wt] )); then
+        # Dynamically fetch commands from wt --complete
+        commands=( ${(f)"$(wt --complete commands 2>/dev/null)"} )
+    fi
+
+    # Fallback to static command list if dynamic fetch failed
+    if (( ${#commands} == 0 )); then
+        commands=(
+            'init:Initialize worktree environment (creates trees/main)'
+            'main:Switch to main worktree (when sourced)'
+            'spawn:Create worktree for an issue'
+            'list:List all worktrees'
+            'remove:Remove worktree and delete branch'
+            'prune:Clean up stale worktree metadata'
+            'help:Display help message'
+        )
+    else
+        # Add descriptions to dynamically fetched commands
+        local -a commands_with_desc
+        for cmd in $commands; do
+            case $cmd in
+                init) commands_with_desc+=('init:Initialize worktree environment (creates trees/main)') ;;
+                main) commands_with_desc+=('main:Switch to main worktree (when sourced)') ;;
+                spawn) commands_with_desc+=('spawn:Create worktree for an issue') ;;
+                list) commands_with_desc+=('list:List all worktrees') ;;
+                remove) commands_with_desc+=('remove:Remove worktree and delete branch') ;;
+                prune) commands_with_desc+=('prune:Clean up stale worktree metadata') ;;
+                help) commands_with_desc+=('help:Display help message') ;;
+            esac
+        done
+        commands=( $commands_with_desc )
+    fi
+
+    _arguments -C \
+        '1: :->command' \
+        '*::arg:->args'
+
+    case $state in
+        command)
+            _describe -t commands 'wt commands' commands
+            ;;
+        args)
+            case $line[1] in
+                spawn)
+                    _wt_spawn
+                    ;;
+                remove)
+                    _wt_remove
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+# Completion for 'wt spawn' subcommand
+_wt_spawn() {
+    local -a spawn_flags
+
+    # Try dynamic fetch first
+    if (( $+commands[wt] )); then
+        spawn_flags=( ${(f)"$(wt --complete spawn-flags 2>/dev/null)"} )
+    fi
+
+    # Fallback to static flags
+    if (( ${#spawn_flags} == 0 )); then
+        spawn_flags=( '--yolo' '--no-agent' )
+    fi
+
+    _arguments \
+        '1:issue number:' \
+        '*:flags:('$spawn_flags')'
+}
+
+# Completion for 'wt remove' subcommand
+_wt_remove() {
+    local -a remove_flags
+
+    # Try dynamic fetch first
+    if (( $+commands[wt] )); then
+        remove_flags=( ${(f)"$(wt --complete remove-flags 2>/dev/null)"} )
+    fi
+
+    # Fallback to static flags
+    if (( ${#remove_flags} == 0 )); then
+        remove_flags=( '-D' '--force' )
+    fi
+
+    _arguments \
+        '1:issue number:' \
+        '*:flags:('$remove_flags')'
+}
+
+_wt "$@"

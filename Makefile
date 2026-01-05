@@ -41,6 +41,15 @@ setup:
 	@echo 'export AGENTIZE_HOME="$(CURDIR)"' >> setup.sh
 	@echo 'source "$$AGENTIZE_HOME/scripts/wt-cli.sh"' >> setup.sh
 	@echo 'source "$$AGENTIZE_HOME/scripts/lol-cli.sh"' >> setup.sh
+	@echo '' >> setup.sh
+	@echo '# Enable zsh completion for wt command' >> setup.sh
+	@echo 'if [ -n "$$ZSH_VERSION" ]; then  # zsh-only setup' >> setup.sh
+	@echo '  fpath=($$AGENTIZE_HOME/scripts/completions $$fpath)' >> setup.sh
+	@echo '  # Only run compinit if not already initialized' >> setup.sh
+	@echo '  if ! command -v compdef >/dev/null 2>&1; then' >> setup.sh
+	@echo '    autoload -Uz compinit && compinit' >> setup.sh
+	@echo '  fi' >> setup.sh
+	@echo 'fi' >> setup.sh
 	@chmod +x setup.sh
 	@echo ""
 	@echo "✓ Created setup.sh in repository root"

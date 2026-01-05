@@ -278,6 +278,7 @@ Usage:
   wt remove [-D|--force] <issue-number>      Remove worktree and delete branch for an issue
   wt prune                                   Clean up stale worktree metadata
   wt help                                    Display this help message
+  wt --complete <topic>                      Shell completion helper (commands, spawn-flags, remove-flags)
 
 Flags:
   --yolo        Skip permission prompts (passes --dangerously-skip-permissions to Claude)
@@ -632,7 +633,44 @@ cmd_prune() {
 }
 
 # Cross-project wt shell function
+# Shell-agnostic completion helper
+# Returns newline-delimited lists for shell completion systems
+wt_complete() {
+    local topic="$1"
+
+    case "$topic" in
+        commands)
+            echo "init"
+            echo "main"
+            echo "spawn"
+            echo "list"
+            echo "remove"
+            echo "prune"
+            echo "help"
+            ;;
+        spawn-flags)
+            echo "--yolo"
+            echo "--no-agent"
+            ;;
+        remove-flags)
+            echo "-D"
+            echo "--force"
+            ;;
+        *)
+            # Unknown topic, return empty
+            return 0
+            ;;
+    esac
+}
+
 wt() {
+    # Handle completion helper before AGENTIZE_HOME validation
+    # This allows completion to work even outside agentize context
+    if [ "$1" = "--complete" ]; then
+        wt_complete "$2"
+        return 0
+    fi
+
     # Check if AGENTIZE_HOME is set
     if [ -z "$AGENTIZE_HOME" ]; then
         echo "Error: AGENTIZE_HOME environment variable is not set"
@@ -714,6 +752,12 @@ wt() {
 
 # CLI main function for wrapper script
 wt_cli_main() {
+    # Handle completion helper first (no repo context needed)
+    if [ "$1" = "--complete" ]; then
+        wt_complete "$2"
+        return 0
+    fi
+
     # Resolve repo root first
     local repo_root
     repo_root=$(wt_resolve_repo_root)
