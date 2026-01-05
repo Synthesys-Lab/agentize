@@ -66,6 +66,7 @@ _wt() {
 # Completion for 'wt spawn' subcommand
 _wt_spawn() {
     local -a spawn_flags
+    local -a option_specs
 
     # Try dynamic fetch first
     if (( $+commands[wt] )); then
@@ -77,14 +78,31 @@ _wt_spawn() {
         spawn_flags=( '--yolo' '--no-agent' )
     fi
 
+    # Build option specs from flags
+    for flag in $spawn_flags; do
+        case $flag in
+            --yolo)
+                option_specs+=('--yolo[Skip permission prompts (use in containers/VMs)]')
+                ;;
+            --no-agent)
+                option_specs+=('--no-agent[Skip automatic Claude invocation]')
+                ;;
+            *)
+                # Unknown flag, pass through without description
+                option_specs+=("$flag")
+                ;;
+        esac
+    done
+
     _arguments \
         '1:issue number:' \
-        '*:flags:('$spawn_flags')'
+        $option_specs
 }
 
 # Completion for 'wt remove' subcommand
 _wt_remove() {
     local -a remove_flags
+    local -a option_specs
 
     # Try dynamic fetch first
     if (( $+commands[wt] )); then
@@ -96,9 +114,25 @@ _wt_remove() {
         remove_flags=( '-D' '--force' )
     fi
 
+    # Build option specs from flags
+    for flag in $remove_flags; do
+        case $flag in
+            -D)
+                option_specs+=('-D[Force delete unmerged branch]')
+                ;;
+            --force)
+                option_specs+=('--force[Force delete unmerged branch]')
+                ;;
+            *)
+                # Unknown flag, pass through without description
+                option_specs+=("$flag")
+                ;;
+        esac
+    done
+
     _arguments \
         '1:issue number:' \
-        '*:flags:('$remove_flags')'
+        $option_specs
 }
 
 _wt "$@"
