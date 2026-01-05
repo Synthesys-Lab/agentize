@@ -113,8 +113,8 @@ TESTS_PASSED=$((TESTS_PASSED + 1))
 unset CLAUDE_HANDSOFF
 cleanup_state
 
-# Test 4: PostToolUse updates ultra-planner to done on issue update
-test_info "Test 4: PostToolUse transitions ultra-planner to done on update"
+# Test 4: PostToolUse updates ultra-planner to done on plan label addition
+test_info "Test 4: PostToolUse transitions ultra-planner to done on plan label"
 cleanup_state
 mkdir -p "$STATE_DIR"
 
@@ -123,8 +123,8 @@ export CLAUDE_HANDSOFF=true
 # Create state in awaiting_details
 echo "ultra-planner:awaiting_details:1:10" > "$STATE_FILE"
 
-# Simulate open-issue tool call (update mode with --update flag)
-TOOL_JSON='{"tool": "Skill", "args": {"skill": "open-issue", "args": "--update 42"}}'
+# Simulate gh issue edit --add-label plan via Bash tool
+TOOL_JSON='{"tool": "Bash", "args": {"command": "gh issue edit 42 --add-label plan"}}'
 "$POSTTOOLUSE_HOOK" "PostToolUse" "Tool executed" "$TOOL_JSON" >/dev/null 2>&1
 
 # Verify state transition to done
@@ -133,14 +133,14 @@ if [[ "$state_content" != "ultra-planner:done:1:10" ]]; then
     test_fail "Test 4 - Expected 'ultra-planner:done:1:10', got '$state_content'"
 fi
 
-echo -e "${GREEN}✓ Test 4 passed: ultra-planner transitioned to done${NC}"
+echo -e "${GREEN}✓ Test 4 passed: ultra-planner transitioned to done on plan label${NC}"
 TESTS_PASSED=$((TESTS_PASSED + 1))
 
 unset CLAUDE_HANDSOFF
 cleanup_state
 
-# Test 4b: PostToolUse does NOT transition on new issue creation (sub-issues)
-test_info "Test 4b: PostToolUse ignores new issue creation (no --update flag)"
+# Test 4b: PostToolUse does NOT transition on other gh commands
+test_info "Test 4b: PostToolUse ignores non-label gh commands"
 cleanup_state
 mkdir -p "$STATE_DIR"
 
@@ -149,8 +149,8 @@ export CLAUDE_HANDSOFF=true
 # Create state in awaiting_details
 echo "ultra-planner:awaiting_details:1:10" > "$STATE_FILE"
 
-# Simulate open-issue tool call WITHOUT --update (creating new sub-issue)
-TOOL_JSON='{"tool": "Skill", "args": {"skill": "open-issue", "args": ""}}'
+# Simulate gh issue edit without plan label (e.g., updating body)
+TOOL_JSON='{"tool": "Bash", "args": {"command": "gh issue edit 42 --body \"Updated description\""}}'
 "$POSTTOOLUSE_HOOK" "PostToolUse" "Tool executed" "$TOOL_JSON" >/dev/null 2>&1
 
 # Verify state did NOT transition (should still be awaiting_details)
@@ -159,7 +159,7 @@ if [[ "$state_content" != "ultra-planner:awaiting_details:1:10" ]]; then
     test_fail "Test 4b - Expected state to remain 'ultra-planner:awaiting_details:1:10', got '$state_content'"
 fi
 
-echo -e "${GREEN}✓ Test 4b passed: New issue creation does not trigger transition${NC}"
+echo -e "${GREEN}✓ Test 4b passed: Non-label gh commands do not trigger transition${NC}"
 TESTS_PASSED=$((TESTS_PASSED + 1))
 
 unset CLAUDE_HANDSOFF

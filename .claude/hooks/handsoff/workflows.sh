@@ -57,10 +57,11 @@ handsoff_transition() {
             fi
         fi
 
-        # awaiting_details -> done (on open-issue --update, meaning plan update)
-        if [[ "$current_state" == "awaiting_details" && "$tool_name" == "open-issue" ]]; then
-            # Check for --update flag specifically (not just any issue number)
-            if echo "$tool_args" | grep -qE -- '--update'; then
+        # awaiting_details -> done (on adding "plan" label to issue)
+        if [[ "$current_state" == "awaiting_details" ]]; then
+            # Detect: gh issue edit ... --add-label plan
+            # Or: gh issue edit ... --add-label "plan"
+            if [[ "$tool_name" == "Bash" ]] && echo "$tool_args" | grep -qE 'gh issue edit.*--add-label.*plan'; then
                 echo "done"
                 return 0
             fi

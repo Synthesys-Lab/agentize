@@ -43,7 +43,7 @@ issue-to-impl:implementation:3:10
 - `UserPromptSubmit`: Detects workflow from user prompt (e.g., `/ultra-planner` or `/issue-to-impl`). Initializes state file with workflow name, initial state, count=0, and max from `HANDSOFF_MAX_CONTINUATIONS` (default: 10).
 
 - `PostToolUse`: Tracks tool invocations to update workflow state:
-  - **ultra-planner**: `planning` → (Skill open-issue creates placeholder) → `awaiting_details` → (Skill open-issue updates with plan) → `done`
+  - **ultra-planner**: `planning` → (Skill open-issue creates placeholder) → `awaiting_details` → (Bash gh issue edit --add-label plan) → `done`
   - **issue-to-impl**: `docs_tests` → (after milestone 1) → `implementation` → (Skill open-pr) → `done`
 
 - `Stop`: Reads state file. If workflow state is `done`, returns `ask` (stop auto-continue). Otherwise, increments count and returns `allow` if count ≤ max, else `ask`.

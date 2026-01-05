@@ -372,9 +372,29 @@ To refine: /refine-issue ${ISSUE_NUMBER}
 To implement: /issue-to-impl ${ISSUE_NUMBER}
 ```
 
-Display this output to the user. Command completes successfully.
+### Step 9: Add "plan" Label to Finalize Issue
 
-**Hands-off auto-continue note:** With `CLAUDE_HANDSOFF=true`, this workflow auto-continues through Stop events (e.g., placeholder creation, consensus completion) up to the configured limit (default: 10). See `docs/handsoff.md` for details.
+**REQUIRED BASH COMMAND:**
+
+Add the "plan" label to mark the issue as a finalized plan:
+
+```bash
+gh issue edit ${ISSUE_NUMBER} --add-label "plan"
+```
+
+**What this does:**
+1. Adds "plan" label to the issue (creates label if it doesn't exist)
+2. Triggers hands-off state machine transition to `done` state
+3. Marks the issue as ready for review/implementation
+
+**Expected output:**
+```
+Label "plan" added to issue #${ISSUE_NUMBER}
+```
+
+Display the final output to the user. Command completes successfully.
+
+**Hands-off auto-continue note:** With `CLAUDE_HANDSOFF=true`, this workflow auto-continues through Stop events (e.g., placeholder creation, consensus completion) up to the configured limit (default: 10). The "plan" label addition signals workflow completion. See `docs/handsoff.md` for details.
 
 ## Usage Examples
 

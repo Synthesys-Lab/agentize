@@ -48,7 +48,7 @@ No direct output. Side effect: Updates state file when workflow transitions occu
 ### ultra-planner workflow
 
 - `planning` + Skill(open-issue) with auto mode → `awaiting_details`
-- `awaiting_details` + Skill(open-issue) with update mode → `done`
+- `awaiting_details` + Bash(gh issue edit --add-label plan) → `done`
 
 ### issue-to-impl workflow
 
@@ -58,9 +58,10 @@ No direct output. Side effect: Updates state file when workflow transitions occu
 ## Tool Matching
 
 The hook monitors:
-- `Skill` tool with `open-issue` skill name
-- `Skill` tool with `milestone` skill name
-- `Skill` tool with `open-pr` skill name
+- `Skill` tool with `open-issue` skill name (for placeholder creation)
+- `Skill` tool with `milestone` skill name (for issue-to-impl)
+- `Skill` tool with `open-pr` skill name (for issue-to-impl)
+- `Bash` tool with `gh issue edit --add-label plan` command (for ultra-planner finalization)
 
 Tool name and arguments are parsed from the JSON params to determine if a workflow transition should occur.
 

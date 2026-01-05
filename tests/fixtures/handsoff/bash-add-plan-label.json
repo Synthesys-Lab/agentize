@@ -1,0 +1,6 @@
+{
+  "tool": "Bash",
+  "args": {
+    "command": "gh issue edit 42 --add-label plan"
+  }
+}

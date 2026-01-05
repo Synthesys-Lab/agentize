@@ -37,7 +37,7 @@ PARAMS="$3"
 # Extract tool name (handling both direct tool and Skill wrapper)
 TOOL_RAW=$(echo "$PARAMS" | grep -oE '"tool"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"tool"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
 
-# If tool is Skill, extract the actual skill name
+# Extract tool name and args based on tool type
 TOOL_NAME=""
 TOOL_ARGS=""
 
@@ -46,6 +46,10 @@ if [[ "$TOOL_RAW" == "Skill" ]]; then
     TOOL_NAME=$(echo "$PARAMS" | grep -oE '"skill"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"skill"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
     # Extract skill args from args.args
     TOOL_ARGS=$(echo "$PARAMS" | grep -oE '"args"[[:space:]]*:[[:space:]]*"[^"]*"' | tail -1 | sed 's/.*"args"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+elif [[ "$TOOL_RAW" == "Bash" ]]; then
+    # For Bash tool, extract command from args.command
+    TOOL_NAME="Bash"
+    TOOL_ARGS=$(echo "$PARAMS" | grep -oE '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*"command"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
 else
     TOOL_NAME="$TOOL_RAW"
     TOOL_ARGS=$(echo "$PARAMS" | grep -oE '"args"[[:space:]]*:[[:space:]]*\{[^}]*\}' | sed 's/.*"args"[[:space:]]*:[[:space:]]*{\([^}]*\)}.*/\1/')
