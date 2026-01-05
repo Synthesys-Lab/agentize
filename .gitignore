@@ -3,3 +3,4 @@
 .milestones/*
 trees/
 setup.sh
+.claude/settings.local.json
