@@ -15,9 +15,10 @@ get_project_root() {
 }
 
 # Get project root using shell-neutral approach
-PROJECT_ROOT="${AGENTIZE_HOME:-$(get_project_root)}"
+# For test isolation, always use the current worktree (ignore parent AGENTIZE_HOME)
+PROJECT_ROOT="$(get_project_root)"
 if [ -z "$PROJECT_ROOT" ]; then
-  echo "Error: Cannot determine project root. Set AGENTIZE_HOME or run from git repo."
+  echo "Error: Cannot determine project root. Run from git repo."
   exit 1
 fi
 
