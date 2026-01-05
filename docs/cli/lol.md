@@ -176,6 +176,66 @@ lol project --automation --write .github/workflows/add-to-project.yml
 - [Metadata schema](../architecture/metadata.md)
 - [Project management](../architecture/project.md)
 
+## Shell Completion (zsh)
+
+The `lol` command provides tab-completion support for zsh users. After running `make setup` and sourcing `setup.sh`, completions are automatically enabled.
+
+**Features:**
+- Subcommand completion (`lol <TAB>` shows: init, update, project)
+- Flag completion for `init` (`--name`, `--lang`, `--path`, `--source`, `--metadata-only`)
+- Flag completion for `update` (`--path`)
+- Flag completion for `project` (`--create`, `--associate`, `--automation`)
+- Value completion for `--lang` (c, cxx, python)
+- Path completion for path-related flags
+
+**Setup:**
+1. Run `make setup` to generate `setup.sh`
+2. Source `setup.sh` in your shell: `source setup.sh`
+3. Tab-completion will be available for `lol` commands
+
+**Note:** Completion setup only affects zsh users. Bash users can continue using `lol` without any changes.
+
+## Completion Helper Interface
+
+The `lol` command includes a shell-agnostic completion helper for use by completion systems:
+
+```bash
+lol --complete <topic>
+```
+
+**Topics:**
+- `commands` - List available subcommands (init, update, project)
+- `init-flags` - List flags for `lol init` (--name, --lang, --path, --source, --metadata-only)
+- `update-flags` - List flags for `lol update` (--path)
+- `project-modes` - List project mode flags (--create, --associate, --automation)
+- `project-create-flags` - List flags for `lol project --create` (--org, --title)
+- `project-automation-flags` - List flags for `lol project --automation` (--write)
+- `lang-values` - List supported language values (c, cxx, python)
+
+**Output format:** Newline-delimited tokens, no descriptions.
+
+**Example:**
+```bash
+$ lol --complete commands
+init
+update
+project
+
+$ lol --complete init-flags
+--name
+--lang
+--path
+--source
+--metadata-only
+
+$ lol --complete lang-values
+c
+cxx
+python
+```
+
+This helper is used by the zsh completion system and can be used by other shells in the future.
+
 ## Flag Details
 
 ### `--name <name>`
