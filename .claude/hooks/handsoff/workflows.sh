@@ -57,10 +57,10 @@ handsoff_transition() {
             fi
         fi
 
-        # awaiting_details -> done (on open-issue with issue number, meaning update)
+        # awaiting_details -> done (on open-issue --update, meaning plan update)
         if [[ "$current_state" == "awaiting_details" && "$tool_name" == "open-issue" ]]; then
-            # Check if args contain issue number (digit pattern) indicating update
-            if echo "$tool_args" | grep -qE '[0-9]+'; then
+            # Check for --update flag specifically (not just any issue number)
+            if echo "$tool_args" | grep -qE -- '--update'; then
                 echo "done"
                 return 0
             fi

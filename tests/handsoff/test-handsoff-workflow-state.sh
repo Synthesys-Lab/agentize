@@ -123,8 +123,8 @@ export CLAUDE_HANDSOFF=true
 # Create state in awaiting_details
 echo "ultra-planner:awaiting_details:1:10" > "$STATE_FILE"
 
-# Simulate open-issue tool call (update mode)
-TOOL_JSON='{"tool": "Skill", "args": {"skill": "open-issue", "args": "42 --update"}}'
+# Simulate open-issue tool call (update mode with --update flag)
+TOOL_JSON='{"tool": "Skill", "args": {"skill": "open-issue", "args": "--update 42"}}'
 "$POSTTOOLUSE_HOOK" "PostToolUse" "Tool executed" "$TOOL_JSON" >/dev/null 2>&1
 
 # Verify state transition to done
@@ -134,6 +134,32 @@ if [[ "$state_content" != "ultra-planner:done:1:10" ]]; then
 fi
 
 echo -e "${GREEN}✓ Test 4 passed: ultra-planner transitioned to done${NC}"
+TESTS_PASSED=$((TESTS_PASSED + 1))
+
+unset CLAUDE_HANDSOFF
+cleanup_state
+
+# Test 4b: PostToolUse does NOT transition on new issue creation (sub-issues)
+test_info "Test 4b: PostToolUse ignores new issue creation (no --update flag)"
+cleanup_state
+mkdir -p "$STATE_DIR"
+
+export CLAUDE_HANDSOFF=true
+
+# Create state in awaiting_details
+echo "ultra-planner:awaiting_details:1:10" > "$STATE_FILE"
+
+# Simulate open-issue tool call WITHOUT --update (creating new sub-issue)
+TOOL_JSON='{"tool": "Skill", "args": {"skill": "open-issue", "args": ""}}'
+"$POSTTOOLUSE_HOOK" "PostToolUse" "Tool executed" "$TOOL_JSON" >/dev/null 2>&1
+
+# Verify state did NOT transition (should still be awaiting_details)
+state_content=$(cat "$STATE_FILE")
+if [[ "$state_content" != "ultra-planner:awaiting_details:1:10" ]]; then
+    test_fail "Test 4b - Expected state to remain 'ultra-planner:awaiting_details:1:10', got '$state_content'"
+fi
+
+echo -e "${GREEN}✓ Test 4b passed: New issue creation does not trigger transition${NC}"
 TESTS_PASSED=$((TESTS_PASSED + 1))
 
 unset CLAUDE_HANDSOFF
@@ -218,5 +244,5 @@ unset CLAUDE_SESSION_ID
 
 # Final summary
 echo ""
-echo -e "${GREEN}All tests passed! (${TESTS_PASSED}/7)${NC}"
+echo -e "${GREEN}All tests passed! (${TESTS_PASSED}/8)${NC}"
 exit 0

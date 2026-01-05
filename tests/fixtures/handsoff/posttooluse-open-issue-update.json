@@ -2,6 +2,6 @@
   "tool": "Skill",
   "args": {
     "skill": "open-issue",
-    "args": "42 --update"
+    "args": "--update 42"
   }
 }
