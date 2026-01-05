@@ -221,38 +221,7 @@ cmd_main() {
     # This function is designed to be used when sourced
     # When executed directly, it just shows a message
 
-    # Check if we're being sourced or executed first
-    # If executed directly, show message without requiring trees/main to exist
-    if [ "$WT_CLI_SOURCED" = false ]; then
-        # Resolve repo root to construct path for message
-        local repo_root
-        repo_root=$(wt_resolve_repo_root)
-        if [ $? -ne 0 ]; then
-            return 1
-        fi
-
-        # Try to read metadata for trees directory
-        local metadata_file
-        local trees_dir="trees"
-
-        metadata_file=$(locate_metadata "$repo_root" || true)
-        if [ -n "$metadata_file" ] && [ -f "$metadata_file" ]; then
-            local meta_trees_dir
-            meta_trees_dir=$(parse_yaml_value "worktree.trees_dir" < "$metadata_file" 2>/dev/null || true)
-            if [ -n "$meta_trees_dir" ]; then
-                trees_dir="$meta_trees_dir"
-            fi
-        fi
-
-        local main_worktree_path="$repo_root/${trees_dir}/main"
-
-        # Direct execution - cannot change directory
-        echo "Note: This command works only when sourced (via 'source setup.sh' and using 'wt main')."
-        echo "To switch to main worktree: cd $main_worktree_path"
-        return 0
-    fi
-
-    # Sourced mode - need to verify trees/main exists before cd
+    # Resolve repo root
     local repo_root
     repo_root=$(wt_resolve_repo_root)
     if [ $? -ne 0 ]; then
@@ -281,10 +250,18 @@ cmd_main() {
         return 1
     fi
 
-    # Sourced - can change directory
-    cd "$main_worktree_path"
-    echo "Switched to main worktree: $main_worktree_path"
-    return 0
+    # Check if we're being sourced or executed
+    if [ "$WT_CLI_SOURCED" = false ]; then
+        # Direct execution - cannot change directory
+        echo "Note: This command works only when sourced (via 'source setup.sh' and using 'wt main')."
+        echo "To switch to main worktree: cd $main_worktree_path"
+        return 0
+    else
+        # Sourced - can change directory
+        cd "$main_worktree_path"
+        echo "Switched to main worktree: $main_worktree_path"
+        return 0
+    fi
 }
 
 # Display help information
