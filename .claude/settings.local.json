@@ -9,7 +9,9 @@
       "Bash(gh issue edit:*)",
       "Bash(gh issue create:*)",
       "Bash(gh pr create:*)",
-      "Bash(git rebase:*)"
+      "Bash(git rebase:*)",
+      "Bash(git stash:*)",
+      "Bash(tests/handsoff/test-lol-project-automation.sh)"
     ]
   }
 }

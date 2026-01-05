@@ -8,7 +8,7 @@ The workflow provides automated issue lifecycle management for GitHub Projects v
 
 1. **Auto-add**: Automatically adds new issues and PRs to your project board
 2. **Stage "proposed"**: Sets newly opened issues to Stage "proposed"
-3. **Auto-done**: Marks linked issues as Stage "done" when PRs are merged
+3. **Auto-close**: Closes linked issues when PRs are merged
 
 ## Workflow Architecture
 
@@ -30,7 +30,7 @@ Runs when issues or PRs are opened.
 
 **Technology**: Uses the `actions/add-to-project@v1.0.2` GitHub Action
 
-### Job 2: `mark-linked-issues-done`
+### Job 2: `close-linked-issues`
 
 Runs when PRs are closed and merged.
 
@@ -38,10 +38,9 @@ Runs when PRs are closed and merged.
 
 **Process**:
 1. **Query linked issues**: Uses `closingIssuesReferences` GraphQL field to find issues that this PR closes
-2. **Lookup project items**: For each linked issue, queries its project item ID
-3. **Update Stage field**: Uses `updateProjectV2ItemFieldValue` mutation to set Stage to "done"
+2. **Close issues**: Uses `gh issue close` command to close each linked issue with reason "completed"
 
-**Technology**: Uses GitHub CLI (`gh`) and GraphQL API directly
+**Technology**: Uses GitHub CLI (`gh`) for both GraphQL queries and issue closing
 
 ## Configuration Requirements
 
@@ -54,16 +53,15 @@ env:
   PROJECT_ORG: YOUR_ORG_HERE              # Your GitHub organization name
   PROJECT_ID: YOUR_PROJECT_ID_HERE        # Project number (e.g., 3)
   STAGE_FIELD_ID: YOUR_STAGE_FIELD_ID_HERE           # GraphQL ID of Stage field
-  STAGE_DONE_OPTION_ID: YOUR_STAGE_DONE_OPTION_ID_HERE  # GraphQL ID of "done" option
 ```
 
 **How to find these values**:
 
 1. **PROJECT_ORG and PROJECT_ID**: These are substituted automatically by `lol project --automation` when you have project metadata in `.agentize.yaml`
 
-2. **STAGE_FIELD_ID and STAGE_DONE_OPTION_ID**: You must look these up manually using GraphQL queries (see next section)
+2. **STAGE_FIELD_ID**: You must look this up manually using GraphQL queries (see next section)
 
-### Finding Field and Option IDs
+### Finding Field ID
 
 **Step 1: Get your project's GraphQL ID**
 
@@ -81,7 +79,7 @@ query {
 
 Save the `id` value (looks like `PVT_xxx`).
 
-**Step 2: List all fields and their option IDs**
+**Step 2: List all fields**
 
 ```bash
 gh api graphql -f query='
@@ -105,9 +103,9 @@ query {
 }'
 ```
 
-From the output, find:
-- The `id` where `name` is `"Stage"` → This is your `STAGE_FIELD_ID`
-- Within that field's options, find the `id` where `name` is `"done"` → This is your `STAGE_DONE_OPTION_ID`
+From the output, find the `id` where `name` is `"Stage"` → This is your `STAGE_FIELD_ID`
+
+**Note:** You only need the field ID for setting the initial "proposed" status. Option IDs are not required since issue closing is handled via `gh issue close` instead of GraphQL field mutations.
 
 ### Repository Secret
 
@@ -153,7 +151,7 @@ When a PR is opened, the workflow:
    - `github-token`: Uses the `ADD_TO_PROJECT_PAT` secret
    - No `status-field`/`status-value` (PRs don't get initial Stage value)
 
-### Step 3: Mark Linked Issues Done (PR Merge)
+### Step 3: Close Linked Issues (PR Merge)
 
 When a PR is merged, the workflow executes two bash script steps:
 
@@ -180,31 +178,21 @@ query($owner: String!, $repo: String!, $prNumber: Int!) {
 
 The script stores the result in `$GITHUB_OUTPUT` for the next step.
 
-#### 3.2: Update Linked Issues to Done
+#### 3.2: Close Linked Issues
 
-For each linked issue, the script:
+For each linked issue, the script simply closes it using GitHub CLI:
 
-1. **Gets project node ID**: Converts `PROJECT_ORG/PROJECT_ID` to GraphQL node ID
-2. **Finds project item ID**: Queries the issue's project items to find the one matching our project
-3. **Updates Stage field**: Uses `updateProjectV2ItemFieldValue` mutation to set Stage to "done"
-
-**GraphQL mutation**:
-```graphql
-mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $valueId: String!) {
-  updateProjectV2ItemFieldValue(
-    input: {
-      projectId: $projectId
-      itemId: $itemId
-      fieldId: $fieldId
-      value: { singleSelectOptionId: $valueId }
-    }
-  ) {
-    projectV2Item { id }
-  }
-}
+```bash
+gh issue close $issue_number --reason "completed"
 ```
 
-**Error handling**: If an issue is not in the project, the script logs a warning and skips it (no failure).
+**Why this is simpler**: Instead of complex GraphQL mutations to update custom Stage fields, we delegate completion tracking to GitHub's native issue status (Open/Closed). This eliminates the need for:
+- Project node ID lookup
+- Project item ID lookup
+- Stage field option ID configuration
+- GraphQL mutation complexity
+
+The close reason "completed" helps distinguish successful completion from abandoned issues (which would use "not planned" as the close reason).
 
 ## Customization
 
@@ -231,12 +219,15 @@ status-field: Stage
 status-value: Backlog  # Changed from "proposed"
 ```
 
-### Changing the "Done" Value
+### Changing the Close Reason
 
-To mark merged issues as something other than "done":
+To use a different close reason when PRs merge:
 
-1. Look up the option ID for your desired value (e.g., "Completed", "Merged")
-2. Update `STAGE_DONE_OPTION_ID` to that option's ID
+```bash
+gh issue close $issue_number --reason "not planned"  # Changed from "completed"
+```
+
+Valid close reasons: `completed`, `not planned`
 
 ### Adding PR Status on Open
 
@@ -263,27 +254,17 @@ To set a Stage value for newly opened PRs:
 
 **Fix**: Re-run the GraphQL query to get the current field ID
 
-### "Option not found" errors
+### Issues not being closed
 
-**Symptom**: Workflow fails when updating to "done"
-
-**Cause**: `STAGE_DONE_OPTION_ID` is incorrect or the option was renamed/deleted
-
-**Fix**: Re-run the GraphQL query to get the current option ID for "done"
-
-### Issues not being marked done
-
-**Symptom**: PR merges but linked issues stay in their current Stage
+**Symptom**: PR merges but linked issues remain open
 
 **Possible causes**:
 
-1. **Issue not in project**: The script skips issues not in the project board. Check if the issue was added to the project.
+1. **No "Closes #N" reference**: GitHub's `closingIssuesReferences` requires explicit closing keywords in the PR description or commits. Ensure your PR body includes "Closes #N" or similar.
 
-2. **No "Closes #N" reference**: GitHub's `closingIssuesReferences` requires explicit closing keywords in the PR description or commits. Ensure your PR body includes "Closes #N" or similar.
+2. **PAT permissions**: Verify `ADD_TO_PROJECT_PAT` has permission to close issues in the repository.
 
-3. **PAT permissions**: Verify `ADD_TO_PROJECT_PAT` has `project` write permission.
-
-4. **Wrong project**: If the issue is in a different project, update that project's field instead.
+3. **Issue already closed**: The script will skip issues that are already closed (no error, just logged).
 
 ### Permission denied errors
 
