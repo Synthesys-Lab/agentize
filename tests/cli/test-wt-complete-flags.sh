@@ -3,7 +3,7 @@
 
 source "$(dirname "$0")/../common.sh"
 
-WT_CLI="$PROJECT_ROOT/scripts/wt-cli.sh"
+WT_CLI="$PROJECT_ROOT/src/cli/wt.sh"
 
 test_info "wt --complete flag topics output documented flags"
 
