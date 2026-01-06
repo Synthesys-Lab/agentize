@@ -17,12 +17,14 @@ _wt() {
     # Fallback to static command list if dynamic fetch failed
     if (( ${#commands} == 0 )); then
         commands=(
+            'common:Print git common directory (bare repo path)'
             'init:Initialize worktree environment (creates trees/main)'
-            'main:Switch to main worktree (when sourced)'
+            'goto:Change directory to worktree target'
             'spawn:Create worktree for an issue'
             'list:List all worktrees'
             'remove:Remove worktree and delete branch'
             'prune:Clean up stale worktree metadata'
+            'purge:Remove worktrees for closed GitHub issues'
             'help:Display help message'
         )
     else
@@ -30,12 +32,14 @@ _wt() {
         local -a commands_with_desc
         for cmd in $commands; do
             case $cmd in
+                common) commands_with_desc+=('common:Print git common directory (bare repo path)') ;;
                 init) commands_with_desc+=('init:Initialize worktree environment (creates trees/main)') ;;
-                main) commands_with_desc+=('main:Switch to main worktree (when sourced)') ;;
+                goto) commands_with_desc+=('goto:Change directory to worktree target') ;;
                 spawn) commands_with_desc+=('spawn:Create worktree for an issue') ;;
                 list) commands_with_desc+=('list:List all worktrees') ;;
                 remove) commands_with_desc+=('remove:Remove worktree and delete branch') ;;
                 prune) commands_with_desc+=('prune:Clean up stale worktree metadata') ;;
+                purge) commands_with_desc+=('purge:Remove worktrees for closed GitHub issues') ;;
                 help) commands_with_desc+=('help:Display help message') ;;
             esac
         done
@@ -52,6 +56,9 @@ _wt() {
             ;;
         args)
             case $line[1] in
+                goto)
+                    _wt_goto
+                    ;;
                 spawn)
                     _wt_spawn
                     ;;
@@ -61,6 +68,24 @@ _wt() {
             esac
             ;;
     esac
+}
+
+# Completion for 'wt goto' subcommand
+_wt_goto() {
+    local -a goto_targets
+
+    # Try dynamic fetch first
+    if (( $+commands[wt] )); then
+        goto_targets=( ${(f)"$(wt --complete goto-targets 2>/dev/null)"} )
+    fi
+
+    # Fallback to main only
+    if (( ${#goto_targets} == 0 )); then
+        goto_targets=( 'main' )
+    fi
+
+    _arguments \
+        "1:target:(${goto_targets})"
 }
 
 # Completion for 'wt spawn' subcommand
@@ -111,17 +136,20 @@ _wt_remove() {
 
     # Fallback to static flags
     if (( ${#remove_flags} == 0 )); then
-        remove_flags=( '-D' '--force' )
+        remove_flags=( '--delete-branch' '-D' '--force' )
     fi
 
     # Build option specs from flags
     for flag in $remove_flags; do
         case $flag in
+            --delete-branch)
+                option_specs+=('--delete-branch[Delete branch even if unmerged]')
+                ;;
             -D)
-                option_specs+=('-D[Force delete unmerged branch]')
+                option_specs+=('-D[Alias for --delete-branch (legacy)]')
                 ;;
             --force)
-                option_specs+=('--force[Force delete unmerged branch]')
+                option_specs+=('--force[Alias for --delete-branch (legacy)]')
                 ;;
             *)
                 # Unknown flag, pass through without description
