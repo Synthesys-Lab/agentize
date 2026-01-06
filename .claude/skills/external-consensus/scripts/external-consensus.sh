@@ -68,7 +68,8 @@ extract_feature_name() {
     # - Variants: Feature Request, Title
     grep -iE "^(#+[[:space:]]*)?(\\*\\*)?(Feature( Request)?|Title)(\\*\\*)?[[:space:]]*[:\-]" "$report_path" 2>/dev/null \
         | head -1 \
-        | sed -E 's/^#+[[:space:]]*//; s/^\*\*(Feature( Request)?|Title)\*\*[[:space:]]*[:\-][[:space:]]*//I; s/^(Feature( Request)?|Title)[[:space:]]*[:\-][[:space:]]*//I; s/^\[[^]]*\]:[[:space:]]*//'
+        | sed -E 's/^#+[[:space:]]*//; s/^\*\*(Feature( Request)?|Title)\*\*[[:space:]]*[:\-][[:space:]]*//I; s/^(Feature( Request)?|Title)[[:space:]]*[:\-][[:space:]]*//I; s/^\[[^]]*\]:[[:space:]]*//' \
+        || true
 }
 
 # Try to extract feature name from reports in priority order
