@@ -101,6 +101,8 @@ wt_resolve_worktree() {
     # Handle issue number (e.g., "42" -> matches "issue-42" or "issue-42-title")
     if [[ "$target" =~ ^[0-9]+$ ]]; then
         local issue_dir
+        # Search only immediate subdirectories of trees/ (maxdepth 1)
+        # to avoid matching nested directories or files
         issue_dir=$(find "$trees_dir" -maxdepth 1 -type d -name "issue-$target*" 2>/dev/null | head -1)
 
         if [ -n "$issue_dir" ]; then
