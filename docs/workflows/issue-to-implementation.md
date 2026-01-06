@@ -26,15 +26,3 @@ graph TD
     style I fill:#ccddff
 ```
 
-## Hands-Off Mode
-
-Enable automated execution without manual permission prompts by setting `CLAUDE_HANDSOFF=true`. This auto-approves safe local operations (file edits, test runs, local commits) while maintaining safety boundaries for destructive or publish actions.
-
-With hands-off mode enabled, the implementation workflow automatically continues through milestones. The system tracks workflow state and automatically stops when the PR is created (workflow completion detected), or when the configured continuation limit is reached (default: 10 per session). Manual resume is required if stopped:
-
-```bash
-User: Continue from the latest milestone
-User: Resume implementation
-```
-
-See [Hands-Off Mode Documentation](../handsoff.md) for complete details on workflow-aware stopping, auto-continue limits, and configuration.

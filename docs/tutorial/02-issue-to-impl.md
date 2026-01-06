@@ -119,8 +119,6 @@ User: Continue implementation
 User: Continue from .milestones/issue-42-milestone-2.md
 ```
 
-**Session-start hints**: When hands-off mode is enabled (`CLAUDE_HANDSOFF=true`), session start automatically displays a hint when a milestone exists on the current branch.
-
 **How it works**: The system automatically:
 1. Detects your current branch (issue-42-*)
 2. Finds the latest milestone file in `.milestones/`
@@ -242,33 +240,6 @@ Each milestone contains:
 
 See `docs/milestone-workflow.md` for complete documentation.
 
-## Hands-Off Mode
-
-Enable automated workflows without manual permission prompts:
-
-```bash
-export CLAUDE_HANDSOFF=true
-/issue-to-impl 42
-```
-
-With hands-off mode, the entire local workflow (docs, tests, implementation, commits) proceeds automatically. The system tracks workflow state and automatically stops when the PR is created (workflow completion) or the continuation limit is reached (default: 10 per session), allowing multi-milestone implementations to complete with minimal intervention.
-
-**Auto-continue behavior:**
-- Workflow continues automatically when reaching milestones (e.g., "Milestone 2 created")
-- Stops automatically when PR is created (workflow completion detected)
-- Limit prevents infinite loops (default: 10 continuations)
-- Once limit is reached or workflow completes, manual resume may be required
-- State resets at the start of each new session
-
-**Configure the limit:**
-```bash
-export HANDSOFF_MAX_CONTINUATIONS=20  # Allow more auto-continuations
-```
-
-Publish operations (like `git push` and PR creation) still require confirmation.
-
-See [Hands-Off Mode Documentation](../handsoff.md) for complete details on workflow-aware stopping, auto-approved operations, auto-continue limits, and safety boundaries.
-
 ## Tips
 
 1. **Let it run**: `/issue-to-impl` works automatically - let it complete or reach a milestone
@@ -276,7 +247,6 @@ See [Hands-Off Mode Documentation](../handsoff.md) for complete details on workf
 3. **Always sync**: Run `/sync-master` before creating PRs to avoid conflicts
 4. **Fix review issues**: Address `/code-review` findings before merging
 5. **Clean working directory**: Commit changes before `/sync-master` or `/issue-to-impl` (require clean working tree for rebasing)
-6. **Use hands-off mode**: Set `CLAUDE_HANDSOFF=true` to reduce permission prompts for local workflows
 
 ## Next Steps
 

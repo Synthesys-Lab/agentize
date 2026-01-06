@@ -62,9 +62,8 @@ All tests are executed via `tests/test-all.sh`, which automatically discovers te
 - `make test-sdk` - Run SDK template tests
 - `make test-cli` - Run CLI command tests
 - `make test-lint` - Run validation tests
-- `make test-handsoff` - Run end-to-end integration tests
+- `make test-e2e` - Run end-to-end integration tests
 - `make test-fast` - Run fast tests (sdk + cli + lint)
-- `make test-e2e` - Run end-to-end tests (alias for handsoff)
 
 **Note**: When `TEST_SHELLS` is explicitly set (e.g., via `make test-shells`), the test runner enforces strict shell availability and exits with an error if any required shell is missing.
 

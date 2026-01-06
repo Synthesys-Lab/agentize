@@ -46,7 +46,6 @@ Testing framework, validation, and agent testing:
 ### Reference Documentation
 
 - `git-msg-tags.md` - Git commit message tag standards
-- `handsoff.md` - Hands-off mode for automated workflows
 
 ## Getting Started
 

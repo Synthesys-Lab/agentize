@@ -222,20 +222,3 @@ Implements plan issue.
 
 *Refinement is optional and can be done multiple times
 
-## Hands-Off Mode
-
-Enable automated planning workflows without manual permission prompts:
-
-```bash
-export CLAUDE_HANDSOFF=true
-/ultra-planner "implement user authentication"
-/refine-issue 42
-```
-
-This auto-approves file reads, exploration, and local file writes during the planning process. The system tracks workflow state and automatically stops when the issue is updated with the final plan (workflow completion detected), or when the configured continuation limit is reached (default: 10 per session). Manual resume is required if stopped:
-
-```bash
-User: Continue from where you left off
-```
-
-See [Hands-Off Mode Documentation](../handsoff.md) for complete details on workflow-aware stopping, auto-continue limits, and configuration.

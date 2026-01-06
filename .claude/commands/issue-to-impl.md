@@ -279,8 +279,6 @@ Starting automatic implementation loop...
    - **LOC ≥ 800 AND tests incomplete** → Create Milestone {M+1}, inform user
    - **All tests pass** → Signal completion
 
-**Hands-off auto-continue note:** With `CLAUDE_HANDSOFF=true`, this workflow auto-continues when reaching milestones up to the configured limit (default: 10 continuations per session). This allows multi-milestone implementations to complete hands-free. Once the limit is reached, manual resume is required. See `docs/handsoff.md` for configuration details.
-
 **Handle milestone skill output:**
 
 **Output A: Milestone created**
@@ -426,26 +424,3 @@ Run: gh auth login
 ```
 Stop execution.
 
-## Hands-Off Mode
-
-**Enable auto-approval for safe operations** to reduce manual permission prompts during implementation workflows.
-
-**To enable:**
-```bash
-export CLAUDE_HANDSOFF=true
-```
-
-**To disable:**
-```bash
-export CLAUDE_HANDSOFF=false
-```
-
-**Safety boundaries:**
-- Only safe/reversible operations auto-approved (reads, file writes on non-main branches)
-- Destructive actions always require manual approval (git push, git reset, rm -rf)
-- `.milestones/` files never auto-staged
-- Only active on non-main branches
-
-**Troubleshooting:**
-- If workflow gets stuck: Check `.tmp/claude-hooks/auto-approvals.log` for decisions
-- To force manual mode: Set `CLAUDE_HANDSOFF=false`

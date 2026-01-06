@@ -166,7 +166,6 @@ User: Continue implementation
 User: Continue from .milestones/issue-42-milestone-2.md
 ```
 
-When hands-off mode is enabled (`CLAUDE_HANDSOFF=true`), session start automatically displays a hint when a milestone exists on the current branch.
 
 **What happens:**
 1. Validates you're on a development branch (issue-{N}-*)
@@ -274,8 +273,6 @@ When a milestone is created, the agent stops. To continue, use natural language:
 User: Resume from the latest milestone
 User: Continue implementation
 ```
-
-When hands-off mode is enabled (`CLAUDE_HANDSOFF=true`), session start automatically displays a hint showing which milestone to resume from.
 
 This loads the context and continues from where you left off.
 
