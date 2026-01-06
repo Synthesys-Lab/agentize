@@ -98,11 +98,10 @@ wt_resolve_worktree() {
         return 0
     fi
 
-    # Handle issue number (e.g., "42" -> "issue-42-*")
+    # Handle issue number (e.g., "42" -> matches "issue-42" or "issue-42-title")
     if [[ "$target" =~ ^[0-9]+$ ]]; then
-        # Find matching issue directory
         local issue_dir
-        issue_dir=$(find "$trees_dir" -maxdepth 1 -type d -name "issue-$target-*" 2>/dev/null | head -1)
+        issue_dir=$(find "$trees_dir" -maxdepth 1 -type d -name "issue-$target*" 2>/dev/null | head -1)
 
         if [ -n "$issue_dir" ]; then
             echo "$issue_dir"

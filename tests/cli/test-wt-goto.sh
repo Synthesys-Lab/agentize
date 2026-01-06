@@ -38,8 +38,8 @@ cd "$TEST_REPO_DIR"
 wt goto 42 2>/dev/null
 current_dir=$(pwd)
 
-# Find the issue-42 directory (name includes title)
-issue_dir=$(find "$TEST_REPO_DIR/trees" -type d -name "issue-42-*" | head -1)
+# Find the issue-42 directory (matches both "issue-42" and "issue-42-title")
+issue_dir=$(find "$TEST_REPO_DIR/trees" -type d -name "issue-42*" 2>/dev/null | head -1)
 if [ -z "$issue_dir" ]; then
   cleanup_test_repo
   test_fail "Could not find issue-42 worktree directory"

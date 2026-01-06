@@ -22,26 +22,26 @@ wt spawn 55 --no-agent >/dev/null 2>&1 || test_fail "wt spawn 55 failed"
 wt spawn 56 --no-agent >/dev/null 2>&1 || test_fail "wt spawn 56 failed"
 wt spawn 211 --no-agent >/dev/null 2>&1 || test_fail "wt spawn 211 failed"
 
-# Verify all worktrees were created
-issue_42_dir=$(find "$TEST_REPO_DIR/trees" -maxdepth 1 -type d -name "issue-42-*" 2>/dev/null | head -1)
+# Verify all worktrees were created (matches both "issue-N" and "issue-N-title")
+issue_42_dir=$(find "$TEST_REPO_DIR/trees" -maxdepth 1 -type d -name "issue-42*" 2>/dev/null | head -1)
 if [ -z "$issue_42_dir" ]; then
   cleanup_test_repo
   test_fail "issue-42 worktree was not created"
 fi
 
-issue_55_dir=$(find "$TEST_REPO_DIR/trees" -maxdepth 1 -type d -name "issue-55-*" 2>/dev/null | head -1)
+issue_55_dir=$(find "$TEST_REPO_DIR/trees" -maxdepth 1 -type d -name "issue-55*" 2>/dev/null | head -1)
 if [ -z "$issue_55_dir" ]; then
   cleanup_test_repo
   test_fail "issue-55 worktree was not created"
 fi
 
-issue_56_dir=$(find "$TEST_REPO_DIR/trees" -maxdepth 1 -type d -name "issue-56-*" 2>/dev/null | head -1)
+issue_56_dir=$(find "$TEST_REPO_DIR/trees" -maxdepth 1 -type d -name "issue-56*" 2>/dev/null | head -1)
 if [ -z "$issue_56_dir" ]; then
   cleanup_test_repo
   test_fail "issue-56 worktree was not created"
 fi
 
-issue_211_dir=$(find "$TEST_REPO_DIR/trees" -maxdepth 1 -type d -name "issue-211-*" 2>/dev/null | head -1)
+issue_211_dir=$(find "$TEST_REPO_DIR/trees" -maxdepth 1 -type d -name "issue-211*" 2>/dev/null | head -1)
 if [ -z "$issue_211_dir" ]; then
   cleanup_test_repo
   test_fail "issue-211 worktree was not created"
@@ -64,26 +64,26 @@ if ! echo "$purge_output" | grep -q "issue-211"; then
 fi
 
 # Verify closed issue worktrees were removed
-issue_56_dir=$(find "$TEST_REPO_DIR/trees" -type d -name "issue-56-*" 2>/dev/null | head -1)
+issue_56_dir=$(find "$TEST_REPO_DIR/trees" -type d -name "issue-56*" 2>/dev/null | head -1)
 if [ -n "$issue_56_dir" ]; then
   cleanup_test_repo
   test_fail "issue-56 worktree should be removed after purge"
 fi
 
-issue_211_dir=$(find "$TEST_REPO_DIR/trees" -type d -name "issue-211-*" 2>/dev/null | head -1)
+issue_211_dir=$(find "$TEST_REPO_DIR/trees" -type d -name "issue-211*" 2>/dev/null | head -1)
 if [ -n "$issue_211_dir" ]; then
   cleanup_test_repo
   test_fail "issue-211 worktree should be removed after purge"
 fi
 
 # Verify open issue worktrees still exist (42, 55)
-issue_42_dir=$(find "$TEST_REPO_DIR/trees" -type d -name "issue-42-*" 2>/dev/null | head -1)
+issue_42_dir=$(find "$TEST_REPO_DIR/trees" -type d -name "issue-42*" 2>/dev/null | head -1)
 if [ -z "$issue_42_dir" ]; then
   cleanup_test_repo
   test_fail "issue-42 worktree should still exist after purge"
 fi
 
-issue_55_dir=$(find "$TEST_REPO_DIR/trees" -type d -name "issue-55-*" 2>/dev/null | head -1)
+issue_55_dir=$(find "$TEST_REPO_DIR/trees" -type d -name "issue-55*" 2>/dev/null | head -1)
 if [ -z "$issue_55_dir" ]; then
   cleanup_test_repo
   test_fail "issue-55 worktree should still exist after purge"

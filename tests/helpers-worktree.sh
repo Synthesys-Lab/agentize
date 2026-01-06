@@ -42,11 +42,22 @@ if [ "$1" = "issue" ] && [ "$2" = "view" ]; then
   issue_no="$3"
   # Handle --json state flag for purge testing
   if [ "$4" = "--json" ] && [ "$5" = "state" ]; then
-    case "$issue_no" in
-      42|55|100|200|210|300) echo '{"state":"OPEN"}'; exit 0 ;;
-      56|211|301|350) echo '{"state":"CLOSED"}'; exit 0 ;;
-      *) exit 1 ;;
-    esac
+    # Check if --jq flag is present
+    if [ "$6" = "--jq" ] && [ "$7" = ".state" ]; then
+      # Return just the state value (simulating jq extraction)
+      case "$issue_no" in
+        42|55|100|200|210|300) echo "OPEN"; exit 0 ;;
+        56|211|301|350) echo "CLOSED"; exit 0 ;;
+        *) exit 1 ;;
+      esac
+    else
+      # Return full JSON (for other use cases)
+      case "$issue_no" in
+        42|55|100|200|210|300) echo '{"state":"OPEN"}'; exit 0 ;;
+        56|211|301|350) echo '{"state":"CLOSED"}'; exit 0 ;;
+        *) exit 1 ;;
+      esac
+    fi
   else
     # Valid issue numbers return exit code 0, invalid ones return 1
     case "$issue_no" in
@@ -104,11 +115,22 @@ setup_test_repo_custom_branch() {
 if [ "$1" = "issue" ] && [ "$2" = "view" ]; then
   issue_no="$3"
   if [ "$4" = "--json" ] && [ "$5" = "state" ]; then
-    case "$issue_no" in
-      42|55|100|200|210|300) echo '{"state":"OPEN"}'; exit 0 ;;
-      56|211|301|350) echo '{"state":"CLOSED"}'; exit 0 ;;
-      *) exit 1 ;;
-    esac
+    # Check if --jq flag is present
+    if [ "$6" = "--jq" ] && [ "$7" = ".state" ]; then
+      # Return just the state value (simulating jq extraction)
+      case "$issue_no" in
+        42|55|100|200|210|300) echo "OPEN"; exit 0 ;;
+        56|211|301|350) echo "CLOSED"; exit 0 ;;
+        *) exit 1 ;;
+      esac
+    else
+      # Return full JSON (for other use cases)
+      case "$issue_no" in
+        42|55|100|200|210|300) echo '{"state":"OPEN"}'; exit 0 ;;
+        56|211|301|350) echo '{"state":"CLOSED"}'; exit 0 ;;
+        *) exit 1 ;;
+      esac
+    fi
   else
     case "$issue_no" in
       42|55|56|100|200|210|211|300|301|350) exit 0 ;;
