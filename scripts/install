@@ -1,0 +1,202 @@
+#!/usr/bin/env bash
+# Agentize installer script
+# One-command installer that clones, initializes worktrees, and sets up shell integration
+
+set -e
+
+# Default values
+DEFAULT_INSTALL_DIR="$HOME/.agentize"
+DEFAULT_REPO_URL="https://github.com/SyntheSys-Lab/agentize.git"
+
+# Parse arguments
+INSTALL_DIR=""
+REPO_SOURCE=""
+SHOW_HELP=false
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --dir)
+            INSTALL_DIR="$2"
+            shift 2
+            ;;
+        --repo)
+            REPO_SOURCE="$2"
+            shift 2
+            ;;
+        --help)
+            SHOW_HELP=true
+            shift
+            ;;
+        *)
+            echo "Error: Unknown option: $1" >&2
+            echo "Use --help for usage information" >&2
+            exit 1
+            ;;
+    esac
+done
+
+# Show help and exit
+if [ "$SHOW_HELP" = true ]; then
+    cat <<'EOF'
+Agentize Installer
+
+Usage: install [OPTIONS]
+
+Options:
+  --dir <path>       Installation directory (default: $HOME/.agentize)
+  --repo <url|path>  Git repository URL or local path (default: GitHub repo)
+  --help             Display this help message
+
+Description:
+  Installs Agentize by cloning the repository, initializing the worktree
+  layout, running setup, and providing shell RC integration instructions.
+
+Examples:
+  # Default installation
+  ./install
+
+  # Custom install directory
+  ./install --dir ~/my-agentize
+
+  # Install from local repository (for testing)
+  ./install --repo /path/to/local/agentize --dir /tmp/test-install
+
+Exit Codes:
+  0  Installation successful
+  1  Installation failed
+EOF
+    exit 0
+fi
+
+# Set defaults if not provided
+INSTALL_DIR="${INSTALL_DIR:-$DEFAULT_INSTALL_DIR}"
+REPO_SOURCE="${REPO_SOURCE:-$DEFAULT_REPO_URL}"
+
+# Validate dependencies
+echo "Checking dependencies..."
+for cmd in git make bash; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "Error: Required command '$cmd' not found" >&2
+        echo "Please install $cmd and try again" >&2
+        exit 1
+    fi
+done
+echo "Dependencies OK"
+
+# Check if install directory already exists
+if [ -e "$INSTALL_DIR" ]; then
+    echo "Error: Install directory already exists: $INSTALL_DIR" >&2
+    echo "" >&2
+    echo "Please remove the directory or choose a different location with --dir" >&2
+    echo "  rm -rf $INSTALL_DIR" >&2
+    exit 1
+fi
+
+# Clone or copy repository
+echo "Installing to: $INSTALL_DIR"
+
+if [ -d "$REPO_SOURCE" ]; then
+    # Local path - copy as bare repo
+    echo "Copying from local repository: $REPO_SOURCE"
+
+    # Verify it's a valid git repository
+    if ! git -C "$REPO_SOURCE" rev-parse --git-dir >/dev/null 2>&1; then
+        echo "Error: Source is not a valid git repository" >&2
+        exit 1
+    fi
+
+    # Clone directly from the repository path (works for both normal and worktree layouts)
+    # Use file:// protocol to avoid hard-linking which can carry over worktree metadata
+    if ! git clone --bare "file://$(cd "$REPO_SOURCE" && pwd)" "$INSTALL_DIR" >/dev/null 2>&1; then
+        echo "Error: Failed to clone from local repository" >&2
+        exit 1
+    fi
+
+    # Remove origin remote to prevent git from checking the source repo's worktree state
+    # This is critical when the source repo has worktrees - git would otherwise refuse to
+    # create a worktree for a branch that's checked out in the source repo
+    git -C "$INSTALL_DIR" remote remove origin 2>/dev/null || true
+else
+    # Remote URL - clone as bare repo
+    echo "Cloning from: $REPO_SOURCE"
+
+    if ! git clone --bare "$REPO_SOURCE" "$INSTALL_DIR" >/dev/null 2>&1; then
+        echo "Error: Failed to clone repository" >&2
+        exit 1
+    fi
+fi
+
+echo "Repository cloned successfully"
+
+# Initialize worktree environment
+echo "Initializing worktree environment..."
+
+# Extract wt-cli.sh from bare repo and run init
+# In a bare repo, files are not in the working tree, so we need to extract them
+(
+    cd "$INSTALL_DIR" || exit 1
+
+    # Detect default branch (main or master)
+    if git show-ref --verify --quiet refs/heads/main; then
+        DEFAULT_BRANCH="main"
+    elif git show-ref --verify --quiet refs/heads/master; then
+        DEFAULT_BRANCH="master"
+    else
+        echo "Error: Cannot find main or master branch" >&2
+        exit 1
+    fi
+
+    # Extract wt-cli.sh and run it
+    TEMP_SCRIPT="/tmp/wt-cli-$$.sh"
+    git show "$DEFAULT_BRANCH:scripts/wt-cli.sh" > "$TEMP_SCRIPT" || exit 1
+    bash "$TEMP_SCRIPT" init
+    INIT_RESULT=$?
+    rm -f "$TEMP_SCRIPT"
+    exit $INIT_RESULT
+) >/dev/null 2>&1
+
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to initialize worktree environment" >&2
+    exit 1
+fi
+
+echo "Worktree initialized: $INSTALL_DIR/trees/main"
+
+# Run setup in trees/main
+echo "Running setup..."
+
+if ! make -C "$INSTALL_DIR/trees/main" setup >/dev/null 2>&1; then
+    echo "Error: Failed to run setup" >&2
+    echo "Command failed: make -C $INSTALL_DIR/trees/main setup" >&2
+    exit 1
+fi
+
+echo "Setup complete: $INSTALL_DIR/trees/main/setup.sh"
+
+# Print shell RC integration instructions
+cat <<EOF
+
+========================================
+Installation Complete!
+========================================
+
+To enable agentize commands (wt, lol) in your shell, add this line to your
+shell RC file (~/.bashrc, ~/.zshrc, etc.):
+
+    source $INSTALL_DIR/trees/main/setup.sh
+
+Then restart your shell or run:
+
+    source ~/.bashrc  # or ~/.zshrc
+
+After that, you can use:
+  - wt init, wt spawn, wt list, etc.
+  - lol init, lol update, etc.
+
+For more information:
+  - Quick Start: $INSTALL_DIR/trees/main/README.md
+  - Documentation: $INSTALL_DIR/trees/main/docs/
+
+EOF
+
+exit 0
