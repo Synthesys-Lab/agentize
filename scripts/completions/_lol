@@ -19,6 +19,7 @@ _lol() {
         commands=(
             'init:Initialize AI-powered SDK'
             'update:Update SDK configuration'
+            'upgrade:Upgrade agentize installation'
             'project:Manage GitHub Projects v2 integration'
         )
     else
@@ -28,6 +29,7 @@ _lol() {
             case $cmd in
                 init) commands_with_desc+=('init:Initialize AI-powered SDK') ;;
                 update) commands_with_desc+=('update:Update SDK configuration') ;;
+                upgrade) commands_with_desc+=('upgrade:Upgrade agentize installation') ;;
                 project) commands_with_desc+=('project:Manage GitHub Projects v2 integration') ;;
             esac
         done
@@ -49,6 +51,9 @@ _lol() {
                     ;;
                 update)
                     _lol_update
+                    ;;
+                upgrade)
+                    _lol_upgrade
                     ;;
                 project)
                     _lol_project
@@ -100,6 +105,12 @@ _lol_update() {
 
     _arguments \
         '--path[Project path]:path:_files -/'
+}
+
+# Completion for 'lol upgrade' subcommand
+_lol_upgrade() {
+    # No flags or arguments for upgrade command
+    return 0
 }
 
 # Completion for 'lol project' subcommand

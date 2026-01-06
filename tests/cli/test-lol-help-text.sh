@@ -11,11 +11,10 @@ export AGENTIZE_HOME="$PROJECT_ROOT"
 source "$LOL_CLI"
 
 # Get usage text from lol (no arguments shows usage)
-output=$(lol 2>&1)
+# Note: lol returns exit code 1 when showing help, so we need to handle this
+output=$(lol 2>&1 || true)
 
 # Verify usage text includes lol upgrade command
-if ! echo "$output" | grep -q "lol upgrade"; then
-  test_fail "Usage text missing 'lol upgrade' command"
-fi
+echo "$output" | grep -q "lol upgrade" || test_fail "Usage text missing 'lol upgrade' command"
 
 test_pass "lol usage text includes lol upgrade"
