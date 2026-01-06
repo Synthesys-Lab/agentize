@@ -56,13 +56,31 @@ if [[ "$REPORT1_BASENAME" =~ ^issue-([0-9]+)- ]]; then
     ISSUE_NUMBER="${BASH_REMATCH[1]}"
 fi
 
-# Extract feature name from first report
-# Try to extract from **Feature**: line (standard debate reports)
-FEATURE_NAME=$(grep "^\*\*Feature\*\*:" "$REPORT1_PATH" | head -1 | sed 's/^\*\*Feature\*\*: //' || echo "")
+# Extract feature name from reports using robust pattern matching
+# Accepts multiple formats: headers (# Feature:), bold labels (**Feature**:), plain labels (Feature:)
+# Scans reports 1 → 2 → 3 in priority order until first match found
+extract_feature_name() {
+    local report_path="$1"
+    # Match patterns (case-insensitive):
+    # - Headers: # Feature: or ## Title:
+    # - Bold labels: **Feature**: or **Title**:
+    # - Plain labels: Feature: or Title:
+    # - Variants: Feature Request, Title
+    grep -iE "^(#+[[:space:]]*)?(\\*\\*)?(Feature( Request)?|Title)(\\*\\*)?[[:space:]]*[:\-]" "$report_path" 2>/dev/null \
+        | head -1 \
+        | sed -E 's/^#+[[:space:]]*//; s/^\*\*(Feature( Request)?|Title)\*\*[[:space:]]*[:\-][[:space:]]*//I; s/^(Feature( Request)?|Title)[[:space:]]*[:\-][[:space:]]*//I; s/^\[[^]]*\]:[[:space:]]*//'
+}
 
-# If not found, try **Title**: line (refinement debate reports)
+# Try to extract feature name from reports in priority order
+FEATURE_NAME="$(extract_feature_name "$REPORT1_PATH")"
 if [ -z "$FEATURE_NAME" ]; then
-    FEATURE_NAME=$(grep "^\*\*Title\*\*:" "$REPORT1_PATH" | head -1 | sed 's/^\*\*Title\*\*: //' | sed 's/^\[draft\]\[plan\]\[[^]]*\]: //' || echo "Unknown Feature")
+    FEATURE_NAME="$(extract_feature_name "$REPORT2_PATH")"
+fi
+if [ -z "$FEATURE_NAME" ]; then
+    FEATURE_NAME="$(extract_feature_name "$REPORT3_PATH")"
+fi
+if [ -z "$FEATURE_NAME" ]; then
+    FEATURE_NAME="Unknown Feature"
 fi
 
 # Use feature name as description
@@ -99,9 +117,8 @@ fi
 
 # Combine all 3 reports into a single debate report file
 cat > "$DEBATE_REPORT_FILE" <<EOF
-# Multi-Agent Debate Report
+# Multi-Agent Debate Report: $FEATURE_NAME
 
-**Feature**: $FEATURE_NAME
 **Generated**: $(date +"%Y-%m-%d %H:%M")
 
 This document combines three perspectives from our multi-agent debate-based planning system:
