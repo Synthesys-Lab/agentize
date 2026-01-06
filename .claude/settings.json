@@ -88,7 +88,7 @@
       "Bash(gh project view:*)",
       "Bash(gh project item-list:*)",
 
-      "Bash(echo More agressive GIT HANDSOFF)",
+      "Bash(echo More aggressive GIT OPERATIONS)",
       "Bash(git add:*)",
       "Bash(git push:*)",
       "Bash(git commit:*)"
