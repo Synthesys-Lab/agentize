@@ -11,7 +11,7 @@ if ! command -v zsh >/dev/null 2>&1; then
   exit 0
 fi
 
-COMPLETION_FILE="$PROJECT_ROOT/scripts/completions/_wt"
+COMPLETION_FILE="$PROJECT_ROOT/src/completion/_wt"
 
 if [ ! -f "$COMPLETION_FILE" ]; then
   test_fail "Completion file not found: $COMPLETION_FILE"
@@ -20,7 +20,7 @@ fi
 # Test case 1: wt spawn with issue number
 test_info "Test case 1: wt spawn 23<tab>"
 output=$(zsh -fc "
-  fpath=('$PROJECT_ROOT/scripts/completions' \$fpath)
+  fpath=('$PROJECT_ROOT/src/completion' \$fpath)
   autoload -Uz compinit && compinit
   autoload -Uz _wt
 
@@ -40,7 +40,7 @@ fi
 # Test case 2: wt spawn with flag before issue number
 test_info "Test case 2: wt spawn --yolo 23<tab>"
 output=$(zsh -fc "
-  fpath=('$PROJECT_ROOT/scripts/completions' \$fpath)
+  fpath=('$PROJECT_ROOT/src/completion' \$fpath)
   autoload -Uz compinit && compinit
   autoload -Uz _wt
 
@@ -58,7 +58,7 @@ fi
 # Test case 3: wt spawn with flag after issue number
 test_info "Test case 3: wt spawn 23 --yolo<tab>"
 output=$(zsh -fc "
-  fpath=('$PROJECT_ROOT/scripts/completions' \$fpath)
+  fpath=('$PROJECT_ROOT/src/completion' \$fpath)
   autoload -Uz compinit && compinit
   autoload -Uz _wt
 
@@ -76,7 +76,7 @@ fi
 # Test case 4: wt remove with flag
 test_info "Test case 4: wt remove 23 --force<tab>"
 output=$(zsh -fc "
-  fpath=('$PROJECT_ROOT/scripts/completions' \$fpath)
+  fpath=('$PROJECT_ROOT/src/completion' \$fpath)
   autoload -Uz compinit && compinit
   autoload -Uz _wt
 

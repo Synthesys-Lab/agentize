@@ -41,7 +41,7 @@ setup:
 	@echo '' >> setup.sh
 	@echo '# Enable zsh completion for wt command' >> setup.sh
 	@echo 'if [ -n "$$ZSH_VERSION" ]; then  # zsh-only setup' >> setup.sh
-	@echo '  fpath=($$AGENTIZE_HOME/scripts/completions $$fpath)' >> setup.sh
+	@echo '  fpath=($$AGENTIZE_HOME/src/completion $$fpath)' >> setup.sh
 	@echo '  # Re-initialize completion system to pick up new fpath' >> setup.sh
 	@echo '  if command -v compdef >/dev/null 2>&1; then' >> setup.sh
 	@echo '    # Already initialized, re-run to pick up new fpath' >> setup.sh
