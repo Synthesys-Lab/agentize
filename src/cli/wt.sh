@@ -269,22 +269,8 @@ cmd_spawn() {
     local default_branch
     default_branch=$(wt_get_default_branch)
 
-    # Get issue title for branch name
+    # Create branch name from issue number only
     local branch_name="issue-$issue_no"
-    if command -v gh >/dev/null 2>&1; then
-        local issue_title
-        issue_title=$(gh issue view "$issue_no" --json title --jq '.title' 2>/dev/null | \
-                      tr '[:upper:]' '[:lower:]' | \
-                      sed 's/[^a-z0-9]/-/g' | \
-                      sed 's/--*/-/g' | \
-                      sed 's/^-//' | \
-                      sed 's/-$//' | \
-                      cut -c1-50)
-
-        if [ -n "$issue_title" ]; then
-            branch_name="issue-$issue_no-$issue_title"
-        fi
-    fi
 
     local worktree_path="$trees_dir/$branch_name"
 

@@ -36,7 +36,7 @@ Replace `42` with your issue number from Tutorial 01.
 When you run `/issue-to-impl`:
 
 **1. Branch Creation**
-- Creates: `issue-42-brief-description`
+- Creates: `issue-42`
 - Switches to that branch
 
 **2. Sync with origin/<default>**
@@ -71,7 +71,7 @@ When you run `/issue-to-impl`:
 ```
 User: /issue-to-impl 42
 
-Agent: Creating branch issue-42-add-typescript-support...
+Agent: Creating branch issue-42...
 Agent: Syncing with origin/main...
   - Fetched latest changes
   - Rebased onto origin/main (clean)
@@ -209,7 +209,7 @@ User: Continue from the latest milestone
 [... Successfully synchronized ...]
 
 # 5. Rebase your branch
-git checkout issue-42-add-typescript-support
+git checkout issue-42
 git rebase main
 
 # 6. Create PR
@@ -260,7 +260,7 @@ See `docs/milestone-workflow.md` for complete documentation.
 
 **"Not on development branch"**
 - You're on `main` or wrong branch
-- Solution: Run `git checkout issue-42-brief-title` or start with `/issue-to-impl`
+- Solution: Run `git checkout issue-42` or start with `/issue-to-impl`
 
 **"Rebase conflict detected"**
 - Your changes conflict with main branch

@@ -102,7 +102,7 @@ General-purpose git worktree helper for **bare repositories**:
 wt init                  # Initialize worktree environment (run once per bare repo)
 wt goto main             # Change directory to main worktree
 wt goto 42               # Change directory to issue-42 worktree
-wt spawn 42              # Create worktree for issue #42
+wt spawn 42              # Create issue-42 branch and worktree
 wt list                  # List all worktrees
 wt remove 42             # Remove worktree for issue #42
 wt prune                 # Clean up stale worktree metadata

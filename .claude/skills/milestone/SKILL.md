@@ -44,7 +44,7 @@ The milestone skill takes the following inputs (extracted from context):
 
 1. **Current branch context**
    - Branch name (extracted from: `git branch --show-current`)
-   - Must be a development branch matching pattern: `issue-{N}-{brief-title}`
+   - Must be a development branch matching pattern: `issue-{N}` or `issue-{N}-*` (wildcard for backward compatibility)
    - Issue number extracted from branch name
 
 2. **Plan reference**
@@ -372,7 +372,7 @@ Create the file `.milestones/issue-{N}-milestone-{M}.md`:
 ```markdown
 # Milestone {M} for Issue #{N}
 
-**Branch:** issue-{N}-{brief-title}
+**Branch:** issue-{N}
 **Created:** {current-datetime}
 **LOC Implemented:** ~{cumulative_loc} lines
 **Test Status:** {passed}/{total} tests passed
@@ -541,14 +541,14 @@ All 8 tests passing. Ready for code review.
 git branch --show-current
 ```
 
-If branch does not match pattern `issue-{N}-*`:
+If branch does not match pattern `issue-{N}` or `issue-{N}-*`:
 
 ```
 Error: Not on a development branch.
 
 Current branch: {branch-name}
 
-You must be on a development branch (issue-{N}-{brief-title}) to use the milestone skill.
+You must be on a development branch (issue-{N}) to use the milestone skill.
 
 Please run /issue-to-impl to start implementation on a proper development branch.
 ```

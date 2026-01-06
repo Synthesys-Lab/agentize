@@ -36,7 +36,7 @@ Orchestrate the complete implementation workflow from a GitHub issue with an imp
 ## Outputs
 
 **Branch created:**
-- New development branch: `issue-{N}-{brief-title}`
+- New development branch: `issue-{N}`
 
 **Files created/modified:**
 - Documentation files (from plan Step 1)
@@ -85,13 +85,11 @@ git branch --show-current
 
 **Otherwise, invoke:** `fork-dev-branch` skill
 **Input:** Issue number from Step 1
-**Output:** New branch `issue-{N}-{brief-title}`, switched to that branch
+**Output:** New branch `issue-{N}`, switched to that branch
 
 **Skill handles:**
-- Fetching issue title via `gh issue view {N} --json title,state`
-- Validating issue exists and is open
-- Creating branch name from title
-- Executing `git checkout -b issue-{N}-{brief-title}`
+- Validating issue exists and is open via `gh issue view {N} --json state`
+- Executing `git checkout -b issue-{N}`
 
 **Error handling:**
 - Issue not found → Stop, display error to user
@@ -371,21 +369,21 @@ Wait for user confirmation before proceeding.
 **Scenario 1: Branch matches requested issue**
 ```bash
 git branch --show-current
-# Output: issue-42-some-feature
+# Output: issue-42
 # Requested issue: 42
 ```
 
 **Response:**
 Step 2 detects match. Step 3 skips branch creation and outputs:
 ```
-Already on issue-42 branch: issue-42-some-feature
+Already on issue-42 branch
 ```
 Continue to Step 4.
 
 **Scenario 2: Branch mismatch (on issue-M, requesting issue-N where M ≠ N)**
 ```bash
 git branch --show-current
-# Output: issue-45-other-feature
+# Output: issue-45
 # Requested issue: 42
 ```
 

@@ -78,7 +78,7 @@ Milestone documents are stored in `.milestones/issue-{N}-milestone-{M}.md` where
 ```markdown
 # Milestone {M} for Issue #{N}
 
-**Branch:** issue-{N}-{brief-title}
+**Branch:** issue-{N}
 **Created:** YYYY-MM-DD HH:MM:SS
 **LOC Implemented:** ~XXX lines
 **Test Status:** X/Y tests passed
@@ -146,7 +146,7 @@ If issue number is not provided, it will be extracted from conversation context.
 **Example:**
 ```
 User: /issue-to-impl 42
-Agent: Creating branch for issue #42...
+Agent: Creating branch issue-42...
 Agent: Updating documentation...
 Agent: Creating test cases...
 Agent: Creating Milestone 1 (0/8 tests pass)...
@@ -219,7 +219,7 @@ User: /open-issue
 ```
 User: /issue-to-impl 42
 
-Agent: Creating branch issue-42-add-typescript-support...
+Agent: Creating branch issue-42...
 Agent: Updating documentation...
   - docs/typescript-support.md created
   - README.md updated
@@ -350,7 +350,7 @@ You're trying to resume from a milestone on a branch without milestones.
 
 You're on `main` or another non-development branch.
 
-**Solution**: Switch to your development branch (issue-{N}-*) or start with `/issue-to-impl`.
+**Solution**: Switch to your development branch (issue-{N}) or start with `/issue-to-impl`.
 
 ### "Milestone file corrupted"
 

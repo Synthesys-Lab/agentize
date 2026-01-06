@@ -24,8 +24,8 @@ After running `make setup` and sourcing `setup.sh`, the `wt` command is availabl
   - Uses `WT_DEFAULT_BRANCH` environment variable if set, otherwise defaults to `main` or `master`
 - `wt goto <issue-no>|main`: changes directory to the worktree target
   - `wt goto main`: changes to `trees/main`
-  - `wt goto <issue-no>`: changes to `trees/issue-<issue-no>-*`
-  - Both `main` and `issue-<issue-no>-` should be auto-completable
+  - `wt goto <issue-no>`: changes to `trees/issue-<issue-no>` (wildcard pattern `issue-<issue-no>*` used for compatibility)
+  - Both `main` and `issue-<issue-no>` should be auto-completable
 - `wt spawn <issue-no>`: create a new worktree for the given issue number from the `main` branch
   - Before creating the worktree, it rebases onto the latest default branch from the bare repo
   - `--no-agent`: skip automatic Claude invocation after worktree creation
@@ -118,8 +118,8 @@ $ wt --complete spawn-flags
 
 $ wt --complete goto-targets
 main
-issue-42-add-feature
-issue-45-fix-bug
+issue-42
+issue-45
 ```
 
 This helper is used by the zsh completion system and can be used by other shells in the future.
