@@ -28,8 +28,10 @@ setup_test_repo() {
     # Clean up seed repo
     rm -rf "$SEED_DIR"
 
-    # Copy wt-cli.sh to test repo's parent (for sourcing)
+    # Copy wt-cli.sh and src/cli/wt.sh to test repo (for sourcing)
     cp "$PROJECT_ROOT/scripts/wt-cli.sh" ./wt-cli.sh
+    mkdir -p src/cli
+    cp "$PROJECT_ROOT/src/cli/wt.sh" ./src/cli/wt.sh
 
     # Create gh stub that validates issue existence and returns status
     mkdir -p bin
@@ -90,8 +92,12 @@ setup_test_repo_custom_branch() {
     # Set WT_DEFAULT_BRANCH for wt to use
     export WT_DEFAULT_BRANCH="$branch_name"
 
-    # Copy wt-cli.sh and create gh stub
+    # Copy wt-cli.sh and src/cli/wt.sh to test repo
     cp "$PROJECT_ROOT/scripts/wt-cli.sh" ./wt-cli.sh
+    mkdir -p src/cli
+    cp "$PROJECT_ROOT/src/cli/wt.sh" ./src/cli/wt.sh
+
+    # Create gh stub
     mkdir -p bin
     cat > bin/gh <<'GHSTUB'
 #!/usr/bin/env bash
