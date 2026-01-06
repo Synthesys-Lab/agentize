@@ -17,6 +17,7 @@ output=$(lol --complete commands 2>/dev/null)
 # Check each command individually (shell-neutral approach)
 echo "$output" | grep -q "^init$" || test_fail "Missing command: init"
 echo "$output" | grep -q "^update$" || test_fail "Missing command: update"
+echo "$output" | grep -q "^upgrade$" || test_fail "Missing command: upgrade"
 echo "$output" | grep -q "^project$" || test_fail "Missing command: project"
 
 # Verify output is newline-delimited (no spaces, commas, etc.)

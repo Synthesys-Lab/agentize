@@ -11,6 +11,7 @@ This document provides detailed reference documentation for the `lol` command us
 ```bash
 lol init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]
 lol update [--path <path>]
+lol upgrade
 lol project --create [--org <org>] [--title <title>]
 lol project --associate <org>/<id>
 lol project --automation [--write <path>]
@@ -104,6 +105,61 @@ lol update                      # From project root or subdirectory
 lol update --path /path/to/project
 ```
 
+### `lol upgrade`
+
+Upgrades your agentize installation by pulling the latest changes from the remote repository.
+
+**No flags required.**
+
+**Behavior:**
+
+- Validates `AGENTIZE_HOME` points to a valid git worktree
+- Checks for uncommitted changes in the worktree
+  - If dirty, prints guidance to commit/stash and exits
+- Resolves the default branch from `origin/HEAD` (supports both `main` and `master`)
+  - Falls back to `main` if `origin/HEAD` is not available
+- Runs `git pull --rebase origin <branch>` in the `AGENTIZE_HOME` worktree
+- On rebase failure, prints recovery hint (`git rebase --abort`) and retry guidance
+- On success, prints shell reload instructions:
+  - `exec $SHELL` - Clean shell restart (recommended)
+  - Re-source `setup.sh` - In-place reload (alternative)
+
+**Error handling:**
+
+*Worktree validation failure:*
+```
+Error: AGENTIZE_HOME is not a valid git worktree.
+```
+
+*Uncommitted changes detected:*
+```
+Warning: Uncommitted changes detected in AGENTIZE_HOME.
+
+Please commit or stash your changes before upgrading:
+  git add .
+  git commit -m "..."
+OR
+  git stash
+```
+
+*Rebase conflict:*
+```
+Error: git pull --rebase failed.
+
+To resolve:
+1. Fix conflicts in the files listed above
+2. Stage resolved files: git add <file>
+3. Continue: git -C $AGENTIZE_HOME rebase --continue
+OR abort: git -C $AGENTIZE_HOME rebase --abort
+
+Then retry: lol upgrade
+```
+
+**Example:**
+```bash
+lol upgrade
+```
+
 ### `lol project`
 
 Integrates your repository with GitHub Projects v2. This command creates or associates a project board, persists the association in `.agentize.yaml`, and can generate automation templates.
@@ -186,7 +242,7 @@ lol project --automation --write .github/workflows/add-to-project.yml
 The `lol` command provides tab-completion support for zsh users. After running `make setup` and sourcing `setup.sh`, completions are automatically enabled.
 
 **Features:**
-- Subcommand completion (`lol <TAB>` shows: init, update, project)
+- Subcommand completion (`lol <TAB>` shows: init, update, upgrade, project)
 - Flag completion for `init` (`--name`, `--lang`, `--path`, `--source`, `--metadata-only`)
 - Flag completion for `update` (`--path`)
 - Flag completion for `project` (`--create`, `--associate`, `--automation`)
@@ -209,7 +265,7 @@ lol --complete <topic>
 ```
 
 **Topics:**
-- `commands` - List available subcommands (init, update, project)
+- `commands` - List available subcommands (init, update, upgrade, project)
 - `init-flags` - List flags for `lol init` (--name, --lang, --path, --source, --metadata-only)
 - `update-flags` - List flags for `lol update` (--path)
 - `project-modes` - List project mode flags (--create, --associate, --automation)
@@ -224,6 +280,7 @@ lol --complete <topic>
 $ lol --complete commands
 init
 update
+upgrade
 project
 
 $ lol --complete init-flags
