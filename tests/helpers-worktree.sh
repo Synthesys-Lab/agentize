@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # Shared helper functions for worktree tests
 
-# Create a test repository with basic setup
+# Create a bare test repository with basic setup
 # Returns the test directory path in TEST_REPO_DIR
 setup_test_repo() {
     # Unset all git environment variables to ensure clean test environment
     unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
     unset GIT_INDEX_VERSION GIT_COMMON_DIR
 
-    TEST_REPO_DIR=$(mktemp -d)
-
-    cd "$TEST_REPO_DIR"
+    # Create temp directory for seed repo
+    local SEED_DIR=$(mktemp -d)
+    cd "$SEED_DIR"
     git init
     git config user.email "test@example.com"
     git config user.name "Test User"
@@ -20,31 +20,45 @@ setup_test_repo() {
     git add README.md
     git commit -m "Initial commit"
 
-    # Copy wt-cli.sh to test repo
+    # Clone as bare repo
+    TEST_REPO_DIR=$(mktemp -d)
+    git clone --bare "$SEED_DIR" "$TEST_REPO_DIR"
+    cd "$TEST_REPO_DIR"
+
+    # Clean up seed repo
+    rm -rf "$SEED_DIR"
+
+    # Copy wt-cli.sh to test repo's parent (for sourcing)
     cp "$PROJECT_ROOT/scripts/wt-cli.sh" ./wt-cli.sh
 
-    # Copy CLAUDE.md for bootstrap testing
-    echo "Test CLAUDE.md" > CLAUDE.md
-
-    # Create gh stub that validates issue existence
+    # Create gh stub that validates issue existence and returns status
     mkdir -p bin
     cat > bin/gh <<'GHSTUB'
 #!/usr/bin/env bash
 # Stub gh command for testing
 if [ "$1" = "issue" ] && [ "$2" = "view" ]; then
   issue_no="$3"
-  # Valid issue numbers return exit code 0, invalid ones return 1
-  case "$issue_no" in
-    42|55|56|100|200|210|211|300|301|350) exit 0 ;;
-    *) exit 1 ;;
-  esac
+  # Handle --json state flag for purge testing
+  if [ "$4" = "--json" ] && [ "$5" = "state" ]; then
+    case "$issue_no" in
+      42|55|100|200|210|300) echo '{"state":"OPEN"}'; exit 0 ;;
+      56|211|301|350) echo '{"state":"CLOSED"}'; exit 0 ;;
+      *) exit 1 ;;
+    esac
+  else
+    # Valid issue numbers return exit code 0, invalid ones return 1
+    case "$issue_no" in
+      42|55|56|100|200|210|211|300|301|350) exit 0 ;;
+      *) exit 1 ;;
+    esac
+  fi
 fi
 GHSTUB
     chmod +x bin/gh
     export PATH="$PWD/bin:$PATH"
 }
 
-# Setup test repo with custom default branch (e.g., trunk)
+# Setup bare test repo with custom default branch via WT_DEFAULT_BRANCH env
 # Usage: setup_test_repo_custom_branch "trunk"
 setup_test_repo_custom_branch() {
     local branch_name="$1"
@@ -52,9 +66,9 @@ setup_test_repo_custom_branch() {
     unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
     unset GIT_INDEX_VERSION GIT_COMMON_DIR
 
-    TEST_REPO_DIR=$(mktemp -d)
-
-    cd "$TEST_REPO_DIR"
+    # Create temp directory for seed repo
+    local SEED_DIR=$(mktemp -d)
+    cd "$SEED_DIR"
     git init
     git config user.email "test@example.com"
     git config user.name "Test User"
@@ -65,27 +79,36 @@ setup_test_repo_custom_branch() {
     git add README.md
     git commit -m "Initial commit"
 
-    # Create .agentize.yaml specifying custom default
-    cat > .agentize.yaml <<EOF
-project:
-  name: test-project
-  lang: python
-git:
-  default_branch: $branch_name
-EOF
+    # Clone as bare repo
+    TEST_REPO_DIR=$(mktemp -d)
+    git clone --bare "$SEED_DIR" "$TEST_REPO_DIR"
+    cd "$TEST_REPO_DIR"
+
+    # Clean up seed repo
+    rm -rf "$SEED_DIR"
+
+    # Set WT_DEFAULT_BRANCH for wt to use
+    export WT_DEFAULT_BRANCH="$branch_name"
 
     # Copy wt-cli.sh and create gh stub
     cp "$PROJECT_ROOT/scripts/wt-cli.sh" ./wt-cli.sh
-    echo "Test CLAUDE.md" > CLAUDE.md
     mkdir -p bin
     cat > bin/gh <<'GHSTUB'
 #!/usr/bin/env bash
 if [ "$1" = "issue" ] && [ "$2" = "view" ]; then
   issue_no="$3"
-  case "$issue_no" in
-    42|55|56|100|200|210|211|300|301|350) exit 0 ;;
-    *) exit 1 ;;
-  esac
+  if [ "$4" = "--json" ] && [ "$5" = "state" ]; then
+    case "$issue_no" in
+      42|55|100|200|210|300) echo '{"state":"OPEN"}'; exit 0 ;;
+      56|211|301|350) echo '{"state":"CLOSED"}'; exit 0 ;;
+      *) exit 1 ;;
+    esac
+  else
+    case "$issue_no" in
+      42|55|56|100|200|210|211|300|301|350) exit 0 ;;
+      *) exit 1 ;;
+    esac
+  fi
 fi
 GHSTUB
     chmod +x bin/gh

@@ -24,12 +24,16 @@ fi
 # Test remove-flags
 remove_output=$(wt --complete remove-flags 2>/dev/null)
 
+if ! echo "$remove_output" | grep -q "^--delete-branch$"; then
+  test_fail "remove-flags missing: --delete-branch"
+fi
+
 if ! echo "$remove_output" | grep -q "^-D$"; then
-  test_fail "remove-flags missing: -D"
+  test_fail "remove-flags missing: -D (legacy alias)"
 fi
 
 if ! echo "$remove_output" | grep -q "^--force$"; then
-  test_fail "remove-flags missing: --force"
+  test_fail "remove-flags missing: --force (legacy alias)"
 fi
 
 # Verify output is newline-delimited

@@ -56,7 +56,7 @@ Learn Agentize in 15 minutes with our step-by-step tutorials (3-5 min each):
 ## Cross-Project Shell Functions
 
 Agentize provides shell functions that work from any directory:
-- `wt` - Manage worktrees (spawn, list, remove, prune)
+- `wt` - Manage worktrees in bare git repositories (spawn, list, remove, prune, purge)
 - `lol` - Initialize and update SDK projects (init, update)
 
 For persistence, add `source /path/to/agentize/setup.sh` to your shell RC file (`~/.bashrc`, `~/.zshrc`, etc.).
@@ -65,19 +65,21 @@ For persistence, add `source /path/to/agentize/setup.sh` to your shell RC file (
 
 ### Worktree Management (`wt`)
 
-Manage git worktrees from any directory:
+General-purpose git worktree helper for **bare repositories**:
 
 ```bash
-wt init                  # Initialize worktree environment (run once)
-wt main                  # Switch to main worktree
+wt init                  # Initialize worktree environment (run once per bare repo)
+wt goto main             # Change directory to main worktree
+wt goto 42               # Change directory to issue-42 worktree
 wt spawn 42              # Create worktree for issue #42
 wt list                  # List all worktrees
 wt remove 42             # Remove worktree for issue #42
 wt prune                 # Clean up stale worktree metadata
+wt purge                 # Remove worktrees for closed GitHub issues
 wt help                  # Display help information
 ```
 
-Worktrees are always created under `$AGENTIZE_HOME/trees/`, regardless of your current directory.
+**Bare repository requirement:** `wt` works with bare git repositories. Worktrees are created under `<bare-repo>/trees/`. See `docs/cli/wt.md` for migration guide.
 
 ### SDK Project Management (`lol`)
 
