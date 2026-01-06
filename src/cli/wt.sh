@@ -294,27 +294,34 @@ cmd_spawn() {
     fi
 
     # Create worktree from default branch
-    git -C "$common_dir" worktree add -b "$branch_name" "$worktree_path" "$default_branch"
+    # In a bare repo, we create worktree directly from the branch ref
+    local spawn_error
+    spawn_error=$(git -C "$common_dir" worktree add -b "$branch_name" "$worktree_path" "$default_branch" 2>&1)
+    local spawn_exit=$?
 
-    if [ $? -eq 0 ]; then
-        echo "Created worktree: $worktree_path"
-
-        # Invoke Claude if not disabled
-        if [ "$no_agent" = false ] && command -v claude >/dev/null 2>&1; then
-            local claude_flags=""
-            if [ "$yolo" = true ]; then
-                claude_flags="--dangerously-skip-permissions"
-            fi
-
-            echo "Invoking Claude Code..."
-            cd "$worktree_path" && claude $claude_flags
-        fi
-
-        return 0
-    else
-        echo "Error: Failed to create worktree" >&2
+    if [ $spawn_exit -ne 0 ]; then
+        echo "Error: Failed to create worktree for issue #$issue_no" >&2
+        echo "  Branch: $branch_name" >&2
+        echo "  Path: $worktree_path" >&2
+        echo "  Base: $default_branch" >&2
+        echo "  Git error: $spawn_error" >&2
         return 1
     fi
+
+    echo "Created worktree: $worktree_path"
+
+    # Invoke Claude if not disabled
+    if [ "$no_agent" = false ] && command -v claude >/dev/null 2>&1; then
+        local claude_flags=""
+        if [ "$yolo" = true ]; then
+            claude_flags="--dangerously-skip-permissions"
+        fi
+
+        echo "Invoking Claude Code..."
+        cd "$worktree_path" && claude $claude_flags
+    fi
+
+    return 0
 }
 
 # wt remove: Remove worktree for issue
