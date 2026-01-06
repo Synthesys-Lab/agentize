@@ -24,8 +24,8 @@ if ! grep -q "if.*zsh" "$PROJECT_ROOT/setup.sh"; then
 fi
 
 # Verify fpath update is present
-if ! grep -q "fpath.*completions" "$PROJECT_ROOT/setup.sh"; then
-  test_fail "setup.sh missing fpath update for completions"
+if ! grep -q "fpath.*completion" "$PROJECT_ROOT/setup.sh"; then
+  test_fail "setup.sh missing fpath update for completion"
 fi
 
 # Verify compinit is mentioned (either check or invocation)
