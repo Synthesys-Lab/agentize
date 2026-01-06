@@ -102,7 +102,11 @@ The skill uses a formalized script (`scripts/external-consensus.sh`) that:
 1. Parses input to detect issue number or path mode
 2. Resolves debate report path (`.tmp/issue-{N}-debate.md` if issue number provided)
 3. Validates the debate report file exists
-4. Extracts feature name/description from the report (if not provided)
+4. Extracts feature name from reports using robust pattern matching:
+   - Accepts headers (`# Feature:`), bold labels (`**Feature**:`), or plain labels (`Feature:`)
+   - Case-insensitive matching for `Feature`, `Title`, or `Feature Request`
+   - Scans reports 1 → 2 → 3 in priority order until first match found
+   - Falls back to "Unknown Feature" only when no label exists in any report
 5. Loads and processes the prompt template with variable substitution
 6. Checks if Codex is available (prefers Codex, falls back to Claude Opus)
 7. Invokes external AI with appropriate configuration:

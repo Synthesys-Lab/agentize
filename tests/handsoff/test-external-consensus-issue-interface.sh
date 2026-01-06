@@ -125,6 +125,123 @@ else
     test_fail "Usage message missing 3-path documentation"
 fi
 
+# Test Case 6: Feature name extraction from header format
+test_info "Test 6: Extract feature name from header format"
+
+cat > "$REPORT1_FILE" << 'EOF'
+# Bold Proposer Report
+
+# Feature: Header Format Feature
+
+This is a bold proposal for the test feature.
+EOF
+
+rm -f "$DEBATE_REPORT"
+
+(
+    "$PROJECT_ROOT/.claude/skills/external-consensus/scripts/external-consensus.sh" \
+        "$REPORT1_FILE" "$REPORT2_FILE" "$REPORT3_FILE" 2>&1 || true
+) &
+SCRIPT_PID=$!
+
+for i in {1..10}; do
+    if [ -f "$DEBATE_REPORT" ]; then
+        break
+    fi
+    sleep 0.5
+done
+
+kill -9 $SCRIPT_PID 2>/dev/null || true
+wait $SCRIPT_PID 2>/dev/null || true
+
+if [ -f "$DEBATE_REPORT" ]; then
+    if grep -q "# Multi-Agent Debate Report: Header Format Feature" "$DEBATE_REPORT"; then
+        test_info "✓ Feature name extracted from header format"
+    else
+        test_fail "Feature name not extracted from header format (expected 'Header Format Feature' in debate report header)"
+    fi
+else
+    test_fail "Debate report not created for header format test"
+fi
+
+# Test Case 7: Feature name extraction from plain label format
+test_info "Test 7: Extract feature name from plain label format"
+
+cat > "$REPORT1_FILE" << 'EOF'
+# Bold Proposer Report
+
+Feature: Plain Label Feature
+
+This is a bold proposal for the test feature.
+EOF
+
+rm -f "$DEBATE_REPORT"
+
+(
+    "$PROJECT_ROOT/.claude/skills/external-consensus/scripts/external-consensus.sh" \
+        "$REPORT1_FILE" "$REPORT2_FILE" "$REPORT3_FILE" 2>&1 || true
+) &
+SCRIPT_PID=$!
+
+for i in {1..10}; do
+    if [ -f "$DEBATE_REPORT" ]; then
+        break
+    fi
+    sleep 0.5
+done
+
+kill -9 $SCRIPT_PID 2>/dev/null || true
+wait $SCRIPT_PID 2>/dev/null || true
+
+if [ -f "$DEBATE_REPORT" ]; then
+    if grep -q "# Multi-Agent Debate Report: Plain Label Feature" "$DEBATE_REPORT"; then
+        test_info "✓ Feature name extracted from plain label format"
+    else
+        test_fail "Feature name not extracted from plain label format (expected 'Plain Label Feature' in debate report header)"
+    fi
+else
+    test_fail "Debate report not created for plain label test"
+fi
+
+# Test Case 8: Feature name extraction from "Title" label variant
+test_info "Test 8: Extract feature name from Title label variant"
+
+cat > "$REPORT1_FILE" << 'EOF'
+# Bold Proposer Report
+
+**Title**: Title Variant Feature
+
+This is a bold proposal for the test feature.
+EOF
+
+rm -f "$DEBATE_REPORT"
+
+(
+    "$PROJECT_ROOT/.claude/skills/external-consensus/scripts/external-consensus.sh" \
+        "$REPORT1_FILE" "$REPORT2_FILE" "$REPORT3_FILE" 2>&1 || true
+) &
+SCRIPT_PID=$!
+
+for i in {1..10}; do
+    if [ -f "$DEBATE_REPORT" ]; then
+        break
+    fi
+    sleep 0.5
+done
+
+kill -9 $SCRIPT_PID 2>/dev/null || true
+wait $SCRIPT_PID 2>/dev/null || true
+
+if [ -f "$DEBATE_REPORT" ]; then
+    if grep -q "# Multi-Agent Debate Report: Title Variant Feature" "$DEBATE_REPORT"; then
+        test_info "✓ Feature name extracted from Title label variant"
+    else
+        test_fail "Feature name not extracted from Title label (expected 'Title Variant Feature' in debate report header)"
+    fi
+else
+    test_fail "Debate report not created for Title label test"
+fi
+
 # Cleanup
 rm -f "$REPORT1_FILE" "$REPORT2_FILE" "$REPORT3_FILE" "$DEBATE_REPORT"
 pkill -9 -f "codex exec" 2>/dev/null || true
