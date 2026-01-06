@@ -5,7 +5,7 @@ source "$(dirname "$0")/../common.sh"
 
 test_info "Invalid AGENTIZE_HOME produces error"
 
-WT_CLI="$PROJECT_ROOT/scripts/wt-cli.sh"
+WT_CLI="$PROJECT_ROOT/src/cli/wt.sh"
 
 # Attempt to use wt spawn with invalid AGENTIZE_HOME
 (

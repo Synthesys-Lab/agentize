@@ -5,7 +5,7 @@ source "$(dirname "$0")/../common.sh"
 
 test_info "wt init creates trees/main worktree"
 
-WT_CLI="$PROJECT_ROOT/scripts/wt-cli.sh"
+WT_CLI="$PROJECT_ROOT/src/cli/wt.sh"
 
 # Unset all git environment variables
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
@@ -41,7 +41,7 @@ GHSTUB
   # Copy scripts
   mkdir -p scripts
   cp "$WT_CLI" scripts/
-  chmod +x scripts/wt-cli.sh
+  chmod +x src/cli/wt.sh
 )
 
 # Test wt init
@@ -51,7 +51,7 @@ GHSTUB
   cd "$TEST_AGENTIZE"
 
   # Source wt functions
-  source scripts/wt-cli.sh
+  source src/cli/wt.sh
 
   # Run init
   wt init

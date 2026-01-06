@@ -5,7 +5,7 @@ source "$(dirname "$0")/../common.sh"
 
 test_info "wt spawn from linked worktree creates under main repo"
 
-WT_CLI="$PROJECT_ROOT/scripts/wt-cli.sh"
+WT_CLI="$PROJECT_ROOT/src/cli/wt.sh"
 
 # Unset all git environment variables to ensure clean test environment
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
@@ -41,7 +41,7 @@ GHSTUB
   # Copy scripts
   mkdir -p scripts
   cp "$WT_CLI" scripts/
-  chmod +x scripts/wt-cli.sh
+  chmod +x src/cli/wt.sh
 )
 
 # Create first worktree and spawn another from it
@@ -49,7 +49,7 @@ GHSTUB
   export AGENTIZE_HOME="$TEST_AGENTIZE"
   export PATH="$TEST_AGENTIZE/bin:$PATH"
   cd "$TEST_AGENTIZE"
-  source scripts/wt-cli.sh
+  source src/cli/wt.sh
 
   # Initialize first
   wt init
@@ -60,7 +60,7 @@ GHSTUB
   cd trees/issue-50
 
   # Source again in linked worktree context
-  source "$TEST_AGENTIZE/scripts/wt-cli.sh"
+  source "$TEST_AGENTIZE/src/cli/wt.sh"
 
   # Create another worktree from inside the linked worktree
   wt spawn --no-agent 51

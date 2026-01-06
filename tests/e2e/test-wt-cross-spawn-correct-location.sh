@@ -5,7 +5,7 @@ source "$(dirname "$0")/../common.sh"
 
 test_info "wt spawn creates worktree in correct location"
 
-WT_CLI="$PROJECT_ROOT/scripts/wt-cli.sh"
+WT_CLI="$PROJECT_ROOT/src/cli/wt.sh"
 
 # Unset all git environment variables to ensure clean test environment
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
@@ -43,7 +43,7 @@ GHSTUB
   mkdir -p scripts
   cp "$PROJECT_ROOT/scripts/worktree.sh" scripts/ 2>/dev/null || true
   cp "$WT_CLI" scripts/
-  chmod +x scripts/wt-cli.sh
+  chmod +x src/cli/wt.sh
 )
 
 # Setup test project (different repo)
@@ -64,7 +64,7 @@ GHSTUB
   cd "$TEST_PROJECT"  # Run from different project
 
   # Source wt functions
-  source "$TEST_AGENTIZE/scripts/wt-cli.sh"
+  source "$TEST_AGENTIZE/src/cli/wt.sh"
 
   # Initialize first
   wt init

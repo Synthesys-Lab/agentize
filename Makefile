@@ -36,7 +36,7 @@ setup:
 	@echo '# This file is local-only and gitignored' >> setup.sh
 	@echo '' >> setup.sh
 	@echo 'export AGENTIZE_HOME="$(CURDIR)"' >> setup.sh
-	@echo 'source "$$AGENTIZE_HOME/scripts/wt-cli.sh"' >> setup.sh
+	@echo 'source "$$AGENTIZE_HOME/src/cli/wt.sh"' >> setup.sh
 	@echo 'source "$$AGENTIZE_HOME/scripts/lol-cli.sh"' >> setup.sh
 	@echo '' >> setup.sh
 	@echo '# Enable zsh completion for wt command' >> setup.sh

@@ -17,10 +17,8 @@ echo "test" > README.md
 git add README.md
 git commit -m "Initial commit"
 
-# Copy wt-cli.sh and src/cli/wt.sh
-cp "$PROJECT_ROOT/scripts/wt-cli.sh" ./wt-cli.sh
-mkdir -p src/cli
-cp "$PROJECT_ROOT/src/cli/wt.sh" ./src/cli/wt.sh
+# Copy src/cli/wt.sh as wt-cli.sh for test sourcing
+cp "$PROJECT_ROOT/src/cli/wt.sh" ./wt-cli.sh
 source ./wt-cli.sh
 
 # Try to run wt init - should fail
