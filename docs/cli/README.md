@@ -8,6 +8,9 @@ These documents provide comprehensive command-line interface specifications, inc
 
 ## Files
 
+### install.md
+The `install` script for one-command Agentize installation. Documents installation flow (clone, worktree init, setup), command-line options (--dir, --repo, --help), post-install shell RC integration, and troubleshooting.
+
 ### lol.md
 The `lol` command interface for creating AI-powered SDKs and managing GitHub Projects v2. Documents `lol init` (SDK initialization), `lol update` (SDK updates), `lol project` (GitHub Projects integration), all command flags (--name, --lang, --path, --source, --metadata-only, --create, --associate, --automation), template system integration, and zsh completion support.
 

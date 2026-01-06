@@ -4,6 +4,25 @@ This directory contains utility scripts and git hooks for the project.
 
 ## Files
 
+### Installer
+- `install` - One-command Agentize installer script
+  - Usage: `curl -fsSL https://raw.githubusercontent.com/SyntheSys-Lab/agentize/main/scripts/install | bash`
+  - Options:
+    - `--dir <path>` - Installation directory (default: `$HOME/.agentize`)
+    - `--repo <url-or-path>` - Git repository URL or local path (default: official GitHub repo)
+    - `--help` - Display help and exit
+  - Behavior:
+    - Validates dependencies (`git`, `make`, `bash`)
+    - Clones repository to install directory (or copies from local path)
+    - Runs `wt init` to create `trees/main` worktree
+    - Executes `make setup` in `trees/main` to generate `setup.sh`
+    - Prints shell RC integration instructions
+  - Safety features:
+    - No automatic RC file modification
+    - Fails if install directory exists (prevents overwrites)
+  - Exit codes: 0 (success), 1 (error)
+  - See [docs/cli/install.md](../docs/cli/install.md) for detailed documentation
+
 ### Pre-commit Hook
 - `pre-commit` - Git pre-commit hook script
   - Runs documentation linter before tests

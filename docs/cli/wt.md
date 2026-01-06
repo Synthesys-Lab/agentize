@@ -2,15 +2,18 @@
 
 ## Getting Started
 
-This is a part of `source setup.sh`.
-After that, you can use the `wt` command in your terminal.
-`wt` are just wrappers around `git worktree`.
+After running `make setup` and sourcing `setup.sh`, the `wt` command is available in your terminal. `wt` is a wrapper around `git worktree` for managing multiple worktrees in a bare repository.
 
-> NOTE1: `wt` is implemented in `src/cli/wt.sh` while this source file is NOT executable alone.
-> The correct usage is ALWAYS through `source setup.sh` which imports all the functions and commands inside.
->
-> NOTE2: `wt` commands must be run inside a git bare git repo. DO NOT get confused, this is NOT a tool specific
-> to `agentize` it is a general-purpose git worktree helper.
+**Installation context:**
+- The installer script (`scripts/install`) sets up the bare repository structure automatically
+- Manual setup: Clone as bare repo, run `wt init`, then `make setup` in `trees/main`
+
+**Repository context:**
+- `wt` commands operate on bare git repositories (not regular clones)
+- Worktrees are created under `trees/` directory in the bare repo root
+- The installer creates this structure: `<repo>.git/trees/main` where `make setup` generates `setup.sh`
+
+> NOTE: `wt` is implemented in `scripts/wt-cli.sh` which is both executable and sourceable. The `wt` function wrapper is exported via `setup.sh`.
 
 - `wt common`: `git rev-parse --git-common-dir`
 - `wt init`

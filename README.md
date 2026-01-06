@@ -2,17 +2,48 @@
 
 ## Quick Start
 
-1. Clone this repository:
+### One-Command Install
+
 ```bash
-git clone https://github.com/SyntheSys-Lab/agentize.git
+curl -fsSL https://raw.githubusercontent.com/SyntheSys-Lab/agentize/main/scripts/install | bash
 ```
-2. Set up the shell functions:
+
+Then add to your shell RC file (`~/.bashrc`, `~/.zshrc`, etc.):
+
+```bash
+source $HOME/.agentize/trees/main/setup.sh
+```
+
+See [docs/cli/install.md](./docs/cli/install.md) for installation options and troubleshooting.
+
+### Manual Install
+
+If you prefer manual setup:
+
+1. Clone this repository as a bare repo:
+```bash
+git clone --bare https://github.com/SyntheSys-Lab/agentize.git agentize.git
+```
+
+2. Initialize worktree environment:
+```bash
+cd agentize.git
+./scripts/wt-cli.sh init
+cd trees/main
+```
+
+3. Set up shell functions:
 ```bash
 make setup
 source setup.sh
 ```
 
-3. Initialize a new project:
+Add `source /path/to/agentize.git/trees/main/setup.sh` to your shell RC file for persistence.
+
+### Initialize a New Project
+
+Once installed, create AI-powered SDK projects:
+
 ```bash
 lol init --name your_project_name --lang c --path /path/to/your/project
 ```

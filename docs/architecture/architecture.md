@@ -49,19 +49,43 @@ Refer to `./sdk.md` for more information about the SDK structure created by `lol
 
 ## Git Usage
 
-- This development workflow prefers to use bare repo for multiple worktrees.
-  - Clone your repo `git clone --bare <repo-url> <repo-name>.git`
-  - Initialize worktree environment `wt init` (run once)
-  - Switch to main worktree `wt main`
-  - Create worktree for issue `wt spawn <issue-number>`
-    - NOTE: `spawn` subcommand is now an all-in-one command that creates the worktree, `cd`s into this tree, and lauches Claude code with the issue implementation prompt.
-    - Example: `wt spawn 42`
-- Your git repo should look like this:
+### Installation
+
+**One-command install (recommended):**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SyntheSys-Lab/agentize/main/scripts/install | bash
+```
+
+The installer:
+1. Clones the bare repository to `$HOME/.agentize` (or custom `--dir`)
+2. Runs `wt init` to create `trees/main` worktree
+3. Executes `make setup` in `trees/main` to generate `setup.sh`
+4. Prints shell RC integration instructions
+
+See [docs/cli/install.md](../cli/install.md) for options and troubleshooting.
+
+**Manual setup:**
+
+This development workflow uses bare repos for multiple worktrees:
+- Clone your repo `git clone --bare <repo-url> <repo-name>.git`
+- Initialize worktree environment `wt init` (run once, creates `trees/main`)
+- Run `make setup` in `trees/main` to generate `setup.sh` with `AGENTIZE_HOME` set
+- Source `setup.sh` to enable `wt` and `lol` commands
+
+### Worktree Management
+
+- Switch to main worktree: `wt main`
+- Create worktree for issue: `wt spawn <issue-number>`
+  - NOTE: `spawn` is an all-in-one command that creates the worktree, `cd`s into it, and launches Claude Code with the issue implementation prompt
+  - Example: `wt spawn 42`
+
+**Repository structure:**
 
 ```plaintext
 <repo-name>.git/      # Bare git repository
 ├── trees/            # Worktrees directory
-│     ├── main/       # Main worktree
+│     ├── main/       # Main worktree (run 'make setup' here)
 │     ├── issue-42/   # Worktree for issue #42
 │     └── ...         # Other worktrees
 └── .../              # Other git internal files
