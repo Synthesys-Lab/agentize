@@ -194,9 +194,12 @@ If using **Method 2**, the workflow requires a GitHub Personal Access Token (PAT
    - **Expiration:** 90 days (recommended for security)
    - **Repository access:** Select your repository
 3. Set permissions:
-   - **Permissions:**
-     - `project`: **Read and write** (required for adding items to projects)
-     - `metadata`: Read-only (automatically granted)
+   - **Repository permissions:**
+     - `Issues`: **Read and write** (required for closing issues)
+     - `Pull requests`: **Read and write** (required for reading PR linked issues)
+     - `Metadata`: Read-only (automatically granted)
+   - **Organization permissions:**
+     - `Projects`: **Read and write** (required for adding items to projects)
 4. Click **Generate token**
 5. Copy the token (you won't see it again)
 
@@ -231,7 +234,9 @@ gh secret set ADD_TO_PROJECT_PAT
 
 ### Permission errors
 
-- Ensure the PAT has `project` read/write permissions
+- Ensure the PAT has all required permissions:
+  - Repository: `Issues` (Read and write), `Pull requests` (Read and write)
+  - Organization: `Projects` (Read and write)
 - Verify the PAT is stored as `ADD_TO_PROJECT_PAT` in repository secrets
 - Check that the workflow uses `secrets.ADD_TO_PROJECT_PAT`, not `secrets.GITHUB_TOKEN`
 

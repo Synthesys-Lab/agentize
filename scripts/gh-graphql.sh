@@ -165,8 +165,8 @@ graphql_create_field() {
                     dataType: SINGLE_SELECT
                     name: $name
                     singleSelectOptions: [
-                        { name: "proposed" }
-                        { name: "accepted" }
+                        { name: "proposed", color: GRAY, description: "" }
+                        { name: "accepted", color: GREEN, description: "" }
                     ]
                 }
             ) {
