@@ -6,7 +6,7 @@ When adding a new test:
    - `tests/sdk/` for SDK template tests
    - `tests/cli/` for CLI command tests
    - `tests/lint/` for validation tests
-   - `tests/handsoff/` for end-to-end integration tests
+   - `tests/e2e/` for end-to-end integration tests
 2. Create the test file in `tests/<category>/test-<feature>-<case>.sh`
 3. Source the shared test helper at the top: `source "$(dirname "$0")/../common.sh"`
 4. Source feature-specific helpers if needed: `source "$(dirname "$0")/../helpers-*.sh"`

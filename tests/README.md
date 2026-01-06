@@ -24,11 +24,11 @@ Test files are organized into categorical subdirectories:
 - **`tests/sdk/`** - SDK template tests (fast unit tests for SDK generation)
 - **`tests/cli/`** - CLI command and tool tests (unit tests for CLI tools)
 - **`tests/lint/`** - Validation and linting tests (static checks and makefile validation)
-- **`tests/handsoff/`** - End-to-end integration tests (slower tests with full workflows)
+- **`tests/e2e/`** - End-to-end integration tests (slower tests with full workflows)
 
 ### Test Fixtures
 
-- `fixtures/` - Test data and mock files for permission request tests
+- `fixtures/` - Test data and mock files used by tests
 
 ## Running Tests
 
@@ -51,15 +51,14 @@ Run tests by category:
 make test-sdk        # Fast SDK unit tests
 make test-cli        # CLI tool tests
 make test-lint       # Validation and linting tests
-make test-handsoff   # End-to-end integration tests
+make test-e2e        # End-to-end integration tests
 make test-fast       # Alias for sdk + cli + lint
-make test-e2e        # Alias for handsoff
 ```
 
 Run a specific test suite:
 ```bash
 bash tests/sdk/test-c-sdk.sh
-bash tests/handsoff/test-worktree.sh
+bash tests/e2e/test-worktree.sh
 ```
 
 Run a specific test under zsh:
@@ -92,7 +91,7 @@ All tests must live in a categorized subdirectory under `tests/`. Do not create 
    - `tests/sdk/` for SDK template tests
    - `tests/cli/` for CLI command tests
    - `tests/lint/` for validation tests
-   - `tests/handsoff/` for end-to-end integration tests
+   - `tests/e2e/` for end-to-end integration tests
 2. Create a new test script: `tests/<category>/test-<feature>-<case>.sh`
 3. Source the common helper: `source "$(dirname "$0")/../common.sh"`
 4. Source feature-specific helpers if needed: `source "$(dirname "$0")/../helpers-*.sh"`

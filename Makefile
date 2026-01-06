@@ -1,5 +1,5 @@
 # Default target
-.PHONY: test test-shells test-sdk test-cli test-lint test-handsoff test-fast test-e2e help setup pre-commit
+.PHONY: test test-shells test-sdk test-cli test-lint test-e2e test-fast help setup pre-commit
 
 test:
 	./tests/test-all.sh
@@ -16,14 +16,11 @@ test-cli:
 test-lint:
 	./tests/test-all.sh lint
 
-test-handsoff:
-	./tests/test-all.sh handsoff
+test-e2e:
+	./tests/test-all.sh e2e
 
 test-fast:
 	./tests/test-all.sh sdk cli lint
-
-test-e2e:
-	./tests/test-all.sh handsoff
 
 pre-commit:
 	HOOKS_DIR=$$(git rev-parse --git-path hooks 2>/dev/null || echo ".git/hooks"); \
@@ -70,9 +67,8 @@ help:
 	@echo "  make test-sdk            - Run SDK template tests"
 	@echo "  make test-cli            - Run CLI command tests"
 	@echo "  make test-lint           - Run validation and linting tests"
-	@echo "  make test-handsoff       - Run end-to-end integration tests"
+	@echo "  make test-e2e            - Run end-to-end integration tests"
 	@echo "  make test-fast           - Run fast tests (sdk + cli + lint)"
-	@echo "  make test-e2e            - Run end-to-end tests (alias for handsoff)"
 	@echo "  make setup               - Generate local setup.sh for development"
 	@echo ""
 	@echo "SDK usage:"

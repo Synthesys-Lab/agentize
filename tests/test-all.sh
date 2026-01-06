@@ -2,7 +2,7 @@
 # Purpose: Master test runner that executes all Agentize test suites
 # Expected: All tests pass (exit 0) or report which tests failed (exit 1)
 # Supports: Multi-shell testing via TEST_SHELLS environment variable
-# Supports: Category filtering (sdk, cli, lint, handsoff)
+# Supports: Category filtering (sdk, cli, lint, e2e)
 
 set -e
 
@@ -64,10 +64,10 @@ if [ $EXPLICIT_SHELLS -eq 1 ]; then
   fi
 fi
 
-# Parse optional category arguments (sdk, cli, lint, handsoff)
+# Parse optional category arguments (sdk, cli, lint, e2e)
 # If no arguments provided, run all categories
 if [ $# -eq 0 ]; then
-  CATEGORIES="sdk cli lint handsoff"
+  CATEGORIES="sdk cli lint e2e"
 else
   CATEGORIES="$@"
 fi

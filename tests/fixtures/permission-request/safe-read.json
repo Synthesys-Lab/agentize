@@ -1,6 +1,0 @@
-{
-  "tool": "Read",
-  "parameters": {
-    "file_path": "/path/to/some/file.txt"
-  }
-}

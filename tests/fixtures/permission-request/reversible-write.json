@@ -1,7 +1,0 @@
-{
-  "tool": "Write",
-  "parameters": {
-    "file_path": "/path/to/implementation/file.ts",
-    "content": "some code here"
-  }
-}
