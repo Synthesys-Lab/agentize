@@ -30,6 +30,8 @@ After running `make setup` and sourcing `setup.sh`, the `wt` command is availabl
   - Before creating the worktree, it rebases onto the latest default branch from the bare repo
   - `--no-agent`: skip automatic Claude invocation after worktree creation
   - `--yolo`: skip permission prompts by passing `--dangerously-skip-permissions` to Claude
+    - **WARNING**: When active, Claude will run with all permission checks bypassed
+    - A warning message will be displayed on stderr before Claude invocation
 - `wt remove <issue-no>`: remove the worktree for the given issue number
   - `--delete-branch`: delete the branch as well, even if unmerged
   - `-D` / `--force`: legacy aliases for `--delete-branch`
