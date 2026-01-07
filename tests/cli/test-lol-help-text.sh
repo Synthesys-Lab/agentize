@@ -14,7 +14,8 @@ source "$LOL_CLI"
 # Note: lol returns exit code 1 when showing help, so we need to handle this
 output=$(lol 2>&1 || true)
 
-# Verify usage text includes lol upgrade command
+# Verify usage text includes lol upgrade and lol version commands
 echo "$output" | grep -q "lol upgrade" || test_fail "Usage text missing 'lol upgrade' command"
+echo "$output" | grep -q "lol version" || test_fail "Usage text missing 'lol version' command"
 
 test_pass "lol usage text includes lol upgrade"

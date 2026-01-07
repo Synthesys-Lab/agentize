@@ -20,5 +20,16 @@ if [ ! -f "$TEST_PROJECT/.agentize.yaml" ]; then
   test_fail ".agentize.yaml was not created by lol update"
 fi
 
+# Verify agentize.commit field exists when AGENTIZE_HOME is a git repo
+if ! grep -q "agentize:" "$TEST_PROJECT/.agentize.yaml"; then
+  cleanup_dir "$TEST_PROJECT"
+  test_fail ".agentize.yaml does not contain agentize section"
+fi
+
+if ! grep -q "commit:" "$TEST_PROJECT/.agentize.yaml"; then
+  cleanup_dir "$TEST_PROJECT"
+  test_fail ".agentize.yaml does not contain agentize.commit field"
+fi
+
 cleanup_dir "$TEST_PROJECT"
 test_pass "lol update creates .agentize.yaml when missing"

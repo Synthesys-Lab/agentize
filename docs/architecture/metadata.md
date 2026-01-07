@@ -24,6 +24,9 @@ git:
   remote_url: https://github.com/org/repo  # Git remote URL (optional)
   default_branch: main         # Default branch (main, master, trunk, etc.)
 
+agentize:
+  commit: abc123...            # Agentize commit hash from last update (optional)
+
 worktree:
   trees_dir: trees            # Worktree directory (optional, defaults to "trees")
 
@@ -96,6 +99,15 @@ GitHub Projects v2 board number (the numeric ID visible in the project URL).
 **Usage:** Set by `lol project --create` or `lol project --associate` to store the project number. This is the project number shown in URLs like `https://github.com/orgs/my-org/projects/3`, NOT the GraphQL node_id.
 
 **Note:** The `project.org` and `project.id` fields work together to uniquely identify a GitHub Projects v2 board.
+
+### agentize.commit (optional)
+Records the agentize installation commit hash used during the last `lol update` operation.
+
+**Example:** `e3eab9a1234567890abcdef1234567890abcdef`
+
+**Usage:** Set by `lol update` to record which agentize version was used. This enables version tracking via `lol version` for troubleshooting and compatibility checks.
+
+**Note:** Only recorded when `AGENTIZE_HOME` is a valid git repository. If git is not available or `AGENTIZE_HOME` is not a git repo, this field is omitted without causing errors.
 
 ### pre_commit.enabled (optional)
 Controls automatic installation of the pre-commit hook during SDK and worktree initialization.
@@ -205,6 +217,8 @@ project:
 git:
   remote_url: https://github.com/synthesys-lab/agentize
   default_branch: main
+agentize:
+  commit: e3eab9a1234567890abcdef1234567890abcdef
 worktree:
   trees_dir: trees
 ```
