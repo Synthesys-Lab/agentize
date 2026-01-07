@@ -20,7 +20,7 @@ Completion scripts follow the naming pattern `_<command>` for zsh completions:
 
 Completions are automatically enabled when users run `make setup` and source the generated `setup.sh`:
 
-1. `make setup` generates `setup.sh` which adds `scripts/completions/` to zsh's `fpath`
+1. `make setup` generates `setup.sh` which adds `src/completion/` to zsh's `fpath`
 2. When user sources `setup.sh`, zsh's completion system (`compinit`) discovers completion files
 3. Tab-completion becomes available for all commands with `_<command>` files in this directory
 
@@ -50,7 +50,7 @@ To add completion support for a new command:
    }
    ```
 
-2. **Create zsh completion script** `scripts/completions/_new_command`:
+2. **Create zsh completion script** `src/completion/_new_command`:
    ```zsh
    #compdef new_command
 

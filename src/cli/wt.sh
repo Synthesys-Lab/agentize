@@ -502,7 +502,7 @@ EOF
 # Main wt function
 wt() {
     local command="$1"
-    shift
+    [ $# -gt 0 ] && shift
 
     case "$command" in
         common)
