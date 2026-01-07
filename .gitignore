@@ -4,3 +4,4 @@
 trees/
 setup.sh
 .claude/settings.local.json
+__pycache__

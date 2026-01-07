@@ -5,12 +5,15 @@ import sys
 import json
 import shutil
 
+from logger import logger
+
 def main():
 
     handsoff = os.getenv('HANDSOFF_MODE', '0')
 
     # Do nothing if handsoff mode is disabled
     if handsoff.lower() in ['0', 'false', 'off', 'disable']:
+        logger('SYSTEM', f'Handsoff mode disabled, exiting hook, {handsoff}')
         sys.exit(0)
 
     hook_input = json.load(sys.stdin)
@@ -26,6 +29,7 @@ def main():
 
     if error.get('reason', None):
         print(json.dumps(error))
+        logger('SYSTEM', f"Error in hook input: {error['reason']}")
         sys.exit(1)
 
     state = {}
@@ -43,14 +47,15 @@ def main():
 
     if state:
         state['continuation_count'] = 0
+        # Create the folder if it doesn't exist
+        os.makedirs('.tmp', exist_ok=True)
+        os.makedirs('.tmp/hooked-sessions', exist_ok=True)
 
-
-    # Create the folder if it doesn't exist
-    os.makedirs('.tmp', exist_ok=True)
-    os.makedirs('.tmp/hooked-sessions', exist_ok=True)
-
-    with open(f'.tmp/hooked-sessions/{session_id}.json', 'w') as f:
-        json.dump(state, f)
+        with open(f'.tmp/hooked-sessions/{session_id}.json', 'w') as f:
+            logger(session_id, f"Writing state: {state}")
+            json.dump(state, f)
+    else:
+        logger(session_id, "No workflow matched, doing nothing.")
 
 if __name__ == "__main__":
     main()
