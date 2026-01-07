@@ -25,6 +25,7 @@ lol project --automation [--write <path>]
 - `--path <path>` - Project path (optional, defaults to current directory)
 - `--source <path>` - Source code path relative to project root (optional)
 - `--metadata-only` - Create only .agentize.yaml without SDK templates (optional, init only)
+- `--version` - Display version information (alias for `lol version`)
 
 ## Commands
 
@@ -110,6 +111,8 @@ lol update --path /path/to/project
 ### `lol version`
 
 Displays version information for both the agentize installation and the current project's last update (if available).
+
+**Alias:** `lol --version`
 
 **No flags required.**
 

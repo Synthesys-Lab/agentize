@@ -42,5 +42,26 @@ echo "$output" | grep -q "a1b2c3d4567890abcdef1234567890abcdef123" || {
   test_fail "Output missing commit hash from .agentize.yaml"
 }
 
+# Test --version flag alias
+output_flag=$(lol --version 2>&1)
+
+# Verify --version output includes "Installation:" line
+echo "$output_flag" | grep -q "Installation:" || {
+  cleanup_dir "$TEST_PROJECT"
+  test_fail "--version output missing 'Installation:' line"
+}
+
+# Verify --version output includes "Last update:" line
+echo "$output_flag" | grep -q "Last update:" || {
+  cleanup_dir "$TEST_PROJECT"
+  test_fail "--version output missing 'Last update:' line"
+}
+
+# Verify --version output includes the commit hash from .agentize.yaml
+echo "$output_flag" | grep -q "a1b2c3d4567890abcdef1234567890abcdef123" || {
+  cleanup_dir "$TEST_PROJECT"
+  test_fail "--version output missing commit hash from .agentize.yaml"
+}
+
 cleanup_dir "$TEST_PROJECT"
-test_pass "lol version displays correct version information"
+test_pass "lol version and lol --version display correct version information"

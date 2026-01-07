@@ -18,4 +18,7 @@ output=$(lol 2>&1 || true)
 echo "$output" | grep -q "lol upgrade" || test_fail "Usage text missing 'lol upgrade' command"
 echo "$output" | grep -q "lol version" || test_fail "Usage text missing 'lol version' command"
 
-test_pass "lol usage text includes lol upgrade"
+# Verify usage text includes --version flag
+echo "$output" | grep -q "\-\-version" || test_fail "Usage text missing '--version' flag"
+
+test_pass "lol usage text includes lol upgrade and --version flag"
