@@ -84,6 +84,12 @@ lol() {
         return 1
     fi
 
+    # Handle --version flag as alias for version subcommand
+    if [ "$1" = "--version" ]; then
+        _agentize_version
+        return $?
+    fi
+
     # Parse subcommand
     local subcommand="$1"
     [ $# -gt 0 ] && shift
@@ -112,11 +118,13 @@ lol() {
             echo "  lol update [--path <path>]"
             echo "  lol upgrade"
             echo "  lol version"
+            echo "  lol --version"
             echo "  lol project --create [--org <org>] [--title <title>]"
             echo "  lol project --associate <org>/<id>"
             echo "  lol project --automation [--write <path>]"
             echo ""
             echo "Flags:"
+            echo "  --version           Display version information (alias for 'lol version')"
             echo "  --name <name>       Project name (required for init)"
             echo "  --lang <lang>       Programming language: c, cxx, python (required for init)"
             echo "  --path <path>       Project path (optional, defaults to current directory)"
@@ -135,6 +143,7 @@ lol() {
             echo "  lol update --path /path/to/project"
             echo "  lol upgrade                   # Upgrade agentize installation"
             echo "  lol version                   # Display version information"
+            echo "  lol --version                 # Display version information"
             echo "  lol project --create --org Synthesys-Lab --title \"My Project\""
             echo "  lol project --associate Synthesys-Lab/3"
             echo "  lol project --automation --write .github/workflows/add-to-project.yml"
