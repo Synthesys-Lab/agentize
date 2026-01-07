@@ -35,6 +35,7 @@ See [`workflows/README.md`](workflows/README.md) for all workflow diagrams:
 - `workflows/milestone.md` - Milestone-based implementation workflow
 - `workflows/ultra-planner.md` - Multi-agent debate-based planning
 - `workflows/issue-to-impl.md` - Complete development cycle
+- `workflows/handsoff.md` - Handsoff mode auto-continuation
 
 ### Testing Documentation
 

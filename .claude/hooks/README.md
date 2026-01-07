@@ -31,6 +31,27 @@ Hooks enable automated behaviors and integrations at key points in the Claude Co
 
 **Purpose**: Project-specific post-edit processing (if configured)
 
+### user-prompt-submit.py
+**Event**: UserPromptSubmit (before prompt is sent to Claude Code)
+
+**Purpose**: Initialize session state for handsoff mode workflows
+
+**Behavior**:
+- Detects `/ultra-planner` and `/issue-to-impl` commands
+- Creates session state files in `.tmp/hooked-sessions/`
+- See [docs/workflows/handsoff.md](../../docs/workflows/handsoff.md) for details
+
+### stop.py
+**Event**: Stop (before Claude Code stops execution)
+
+**Purpose**: Auto-continue workflows in handsoff mode
+
+**Behavior**:
+- Reads session state from `.tmp/hooked-sessions/`
+- Increments continuation count and checks limits
+- Injects workflow-specific continuation prompts
+- See [docs/workflows/handsoff.md](../../docs/workflows/handsoff.md) for details
+
 ## Hook Invocation Mechanism
 
 Hooks are configured in `.claude/settings.json`:

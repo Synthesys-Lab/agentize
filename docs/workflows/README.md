@@ -14,6 +14,9 @@ Multi-agent debate-based planning workflow showing how the `/ultra-planner` comm
 ### issue-to-impl.md
 Complete development cycle workflow showing how the `/issue-to-impl` command automates the journey from GitHub issue to pull request, including documentation, testing, milestone tracking, and code review phases.
 
+### handsoff.md
+Handsoff mode documentation explaining how auto-continuation works for `/ultra-planner` and `/issue-to-impl` workflows, including session state management, continuation limits, hook implementation, and debugging procedures.
+
 ## Integration
 
 These workflows are referenced from the main [README.md](../../README.md) and correspond to:
