@@ -11,7 +11,7 @@ These diagrams provide detailed visualizations of how Agentize commands orchestr
 ### ultra-planner.md
 Multi-agent debate-based planning workflow showing how the `/ultra-planner` command coordinates three specialized agents (bold-proposer, critique, reducer) with external consensus review to generate comprehensive implementation plans.
 
-### issue-to-implementation.md
+### issue-to-impl.md
 Complete development cycle workflow showing how the `/issue-to-impl` command automates the journey from GitHub issue to pull request, including documentation, testing, milestone tracking, and code review phases.
 
 ## Integration

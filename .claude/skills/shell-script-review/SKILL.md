@@ -9,6 +9,21 @@ However, many programmers like Zsh for its better interactive features.
 Below we list several common different behaviors between Bash and Zsh, along with
 workarounds to write shell-neutral scripts that work in both shells.
 
+## DO NOT over checking!
+
+```bash
+if [ -f XXX ] then
+   ...
+fi
+```
+
+Suspecting everything itself is suspicious: If the file checked is a well committed file in this repo, **DO NOT** check for it existence at all!
+If you are not sure, use `git ls-files XXX` to check if it is tracked by git.
+
+Similarly for environment variables, check `setup.sh` and `session-init.sh` to see if these variables are always set by those scripts.
+If so, **DO NOT** `-z` or `-n` check them!
+
+
 ## Array Indexing
 
 ```bash

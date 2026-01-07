@@ -72,6 +72,7 @@ The ultimate goal of this workflow is to deliver a PR on GitHut that implements 
             with open(fname, 'w') as f:
                 logger(session_id, f"Updating state for continuation: {state}")
                 json.dump(state, f)
+            # NOTE: `dumps` is REQUIRED ow Claude Code will just ignore your output!
             print(json.dumps({
                 'decision': 'block',
                 'reason': prompt

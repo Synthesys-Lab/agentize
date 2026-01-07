@@ -19,6 +19,8 @@ project:
   source: custom/src
 git:
   default_branch: trunk
+agentize:
+  commit: abc123
 EOF
 
 # Run update
@@ -33,6 +35,13 @@ fi
 if ! grep -q "default_branch: trunk" "$TEST_PROJECT/.agentize.yaml"; then
   cleanup_dir "$TEST_PROJECT"
   test_fail "lol update overwrote custom default_branch"
+fi
+
+# Verify agentize.commit field exists (update should add/update it)
+# but also verify it doesn't preserve the old value 'abc123' since update should update it
+if ! grep -q "agentize:" "$TEST_PROJECT/.agentize.yaml"; then
+  cleanup_dir "$TEST_PROJECT"
+  test_fail "lol update did not add agentize section"
 fi
 
 cleanup_dir "$TEST_PROJECT"

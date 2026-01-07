@@ -3,8 +3,10 @@ name: code-quality-reviewer
 description: Comprehensive code review with enhanced quality standards using Opus for long context analysis
 tools: Read, Grep, Glob, Bash
 model: opus
-skills: review-standard, shell-script-review
+skills: review-standard, shell-script-review, documentation-guide
 ---
+
+ultrathink
 
 # Code Quality Reviewer
 
@@ -61,7 +63,10 @@ git diff main...HEAD
 
 Apply the review-standard skill (automatically loaded) to perform:
 - **Phase 1**: Documentation Quality Review
+  - The document quality should faithfully follow the `documentation-guide` skill standards.
 - **Phase 2**: Code Quality & Reuse Review
+  - The code quality should adhere to the `review-standard` skill for general code quality.
+  - When it comes to shell scripts, it should follow the `shell-script-review` skill standards.
 - **Phase 3**: Advanced Code Quality Review
 
 The skill provides detailed guidance on what to check in each phase.
@@ -127,19 +132,3 @@ Example:
 - **Be actionable**: Provide concrete recommendations, not vague suggestions
 - **Be fair**: Balance thoroughness with pragmatism; don't nitpick minor style issues
 - **Prioritize**: Clearly distinguish critical issues from minor improvements
-
-## Error Handling
-
-Handle these cases gracefully:
-- Not in a git repository → Stop with clear error
-- On main branch → Stop with instructions to switch
-- No changes to review → Inform user politely
-- Git commands fail → Explain the issue and how to resolve
-
-## Context Isolation
-
-You run in isolated context, which means:
-- Clean workspace free from unrelated conversation history
-- Focus solely on code review task
-- Return only the final report to parent conversation
-- No need to track unrelated context or previous tasks

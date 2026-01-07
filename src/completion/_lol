@@ -21,6 +21,7 @@ _lol() {
             'update:Update SDK configuration'
             'upgrade:Upgrade agentize installation'
             'project:Manage GitHub Projects v2 integration'
+            'version:Display version information'
         )
     else
         # Add descriptions to dynamically fetched commands
@@ -31,6 +32,7 @@ _lol() {
                 update) commands_with_desc+=('update:Update SDK configuration') ;;
                 upgrade) commands_with_desc+=('upgrade:Upgrade agentize installation') ;;
                 project) commands_with_desc+=('project:Manage GitHub Projects v2 integration') ;;
+                version) commands_with_desc+=('version:Display version information') ;;
             esac
         done
         commands=( $commands_with_desc )
@@ -57,6 +59,9 @@ _lol() {
                     ;;
                 project)
                     _lol_project
+                    ;;
+                version)
+                    _lol_version
                     ;;
             esac
             ;;
@@ -110,6 +115,12 @@ _lol_update() {
 # Completion for 'lol upgrade' subcommand
 _lol_upgrade() {
     # No flags or arguments for upgrade command
+    return 0
+}
+
+# Completion for 'lol version' subcommand
+_lol_version() {
+    # No flags or arguments for version command
     return 0
 }
 

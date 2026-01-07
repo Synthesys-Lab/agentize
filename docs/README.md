@@ -34,7 +34,7 @@ Detailed workflow diagrams and process documentation:
 See [`workflows/README.md`](workflows/README.md) for all workflow diagrams:
 - `workflows/milestone.md` - Milestone-based implementation workflow
 - `workflows/ultra-planner.md` - Multi-agent debate-based planning
-- `workflows/issue-to-implementation.md` - Complete development cycle
+- `workflows/issue-to-impl.md` - Complete development cycle
 
 ### Testing Documentation
 

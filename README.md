@@ -45,7 +45,7 @@ lol init --name your_project_name --lang c --path /path/to/your/project
 
 This creates an initial SDK structure in the specified project path. Use `lol --help` to see all available options.
 
-## Core Phylosophy
+## Core Philosophy
 
 1. Plan first, code later: Use AI to generate a detailed plan before writing any code.
    - Plan is put on Github Issues for tracking.
@@ -65,7 +65,7 @@ This creates an initial SDK structure in the specified project path. Use `lol --
 See our detailed workflow diagrams:
 
 - [Ultra Planner Workflow](./docs/workflows/ultra-planner.md) - Multi-agent debate-based planning
-- [Issue to Implementation Workflow](./docs/workflows/issue-to-implementation.md) - Complete development cycle
+- [Issue to Implementation Workflow](./docs/workflows/issue-to-impl.md) - Complete development cycle
 
 **Legend**: Red boxes represent user interventions (providing requirements, approving/rejecting results, starting sessions). Blue boxes represent automated AI steps.
 

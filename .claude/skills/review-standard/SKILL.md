@@ -261,6 +261,7 @@ Assesses code quality and identifies reuse opportunities.
 - IDE/editor files: `.vscode/`, `.idea/`, `*.sublime-*`
 - Local config: `.env`, `*.local.*`, `settings.local.json`
 - Log files: `*.log`, `debug.txt`
+- Are they in `.gitignore`?
 
 **Check for debug code**:
 - Debug print statements: `console.log()`, `print("debug")`, `printf("DEBUG")`
@@ -361,7 +362,7 @@ Deep analysis of code structure, type safety, and architectural boundaries.
 **Prefer**: `@dataclass` for structured data (pre-declares attributes, type safety, auto-generated methods).
 
 **Check for**:
-- `getattr`/`setattr` instead of explicit attributes
+- Use direct `a.b` access instead of `getattr(a, 'b')`
 - None-handling scattered at usage sites
 - Mixing mandatory/optional attributes without clear contract
 
@@ -376,6 +377,8 @@ Deep analysis of code structure, type safety, and architectural boundaries.
    class Config:
        timeout: int = 30  # Optional with default
        host: str          # Mandatory
+
+   Then directly use: `config.timeout`
 
    Benefits: Clear contract, type safety, IDE autocomplete
 
@@ -404,7 +407,8 @@ Deep analysis of code structure, type safety, and architectural boundaries.
    src/cache.py:34 - cache.set(key, value, 86400)
 
    Recommendation: Extract to named constant:
-   SECONDS_PER_DAY = 86400  # or: CACHE_TTL = 24 * 60 * 60
+   class DayConstants:
+       SECONDS_PER_DAY = 86400  # or: CACHE_TTL = 24 * 60 * 60
 
 ❌ Missing type annotations
    src/utils/parser.py:15 - def parse_input(data): return json.loads(data)

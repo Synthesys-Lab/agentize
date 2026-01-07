@@ -12,6 +12,7 @@ This document provides detailed reference documentation for the `lol` command us
 lol init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]
 lol update [--path <path>]
 lol upgrade
+lol version
 lol project --create [--org <org>] [--title <title>]
 lol project --associate <org>/<id>
 lol project --automation [--write <path>]
@@ -87,7 +88,8 @@ Updates the AI-related rules and files in an existing SDK structure without affe
   - `project.name` (from directory basename)
   - `project.lang` (via `detect-lang.sh`)
   - `git.default_branch` (if git repository exists)
-- Preserves existing `.agentize.yaml` without overwriting
+- Preserves existing `.agentize.yaml` fields without overwriting
+- Records `agentize.commit` (current agentize installation commit hash) in `.agentize.yaml` when git is available
 - Installs pre-commit hook from `scripts/pre-commit` if available and `.git` directory exists (unless `pre_commit.enabled: false` in metadata)
 - Prints conditional post-update hints based on available resources:
   - `make test` (if Makefile has `test:` target)
@@ -103,6 +105,32 @@ Updates the AI-related rules and files in an existing SDK structure without affe
 ```bash
 lol update                      # From project root or subdirectory
 lol update --path /path/to/project
+```
+
+### `lol version`
+
+Displays version information for both the agentize installation and the current project's last update (if available).
+
+**No flags required.**
+
+**Behavior:**
+
+- Prints the agentize installation commit hash (from `AGENTIZE_HOME` git repository)
+- Prints the project's last update commit hash (from `.agentize.yaml` `agentize.commit` field, if present)
+- Displays "Not a git repository" for installation if `AGENTIZE_HOME` is not a git repo
+- Displays "Not set" for project update if `.agentize.yaml` is missing or `agentize.commit` is not set
+
+**Output format:**
+```
+Installation: <commit-hash>
+Last update:  <commit-hash>
+```
+
+**Example:**
+```bash
+$ lol version
+Installation: e3eab9a1234567890abcdef1234567890abcdef
+Last update:  a1b2c3d4567890abcdef1234567890abcdef123
 ```
 
 ### `lol upgrade`
@@ -242,7 +270,7 @@ lol project --automation --write .github/workflows/add-to-project.yml
 The `lol` command provides tab-completion support for zsh users. After running `make setup` and sourcing `setup.sh`, completions are automatically enabled.
 
 **Features:**
-- Subcommand completion (`lol <TAB>` shows: init, update, upgrade, project)
+- Subcommand completion (`lol <TAB>` shows: init, update, upgrade, version, project)
 - Flag completion for `init` (`--name`, `--lang`, `--path`, `--source`, `--metadata-only`)
 - Flag completion for `update` (`--path`)
 - Flag completion for `project` (`--create`, `--associate`, `--automation`)
@@ -265,7 +293,7 @@ lol --complete <topic>
 ```
 
 **Topics:**
-- `commands` - List available subcommands (init, update, upgrade, project)
+- `commands` - List available subcommands (init, update, upgrade, version, project)
 - `init-flags` - List flags for `lol init` (--name, --lang, --path, --source, --metadata-only)
 - `update-flags` - List flags for `lol update` (--path)
 - `project-modes` - List project mode flags (--create, --associate, --automation)
@@ -281,6 +309,7 @@ $ lol --complete commands
 init
 update
 upgrade
+version
 project
 
 $ lol --complete init-flags
