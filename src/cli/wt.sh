@@ -301,6 +301,7 @@ cmd_spawn() {
     if [ "$no_agent" = false ] && command -v claude >/dev/null 2>&1; then
         local claude_flags=""
         if [ "$yolo" = true ]; then
+            echo "WARNING: --yolo active; Claude will run with --dangerously-skip-permissions" >&2
             claude_flags="--dangerously-skip-permissions"
         fi
 
