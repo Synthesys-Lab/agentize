@@ -51,7 +51,7 @@ Worktrees are created in the `trees/` directory following the `issue-{N}` branch
 
 ## Related Documentation
 
-- [scripts/wt-cli.sh](../../scripts/wt-cli.sh) - Legacy implementation (use `src/cli/wt.sh` instead)
 - [tests/cli/](../../tests/cli/) - CLI command tests
 - [tests/e2e/](../../tests/e2e/) - End-to-end worktree tests
-- [docs/cli/](../../docs/cli/) - CLI command documentation (if exists)
+- [scripts/README.md](../../scripts/README.md) - Scripts directory overview
+- [docs/cli/wt.md](../../docs/cli/wt.md) - CLI command documentation (if exists)
