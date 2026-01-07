@@ -12,7 +12,6 @@ lol_complete() {
             echo "init"
             echo "update"
             echo "upgrade"
-            echo "version"
             echo "project"
             ;;
         init-flags)
@@ -104,9 +103,6 @@ lol() {
         upgrade)
             _agentize_upgrade "$@"
             ;;
-        version)
-            _agentize_version "$@"
-            ;;
         project)
             _agentize_project "$@"
             ;;
@@ -117,14 +113,13 @@ lol() {
             echo "  lol init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]"
             echo "  lol update [--path <path>]"
             echo "  lol upgrade"
-            echo "  lol version"
             echo "  lol --version"
             echo "  lol project --create [--org <org>] [--title <title>]"
             echo "  lol project --associate <org>/<id>"
             echo "  lol project --automation [--write <path>]"
             echo ""
             echo "Flags:"
-            echo "  --version           Display version information (alias for 'lol version')"
+            echo "  --version           Display version information"
             echo "  --name <name>       Project name (required for init)"
             echo "  --lang <lang>       Programming language: c, cxx, python (required for init)"
             echo "  --path <path>       Project path (optional, defaults to current directory)"
@@ -142,7 +137,6 @@ lol() {
             echo "  lol update                    # From project root or subdirectory"
             echo "  lol update --path /path/to/project"
             echo "  lol upgrade                   # Upgrade agentize installation"
-            echo "  lol version                   # Display version information"
             echo "  lol --version                 # Display version information"
             echo "  lol project --create --org Synthesys-Lab --title \"My Project\""
             echo "  lol project --associate Synthesys-Lab/3"

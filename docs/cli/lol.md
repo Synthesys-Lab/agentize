@@ -12,7 +12,7 @@ This document provides detailed reference documentation for the `lol` command us
 lol init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]
 lol update [--path <path>]
 lol upgrade
-lol version
+lol --version
 lol project --create [--org <org>] [--title <title>]
 lol project --associate <org>/<id>
 lol project --automation [--write <path>]
@@ -25,7 +25,7 @@ lol project --automation [--write <path>]
 - `--path <path>` - Project path (optional, defaults to current directory)
 - `--source <path>` - Source code path relative to project root (optional)
 - `--metadata-only` - Create only .agentize.yaml without SDK templates (optional, init only)
-- `--version` - Display version information (alias for `lol version`)
+- `--version` - Display version information
 
 ## Commands
 
@@ -108,13 +108,9 @@ lol update                      # From project root or subdirectory
 lol update --path /path/to/project
 ```
 
-### `lol version`
+### `lol --version`
 
 Displays version information for both the agentize installation and the current project's last update (if available).
-
-**Alias:** `lol --version`
-
-**No flags required.**
 
 **Behavior:**
 
@@ -131,7 +127,7 @@ Last update:  <commit-hash>
 
 **Example:**
 ```bash
-$ lol version
+$ lol --version
 Installation: e3eab9a1234567890abcdef1234567890abcdef
 Last update:  a1b2c3d4567890abcdef1234567890abcdef123
 ```
