@@ -12,6 +12,7 @@ lol_complete() {
             echo "init"
             echo "update"
             echo "upgrade"
+            echo "version"
             echo "project"
             ;;
         init-flags)
@@ -97,6 +98,9 @@ lol() {
         upgrade)
             _agentize_upgrade "$@"
             ;;
+        version)
+            _agentize_version "$@"
+            ;;
         project)
             _agentize_project "$@"
             ;;
@@ -107,6 +111,7 @@ lol() {
             echo "  lol init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]"
             echo "  lol update [--path <path>]"
             echo "  lol upgrade"
+            echo "  lol version"
             echo "  lol project --create [--org <org>] [--title <title>]"
             echo "  lol project --associate <org>/<id>"
             echo "  lol project --automation [--write <path>]"
@@ -129,12 +134,73 @@ lol() {
             echo "  lol update                    # From project root or subdirectory"
             echo "  lol update --path /path/to/project"
             echo "  lol upgrade                   # Upgrade agentize installation"
+            echo "  lol version                   # Display version information"
             echo "  lol project --create --org Synthesys-Lab --title \"My Project\""
             echo "  lol project --associate Synthesys-Lab/3"
             echo "  lol project --automation --write .github/workflows/add-to-project.yml"
             return 1
             ;;
     esac
+}
+
+_agentize_version() {
+    # Reject unexpected arguments
+    if [ $# -gt 0 ]; then
+        echo "Error: lol version does not accept arguments"
+        echo "Usage: lol version"
+        return 1
+    fi
+
+    # Get installation commit from AGENTIZE_HOME
+    local install_commit="Not a git repository"
+    if git -C "$AGENTIZE_HOME" rev-parse HEAD >/dev/null 2>&1; then
+        install_commit=$(git -C "$AGENTIZE_HOME" rev-parse HEAD)
+    fi
+
+    # Get project commit from .agentize.yaml
+    local project_commit="Not set"
+    local agentize_yaml=""
+
+    # Search for .agentize.yaml in current directory and parents
+    local search_path="$PWD"
+    while [ "$search_path" != "/" ]; do
+        if [ -f "$search_path/.agentize.yaml" ]; then
+            agentize_yaml="$search_path/.agentize.yaml"
+            break
+        fi
+        search_path="$(dirname "$search_path")"
+    done
+
+    # If found, extract agentize.commit field
+    if [ -n "$agentize_yaml" ]; then
+        # Parse YAML to extract agentize.commit value
+        # Look for line matching "  commit: <hash>" under "agentize:" section
+        local in_agentize_section=0
+        while IFS= read -r line; do
+            # Check if we're entering agentize section
+            if echo "$line" | grep -q "^agentize:"; then
+                in_agentize_section=1
+                continue
+            fi
+
+            # Check if we've left the agentize section (new top-level key)
+            if [ "$in_agentize_section" = "1" ] && echo "$line" | grep -q "^[a-z]"; then
+                in_agentize_section=0
+            fi
+
+            # Extract commit if we're in agentize section
+            if [ "$in_agentize_section" = "1" ]; then
+                if echo "$line" | grep -q "^  commit:"; then
+                    project_commit=$(echo "$line" | sed 's/^  commit: *//')
+                    break
+                fi
+            fi
+        done < "$agentize_yaml"
+    fi
+
+    # Display version information
+    echo "Installation: $install_commit"
+    echo "Last update:  $project_commit"
 }
 
 _agentize_init() {

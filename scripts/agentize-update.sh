@@ -138,6 +138,50 @@ else
     echo "  Existing .agentize.yaml preserved"
 fi
 
+# Record agentize commit hash in .agentize.yaml
+if git -C "$AGENTIZE_HOME" rev-parse HEAD >/dev/null 2>&1; then
+    AGENTIZE_COMMIT=$(git -C "$AGENTIZE_HOME" rev-parse HEAD)
+    echo "  Recording agentize commit: $AGENTIZE_COMMIT"
+
+    # Check if .agentize.yaml exists (it should by now)
+    if [ -f "$AGENTIZE_PROJECT_PATH/.agentize.yaml" ]; then
+        # Check if agentize section exists
+        if grep -q "^agentize:" "$AGENTIZE_PROJECT_PATH/.agentize.yaml"; then
+            # Update existing agentize.commit field
+            # Use awk to update the commit line under agentize section
+            awk -v commit="$AGENTIZE_COMMIT" '
+            BEGIN { in_agentize = 0; commit_updated = 0 }
+            /^agentize:/ { in_agentize = 1; print; next }
+            /^[a-z]/ && in_agentize {
+                if (!commit_updated) {
+                    print "  commit: " commit
+                    commit_updated = 1
+                }
+                in_agentize = 0
+            }
+            in_agentize && /^  commit:/ {
+                print "  commit: " commit
+                commit_updated = 1
+                next
+            }
+            { print }
+            END {
+                if (in_agentize && !commit_updated) {
+                    print "  commit: " commit
+                }
+            }
+            ' "$AGENTIZE_PROJECT_PATH/.agentize.yaml" > "$AGENTIZE_PROJECT_PATH/.agentize.yaml.tmp"
+            mv "$AGENTIZE_PROJECT_PATH/.agentize.yaml.tmp" "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
+        else
+            # Add agentize section with commit field
+            echo "agentize:" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
+            echo "  commit: $AGENTIZE_COMMIT" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
+        fi
+    fi
+else
+    echo "  Warning: AGENTIZE_HOME is not a git repository, skipping commit recording"
+fi
+
 # Copy scripts/pre-commit if missing (for older SDKs)
 if [ ! -f "$AGENTIZE_PROJECT_PATH/scripts/pre-commit" ] && [ -f "$PROJECT_ROOT/scripts/pre-commit" ]; then
     echo "  Copying missing scripts/pre-commit..."
