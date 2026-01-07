@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Shared helper for /open-issue tests
+# Purpose: Shared helper providing gh mock setup for /open-issue skill tests
+# Expected: Sourced by open-issue tests to create GitHub CLI mocks
 
 # Create gh mock for open-issue tests
 setup_gh_mock_open_issue() {

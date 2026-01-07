@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Shared helper functions for worktree tests
+# Purpose: Shared helper providing gh CLI stubs and worktree test setup functions
+# Expected: Sourced by worktree tests to create test environments and mocks
 
 # Create gh CLI stub for testing
 # Sets up bin/gh with issue state mocking

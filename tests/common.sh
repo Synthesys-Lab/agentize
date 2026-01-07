@@ -1,6 +1,6 @@
 #!/bin/bash
-# Shared test helper for Agentize test suite
-# Provides PROJECT_ROOT detection, test result helpers, and resource management
+# Purpose: Shared test helper providing PROJECT_ROOT detection, test result helpers, and resource management
+# Expected: Sourced by all test scripts to access common functionality
 
 set -e
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Placeholder for additional worktree edge case tests
-# (Added to reach the plan's 20 test files target)
+# Purpose: Placeholder for worktree flag ordering edge case tests
+# Expected: Test passes as placeholder for future implementation
 
 source "$(dirname "$0")/../common.sh"
 
