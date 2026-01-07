@@ -100,8 +100,8 @@ The `update` mode refreshes the Claude Code configuration (`.claude/`) while pre
 
 | Directory State | Behavior |
 |----------------|----------|
-| Does not exist | **Aborts with error** ✗ |
-| Exists but no `.claude/` directory | **Aborts with error** ✗ |
+| Does not exist | Creates `.claude/` directory and proceeds with update ✓ |
+| Exists but no `.claude/` directory | Creates `.claude/` directory and proceeds with update ✓ |
 | Valid SDK structure | Updates `.claude/` and creates backup ✓ |
 
 ### Example
@@ -113,10 +113,8 @@ lol update
 # Or specify explicit path
 lol update --path /path/to/my_project
 
-# Error: Will fail if not a valid SDK
+# Will create .claude/ if missing
 lol update --path /some/random/dir
-# Output: Error: Directory '/some/random/dir' is not a valid SDK structure.
-#         Missing '.claude/' directory.
 ```
 
 ### What Gets Updated
@@ -153,14 +151,18 @@ else:
 ### Update Mode Validation
 
 ```bash
-if directory does not exist:
-    abort with error  # Must be existing project
-
 if .claude/ directory does not exist:
-    abort with error  # Must be valid SDK structure
+    create .claude/ directory
+else:
+    create backup .claude.backup/
 
-create backup .claude.backup/
 update .claude/ with latest files
+
+if .agentize.yaml does not exist:
+    create .agentize.yaml with detected values
+
+if AGENTIZE_HOME is a git repository:
+    record agentize.commit in .agentize.yaml
 ```
 
 ## Common Workflows
