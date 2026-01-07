@@ -32,41 +32,41 @@ def main():
         prompt = ''
         if workflow == 'ultra-planner':
             prompt = f'''
-This is an auto-continuation prompt for handsoff mode, it is currently {continuation_count}/{max_continuations} continuations. 
-The ultimate goal of this workflow is to create a comprehensive plan and post it on GitHub Issue. Did you have this delivered?
-1. If not, please continue on this! Try to be as hands-off as possible, avoid asking user design decision questions, and choose the one you most recommended.
-2. If you have already delivered the plan, please tell me "Yes! I am done!"
-  - Set `{fname}` continuation count to {max_continuations} to stop further continuations.
-3. If you are stuck, and does not know what to do next. Please post a comment on GitHub Issue asking for help.
-  - First, set `{fname}` continuation count to {max_continuations} to stop further continuations.
-  - Then, post a comment on GitHub Issue asking for help. This comment shall include:
+This is an auto-continuation prompt for handsoff mode, it is currently {continuation_count}/{max_continuations} continuations.
+The ultimate goal of this workflow is to create a comprehensive plan and post it on GitHub Issue. Have you delivered this?
+1. If not, please continue! Try to be as hands-off as possible, avoid asking user design decision questions, and choose the option you recommend most.
+2. If you have already delivered the plan, manually stop further continuations.
+3. If you do not know what to do next, or you reached the max continuations limit without delivering the plan,
+   look at the current branch name to see what issue you are working on. Then stop manually
+   and leave a comment on the GitHub Issue for human collaborators to take over.
+   This comment shall include:
     - What you have done so far
     - What is blocking you from moving forward
     - What kind of help you need from human collaborators
     - The session ID: {session_id} so that human can `claude -r {session_id}` for a human intervention.
-            '''.strip()
+4. To manually stop further continuations, find {fname} and set `continuation_count` to {max_continuations}.'''.strip()
         elif workflow == 'issue-to-impl':
             prompt = f'''
-This is an auto-continuation prompt for handsoff mode, it is currently {continuation_count}/{max_continuations} continuations. 
-The ultimate goal of this workflow is to deliver a PR on GitHut that implements the corresponding issue. Did you have this delivered?
-1. If you are done with a milestone, but still having next ones. Please continue on the latest milestone!
-2. If you have every coding task done, go to /code-review step.
-3. If code review is concerning, fix the code review comments and repeat /code-review step.
-4. If code review is good, open the PR!
-5. If you are gonna open the PR, look at `CLAUDE.md` to run the full test suite locally before opening the PR.
-   - If it is failing fix the issues before opening the PR.
-   - If it is passing, proceed to open the PR.
-6. After preparing the PR description, do not ask "Should I open the PR?" Just open it right away.
-7. If the PR is successfully created, please tell me "Yes! I am done!"
-  - Set `{fname}` continuation count to {max_continuations} to stop further continuations.
-8. If you are stuck, and does not know what to do next. Please post a comment on GitHub Issue asking for help.
-  - First, set `{fname}` continuation count to {max_continuations} to stop further continuations.
-  - This comment shall include:
-    - What you have done so far
-    - What is blocking you from moving forward
-    - What kind of help you need from human collaborators
-    - The session ID: {session_id} so that human can `claude -r {session_id}` for a human intervention.
-            '''
+This is an auto-continuation prompt for handsoff mode, it is currently {continuation_count}/{max_continuations} continuations.
+The ultimate goal of this workflow is to deliver a PR on GitHub that implements the corresponding issue. Did you have this delivered?
+1. If you have completed a milestone but still have more to do, please continue on the next milestone!
+2. If you have every coding task done, start the following steps to prepare for PR:
+   2.0 Rebase the branch with upstream or origin (priority: upstream/main > upstream/master > origin/main > origin/master).
+   2.1 Run the full test suite following the project's test conventions (see CLAUDE.md).
+   2.2 Use the code-quality-reviewer agent to review the code quality.
+   2.3 If the code review raises concerns, fix the issues and return to 2.1.
+   2.4 If the code review is satisfactory, proceed to open the PR.
+3. Prepare and create the PR. Do not ask user "Should I create the PR?" - just go ahead and create it!
+4. If the PR is successfully created, manually stop further continuations.
+5. If you do not know what to do next, or you reached the max continuations limit without delivering the PR,
+   manually stop further continuations and look at the current branch name to see what issue you are working on.
+   Then, leave a comment on the GitHub Issue for human collaborators to take over.
+   This comment shall include:
+  - What you have done so far
+  - What is blocking you from moving forward
+  - What kind of help you need from human collaborators
+  - The session ID: {session_id} so that human can `claude -r {session_id}` for a human intervention.
+6. To manually stop further continuations, find {fname} and set the `continuation_count` to {max_continuations}.'''
 
         if prompt:
             with open(fname, 'w') as f:
