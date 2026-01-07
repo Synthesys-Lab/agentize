@@ -36,9 +36,9 @@ CLI documentation is referenced from:
 
 ### Zsh Tab Completion Not Working
 
-**Problem:** After running `make setup` and `source setup.sh`, tab completion doesn't work for `wt` or other commands.
+**Problem:** After running `make setup` and `source setup.sh`, tab completion doesn't work for `wt`, `lol`, or other commands.
 
-**Cause:** Stale zsh completion cache from before completion files were moved to `src/completion/`.
+**Cause:** Stale zsh completion cache from before completion files (`_wt`, `_lol`) were moved to `src/completion/`.
 
 **Solution:**
 ```bash

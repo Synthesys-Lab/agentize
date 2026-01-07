@@ -3,7 +3,7 @@
 
 source "$(dirname "$0")/../common.sh"
 
-COMPLETION_FILE="$PROJECT_ROOT/scripts/completions/_lol"
+COMPLETION_FILE="$PROJECT_ROOT/src/completion/_lol"
 
 test_info "zsh completion file exists and has correct structure"
 
