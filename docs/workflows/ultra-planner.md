@@ -11,14 +11,15 @@ The ultra-planner workflow creates implementation plans through multi-agent deba
 ```mermaid
 graph TD
     A[User provides requirements] --> B[Create placeholder issue]
-    B --> C[Bold-proposer: Research SOTA & propose innovation]
+    B --> B2[doc-architect: Generate diff previews]
+    B2 --> C[Bold-proposer: Research SOTA & propose innovation]
     C --> D
     C --> E
     D[Critique: Validate assumptions & feasibility] --> F
     E[Reducer: Simplify following 'less is more'] --> F
     C --> F
     F[Combined 3-perspective report] --> G
-    G[External consensus: Synthesize plan] --> H[Update issue with consensus plan]
+    G[External consensus: Synthesize plan with diffs] --> H[Update issue with consensus plan]
     H --> I{User reviews plan}
     I -->|Refine| J["/ultra-planner --refine"]
     J --> C
@@ -28,6 +29,7 @@ graph TD
     style A fill:#ffcccc
     style I fill:#ffcccc
     style B fill:#ccddff
+    style B2 fill:#ccddff
     style C fill:#ccddff
     style D fill:#ccddff
     style E fill:#ccddff
@@ -102,11 +104,11 @@ Issue #42 updated with refined plan.
 Summary: Reduced LOC 280→150, removed OAuth2, simplified middleware
 ```
 
-### 3. Documentation Planning
+### 3. Documentation Planning with Diff Previews
 
 The external consensus process must explicitly identify documentation impacts and produce a **Documentation Planning** section in the final plan. This ensures all documentation changes are identified early and tracked through implementation.
 
-**Required format:**
+**Standard format:**
 ```markdown
 ## Documentation Planning
 
@@ -121,10 +123,48 @@ The external consensus process must explicitly identify documentation impacts an
 - `src/api/endpoints.md` — update API interface documentation
 ```
 
+**Enhanced format with diff previews:**
+
+When using `/doc-architect --diff`, the Documentation Planning section includes markdown diff previews showing proposed changes:
+
+```markdown
+## Documentation Planning
+
+### High-level design docs (docs/)
+- [ ] `docs/workflows/feature-name.md` — update workflow diagram
+
+` ` `diff
+  ## Workflow Diagram
+
+  ` ` `mermaid
+  graph TD
+      A[Start] --> B[Process]
++     B --> C[New Step]
++     C --> D[End]
+-     B --> D[End]
+  ` ` `
+` ` `
+
+### Folder READMEs
+- [ ] `src/feature/README.md` — update purpose
+
+` ` `diff
+  # Feature Module
+- Handles basic functionality.
++ Handles basic functionality with enhanced diff preview support.
+` ` `
+```
+
+**Benefits of diff previews:**
+- Task list checkboxes enable progress tracking in GitHub UI
+- Diff blocks show exact proposed changes before implementation
+- Reduces ambiguity in documentation requirements
+- `/issue-to-impl` Step 5 can apply diff specifications directly
+
 The consensus plan references command interfaces by citing actual `docs/` files (e.g., `docs/workflows/ultra-planner.md`, `docs/tutorial/02-issue-to-impl.md`) to ensure accuracy and grounding.
 
 **Skill integration:**
-The `/doc-architect` skill can generate this checklist format for any feature, ensuring consistency across planning workflows.
+The `/doc-architect` skill generates this checklist format. Use `/doc-architect --diff` for diff previews.
 
 ### 4. Review and Implementation
 

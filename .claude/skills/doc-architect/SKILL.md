@@ -10,8 +10,11 @@ Analyzes feature requirements and generates a structured documentation checklist
 ## Invocation
 
 ```
-/doc-architect
+/doc-architect [--diff]
 ```
+
+**Options:**
+- `--diff`: Generate markdown diff previews showing proposed changes for existing files
 
 ## Inputs
 
@@ -22,7 +25,7 @@ From conversation context:
 
 ## Outputs
 
-A **Documentation Planning** section in markdown format:
+A **Documentation Planning** section in markdown format.
 
 ```markdown
 ## Documentation Planning
@@ -69,6 +72,7 @@ For each identified documentation impact:
 
 Structure output as markdown section ready to paste into implementation plans:
 
+**Standard format (default):**
 ```markdown
 ## Documentation Planning
 
@@ -81,6 +85,37 @@ Structure output as markdown section ready to paste into implementation plans:
 ### Interface docs
 - `src/module/interface.md` — update [which interfaces]
 ```
+
+**Diff format (with `--diff` flag):**
+```markdown
+## Documentation Planning
+
+### High-level design docs (docs/)
+- [ ] `docs/path/to/doc.md` — update [brief description]
+
+` ` `diff
+  ## Existing Section
+
+  Some existing content here.
++ New content to be added.
+- Content to be removed.
+` ` `
+
+### Folder READMEs
+- [ ] `path/to/README.md` — update [what aspect]
+
+` ` `diff
+  ### Component
+- Old description
++ Updated description with new feature
+` ` `
+```
+
+**Diff mode notes:**
+- Task list checkboxes (`- [ ]`) enable tracking in GitHub UI
+- Diff blocks show AI-generated preview of proposed changes (best-effort, not git diff)
+- If file read fails, falls back to standard format without diff
+- Read existing files to generate meaningful diff previews
 
 ## Integration
 
@@ -123,4 +158,40 @@ Output:
 
 ### Interface docs
 - N/A — internal refactor, no interface changes
+```
+
+**Feature: Add dark mode (with `--diff`)**
+
+Output:
+```markdown
+## Documentation Planning
+
+### High-level design docs (docs/)
+- [ ] `docs/features/theming.md` — update with dark mode support
+
+` ` `diff
+  ## Theming System
+
+  The application supports customizable themes.
++
++ ### Dark Mode
++
++ Dark mode can be enabled via the settings panel or system preference detection.
++ The theme automatically switches based on `prefers-color-scheme` media query.
+` ` `
+
+### Folder READMEs
+- [ ] `src/theme/README.md` — update purpose and organization
+
+` ` `diff
+  # Theme Module
+
+- Provides light theme styling for the application.
++ Provides light and dark theme styling for the application.
++
++ ## Files
++ - `light.css` - Light theme variables
++ - `dark.css` - Dark theme variables
++ - `toggle.ts` - Theme switching logic
+` ` `
 ```

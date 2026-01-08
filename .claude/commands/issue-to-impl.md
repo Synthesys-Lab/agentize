@@ -193,16 +193,38 @@ gh issue view {issue-number} --json body --jq '.body'
   ```
   Stop execution.
 
-### Step 5: Update Documentation
+### Step 5: Update Documentation and Create Commit
 
-**Based on plan:** Identify documentation steps (usually Step 1 or Steps 1-N)
+**Based on plan:** Identify documentation steps from "Documentation Planning" section
 
 **For each documentation file in plan:**
 - Use `Read` tool if file exists (for updates)
 - Use `Edit` or `Write` tool to create/modify file
-- Follow exact file paths and changes specified in plan
+- Follow diff specifications if provided in plan (from `--diff` mode)
+- Check off task list items as files are updated
 
-**Track:** Files created/modified for Milestone 1 commit
+**Create documentation commit:**
+```bash
+# Stage only documentation files
+git add docs/ README.md **/*.md
+
+# Verify staged files
+git diff --cached --name-only
+```
+
+**Invoke:** `commit-msg` skill
+**Input:**
+- Purpose: `delivery`
+- Tags: `[docs]`
+- Message: "Update documentation for issue #{N}"
+**Output:** Documentation commit created
+
+**Track:** Documentation commit SHA for milestone reference
+
+**Note:** This creates a separate `[docs]` commit before tests/implementation, enabling:
+- Clear separation of documentation vs code changes
+- Easy revert if documentation needs revision
+- Audit trail for documentation updates
 
 ### Step 6: Create/Update Test Cases
 

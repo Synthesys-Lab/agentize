@@ -64,6 +64,10 @@ The ultimate goal of this workflow is to create a comprehensive plan and post it
 This is an auto-continuation prompt for handsoff mode, it is currently {continuation_count}/{max_continuations} continuations.
 The ultimate goal of this workflow is to deliver a PR on GitHub that implements the corresponding issue. Did you have this delivered?
 1. If you have completed a milestone but still have more to do, please continue on the next milestone!
+1.5. If you are working on documentation updates (Step 5):
+   - Review the "Documentation Planning" section in the issue for diff specifications
+   - Apply any markdown diff previews provided in the plan
+   - Create a dedicated [docs] commit before proceeding to tests
 2. If you have every coding task done, start the following steps to prepare for PR:
    2.0 Rebase the branch with upstream or origin (priority: upstream/main > upstream/master > origin/main > origin/master).
    2.1 Run the full test suite following the project's test conventions (see CLAUDE.md).
