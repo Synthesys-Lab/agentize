@@ -1,0 +1,44 @@
+{
+  "bash_git_status": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "git status"
+    },
+    "session_id": "test-session"
+  },
+  "bash_with_env": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "ENV=foo git status"
+    },
+    "session_id": "test-session"
+  },
+  "bash_denied": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "rm -rf /"
+    },
+    "session_id": "test-session"
+  },
+  "read_allowed": {
+    "tool_name": "Read",
+    "tool_input": {
+      "file_path": "/Users/were/repos/agentize/README.md"
+    },
+    "session_id": "test-session"
+  },
+  "read_denied": {
+    "tool_name": "Read",
+    "tool_input": {
+      "file_path": "keys/test.pem"
+    },
+    "session_id": "test-session"
+  },
+  "bash_git_push": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "git push origin main"
+    },
+    "session_id": "test-session"
+  }
+}

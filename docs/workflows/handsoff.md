@@ -72,9 +72,9 @@ Set in shell environment or `.claude/settings.json`:
 - **Example:** `export HANDSOFF_MAX_CONTINUATIONS=20`
 
 **`HANDSOFF_DEBUG`**
-- **Purpose:** Enable detailed debug logging
+- **Purpose:** Enable detailed debug logging and tool usage tracking
 - **Values:** `1` (enabled), `0` (disabled, default)
-- **Log file:** `.tmp/hook-debug.log`
+- **Log file:** `.tmp/hooked-sessions/tool-used.txt`
 - **Example:** `export HANDSOFF_DEBUG=1`
 
 ### Settings.json Configuration
@@ -193,7 +193,26 @@ This allows you to review progress, provide guidance, and manually continue the 
 
 ## Hook Implementation
 
-Handsoff mode is implemented via two Claude Code hooks (see [.claude/hooks/README.md](../../.claude/hooks/README.md)):
+Handsoff mode is implemented via three Claude Code hooks (see [.claude/hooks/README.md](../../.claude/hooks/README.md)):
+
+### `pre-tool-use.py`
+- **Event:** `PreToolUse` (before tool execution)
+- **Purpose:** Enforce permission rules and log tool usage
+- **Location:** `.claude/hooks/pre-tool-use.py`
+
+**Key logic:**
+- Defines permission rules as Python tuples: `(tool_name, regex_pattern)`
+- Matches tool usage against deny → ask → allow rules (first match wins)
+- Returns `allow/deny/ask` decision to Claude Code
+- Logs tool usage when `HANDSOFF_DEBUG=1`
+
+**Permission rules are defined in Python code instead of `.claude/settings.json`.** This approach:
+- Eliminates JSON parsing complexity
+- Enables regex pattern matching with Python `re` module
+- Provides single source of truth for permissions
+- Allows fail-safe defaults (`ask` on errors)
+
+See [.claude/hooks/pre-tool-use.md](../../.claude/hooks/pre-tool-use.md) for rule syntax and interface details.
 
 ### `user-prompt-submit.py`
 - **Event:** `UserPromptSubmit` (before prompt is sent to Claude Code)
@@ -217,7 +236,7 @@ Handsoff mode is implemented via two Claude Code hooks (see [.claude/hooks/READM
 - Injects workflow-specific continuation prompt
 - Blocks stop and triggers auto-resume
 
-**Source of truth:** For exact implementation details and prompt text, refer to `.claude/hooks/user-prompt-submit.py` and `.claude/hooks/stop.py`.
+**Source of truth:** For exact implementation details and prompt text, refer to `.claude/hooks/pre-tool-use.py`, `.claude/hooks/user-prompt-submit.py` and `.claude/hooks/stop.py`.
 
 ## Limitations
 

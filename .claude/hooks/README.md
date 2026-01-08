@@ -31,6 +31,17 @@ Hooks enable automated behaviors and integrations at key points in the Claude Co
 
 **Purpose**: Project-specific post-edit processing (if configured)
 
+### pre-tool-use.py
+**Event**: PreToolUse (before tool execution)
+
+**Purpose**: Logs tool usage and enforces permission rules
+
+**Behavior**:
+- Checks tool usage against Python-defined permission rules
+- Returns `allow/deny/ask` decision based on pattern matching
+- Logs tool usage when `HANDSOFF_DEBUG=1`
+- See [pre-tool-use.md](pre-tool-use.md) for interface details
+
 ### user-prompt-submit.py
 **Event**: UserPromptSubmit (before prompt is sent to Claude Code)
 
