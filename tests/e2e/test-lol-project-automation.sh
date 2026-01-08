@@ -96,6 +96,24 @@ EOF
         test_fail "Automation template should not use updateProjectV2ItemFieldValue (simplified to issue closing)"
     fi
 
+    # Check for archive-pr-on-merge job
+    if ! echo "$output" | grep -q "archive-pr-on-merge"; then
+        cleanup_dir "$TMP_DIR"
+        test_fail "Automation template missing archive-pr-on-merge job"
+    fi
+
+    # Check for archiveProjectV2Item mutation
+    if ! echo "$output" | grep -q "archiveProjectV2Item"; then
+        cleanup_dir "$TMP_DIR"
+        test_fail "Automation template missing archiveProjectV2Item mutation"
+    fi
+
+    # Check for merged guard in archive job
+    if ! echo "$output" | grep -q "github.event.pull_request.merged == true"; then
+        cleanup_dir "$TMP_DIR"
+        test_fail "Automation template missing merged guard for archive job"
+    fi
+
     cleanup_dir "$TMP_DIR"
     test_pass "Automation template generated with enhanced lifecycle automation"
 )

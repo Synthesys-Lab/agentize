@@ -89,8 +89,157 @@ jobs:
             issue_number=$(echo "$issue" | jq -r '.number')
             echo "Closing issue #$issue_number..."
             gh issue close $issue_number --reason "completed"
-            echo "  ✅ Issue #$issue_number closed"
+            echo "  Issue #$issue_number closed"
           done
 
           echo ""
           echo "All linked issues closed successfully!"
+
+  archive-pr-on-merge:
+    name: Archive merged PR
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+    steps:
+      - name: Get project node ID
+        id: get-project
+        env:
+          GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}
+        run: |
+          echo "Fetching project node ID for ${{ env.PROJECT_ORG }}/projects/${{ env.PROJECT_ID }}..."
+
+          project_node_id=$(gh api graphql -f query='
+            query($org: String!, $number: Int!) {
+              organization(login: $org) {
+                projectV2(number: $number) {
+                  id
+                }
+              }
+            }
+          ' -f org="${{ env.PROJECT_ORG }}" -F number="${{ env.PROJECT_ID }}" --jq '.data.organization.projectV2.id')
+
+          if [ -z "$project_node_id" ] || [ "$project_node_id" = "null" ]; then
+            echo "Error: Could not find project ${{ env.PROJECT_ORG }}/projects/${{ env.PROJECT_ID }}"
+            exit 1
+          fi
+
+          echo "project_node_id=$project_node_id" >> $GITHUB_OUTPUT
+          echo "Found project: $project_node_id"
+
+      - name: Find PR item in project
+        id: find-item
+        env:
+          GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}
+        run: |
+          project_id="${{ steps.get-project.outputs.project_node_id }}"
+          pr_node_id="${{ github.event.pull_request.node_id }}"
+
+          echo "Searching for PR item in project..."
+          echo "  PR node ID: $pr_node_id"
+
+          item_id=""
+          cursor=""
+          page=1
+          max_pages=5
+
+          while [ $page -le $max_pages ]; do
+            echo "  Fetching page $page..."
+
+            if [ -z "$cursor" ]; then
+              result=$(gh api graphql -f query='
+                query($projectId: ID!) {
+                  node(id: $projectId) {
+                    ... on ProjectV2 {
+                      items(first: 100) {
+                        pageInfo {
+                          hasNextPage
+                          endCursor
+                        }
+                        nodes {
+                          id
+                          content {
+                            ... on PullRequest {
+                              id
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              ' -f projectId="$project_id")
+            else
+              result=$(gh api graphql -f query='
+                query($projectId: ID!, $cursor: String!) {
+                  node(id: $projectId) {
+                    ... on ProjectV2 {
+                      items(first: 100, after: $cursor) {
+                        pageInfo {
+                          hasNextPage
+                          endCursor
+                        }
+                        nodes {
+                          id
+                          content {
+                            ... on PullRequest {
+                              id
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              ' -f projectId="$project_id" -f cursor="$cursor")
+            fi
+
+            # Find matching item
+            item_id=$(echo "$result" | jq -r --arg pr_id "$pr_node_id" '
+              .data.node.items.nodes[] |
+              select(.content.id == $pr_id) |
+              .id
+            ' | head -1)
+
+            if [ -n "$item_id" ] && [ "$item_id" != "null" ]; then
+              echo "  Found PR item: $item_id"
+              break
+            fi
+
+            # Check for more pages
+            has_next=$(echo "$result" | jq -r '.data.node.items.pageInfo.hasNextPage')
+            if [ "$has_next" != "true" ]; then
+              echo "  No more pages"
+              break
+            fi
+
+            cursor=$(echo "$result" | jq -r '.data.node.items.pageInfo.endCursor')
+            page=$((page + 1))
+          done
+
+          if [ -z "$item_id" ] || [ "$item_id" = "null" ]; then
+            echo "PR not found in project (may not have been added)"
+            echo "item_id=" >> $GITHUB_OUTPUT
+          else
+            echo "item_id=$item_id" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Archive PR item
+        if: steps.find-item.outputs.item_id != ''
+        env:
+          GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}
+        run: |
+          project_id="${{ steps.get-project.outputs.project_node_id }}"
+          item_id="${{ steps.find-item.outputs.item_id }}"
+
+          echo "Archiving PR item $item_id..."
+
+          gh api graphql -f query='
+            mutation($projectId: ID!, $itemId: ID!) {
+              archiveProjectV2Item(input: {projectId: $projectId, itemId: $itemId}) {
+                item {
+                  id
+                }
+              }
+            }
+          ' -f projectId="$project_id" -f itemId="$item_id"
+
+          echo "PR item archived successfully!"
