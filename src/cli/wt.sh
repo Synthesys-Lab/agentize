@@ -584,10 +584,6 @@ wt() {
                     ;;
             esac
             ;;
-        main)
-            # Legacy alias for goto main
-            cmd_goto "main" "$@"
-            ;;
         *)
             echo "Error: Unknown command: $command" >&2
             echo "Run 'wt help' for usage information" >&2

@@ -75,7 +75,7 @@ This development workflow uses bare repos for multiple worktrees:
 
 ### Worktree Management
 
-- Switch to main worktree: `wt main`
+- Switch to main worktree: `wt goto main`
 - Create worktree for issue: `wt spawn <issue-number>`
   - NOTE: `spawn` is an all-in-one command that creates the worktree, `cd`s into it, and launches Claude Code with the issue implementation prompt
   - Example: `wt spawn 42`
