@@ -1,6 +1,8 @@
 # Scripts Directory
 
-This directory contains utility scripts and git hooks for the project.
+This directory contains utility scripts, git hooks, and wrapper entrypoints for the project.
+
+**Canonical CLI sources:** The primary CLI implementations live in `src/cli/`. Scripts in this directory are either standalone utilities or thin wrappers that delegate to `src/cli/` libraries.
 
 ## Files
 
@@ -42,8 +44,9 @@ This directory contains utility scripts and git hooks for the project.
   - Examples of usage and output
 
 ### Git Worktree Helper
-- `wt-cli.sh` - Worktree CLI and library (executable + sourceable)
+- `wt-cli.sh` - Worktree CLI wrapper (sources `src/cli/wt.sh`)
   - Usage: `./scripts/wt-cli.sh <command> [args]`
+  - Canonical source: `src/cli/wt.sh`
   - Commands:
     - `init` - Initialize worktree environment (creates trees/main)
     - `main` - Switch to main worktree (when sourced)
@@ -52,47 +55,38 @@ This directory contains utility scripts and git hooks for the project.
     - `remove <issue-number>` - Remove worktree by issue number
     - `prune` - Clean up stale worktree metadata
     - `help` - Display help information
-  - Features:
-    - Validates issue existence via `gh` CLI
-    - Creates branches following `issue-{N}` convention
-    - Bootstraps `CLAUDE.md` into each worktree
-    - Worktrees stored in `trees/` directory (gitignored)
-    - Backward compatible removal of legacy `issue-{N}-{slug}` worktrees
   - Exit codes: 0 (success), 1 (error)
-  - Examples:
-    ```bash
-    # Initialize worktree environment
-    ./scripts/wt-cli.sh init
-
-    # Create worktree for GitHub issue #42
-    ./scripts/wt-cli.sh spawn 42
-
-    # List all worktrees
-    ./scripts/wt-cli.sh list
-
-    # Remove worktree (supports both issue-42 and legacy issue-42-* formats)
-    ./scripts/wt-cli.sh remove 42
-    ```
 
 - `worktree.sh` - Legacy worktree management (use `wt-cli.sh` instead)
 
-### Makefile Utilities
+### SDK CLI Wrappers
 
-#### Agentize Mode Scripts
-- `agentize-init.sh` - Initialize new project with agentize templates
-  - Usage: Called by `lol init` command
+These scripts delegate to `src/cli/lol.sh` for backwards compatibility:
+
+- `lol-cli.sh` - SDK CLI wrapper (sources `src/cli/lol.sh`)
+  - Canonical source: `src/cli/lol.sh`
+  - Provides `lol` and `lol_complete` functions when sourced
+
+- `agentize-init.sh` - Init command wrapper (calls `lol_cmd_init`)
+  - Usage: Called by `lol init` command or directly with environment variables
   - Environment variables: `AGENTIZE_PROJECT_PATH`, `AGENTIZE_PROJECT_NAME`, `AGENTIZE_PROJECT_LANG`
-  - Creates language template structure, copies `.claude/` content, applies substitutions
-  - Executes `bootstrap.sh` if present in project directory
   - Exit codes: 0 (success), 1 (failure)
 
-- `agentize-update.sh` - Update existing project with latest agentize configs
-  - Usage: Called by `lol update` command
+- `agentize-update.sh` - Update command wrapper (calls `lol_cmd_update`)
+  - Usage: Called by `lol update` command or directly with environment variables
   - Environment variables: `AGENTIZE_PROJECT_PATH`
-  - Backs up existing `.claude/` directory, refreshes configurations with file-level synchronization
-  - File-level copy preserves user-added files (e.g., custom skills, commands, agents) while updating template files
-  - Ensures `docs/git-msg-tags.md` exists using language detection
   - Exit codes: 0 (success), 1 (failure)
+
+- `agentize-project.sh` - Project command wrapper (calls `lol_cmd_project`)
+  - Usage: Called by `lol project` command or directly with environment variables
+  - Environment variables: `AGENTIZE_PROJECT_MODE`, `AGENTIZE_PROJECT_ORG`, etc.
+  - Exit codes: 0 (success), 1 (failure)
+
+- `detect-lang.sh` - Language detection wrapper (calls `lol_detect_lang`)
+  - Usage: `./scripts/detect-lang.sh <project_path>`
+  - Exit codes: 0 (detected), 1 (unable to detect)
+
+### Makefile Utilities
 
 #### Parameter Validation
 - `check-parameter.sh` - Mode-based parameter validation for agentize target
@@ -104,25 +98,6 @@ This directory contains utility scripts and git hooks for the project.
   - Example:
     ```bash
     ./scripts/check-parameter.sh "init" "/path/to/project" "my_project" "python"
-    ```
-
-#### Language Detection
-- `detect-lang.sh` - Automatic language detection for projects
-  - Usage: `./scripts/detect-lang.sh <project_path>`
-  - Detects project language based on file structure
-  - Detection rules:
-    - **Python**: Looks for requirements.txt, pyproject.toml, or *.py files
-    - **C**: Looks for CMakeLists.txt without CXX language
-    - **C++**: Looks for CMakeLists.txt with CXX language
-  - Outputs detected language to stdout: "python", "c", or "cxx"
-  - Writes warnings to stderr if unable to detect
-  - Exit codes: 0 (detected), 1 (unable to detect)
-  - Example:
-    ```bash
-    LANG=$(./scripts/detect-lang.sh "/path/to/project")
-    if [ $? -eq 0 ]; then
-        echo "Detected language: $LANG"
-    fi
     ```
 
 ## Usage

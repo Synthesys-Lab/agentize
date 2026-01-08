@@ -6,6 +6,8 @@ This directory contains detailed reference documentation for Agentize command-li
 
 These documents provide comprehensive command-line interface specifications, including all flags, options, usage patterns, and examples for each tool in the Agentize framework.
 
+**Canonical source location:** CLI implementations live in `src/cli/` as source-first libraries. The documentation here describes the user-facing interface; see `src/cli/*.md` for function-level interface documentation.
+
 ## Files
 
 ### install.md

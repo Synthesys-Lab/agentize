@@ -91,6 +91,18 @@ This development workflow uses bare repos for multiple worktrees:
 └── .../              # Other git internal files
 ```
 
+## CLI Implementation
+
+The Agentize CLI commands (`wt`, `lol`) follow a source-first architecture where:
+- Canonical implementations live in `src/cli/` as sourceable libraries
+- `setup.sh` sources these libraries to provide shell functions
+- Wrapper scripts in `scripts/` delegate to the library functions
+
+This pattern provides:
+- Single source of truth for CLI logic
+- Functions available in interactive shells via `setup.sh`
+- Direct script execution for testing and non-interactive use
+
 ## GitHub Usage
 
 It is preferred to associate each repository with a GitHub Projects v2 board for better issue tracking and project management.

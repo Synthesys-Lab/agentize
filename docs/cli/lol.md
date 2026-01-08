@@ -4,6 +4,8 @@ This document provides detailed reference documentation for the `lol` command us
 
 **Quick Reference:** Use `lol --help` for a concise summary of options.
 
+**Implementation:** The `lol` command is implemented in `src/cli/lol.sh` as a source-first library. For function-level interface documentation, see `src/cli/lol.md`.
+
 ## Quick Reference
 
 ### Commands
