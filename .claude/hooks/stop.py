@@ -57,7 +57,8 @@ The ultimate goal of this workflow is to create a comprehensive plan and post it
     - What is blocking you from moving forward
     - What kind of help you need from human collaborators
     - The session ID: {session_id} so that human can `claude -r {session_id}` for a human intervention.
-4. To manually stop further continuations, find {fname} and set `continuation_count` to {max_continuations}.'''.strip()
+4. To manually stop further continuations, find {fname} and set `continuation_count` to {max_continuations}.
+5. When creating issues or PRs, use `--body-file` instead of `--body`, as body content with "--something" will be misinterpreted as flags.'''.strip()
         elif workflow == 'issue-to-impl':
             prompt = f'''
 This is an auto-continuation prompt for handsoff mode, it is currently {continuation_count}/{max_continuations} continuations.
@@ -79,7 +80,8 @@ The ultimate goal of this workflow is to deliver a PR on GitHub that implements 
   - What is blocking you from moving forward
   - What kind of help you need from human collaborators
   - The session ID: {session_id} so that human can `claude -r {session_id}` for a human intervention.
-6. To manually stop further continuations, find {fname} and set the `continuation_count` to {max_continuations}.'''
+6. To manually stop further continuations, find {fname} and set the `continuation_count` to {max_continuations}.
+7. When creating issues or PRs, use `--body-file` instead of `--body`, as body content with "--something" will be misinterpreted as flags.'''
 
         if prompt:
             with open(fname, 'w') as f:
