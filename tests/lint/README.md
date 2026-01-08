@@ -6,14 +6,11 @@ Static validation tests ensuring project structure integrity, linter correctness
 
 ## Contents
 
-### Documentation Linter Tests (`test-external-consensus-doc-*`, `test-doc-*`, `test-*-docs-*`)
+### Documentation Linter Tests (`test-external-consensus-doc-*`)
 
 Tests for documentation requirements and validation:
 
 - `test-external-consensus-doc-planning.sh` - Validates external-consensus skill documentation completeness
-- `test-doc-architect-diff-output.sh` - Validates doc-architect --diff mode documentation
-- `test-issue-to-impl-docs-commit.sh` - Validates issue-to-impl docs commit support
-- `test-stop-hook-docs-hint.sh` - Validates stop.py documentation phase hint
 
 ### Makefile Validation Tests (`test-makefile-*`)
 
