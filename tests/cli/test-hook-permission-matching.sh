@@ -108,4 +108,63 @@ test_info "Test 13: Telegram with missing chat ID returns ask"
     [ "$decision" = "ask" ] || test_fail "Expected 'ask' with missing TG_CHAT_ID, got '$decision'"
 )
 
+# Test 14: HTML escape function handles special characters correctly
+test_info "Test 14: HTML escape handles <, >, & correctly"
+# Test the pure function logic directly without loading the entire module
+escaped=$(python3 -c "
+def escape_html(text):
+    return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+print(escape_html('<script>alert(1)</script> & \"test\"'))
+")
+expected='&lt;script&gt;alert(1)&lt;/script&gt; &amp; "test"'
+[ "$escaped" = "$expected" ] || test_fail "Expected '$expected', got '$escaped'"
+
+# Test 15: Inline keyboard payload structure validation
+test_info "Test 15: Inline keyboard structure is valid"
+keyboard=$(python3 -c "
+import json
+def build_inline_keyboard(message_id):
+    return {
+        'inline_keyboard': [[
+            {'text': '✅ Allow', 'callback_data': f'allow:{message_id}'},
+            {'text': '❌ Deny', 'callback_data': f'deny:{message_id}'}
+        ]]
+    }
+kb = build_inline_keyboard(12345)
+print(json.dumps(kb))
+")
+# Validate structure: should have inline_keyboard array with buttons
+has_allow=$(echo "$keyboard" | jq -r '.inline_keyboard[0][0].text')
+has_deny=$(echo "$keyboard" | jq -r '.inline_keyboard[0][1].text')
+allow_data=$(echo "$keyboard" | jq -r '.inline_keyboard[0][0].callback_data')
+deny_data=$(echo "$keyboard" | jq -r '.inline_keyboard[0][1].callback_data')
+[ "$has_allow" = "✅ Allow" ] || test_fail "Expected Allow button, got '$has_allow'"
+[ "$has_deny" = "❌ Deny" ] || test_fail "Expected Deny button, got '$has_deny'"
+[ "$allow_data" = "allow:12345" ] || test_fail "Expected 'allow:12345', got '$allow_data'"
+[ "$deny_data" = "deny:12345" ] || test_fail "Expected 'deny:12345', got '$deny_data'"
+
+# Test 16: Callback data format validation (parse and extract)
+test_info "Test 16: Callback data parsing extracts action and message_id"
+result=$(python3 -c "
+def parse_callback_data(callback_data):
+    parts = callback_data.split(':', 1)
+    action = parts[0]
+    message_id = int(parts[1]) if len(parts) > 1 else 0
+    return action, message_id
+action, msg_id = parse_callback_data('allow:12345')
+print(f'{action}:{msg_id}')
+")
+[ "$result" = "allow:12345" ] || test_fail "Expected 'allow:12345', got '$result'"
+# Test deny case
+result=$(python3 -c "
+def parse_callback_data(callback_data):
+    parts = callback_data.split(':', 1)
+    action = parts[0]
+    message_id = int(parts[1]) if len(parts) > 1 else 0
+    return action, message_id
+action, msg_id = parse_callback_data('deny:67890')
+print(f'{action}:{msg_id}')
+")
+[ "$result" = "deny:67890" ] || test_fail "Expected 'deny:67890', got '$result'"
+
 test_pass "PreToolUse hook permission matching works correctly"

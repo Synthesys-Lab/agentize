@@ -167,16 +167,33 @@ Return decision
 
 ### Message Format
 
-Approval request sent to Telegram:
-```
+Approval requests are sent to Telegram with HTML formatting and inline keyboard buttons:
+
+```html
 🔧 Tool Approval Request
 
-Tool: Bash
-Target: git push origin main
+Tool: <code>Bash</code>
+Target: <code>git push origin main</code>
 Session: abc123
 
-Reply /allow or /deny
+[✅ Allow] [❌ Deny]
 ```
+
+**Features:**
+- HTML `<code>` tags provide syntax highlighting for tool names and targets
+- Inline keyboard buttons (`[✅ Allow]` and `[❌ Deny]`) for one-tap approval
+- Text commands (`/allow` and `/deny`) still work as fallback
+- Button presses trigger immediate acknowledgment (no spinner delay)
+- Original message is edited to show decision result
+
+**Callback data format:** `allow:{message_id}` or `deny:{message_id}`
+
+### Acknowledgment Flow
+
+When a user taps a button:
+1. `answerCallbackQuery` is called to dismiss the loading spinner
+2. Original message is edited via `editMessageText` to show the decision result
+3. Decision is returned to the hook
 
 ### Error Handling
 
@@ -184,3 +201,5 @@ Reply /allow or /deny
 - Telegram API error: Logs error, returns `ask`
 - Timeout (no response): Returns `ask`
 - Invalid response (not /allow or /deny): Continues polling until timeout
+- `answerCallbackQuery` failure: Logged but does not block decision
+- `editMessageText` failure: Logged but does not block decision

@@ -174,6 +174,103 @@ def _tg_api_request(token: str, method: str, payload: Optional[Dict[str, Any]] =
         return None
 
 
+def _escape_html(text: str) -> str:
+    """Escape special HTML characters for Telegram HTML parse mode.
+
+    Telegram HTML mode requires escaping: < > &
+    """
+    return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+
+def _build_inline_keyboard(message_id: int) -> Dict[str, Any]:
+    """Build inline keyboard markup with Allow/Deny buttons.
+
+    Args:
+        message_id: The message ID to include in callback_data for correlation
+
+    Returns:
+        InlineKeyboardMarkup dict for Telegram API
+    """
+    return {
+        'inline_keyboard': [[
+            {'text': '✅ Allow', 'callback_data': f'allow:{message_id}'},
+            {'text': '❌ Deny', 'callback_data': f'deny:{message_id}'}
+        ]]
+    }
+
+
+def _parse_callback_data(callback_data: str) -> Tuple[str, int]:
+    """Parse callback_data from inline keyboard button press.
+
+    Args:
+        callback_data: String in format "action:message_id" (e.g., "allow:12345")
+
+    Returns:
+        Tuple of (action, message_id). Returns (action, 0) on parse errors.
+    """
+    parts = callback_data.split(':', 1)
+    action = parts[0]
+    try:
+        message_id = int(parts[1]) if len(parts) > 1 else 0
+    except ValueError:
+        message_id = 0
+    return action, message_id
+
+
+def _handle_callback_query(token: str, callback_query: Dict[str, Any], expected_message_id: int,
+                           session_id: str = 'unknown') -> Optional[str]:
+    """Process a callback query from inline keyboard button press.
+
+    Args:
+        token: Bot API token
+        callback_query: The callback_query object from Telegram update
+        expected_message_id: The message_id we're waiting for (for correlation)
+        session_id: Session ID for logging
+
+    Returns:
+        'allow', 'deny', or None if this callback doesn't match our request
+    """
+    callback_data = callback_query.get('data', '')
+    action, msg_id = _parse_callback_data(callback_data)
+
+    # Verify message_id matches (ignore callbacks from other requests)
+    if msg_id != expected_message_id:
+        return None
+
+    callback_id = callback_query.get('id', '')
+
+    # Acknowledge the callback to stop the loading spinner
+    _tg_api_request(token, 'answerCallbackQuery', {
+        'callback_query_id': callback_id,
+        'text': f"{'✅ Allowed' if action == 'allow' else '❌ Denied'}"
+    }, session_id)
+
+    return action if action in ['allow', 'deny'] else None
+
+
+def _edit_message_result(token: str, chat_id: str, message_id: int, tool: str,
+                         decision: str, session_id: str = 'unknown') -> None:
+    """Edit the original approval message to show the decision result.
+
+    Args:
+        token: Bot API token
+        chat_id: Chat ID where the message was sent
+        message_id: ID of the message to edit
+        tool: Tool name for display
+        decision: 'allow' or 'deny'
+        session_id: Session ID for logging
+    """
+    emoji = '✅' if decision == 'allow' else '❌'
+    result_text = f"{emoji} {'Allowed' if decision == 'allow' else 'Denied'}: {_escape_html(tool)}"
+
+    _tg_api_request(token, 'editMessageText', {
+        'chat_id': chat_id,
+        'message_id': message_id,
+        'text': result_text,
+        'parse_mode': 'HTML'
+    }, session_id)
+
+
 def _telegram_approval_decision(tool: str, target: str, session_id: str, raw_target: str) -> Optional[str]:
     """Request approval via Telegram for an 'ask' decision.
 
@@ -208,28 +305,39 @@ def _telegram_approval_decision(tool: str, target: str, session_id: str, raw_tar
     else:
         update_offset = 0
 
-    # Send approval request message
+    # Send approval request message with HTML formatting and inline keyboard
+    truncated_target = raw_target[:TARGET_DISPLAY_MAX_LEN]
     message_text = (
         f"🔧 Tool Approval Request\n\n"
-        f"Tool: {tool}\n"
-        f"Target: {raw_target[:TARGET_DISPLAY_MAX_LEN]}\n"
+        f"Tool: <code>{_escape_html(tool)}</code>\n"
+        f"Target: <code>{_escape_html(truncated_target)}</code>\n"
         f"Session: {session_id[:SESSION_ID_DISPLAY_LEN]}\n\n"
-        f"Reply /allow or /deny"
+        f"<i>Or reply /allow or /deny</i>"
     )
 
     send_resp = _tg_api_request(token, 'sendMessage', {
         'chat_id': chat_id,
-        'text': message_text
+        'text': message_text,
+        'parse_mode': 'HTML',
+        'reply_markup': _build_inline_keyboard(0)  # Placeholder, will update with actual message_id
     }, session_id)
 
     if not send_resp or not send_resp.get('ok'):
         log_tool_decision(session_id, '', tool, raw_target, 'TG_SEND_FAILED')
         return None
 
-    message_id = send_resp.get('result', {}).get('message_id')
+    message_id = send_resp.get('result', {}).get('message_id', 0)
     log_tool_decision(session_id, '', tool, raw_target, f'TG_SENT message_id={message_id}')
 
-    # Poll for response
+    # Update the message with correct callback_data containing the actual message_id
+    if message_id:
+        _tg_api_request(token, 'editMessageReplyMarkup', {
+            'chat_id': chat_id,
+            'message_id': message_id,
+            'reply_markup': _build_inline_keyboard(message_id)
+        }, session_id)
+
+    # Poll for response (both callback_query and text commands)
     start_time = time.monotonic()
     while (time.monotonic() - start_time) < timeout:
         updates_resp = _tg_api_request(token, 'getUpdates', {
@@ -244,6 +352,25 @@ def _telegram_approval_decision(tool: str, target: str, session_id: str, raw_tar
         for update in updates_resp.get('result', []):
             update_offset = update.get('update_id', 0) + 1
 
+            # Check for callback_query (inline button press)
+            callback_query = update.get('callback_query')
+            if callback_query:
+                from_user = callback_query.get('from', {})
+                user_id = from_user.get('id')
+
+                # Check if response is from allowed user (if configured)
+                if allowed_user_ids and user_id not in allowed_user_ids:
+                    continue
+
+                decision = _handle_callback_query(token, callback_query, message_id, session_id)
+                if decision:
+                    log_tool_decision(session_id, '', tool, raw_target,
+                                      f'TG_{decision.upper()} user_id={user_id} via=button')
+                    # Edit the original message to show result
+                    _edit_message_result(token, chat_id, message_id, tool, decision, session_id)
+                    return decision
+
+            # Check for text message (backward compatibility with /allow /deny commands)
             msg = update.get('message', {})
             text = msg.get('text', '').strip().lower()
             from_user = msg.get('from', {})
@@ -255,29 +382,38 @@ def _telegram_approval_decision(tool: str, target: str, session_id: str, raw_tar
 
             # Check for /allow or /deny commands
             if text == '/allow' or text.startswith('/allow '):
-                log_tool_decision(session_id, '', tool, raw_target, f'TG_ALLOW user_id={user_id}')
-                # Send confirmation
+                log_tool_decision(session_id, '', tool, raw_target,
+                                  f'TG_ALLOW user_id={user_id} via=text')
+                # Send confirmation reply
                 _tg_api_request(token, 'sendMessage', {
                     'chat_id': chat_id,
-                    'text': f"✅ Allowed: {tool}",
+                    'text': f"✅ Allowed: <code>{_escape_html(tool)}</code>",
+                    'parse_mode': 'HTML',
                     'reply_to_message_id': msg.get('message_id')
                 }, session_id)
+                # Edit the original message to show result
+                _edit_message_result(token, chat_id, message_id, tool, 'allow', session_id)
                 return 'allow'
             elif text == '/deny' or text.startswith('/deny '):
-                log_tool_decision(session_id, '', tool, raw_target, f'TG_DENY user_id={user_id}')
-                # Send confirmation
+                log_tool_decision(session_id, '', tool, raw_target,
+                                  f'TG_DENY user_id={user_id} via=text')
+                # Send confirmation reply
                 _tg_api_request(token, 'sendMessage', {
                     'chat_id': chat_id,
-                    'text': f"❌ Denied: {tool}",
+                    'text': f"❌ Denied: <code>{_escape_html(tool)}</code>",
+                    'parse_mode': 'HTML',
                     'reply_to_message_id': msg.get('message_id')
                 }, session_id)
+                # Edit the original message to show result
+                _edit_message_result(token, chat_id, message_id, tool, 'deny', session_id)
                 return 'deny'
 
     # Timeout reached
     log_tool_decision(session_id, '', tool, raw_target, f'TG_TIMEOUT after {timeout}s')
     _tg_api_request(token, 'sendMessage', {
         'chat_id': chat_id,
-        'text': f"⏰ Timeout: No response for {tool}, falling back to local prompt",
+        'text': f"⏰ Timeout: No response for <code>{_escape_html(tool)}</code>, falling back to local prompt",
+        'parse_mode': 'HTML',
         'reply_to_message_id': message_id
     }, session_id)
     return None
