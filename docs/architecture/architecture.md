@@ -5,7 +5,7 @@ best fit in agentize's ecosystem. Although not strictly required, and
 are some common software engineering practices, it is highly recommended
 to follow, in local code structure, git, and GitHub usage.
 
-All the `sdk` created by `lol init` command shall follow this following architecture.
+All the `sdk` created by `lol apply --init` or `lol init` command shall follow this following architecture.
 
 
 ## Local Code Base

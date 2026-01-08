@@ -9,7 +9,7 @@ These documents explain how Agentize's core systems work, their design decisions
 ## Files
 
 ### sdk.md
-SDK structure and creation process. Documents the file structure created by `lol init`, the `.claude/` directory organization, initialization and update modes, and template system behavior.
+SDK structure and creation process. Documents the unified `lol apply` command, the file structure created by `lol init`, the `.claude/` directory organization, initialization and update modes, and template system behavior.
 
 ### metadata.md
 Project metadata file (`.agentize.yaml`) specification. Describes the configuration schema, field definitions, usage by `wt` and `lol` commands, and how metadata drives project behavior.

@@ -11,6 +11,8 @@ This document provides detailed reference documentation for the `lol` command us
 ### Commands
 
 ```bash
+lol apply --init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]
+lol apply --update [--path <path>]
 lol init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]
 lol update [--path <path>]
 lol upgrade
@@ -30,6 +32,32 @@ lol project --automation [--write <path>]
 - `--version` - Display version information
 
 ## Commands
+
+### `lol apply`
+
+Unified entrypoint that wraps both `lol init` and `lol update` under explicit mode flags. This reduces cognitive load by providing a single command while preserving distinct init/update behaviors.
+
+**Required flags (exactly one):**
+- `--init` - Use init mode (requires `--name` and `--lang`)
+- `--update` - Use update mode (`--path` optional)
+
+**Behavior:**
+- `lol apply --init ...` behaves identically to `lol init ...`
+- `lol apply --update ...` behaves identically to `lol update ...`
+- Specifying neither or both `--init` and `--update` will fail with a usage hint
+
+**Examples:**
+
+Initialize a new SDK:
+```bash
+lol apply --init --name my-project --lang python --path /path/to/project
+```
+
+Update an existing SDK:
+```bash
+lol apply --update
+lol apply --update --path /path/to/project
+```
 
 ### `lol init`
 
@@ -271,7 +299,8 @@ lol project --automation --write .github/workflows/add-to-project.yml
 The `lol` command provides tab-completion support for zsh users. After running `make setup` and sourcing `setup.sh`, completions are automatically enabled.
 
 **Features:**
-- Subcommand completion (`lol <TAB>` shows: init, update, upgrade, version, project)
+- Subcommand completion (`lol <TAB>` shows: apply, init, update, upgrade, version, project)
+- Flag completion for `apply` (`--init`, `--update`, plus all init/update flags)
 - Flag completion for `init` (`--name`, `--lang`, `--path`, `--source`, `--metadata-only`)
 - Flag completion for `update` (`--path`)
 - Flag completion for `project` (`--create`, `--associate`, `--automation`)
@@ -294,7 +323,8 @@ lol --complete <topic>
 ```
 
 **Topics:**
-- `commands` - List available subcommands (init, update, upgrade, version, project)
+- `commands` - List available subcommands (apply, init, update, upgrade, version, project)
+- `apply-flags` - List flags for `lol apply` (--init, --update)
 - `init-flags` - List flags for `lol init` (--name, --lang, --path, --source, --metadata-only)
 - `update-flags` - List flags for `lol update` (--path)
 - `project-modes` - List project mode flags (--create, --associate, --automation)
@@ -307,11 +337,15 @@ lol --complete <topic>
 **Example:**
 ```bash
 $ lol --complete commands
+apply
 init
 update
 upgrade
-version
 project
+
+$ lol --complete apply-flags
+--init
+--update
 
 $ lol --complete init-flags
 --name

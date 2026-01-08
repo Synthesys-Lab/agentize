@@ -43,6 +43,20 @@ This is a crucial architectural difference that allows:
 1. **Agentize development**: Changes to `.claude/` define the framework
 2. **SDK independence**: Each created SDK has its own configuration that can be customized
 
+## Unified Apply Command
+
+The `lol apply` command provides a single entrypoint for both initialization and update operations:
+
+```bash
+# Initialize (equivalent to lol init)
+lol apply --init --name my_project --lang python
+
+# Update (equivalent to lol update)
+lol apply --update --path /path/to/project
+```
+
+This unified interface reduces cognitive load while preserving the distinct behaviors of init and update modes. Exactly one of `--init` or `--update` must be specified.
+
 ## Initialization Mode (`init`)
 
 ### Behavior

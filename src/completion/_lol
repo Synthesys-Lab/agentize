@@ -17,6 +17,7 @@ _lol() {
     # Fallback to static command list if dynamic fetch failed
     if (( ${#commands} == 0 )); then
         commands=(
+            'apply:Unified init/update entrypoint'
             'init:Initialize AI-powered SDK'
             'update:Update SDK configuration'
             'upgrade:Upgrade agentize installation'
@@ -28,6 +29,7 @@ _lol() {
         local -a commands_with_desc
         for cmd in $commands; do
             case $cmd in
+                apply) commands_with_desc+=('apply:Unified init/update entrypoint') ;;
                 init) commands_with_desc+=('init:Initialize AI-powered SDK') ;;
                 update) commands_with_desc+=('update:Update SDK configuration') ;;
                 upgrade) commands_with_desc+=('upgrade:Upgrade agentize installation') ;;
@@ -48,6 +50,9 @@ _lol() {
             ;;
         args)
             case $line[1] in
+                apply)
+                    _lol_apply
+                    ;;
                 init)
                     _lol_init
                     ;;
@@ -66,6 +71,38 @@ _lol() {
             esac
             ;;
     esac
+}
+
+# Completion for 'lol apply' subcommand
+_lol_apply() {
+    local -a apply_flags init_flags lang_values
+
+    # Try dynamic fetch first
+    if (( $+commands[lol] )); then
+        apply_flags=( ${(f)"$(lol --complete apply-flags 2>/dev/null)"} )
+        init_flags=( ${(f)"$(lol --complete init-flags 2>/dev/null)"} )
+        lang_values=( ${(f)"$(lol --complete lang-values 2>/dev/null)"} )
+    fi
+
+    # Fallback to static flags
+    if (( ${#apply_flags} == 0 )); then
+        apply_flags=( '--init' '--update' )
+    fi
+    if (( ${#init_flags} == 0 )); then
+        init_flags=( '--name' '--lang' '--path' '--source' '--metadata-only' )
+    fi
+    if (( ${#lang_values} == 0 )); then
+        lang_values=( 'c' 'cxx' 'python' )
+    fi
+
+    _arguments \
+        '--init[Use init mode (requires --name and --lang)]' \
+        '--update[Use update mode]' \
+        '--name[Project name]:name:' \
+        '--lang[Programming language]:language:('$lang_values')' \
+        '--path[Project path]:path:_files -/' \
+        '--source[Source code path]:source path:_files -/' \
+        '--metadata-only[Create only .agentize.yaml]'
 }
 
 # Completion for 'lol init' subcommand

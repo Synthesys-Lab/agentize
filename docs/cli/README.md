@@ -14,7 +14,7 @@ These documents provide comprehensive command-line interface specifications, inc
 The `install` script for one-command Agentize installation. Documents installation flow (clone, worktree init, setup), command-line options (--dir, --repo, --help), post-install shell RC integration, and troubleshooting.
 
 ### lol.md
-The `lol` command interface for creating AI-powered SDKs and managing GitHub Projects v2. Documents `lol init` (SDK initialization), `lol update` (SDK updates), `lol upgrade` (agentize installation upgrade), `lol version` (version information), `lol project` (GitHub Projects integration), all command flags (--name, --lang, --path, --source, --metadata-only, --create, --associate, --automation), template system integration, and zsh completion support.
+The `lol` command interface for creating AI-powered SDKs and managing GitHub Projects v2. Documents `lol apply` (unified init/update entrypoint), `lol init` (SDK initialization), `lol update` (SDK updates), `lol upgrade` (agentize installation upgrade), `lol version` (version information), `lol project` (GitHub Projects integration), all command flags (--name, --lang, --path, --source, --metadata-only, --create, --associate, --automation, --init, --update), template system integration, and zsh completion support.
 
 ### wt.md
 The `wt` command interface for git worktree management. Documents `wt init` (worktree initialization), `wt spawn` (issue-based worktree creation), `wt main` (switch to main worktree), `.agentize.yaml` metadata integration, and zsh completion support.

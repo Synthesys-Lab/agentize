@@ -11,6 +11,10 @@ This tutorial shows you how to set up the Agentize framework in your project.
 For a fresh project starting with the Agentize framework:
 
 ```bash
+# Preferred: unified apply command
+lol apply --init --name my_project --lang c --path /path/to/new/project
+
+# Alternative: direct init command
 lol init --name my_project --lang c --path /path/to/new/project
 ```
 
@@ -25,10 +29,12 @@ This creates the initial SDK structure with:
 To add Agentize to your existing codebase or update the framework rules:
 
 ```bash
-# From project root or any subdirectory
-lol update
+# Preferred: unified apply command
+lol apply --update
+lol apply --update --path /path/to/existing/project
 
-# Or specify explicit path
+# Alternative: direct update command
+lol update
 lol update --path /path/to/existing/project
 ```
 

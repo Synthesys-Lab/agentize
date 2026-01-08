@@ -126,20 +126,26 @@ Controls automatic installation of the pre-commit hook during SDK and worktree i
 
 The `.agentize.yaml` file is automatically created by:
 
-**`lol init`:**
+**`lol apply --init` or `lol init`:**
 ```bash
+lol apply --init --name my-project --lang python
+# or
 lol init --name my-project --lang python
 ```
 Creates `.agentize.yaml` with provided name, language, and detected git branch.
 
-**`lol init --metadata-only`:**
+**`lol apply --init --metadata-only` or `lol init --metadata-only`:**
 ```bash
+lol apply --init --name my-project --lang python --metadata-only
+# or
 lol init --name my-project --lang python --metadata-only
 ```
 Creates only `.agentize.yaml` without SDK templates or `.claude/` configuration. This is useful for adding metadata to existing projects.
 
-**`lol update`:**
+**`lol apply --update` or `lol update`:**
 ```bash
+lol apply --update
+# or
 lol update
 ```
 Creates `.agentize.yaml` if missing, using:

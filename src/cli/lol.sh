@@ -56,10 +56,15 @@ lol_complete() {
 
     case "$topic" in
         commands)
+            echo "apply"
             echo "init"
             echo "update"
             echo "upgrade"
             echo "project"
+            ;;
+        apply-flags)
+            echo "--init"
+            echo "--update"
             ;;
         init-flags)
             echo "--name"
@@ -1099,6 +1104,9 @@ lol() {
     [ $# -gt 0 ] && shift
 
     case "$subcommand" in
+        apply)
+            _lol_parse_apply "$@"
+            ;;
         init)
             _lol_parse_init "$@"
             ;;
@@ -1118,6 +1126,8 @@ lol() {
             echo "lol: AI-powered SDK CLI"
             echo ""
             echo "Usage:"
+            echo "  lol apply --init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]"
+            echo "  lol apply --update [--path <path>]"
             echo "  lol init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]"
             echo "  lol update [--path <path>]"
             echo "  lol upgrade"
@@ -1128,6 +1138,8 @@ lol() {
             echo ""
             echo "Flags:"
             echo "  --version           Display version information"
+            echo "  --init              Use init mode (apply only, requires --name and --lang)"
+            echo "  --update            Use update mode (apply only)"
             echo "  --name <name>       Project name (required for init)"
             echo "  --lang <lang>       Programming language: c, cxx, python (required for init)"
             echo "  --path <path>       Project path (optional, defaults to current directory)"
@@ -1141,6 +1153,8 @@ lol() {
             echo "  --title <title>     Project title (project --create)"
             echo ""
             echo "Examples:"
+            echo "  lol apply --init --name my-project --lang python --path /path/to/project"
+            echo "  lol apply --update --path /path/to/project"
             echo "  lol init --name my-project --lang python --path /path/to/project"
             echo "  lol update                    # From project root or subdirectory"
             echo "  lol update --path /path/to/project"
@@ -1157,6 +1171,62 @@ lol() {
 # ============================================================================
 # SECTION 5: ARGUMENT PARSERS
 # ============================================================================
+
+# Parse apply command arguments and delegate to init or update
+_lol_parse_apply() {
+    local mode=""
+    local remaining_args=()
+
+    # First pass: detect mode and collect remaining arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --init)
+                if [ -n "$mode" ]; then
+                    echo "Error: Cannot use both --init and --update"
+                    echo "Usage: lol apply --init|--update [flags...]"
+                    return 1
+                fi
+                mode="init"
+                shift
+                ;;
+            --update)
+                if [ -n "$mode" ]; then
+                    echo "Error: Cannot use both --init and --update"
+                    echo "Usage: lol apply --init|--update [flags...]"
+                    return 1
+                fi
+                mode="update"
+                shift
+                ;;
+            *)
+                # Collect remaining arguments for the delegated command
+                remaining_args+=("$1")
+                shift
+                ;;
+        esac
+    done
+
+    # Validate mode
+    if [ -z "$mode" ]; then
+        echo "Error: Must specify --init or --update"
+        echo "Usage: lol apply --init|--update [flags...]"
+        echo ""
+        echo "Examples:"
+        echo "  lol apply --init --name my-project --lang python"
+        echo "  lol apply --update --path /path/to/project"
+        return 1
+    fi
+
+    # Delegate to the appropriate command
+    case "$mode" in
+        init)
+            _lol_parse_init "${remaining_args[@]}"
+            ;;
+        update)
+            _lol_parse_update "${remaining_args[@]}"
+            ;;
+    esac
+}
 
 # Parse init command arguments and call lol_cmd_init
 _lol_parse_init() {

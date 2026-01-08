@@ -15,6 +15,7 @@ output=$(lol --complete commands 2>/dev/null)
 
 # Verify documented commands are present
 # Check each command individually (shell-neutral approach)
+echo "$output" | grep -q "^apply$" || test_fail "Missing command: apply"
 echo "$output" | grep -q "^init$" || test_fail "Missing command: init"
 echo "$output" | grep -q "^update$" || test_fail "Missing command: update"
 echo "$output" | grep -q "^upgrade$" || test_fail "Missing command: upgrade"

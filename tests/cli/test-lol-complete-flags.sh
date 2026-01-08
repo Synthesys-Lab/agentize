@@ -10,6 +10,12 @@ test_info "lol --complete flag topics output documented flags"
 export AGENTIZE_HOME="$PROJECT_ROOT"
 source "$LOL_CLI"
 
+# Test apply-flags
+apply_output=$(lol --complete apply-flags 2>/dev/null)
+
+echo "$apply_output" | grep -q "^--init$" || test_fail "apply-flags missing: --init"
+echo "$apply_output" | grep -q "^--update$" || test_fail "apply-flags missing: --update"
+
 # Test init-flags
 init_output=$(lol --complete init-flags 2>/dev/null)
 
