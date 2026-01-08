@@ -93,6 +93,23 @@ This ensures rules like `r'^git status'` match both:
 - `git status`
 - `ENV=foo git status`
 
+## Shell Prefix Stripping
+
+Commands with leading shell option prefixes are normalized before matching:
+
+**Input:** `set -x && git status`
+**Matched against:** `git status`
+
+**Supported prefixes:**
+- `set -x && ` (debug tracing)
+- `set -e && ` (exit on error)
+- `set -o pipefail && ` (pipeline error handling)
+
+Multiple prefixes are also handled:
+- `set -x && set -e && git status` → `git status`
+
+**Regex:** `r'^(set\s+-[exo]\s+[a-z]*\s*&&\s*)+'`
+
 ## Fail-Safe Behavior
 
 Errors during permission checking default to `ask`:

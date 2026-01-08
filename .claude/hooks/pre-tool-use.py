@@ -15,15 +15,15 @@ from logger import log_tool_decision
 PERMISSION_RULES = {
     'allow': [
         # Skills
-        ('Skill', r'^open-pr$'),
-        ('Skill', r'^open-issue$'),
-        ('Skill', r'^fork-dev-branch$'),
-        ('Skill', r'^commit-msg$'),
-        ('Skill', r'^review-standard$'),
-        ('Skill', r'^external-consensus$'),
-        ('Skill', r'^milestone$'),
-        ('Skill', r'^code-review$'),
-        ('Skill', r'^pull-request$'),
+        ('Skill', r'^open-pr'),
+        ('Skill', r'^open-issue'),
+        ('Skill', r'^fork-dev-branch'),
+        ('Skill', r'^commit-msg'),
+        ('Skill', r'^review-standard'),
+        ('Skill', r'^external-consensus'),
+        ('Skill', r'^milestone'),
+        ('Skill', r'^code-review'),
+        ('Skill', r'^pull-request'),
 
         # WebSearch and WebFetch
         ('WebSearch', r'.*'),
@@ -121,6 +121,16 @@ def strip_env_vars(command):
     env_pattern = re.compile(r'^(\w+=\S+\s+)+')
     return env_pattern.sub('', command)
 
+def strip_shell_prefixes(command):
+    """Strip leading shell option prefixes from bash commands.
+
+    Common prefixes like 'set -x && ' or 'set -e && ' are debugging/safety
+    options that don't change command semantics for permission purposes.
+    """
+    # Match patterns like: set -x && , set -e && , set -o pipefail &&
+    prefix_pattern = re.compile(r'^(set\s+-[exo]\s+[a-z]*\s*&&\s*)+', re.IGNORECASE)
+    return prefix_pattern.sub('', command)
+
 def ask_haiku_first(tool, target):
     global hook_input
 
@@ -184,18 +194,25 @@ Target: {target}
         log_tool_decision(hook_input['session_id'], transcript, tool, target, f'ERROR subprocess: {str(e)}')
         return 'ask'
 
-def check_permission(tool, target):
+def normalize_bash_command(command):
+    """Normalize bash command by stripping env vars and shell prefixes."""
+    command = strip_env_vars(command)
+    command = strip_shell_prefixes(command)
+    return command
+
+def check_permission(tool, target, raw_target):
     """
     Check permission for tool usage against PERMISSION_RULES.
     Returns: (decision, source) where decision is 'allow'/'deny'/'ask' and source is 'rules' or 'haiku'
     Priority: deny → ask → allow (first match wins)
     Default: ask Haiku if no match or error
+
+    Args:
+        tool: Tool name
+        target: Normalized target (for rule matching)
+        raw_target: Original target (for logging/Haiku context)
     """
     try:
-        # Special handling for Bash: strip environment variables
-        if tool == 'Bash':
-            target = strip_env_vars(target)
-
         # Check rules in priority order: deny → ask → allow
         for decision in ['deny', 'ask', 'allow']:
             for rule_tool, pattern in PERMISSION_RULES.get(decision, []):
@@ -207,13 +224,13 @@ def check_permission(tool, target):
                         # Malformed pattern, fail safe to 'ask'
                         continue
 
-        # No match, ask Haiku
-        haiku_decision = ask_haiku_first(tool, target)
+        # No match, ask Haiku (use raw_target for context)
+        haiku_decision = ask_haiku_first(tool, raw_target)
         return (haiku_decision, 'haiku')
     except Exception as e:
         # Any error, ask Haiku as fallback
         try:
-            haiku_decision = ask_haiku_first(tool, target)
+            haiku_decision = ask_haiku_first(tool, raw_target)
             return (haiku_decision, 'haiku')
         except Exception:
             # If even Haiku fails, default to 'ask'
@@ -270,8 +287,13 @@ else:
     # For other tools, try to get a representative field
     target = str(tool_input)[:100]
 
+# Keep raw_target for logging, normalize target for permission checking
+raw_target = target
+if tool == 'Bash':
+    target = normalize_bash_command(target)
+
 # Check permission
-permission_decision, decision_source = check_permission(tool, target)
+permission_decision, decision_source = check_permission(tool, target, raw_target)
 
 if os.getenv('HANDSOFF_MODE', '0').lower() in ['1', 'true', 'on', 'enable'] and \
    os.getenv('HANDSOFF_DEBUG', '0').lower() in ['1', 'true', 'on', 'enable']:
@@ -294,15 +316,16 @@ if os.getenv('HANDSOFF_MODE', '0').lower() in ['1', 'true', 'on', 'enable'] and 
             pass
 
     # Log tool usage - separate files for rules vs haiku decisions
+    # Use raw_target for logging to preserve original command
     time = datetime.datetime.now().isoformat()
     if decision_source == 'rules' and permission_decision == 'allow':
         # Automatically approved tools go to tool-used.txt
         with open('.tmp/hooked-sessions/tool-used.txt', 'a') as f:
-            f.write(f'[{time}] [{session}] [{workflow}] {tool} | {target}\n')
+            f.write(f'[{time}] [{session}] [{workflow}] {tool} | {raw_target}\n')
     elif decision_source == 'haiku':
         # Haiku-determined tools go to their own file
         with open('.tmp/hooked-sessions/tool-haiku-determined.txt', 'a') as f:
-            f.write(f'[{time}] [{session}] [{workflow}] [{permission_decision}] {tool} | {target}\n')
+            f.write(f'[{time}] [{session}] [{workflow}] [{permission_decision}] {tool} | {raw_target}\n')
 
 output = {
     "hookSpecificOutput": {
