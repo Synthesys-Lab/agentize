@@ -12,24 +12,23 @@ OUTPUT_FILE="$TMP_DIR/output.txt"
 set +e
 (
     source "$PROJECT_ROOT/scripts/lol-cli.sh"
-    export AGENTIZE_PROJECT_NAME="test_proj"
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR"
-    lol_cmd_init
+    # Call without lang parameter - should fail
+    lol_cmd_init "$TMP_DIR" "test_proj"
 ) > "$OUTPUT_FILE" 2>&1
 exit_code=$?
 set -e
 
 # Verify it failed
 if [ $exit_code -ne 0 ]; then
-    # Check error message mentions LANG requirement
-    if grep -q "AGENTIZE_PROJECT_LANG" "$OUTPUT_FILE"; then
+    # Check error message mentions lang requirement
+    if grep -q "project_lang is required" "$OUTPUT_FILE"; then
         cleanup_dir "$TMP_DIR"
-        test_pass "Init mode correctly requires AGENTIZE_PROJECT_LANG parameter"
+        test_pass "Init mode correctly requires project_lang parameter"
     else
         cleanup_dir "$TMP_DIR"
-        test_fail "Error message doesn't mention AGENTIZE_PROJECT_LANG requirement"
+        test_fail "Error message doesn't mention project_lang requirement"
     fi
 else
     cleanup_dir "$TMP_DIR"
-    test_fail "Init mode should fail without AGENTIZE_PROJECT_LANG, but succeeded"
+    test_fail "Init mode should fail without project_lang, but succeeded"
 fi

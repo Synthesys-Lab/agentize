@@ -13,11 +13,7 @@ OUTPUT_FILE="$OUTPUT_DIR/output.txt"
 set +e
 (
     source "$PROJECT_ROOT/scripts/lol-cli.sh"
-    export AGENTIZE_HOME="$PROJECT_ROOT"
-    export AGENTIZE_PROJECT_NAME="test_proj"
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR"
-    export AGENTIZE_PROJECT_LANG="python"
-    lol_cmd_init
+    lol_cmd_init "$TMP_DIR" "test_proj" "python"
 ) > "$OUTPUT_FILE" 2>&1
 setup_exit=$?
 set -e
@@ -35,9 +31,7 @@ rm -f "$TMP_DIR/docs/git-msg-tags.md"
 set +e
 (
     source "$PROJECT_ROOT/scripts/lol-cli.sh"
-    export AGENTIZE_HOME="$PROJECT_ROOT"
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR"
-    lol_cmd_update
+    lol_cmd_update "$TMP_DIR"
 ) > "$OUTPUT_FILE" 2>&1
 exit_code=$?
 set -e

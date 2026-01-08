@@ -12,10 +12,7 @@ OUTPUT_FILE="$TMP_DIR/output.txt"
 set +e
 (
     source "$PROJECT_ROOT/scripts/lol-cli.sh"
-    export AGENTIZE_PROJECT_NAME="test_proj"
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR"
-    export AGENTIZE_PROJECT_LANG="rust"
-    lol_cmd_init
+    lol_cmd_init "$TMP_DIR" "test_proj" "rust"
 ) > "$OUTPUT_FILE" 2>&1
 exit_code=$?
 set -e

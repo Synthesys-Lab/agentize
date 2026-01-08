@@ -100,12 +100,17 @@ Subshell command functions called by main dispatcher. Each runs in a subshell to
 
 Initialize new SDK project with templates.
 
-**Environment variables (set by lol()):**
-- `AGENTIZE_PROJECT_NAME`: Project name (required)
-- `AGENTIZE_PROJECT_LANG`: Project language (required)
-- `AGENTIZE_PROJECT_PATH`: Target path (defaults to current directory)
-- `AGENTIZE_SOURCE_PATH`: Source code path (optional)
-- `AGENTIZE_METADATA_ONLY`: If "1", create only metadata file
+**Signature:**
+```bash
+lol_cmd_init <project_path> <project_name> <project_lang> [source_path] [metadata_only]
+```
+
+**Parameters:**
+- `project_path`: Target project directory path (required)
+- `project_name`: Project name for template substitutions (required)
+- `project_lang`: Project language - python, c, cxx (required)
+- `source_path`: Source code path relative to project root (optional, defaults to "src")
+- `metadata_only`: If "1", create only metadata file (optional, defaults to "0")
 
 **Operations:**
 1. Validate required parameters
@@ -124,8 +129,13 @@ Initialize new SDK project with templates.
 
 Update existing project with latest agentize configuration.
 
-**Environment variables (set by lol()):**
-- `AGENTIZE_PROJECT_PATH`: Target path (required)
+**Signature:**
+```bash
+lol_cmd_update <project_path>
+```
+
+**Parameters:**
+- `project_path`: Target project directory path (required)
 
 **Operations:**
 1. Validate project path exists
@@ -163,12 +173,20 @@ Upgrade agentize installation via git pull.
 
 GitHub Projects v2 integration.
 
-**Environment variables (set by lol()):**
-- `AGENTIZE_PROJECT_MODE`: Mode (create, associate, automation)
-- `AGENTIZE_PROJECT_ORG`: Organization (for create)
-- `AGENTIZE_PROJECT_TITLE`: Project title (for create)
-- `AGENTIZE_PROJECT_ASSOCIATE`: org/id argument (for associate)
-- `AGENTIZE_PROJECT_WRITE_PATH`: Output path (for automation)
+**Signature:**
+```bash
+lol_cmd_project <mode> [arg1] [arg2] [arg3]
+```
+
+**Parameters:**
+- `mode`: Operation mode - create, associate, automation (required)
+- For `create` mode:
+  - `arg1`: Organization (optional, defaults to repo owner)
+  - `arg2`: Project title (optional, defaults to repo name)
+- For `associate` mode:
+  - `arg1`: org/id argument (required, e.g., "Synthesys-Lab/3")
+- For `automation` mode:
+  - `arg1`: Write path for workflow file (optional, outputs to stdout if not specified)
 
 **Modes:**
 

@@ -22,10 +22,7 @@ rm -rf "$TMP_DIR_SRC"
 echo "Creating C SDK with default source path..."
 (
     source "$PROJECT_ROOT/scripts/lol-cli.sh"
-    export AGENTIZE_PROJECT_NAME="test-c-sdk-src"
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR_SRC"
-    export AGENTIZE_PROJECT_LANG="c"
-    lol_cmd_init
+    lol_cmd_init "$TMP_DIR_SRC" "test-c-sdk-src" "c"
 )
 
 # Verify src/ directory exists
@@ -99,11 +96,7 @@ rm -rf "$TMP_DIR_LIB"
 echo "Creating C SDK with custom source path (lib/)..."
 (
     source "$PROJECT_ROOT/scripts/lol-cli.sh"
-    export AGENTIZE_PROJECT_NAME="test-c-sdk-lib"
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR_LIB"
-    export AGENTIZE_PROJECT_LANG="c"
-    export AGENTIZE_SOURCE_PATH="lib"
-    lol_cmd_init
+    lol_cmd_init "$TMP_DIR_LIB" "test-c-sdk-lib" "c" "lib"
 )
 
 # Verify lib/ directory exists and src/ does not

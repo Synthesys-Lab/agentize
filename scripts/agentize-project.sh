@@ -4,7 +4,7 @@
 # This is a compatibility wrapper that delegates to the canonical implementation
 # in src/cli/lol.sh. Direct script execution is preserved for backwards compatibility.
 #
-# Environment variables:
+# Environment variables (for backward compatibility - will be converted to positional args):
 #   AGENTIZE_PROJECT_MODE      - Mode (create, associate, automation)
 #   AGENTIZE_PROJECT_ORG       - Organization (for create)
 #   AGENTIZE_PROJECT_TITLE     - Project title (for create)
@@ -30,5 +30,20 @@ else
     exit 1
 fi
 
-# Execute the project command
-lol_cmd_project
+# Convert environment variables to positional arguments for backward compatibility
+# lol_cmd_project <mode> [arg1] [arg2]
+case "$AGENTIZE_PROJECT_MODE" in
+    create)
+        lol_cmd_project "create" "$AGENTIZE_PROJECT_ORG" "$AGENTIZE_PROJECT_TITLE"
+        ;;
+    associate)
+        lol_cmd_project "associate" "$AGENTIZE_PROJECT_ASSOCIATE"
+        ;;
+    automation)
+        lol_cmd_project "automation" "$AGENTIZE_PROJECT_WRITE_PATH"
+        ;;
+    *)
+        echo "Error: AGENTIZE_PROJECT_MODE must be set to 'create', 'associate', or 'automation'" >&2
+        exit 1
+        ;;
+esac

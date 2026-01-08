@@ -106,34 +106,38 @@ lol_complete() {
 
 # lol_cmd_init: Initialize new SDK project
 # Runs in subshell to preserve set -e semantics
+# Usage: lol_cmd_init <project_path> <project_name> <project_lang> [source_path] [metadata_only]
 lol_cmd_init() (
     set -e
 
-    # Environment variables expected:
-    #   AGENTIZE_PROJECT_PATH  - Target project directory path
-    #   AGENTIZE_PROJECT_NAME  - Project name for template substitutions
-    #   AGENTIZE_PROJECT_LANG  - Project language (python, c, cxx)
-    #   AGENTIZE_SOURCE_PATH   - Source code path (optional, defaults to "src")
-    #   AGENTIZE_METADATA_ONLY - If "1", create only metadata file
+    # Positional arguments:
+    #   $1 - project_path: Target project directory path (required)
+    #   $2 - project_name: Project name for template substitutions (required)
+    #   $3 - project_lang: Project language - python, c, cxx (required)
+    #   $4 - source_path: Source code path (optional, defaults to "src")
+    #   $5 - metadata_only: If "1", create only metadata file (optional, defaults to "0")
 
-    # Validate required environment variables
-    if [ -z "$AGENTIZE_PROJECT_PATH" ]; then
-        echo "Error: AGENTIZE_PROJECT_PATH is not set"
+    local project_path="$1"
+    local project_name="$2"
+    local project_lang="$3"
+    local source_path="${4:-src}"
+    local metadata_only="${5:-0}"
+
+    # Validate required arguments
+    if [ -z "$project_path" ]; then
+        echo "Error: project_path is required (argument 1)"
         exit 1
     fi
 
-    if [ -z "$AGENTIZE_PROJECT_NAME" ]; then
-        echo "Error: AGENTIZE_PROJECT_NAME is not set"
+    if [ -z "$project_name" ]; then
+        echo "Error: project_name is required (argument 2)"
         exit 1
     fi
 
-    if [ -z "$AGENTIZE_PROJECT_LANG" ]; then
-        echo "Error: AGENTIZE_PROJECT_LANG is not set"
+    if [ -z "$project_lang" ]; then
+        echo "Error: project_lang is required (argument 3)"
         exit 1
     fi
-
-    # Set default source path if not specified
-    local SOURCE_PATH="${AGENTIZE_SOURCE_PATH:-src}"
 
     # Get project root from AGENTIZE_HOME
     if [ -z "$AGENTIZE_HOME" ]; then
@@ -142,108 +146,108 @@ lol_cmd_init() (
     fi
     local PROJECT_ROOT="$AGENTIZE_HOME"
 
-    echo "Creating SDK for project: $AGENTIZE_PROJECT_NAME"
-    echo "Language: $AGENTIZE_PROJECT_LANG"
-    echo "Source path: $SOURCE_PATH"
+    echo "Creating SDK for project: $project_name"
+    echo "Language: $project_lang"
+    echo "Source path: $source_path"
 
     # Check if metadata-only mode is enabled
-    if [ "${AGENTIZE_METADATA_ONLY:-0}" = "1" ]; then
+    if [ "$metadata_only" = "1" ]; then
         echo "Mode: Metadata only (no templates)"
         echo ""
 
         # In metadata-only mode, allow non-empty directories
-        if [ ! -d "$AGENTIZE_PROJECT_PATH" ]; then
-            echo "Creating directory '$AGENTIZE_PROJECT_PATH'..."
-            mkdir -p "$AGENTIZE_PROJECT_PATH"
+        if [ ! -d "$project_path" ]; then
+            echo "Creating directory '$project_path'..."
+            mkdir -p "$project_path"
         fi
     else
         echo "Initializing SDK structure..."
 
         # Standard mode: Check if directory exists and is not empty (excluding .git and .agentize.yaml)
-        if [ -d "$AGENTIZE_PROJECT_PATH" ]; then
+        if [ -d "$project_path" ]; then
             # Count files excluding .git directory and .agentize.yaml file
             local file_count
-            file_count=$(find "$AGENTIZE_PROJECT_PATH" -maxdepth 1 -mindepth 1 ! -name '.git' ! -name '.agentize.yaml' 2>/dev/null | wc -l)
+            file_count=$(find "$project_path" -maxdepth 1 -mindepth 1 ! -name '.git' ! -name '.agentize.yaml' 2>/dev/null | wc -l)
             if [ "$file_count" -gt 0 ]; then
-                echo "Error: Directory '$AGENTIZE_PROJECT_PATH' exists and is not empty."
+                echo "Error: Directory '$project_path' exists and is not empty."
                 echo "Please use an empty directory or a non-existent path for init mode."
                 exit 1
             fi
             echo "Directory exists and is empty, proceeding..."
         else
-            echo "Creating directory '$AGENTIZE_PROJECT_PATH'..."
-            mkdir -p "$AGENTIZE_PROJECT_PATH"
+            echo "Creating directory '$project_path'..."
+            mkdir -p "$project_path"
         fi
     fi
 
     # Skip template and .claude copying in metadata-only mode
-    if [ "${AGENTIZE_METADATA_ONLY:-0}" != "1" ]; then
+    if [ "$metadata_only" != "1" ]; then
         # Copy language template
-        cp -r "$PROJECT_ROOT/templates/$AGENTIZE_PROJECT_LANG/"* "$AGENTIZE_PROJECT_PATH/"
+        cp -r "$PROJECT_ROOT/templates/$project_lang/"* "$project_path/"
 
         # Copy Claude Code configuration
         echo "Copying Claude Code configuration..."
-        mkdir -p "$AGENTIZE_PROJECT_PATH/.claude"
-        cp -r "$PROJECT_ROOT/.claude/"* "$AGENTIZE_PROJECT_PATH/.claude/"
+        mkdir -p "$project_path/.claude"
+        cp -r "$PROJECT_ROOT/.claude/"* "$project_path/.claude/"
 
         # Apply template substitutions to CLAUDE.md
         if [ -f "$PROJECT_ROOT/templates/claude/CLAUDE.md.template" ]; then
-            sed -e "s/{{PROJECT_NAME}}/$AGENTIZE_PROJECT_NAME/g" \
-                -e "s/{{PROJECT_LANG}}/$AGENTIZE_PROJECT_LANG/g" \
-                "$PROJECT_ROOT/templates/claude/CLAUDE.md.template" > "$AGENTIZE_PROJECT_PATH/CLAUDE.md"
+            sed -e "s/{{PROJECT_NAME}}/$project_name/g" \
+                -e "s/{{PROJECT_LANG}}/$project_lang/g" \
+                "$PROJECT_ROOT/templates/claude/CLAUDE.md.template" > "$project_path/CLAUDE.md"
         fi
 
         # Copy documentation templates
-        cp -r "$PROJECT_ROOT/templates/claude/docs" "$AGENTIZE_PROJECT_PATH/"
+        cp -r "$PROJECT_ROOT/templates/claude/docs" "$project_path/"
     fi
 
     # Create .agentize.yaml with project metadata (preserve if exists)
-    if [ -f "$AGENTIZE_PROJECT_PATH/.agentize.yaml" ]; then
+    if [ -f "$project_path/.agentize.yaml" ]; then
         echo "Preserving existing .agentize.yaml..."
     else
         echo "Creating .agentize.yaml with project metadata..."
         {
             echo "project:"
-            echo "  name: $AGENTIZE_PROJECT_NAME"
-            echo "  lang: $AGENTIZE_PROJECT_LANG"
-            echo "  source: $SOURCE_PATH"
-        } > "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
+            echo "  name: $project_name"
+            echo "  lang: $project_lang"
+            echo "  source: $source_path"
+        } > "$project_path/.agentize.yaml"
     fi
 
     # Optionally detect git default branch (only if .agentize.yaml was just created)
-    if [ ! -f "$AGENTIZE_PROJECT_PATH/.agentize.yaml.backup" ]; then
-      if [ -d "$AGENTIZE_PROJECT_PATH/.git" ]; then
-        if git -C "$AGENTIZE_PROJECT_PATH" show-ref --verify --quiet refs/heads/main; then
-          echo "git:" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
-          echo "  default_branch: main" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
-        elif git -C "$AGENTIZE_PROJECT_PATH" show-ref --verify --quiet refs/heads/master; then
-          echo "git:" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
-          echo "  default_branch: master" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
+    if [ ! -f "$project_path/.agentize.yaml.backup" ]; then
+      if [ -d "$project_path/.git" ]; then
+        if git -C "$project_path" show-ref --verify --quiet refs/heads/main; then
+          echo "git:" >> "$project_path/.agentize.yaml"
+          echo "  default_branch: main" >> "$project_path/.agentize.yaml"
+        elif git -C "$project_path" show-ref --verify --quiet refs/heads/master; then
+          echo "git:" >> "$project_path/.agentize.yaml"
+          echo "  default_branch: master" >> "$project_path/.agentize.yaml"
         fi
       fi
     fi
 
     # Skip bootstrap in metadata-only mode
-    if [ "${AGENTIZE_METADATA_ONLY:-0}" != "1" ]; then
+    if [ "$metadata_only" != "1" ]; then
         # Run bootstrap script if it exists
-        if [ -f "$AGENTIZE_PROJECT_PATH/bootstrap.sh" ]; then
+        if [ -f "$project_path/bootstrap.sh" ]; then
             echo "Running bootstrap script..."
-            chmod +x "$AGENTIZE_PROJECT_PATH/bootstrap.sh"
-            (cd "$AGENTIZE_PROJECT_PATH" && \
-             AGENTIZE_PROJECT_NAME="$AGENTIZE_PROJECT_NAME" \
-             AGENTIZE_PROJECT_PATH="$AGENTIZE_PROJECT_PATH" \
-             AGENTIZE_SOURCE_PATH="$SOURCE_PATH" \
+            chmod +x "$project_path/bootstrap.sh"
+            (cd "$project_path" && \
+             AGENTIZE_PROJECT_NAME="$project_name" \
+             AGENTIZE_PROJECT_PATH="$project_path" \
+             AGENTIZE_SOURCE_PATH="$source_path" \
              ./bootstrap.sh)
         fi
     fi
 
     # Install pre-commit hook if conditions are met
-    if [ -d "$AGENTIZE_PROJECT_PATH/.git" ] && [ -f "$AGENTIZE_PROJECT_PATH/scripts/pre-commit" ]; then
+    if [ -d "$project_path/.git" ] && [ -f "$project_path/scripts/pre-commit" ]; then
         # Check if pre_commit.enabled is set to false in metadata
         local PRE_COMMIT_ENABLED=true
-        if [ -f "$AGENTIZE_PROJECT_PATH/.agentize.yaml" ]; then
-            if grep -q "pre_commit:" "$AGENTIZE_PROJECT_PATH/.agentize.yaml"; then
-                if grep -A1 "pre_commit:" "$AGENTIZE_PROJECT_PATH/.agentize.yaml" | grep -q "enabled: false"; then
+        if [ -f "$project_path/.agentize.yaml" ]; then
+            if grep -q "pre_commit:" "$project_path/.agentize.yaml"; then
+                if grep -A1 "pre_commit:" "$project_path/.agentize.yaml" | grep -q "enabled: false"; then
                     PRE_COMMIT_ENABLED=false
                 fi
             fi
@@ -251,12 +255,12 @@ lol_cmd_init() (
 
         if [ "$PRE_COMMIT_ENABLED" = true ]; then
             # Check if hook already exists and is not ours
-            if [ -f "$AGENTIZE_PROJECT_PATH/.git/hooks/pre-commit" ] && [ ! -L "$AGENTIZE_PROJECT_PATH/.git/hooks/pre-commit" ]; then
+            if [ -f "$project_path/.git/hooks/pre-commit" ] && [ ! -L "$project_path/.git/hooks/pre-commit" ]; then
                 echo "  Warning: Custom pre-commit hook detected, skipping installation"
             else
                 echo "  Installing pre-commit hook..."
-                mkdir -p "$AGENTIZE_PROJECT_PATH/.git/hooks"
-                ln -sf ../../scripts/pre-commit "$AGENTIZE_PROJECT_PATH/.git/hooks/pre-commit"
+                mkdir -p "$project_path/.git/hooks"
+                ln -sf ../../scripts/pre-commit "$project_path/.git/hooks/pre-commit"
                 echo "  Pre-commit hook installed"
             fi
         else
@@ -264,24 +268,27 @@ lol_cmd_init() (
         fi
     fi
 
-    if [ "${AGENTIZE_METADATA_ONLY:-0}" = "1" ]; then
-        echo "Metadata file created successfully at $AGENTIZE_PROJECT_PATH/.agentize.yaml"
+    if [ "$metadata_only" = "1" ]; then
+        echo "Metadata file created successfully at $project_path/.agentize.yaml"
     else
-        echo "SDK initialized successfully at $AGENTIZE_PROJECT_PATH"
+        echo "SDK initialized successfully at $project_path"
     fi
 )
 
 # lol_cmd_update: Update existing project with latest agentize configs
 # Runs in subshell to preserve set -e semantics
+# Usage: lol_cmd_update <project_path>
 lol_cmd_update() (
     set -e
 
-    # Environment variables expected:
-    #   AGENTIZE_PROJECT_PATH  - Target project directory path
+    # Positional arguments:
+    #   $1 - project_path: Target project directory path (required)
 
-    # Validate required environment variables
-    if [ -z "$AGENTIZE_PROJECT_PATH" ]; then
-        echo "Error: AGENTIZE_PROJECT_PATH is not set"
+    local project_path="$1"
+
+    # Validate required arguments
+    if [ -z "$project_path" ]; then
+        echo "Error: project_path is required (argument 1)"
         exit 1
     fi
 
@@ -295,17 +302,17 @@ lol_cmd_update() (
     echo "Updating SDK structure..."
 
     # Validate project path exists
-    if [ ! -d "$AGENTIZE_PROJECT_PATH" ]; then
-        echo "Error: Project path '$AGENTIZE_PROJECT_PATH' does not exist."
+    if [ ! -d "$project_path" ]; then
+        echo "Error: Project path '$project_path' does not exist."
         echo "Use AGENTIZE_MODE=init to create it."
         exit 1
     fi
 
     # Check if .claude directory exists, create if missing
     local CLAUDE_EXISTED=true
-    if [ ! -d "$AGENTIZE_PROJECT_PATH/.claude" ]; then
+    if [ ! -d "$project_path/.claude" ]; then
         echo "  .claude/ directory not found, creating it..."
-        mkdir -p "$AGENTIZE_PROJECT_PATH/.claude"
+        mkdir -p "$project_path/.claude"
         CLAUDE_EXISTED=false
     fi
 
@@ -313,14 +320,14 @@ lol_cmd_update() (
     echo "Updating Claude Code configuration..."
     if [ "$CLAUDE_EXISTED" = true ]; then
         echo "  Backing up existing .claude/ to .claude.backup/"
-        cp -r "$AGENTIZE_PROJECT_PATH/.claude" "$AGENTIZE_PROJECT_PATH/.claude.backup"
+        cp -r "$project_path/.claude" "$project_path/.claude.backup"
     fi
 
     # Update .claude contents with file-level copy to preserve user additions
     local file_count=0
     find "$PROJECT_ROOT/.claude" -type f -print0 | while IFS= read -r -d '' src_file; do
         local rel_path="${src_file#$PROJECT_ROOT/.claude/}"
-        local dest_file="$AGENTIZE_PROJECT_PATH/.claude/$rel_path"
+        local dest_file="$project_path/.claude/$rel_path"
         mkdir -p "$(dirname "$dest_file")"
         cp "$src_file" "$dest_file"
         file_count=$((file_count + 1))
@@ -328,39 +335,39 @@ lol_cmd_update() (
     echo "  Updated .claude/ with file-level sync (preserves user-added files)"
 
     # Ensure docs/git-msg-tags.md exists
-    if [ ! -f "$AGENTIZE_PROJECT_PATH/docs/git-msg-tags.md" ]; then
+    if [ ! -f "$project_path/docs/git-msg-tags.md" ]; then
         echo "  Creating missing docs/git-msg-tags.md..."
 
         # Try to detect language (allow failure)
         set +e
         local DETECTED_LANG
-        DETECTED_LANG=$(lol_detect_lang "$AGENTIZE_PROJECT_PATH" 2>/dev/null)
+        DETECTED_LANG=$(lol_detect_lang "$project_path" 2>/dev/null)
         local DETECT_EXIT_CODE=$?
         set -e
 
         if [ $DETECT_EXIT_CODE -eq 0 ]; then
             echo "    Detected language: $DETECTED_LANG"
-            mkdir -p "$AGENTIZE_PROJECT_PATH/docs"
+            mkdir -p "$project_path/docs"
 
             if [ "$DETECTED_LANG" = "python" ]; then
                 sed -e "/{{#if_python}}/d" \
                     -e "/{{\/if_python}}/d" \
                     -e "/{{#if_c_or_cxx}}/,/{{\/if_c_or_cxx}}/d" \
-                    "$PROJECT_ROOT/templates/claude/docs/git-msg-tags.md.template" > "$AGENTIZE_PROJECT_PATH/docs/git-msg-tags.md"
+                    "$PROJECT_ROOT/templates/claude/docs/git-msg-tags.md.template" > "$project_path/docs/git-msg-tags.md"
             else
                 sed -e "/{{#if_python}}/,/{{\/if_python}}/d" \
                     -e "/{{#if_c_or_cxx}}/d" \
                     -e "/{{\/if_c_or_cxx}}/d" \
-                    "$PROJECT_ROOT/templates/claude/docs/git-msg-tags.md.template" > "$AGENTIZE_PROJECT_PATH/docs/git-msg-tags.md"
+                    "$PROJECT_ROOT/templates/claude/docs/git-msg-tags.md.template" > "$project_path/docs/git-msg-tags.md"
             fi
             echo "    Created docs/git-msg-tags.md"
         else
             echo "    Warning: Could not detect project language, using generic template"
-            mkdir -p "$AGENTIZE_PROJECT_PATH/docs"
+            mkdir -p "$project_path/docs"
             # Use generic template with both sections removed
             sed -e "/{{#if_python}}/,/{{\/if_python}}/d" \
                 -e "/{{#if_c_or_cxx}}/,/{{\/if_c_or_cxx}}/d" \
-                "$PROJECT_ROOT/templates/claude/docs/git-msg-tags.md.template" > "$AGENTIZE_PROJECT_PATH/docs/git-msg-tags.md"
+                "$PROJECT_ROOT/templates/claude/docs/git-msg-tags.md.template" > "$project_path/docs/git-msg-tags.md"
             echo "    Created docs/git-msg-tags.md (generic template)"
         fi
     else
@@ -368,39 +375,39 @@ lol_cmd_update() (
     fi
 
     # Create .agentize.yaml if missing
-    if [ ! -f "$AGENTIZE_PROJECT_PATH/.agentize.yaml" ]; then
+    if [ ! -f "$project_path/.agentize.yaml" ]; then
         echo "  Creating .agentize.yaml with best-effort metadata..."
 
         # Detect project name from directory basename
         local PROJECT_NAME
-        PROJECT_NAME=$(basename "$AGENTIZE_PROJECT_PATH")
+        PROJECT_NAME=$(basename "$project_path")
 
         # Try to detect language
         set +e
         local DETECTED_LANG
-        DETECTED_LANG=$(lol_detect_lang "$AGENTIZE_PROJECT_PATH" 2>/dev/null)
+        DETECTED_LANG=$(lol_detect_lang "$project_path" 2>/dev/null)
         local DETECT_EXIT_CODE=$?
         set -e
 
         # Start building .agentize.yaml
-        cat > "$AGENTIZE_PROJECT_PATH/.agentize.yaml" <<EOF
+        cat > "$project_path/.agentize.yaml" <<EOF
 project:
   name: $PROJECT_NAME
 EOF
 
         # Add language if detected
         if [ $DETECT_EXIT_CODE -eq 0 ] && [ -n "$DETECTED_LANG" ]; then
-            echo "  lang: $DETECTED_LANG" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
+            echo "  lang: $DETECTED_LANG" >> "$project_path/.agentize.yaml"
         fi
 
         # Detect git default branch if git repository exists
-        if [ -d "$AGENTIZE_PROJECT_PATH/.git" ]; then
-            if git -C "$AGENTIZE_PROJECT_PATH" show-ref --verify --quiet refs/heads/main; then
-                echo "git:" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
-                echo "  default_branch: main" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
-            elif git -C "$AGENTIZE_PROJECT_PATH" show-ref --verify --quiet refs/heads/master; then
-                echo "git:" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
-                echo "  default_branch: master" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
+        if [ -d "$project_path/.git" ]; then
+            if git -C "$project_path" show-ref --verify --quiet refs/heads/main; then
+                echo "git:" >> "$project_path/.agentize.yaml"
+                echo "  default_branch: main" >> "$project_path/.agentize.yaml"
+            elif git -C "$project_path" show-ref --verify --quiet refs/heads/master; then
+                echo "git:" >> "$project_path/.agentize.yaml"
+                echo "  default_branch: master" >> "$project_path/.agentize.yaml"
             fi
         fi
 
@@ -416,9 +423,9 @@ EOF
         echo "  Recording agentize commit: $AGENTIZE_COMMIT"
 
         # Check if .agentize.yaml exists (it should by now)
-        if [ -f "$AGENTIZE_PROJECT_PATH/.agentize.yaml" ]; then
+        if [ -f "$project_path/.agentize.yaml" ]; then
             # Check if agentize section exists
-            if grep -q "^agentize:" "$AGENTIZE_PROJECT_PATH/.agentize.yaml"; then
+            if grep -q "^agentize:" "$project_path/.agentize.yaml"; then
                 # Update existing agentize.commit field
                 # Use awk to update the commit line under agentize section
                 awk -v commit="$AGENTIZE_COMMIT" '
@@ -442,12 +449,12 @@ EOF
                         print "  commit: " commit
                     }
                 }
-                ' "$AGENTIZE_PROJECT_PATH/.agentize.yaml" > "$AGENTIZE_PROJECT_PATH/.agentize.yaml.tmp"
-                mv "$AGENTIZE_PROJECT_PATH/.agentize.yaml.tmp" "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
+                ' "$project_path/.agentize.yaml" > "$project_path/.agentize.yaml.tmp"
+                mv "$project_path/.agentize.yaml.tmp" "$project_path/.agentize.yaml"
             else
                 # Add agentize section with commit field
-                echo "agentize:" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
-                echo "  commit: $AGENTIZE_COMMIT" >> "$AGENTIZE_PROJECT_PATH/.agentize.yaml"
+                echo "agentize:" >> "$project_path/.agentize.yaml"
+                echo "  commit: $AGENTIZE_COMMIT" >> "$project_path/.agentize.yaml"
             fi
         fi
     else
@@ -455,20 +462,20 @@ EOF
     fi
 
     # Copy scripts/pre-commit if missing (for older SDKs)
-    if [ ! -f "$AGENTIZE_PROJECT_PATH/scripts/pre-commit" ] && [ -f "$PROJECT_ROOT/scripts/pre-commit" ]; then
+    if [ ! -f "$project_path/scripts/pre-commit" ] && [ -f "$PROJECT_ROOT/scripts/pre-commit" ]; then
         echo "  Copying missing scripts/pre-commit..."
-        mkdir -p "$AGENTIZE_PROJECT_PATH/scripts"
-        cp "$PROJECT_ROOT/scripts/pre-commit" "$AGENTIZE_PROJECT_PATH/scripts/pre-commit"
-        chmod +x "$AGENTIZE_PROJECT_PATH/scripts/pre-commit"
+        mkdir -p "$project_path/scripts"
+        cp "$PROJECT_ROOT/scripts/pre-commit" "$project_path/scripts/pre-commit"
+        chmod +x "$project_path/scripts/pre-commit"
     fi
 
     # Install pre-commit hook if conditions are met
-    if [ -d "$AGENTIZE_PROJECT_PATH/.git" ] && [ -f "$AGENTIZE_PROJECT_PATH/scripts/pre-commit" ]; then
+    if [ -d "$project_path/.git" ] && [ -f "$project_path/scripts/pre-commit" ]; then
         # Check if pre_commit.enabled is set to false in metadata
         local PRE_COMMIT_ENABLED=true
-        if [ -f "$AGENTIZE_PROJECT_PATH/.agentize.yaml" ]; then
-            if grep -q "pre_commit:" "$AGENTIZE_PROJECT_PATH/.agentize.yaml"; then
-                if grep -A1 "pre_commit:" "$AGENTIZE_PROJECT_PATH/.agentize.yaml" | grep -q "enabled: false"; then
+        if [ -f "$project_path/.agentize.yaml" ]; then
+            if grep -q "pre_commit:" "$project_path/.agentize.yaml"; then
+                if grep -A1 "pre_commit:" "$project_path/.agentize.yaml" | grep -q "enabled: false"; then
                     PRE_COMMIT_ENABLED=false
                 fi
             fi
@@ -476,12 +483,12 @@ EOF
 
         if [ "$PRE_COMMIT_ENABLED" = true ]; then
             # Check if hook already exists and is not ours
-            if [ -f "$AGENTIZE_PROJECT_PATH/.git/hooks/pre-commit" ] && [ ! -L "$AGENTIZE_PROJECT_PATH/.git/hooks/pre-commit" ]; then
+            if [ -f "$project_path/.git/hooks/pre-commit" ] && [ ! -L "$project_path/.git/hooks/pre-commit" ]; then
                 echo "  Warning: Custom pre-commit hook detected, skipping installation"
             else
                 echo "  Installing pre-commit hook..."
-                mkdir -p "$AGENTIZE_PROJECT_PATH/.git/hooks"
-                ln -sf ../../scripts/pre-commit "$AGENTIZE_PROJECT_PATH/.git/hooks/pre-commit"
+                mkdir -p "$project_path/.git/hooks"
+                ln -sf ../../scripts/pre-commit "$project_path/.git/hooks/pre-commit"
                 echo "  Pre-commit hook installed"
             fi
         else
@@ -489,7 +496,7 @@ EOF
         fi
     fi
 
-    echo "SDK updated successfully at $AGENTIZE_PROJECT_PATH"
+    echo "SDK updated successfully at $project_path"
 
     # Print context-aware next steps hints
     local HINTS_PRINTED=false
@@ -497,13 +504,13 @@ EOF
     # Check for Makefile targets and available resources
     local HAS_TEST_TARGET=false
     local HAS_SETUP_TARGET=false
-    if [ -f "$AGENTIZE_PROJECT_PATH/Makefile" ]; then
-        HAS_TEST_TARGET=$(grep -q '^test:' "$AGENTIZE_PROJECT_PATH/Makefile" && echo "true" || echo "false")
-        HAS_SETUP_TARGET=$(grep -q '^setup:' "$AGENTIZE_PROJECT_PATH/Makefile" && echo "true" || echo "false")
+    if [ -f "$project_path/Makefile" ]; then
+        HAS_TEST_TARGET=$(grep -q '^test:' "$project_path/Makefile" && echo "true" || echo "false")
+        HAS_SETUP_TARGET=$(grep -q '^setup:' "$project_path/Makefile" && echo "true" || echo "false")
     fi
 
     local HAS_ARCH_DOC=false
-    [ -f "$AGENTIZE_PROJECT_PATH/docs/architecture/architecture.md" ] && HAS_ARCH_DOC=true
+    [ -f "$project_path/docs/architecture/architecture.md" ] && HAS_ARCH_DOC=true
 
     # Print hints header only if we have suggestions
     if [ "$HAS_TEST_TARGET" = "true" ] || [ "$HAS_SETUP_TARGET" = "true" ] || [ "$HAS_ARCH_DOC" = "true" ]; then
@@ -645,15 +652,33 @@ lol_cmd_version() {
 
 # lol_cmd_project: GitHub Projects v2 integration
 # Runs in subshell to preserve set -e semantics
+# Usage: lol_cmd_project <mode> [arg1] [arg2]
+#   For create mode:    lol_cmd_project create [org] [title]
+#   For associate mode: lol_cmd_project associate <org/id>
+#   For automation mode: lol_cmd_project automation [write_path]
 lol_cmd_project() (
     set -e
 
-    # Environment variables expected:
-    #   AGENTIZE_PROJECT_MODE      - Mode (create, associate, automation)
-    #   AGENTIZE_PROJECT_ORG       - Organization (for create)
-    #   AGENTIZE_PROJECT_TITLE     - Project title (for create)
-    #   AGENTIZE_PROJECT_ASSOCIATE - org/id argument (for associate)
-    #   AGENTIZE_PROJECT_WRITE_PATH - Output path (for automation)
+    # Positional arguments:
+    #   $1 - mode: Operation mode - create, associate, automation (required)
+    #   For create mode:
+    #     $2 - org: Organization (optional, defaults to repo owner)
+    #     $3 - title: Project title (optional, defaults to repo name)
+    #   For associate mode:
+    #     $2 - associate_arg: org/id argument (required, e.g., "Synthesys-Lab/3")
+    #   For automation mode:
+    #     $2 - write_path: Output path for workflow file (optional)
+
+    local mode="$1"
+    local arg1="$2"
+    local arg2="$3"
+
+    # Validate mode
+    if [ -z "$mode" ]; then
+        echo "Error: mode is required (argument 1)"
+        echo "Usage: lol_cmd_project <mode> [arg1] [arg2]"
+        exit 1
+    fi
 
     # Find project root
     local PROJECT_ROOT
@@ -728,8 +753,8 @@ lol_cmd_project() (
 
     # Helper: Create a new GitHub Projects v2 board
     _create_project() {
-        local org="$AGENTIZE_PROJECT_ORG"
-        local title="$AGENTIZE_PROJECT_TITLE"
+        local org="$arg1"
+        local title="$arg2"
 
         # Default org to repository owner
         if [ -z "$org" ]; then
@@ -802,7 +827,7 @@ lol_cmd_project() (
 
     # Helper: Associate with an existing GitHub Projects v2 board
     _associate_project() {
-        local associate_arg="$AGENTIZE_PROJECT_ASSOCIATE"
+        local associate_arg="$arg1"
 
         if [ -z "$associate_arg" ]; then
             echo "Error: --associate requires <org>/<id> argument"
@@ -864,7 +889,7 @@ lol_cmd_project() (
 
     # Helper: Generate automation workflow template
     _generate_automation() {
-        local write_path="$AGENTIZE_PROJECT_WRITE_PATH"
+        local write_path="$arg1"
 
         # Read project metadata
         local org
@@ -1032,8 +1057,6 @@ lol_cmd_project() (
     }
 
     # Main execution
-    local mode="$AGENTIZE_PROJECT_MODE"
-
     case "$mode" in
         create)
             _preflight_check
@@ -1307,13 +1330,8 @@ _lol_parse_init() {
     fi
     echo ""
 
-    # Set environment variables and call command
-    AGENTIZE_PROJECT_NAME="$name" \
-    AGENTIZE_PROJECT_PATH="$project_path" \
-    AGENTIZE_PROJECT_LANG="$lang" \
-    AGENTIZE_SOURCE_PATH="$source" \
-    AGENTIZE_METADATA_ONLY="$metadata_only" \
-    lol_cmd_init
+    # Call command with positional arguments
+    lol_cmd_init "$project_path" "$name" "$lang" "$source" "$metadata_only"
 }
 
 # Parse update command arguments and call lol_cmd_update
@@ -1369,8 +1387,8 @@ _lol_parse_update() {
     echo "  Path: $project_path"
     echo ""
 
-    # Set environment variables and call command
-    AGENTIZE_PROJECT_PATH="$project_path" lol_cmd_update
+    # Call command with positional arguments
+    lol_cmd_update "$project_path"
 }
 
 # Parse upgrade command arguments and call lol_cmd_upgrade
@@ -1459,12 +1477,19 @@ _lol_parse_project() {
         return 1
     fi
 
-    # Set environment variables and call command
-    AGENTIZE_PROJECT_MODE="$mode" \
-    AGENTIZE_PROJECT_ORG="$org" \
-    AGENTIZE_PROJECT_TITLE="$title" \
-    AGENTIZE_PROJECT_ASSOCIATE="$associate_arg" \
-    AGENTIZE_PROJECT_AUTOMATION="$automation" \
-    AGENTIZE_PROJECT_WRITE_PATH="$write_path" \
-    lol_cmd_project
+    # Call command with positional arguments
+    # For create: lol_cmd_project create [org] [title]
+    # For associate: lol_cmd_project associate <org/id>
+    # For automation: lol_cmd_project automation [write_path]
+    case "$mode" in
+        create)
+            lol_cmd_project "create" "$org" "$title"
+            ;;
+        associate)
+            lol_cmd_project "associate" "$associate_arg"
+            ;;
+        automation)
+            lol_cmd_project "automation" "$write_path"
+            ;;
+    esac
 }

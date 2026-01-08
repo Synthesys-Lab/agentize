@@ -11,8 +11,7 @@ touch "$TMP_DIR/some-file.txt"
 # Updating directory without SDK structure (should create .claude/)
 (
     source "$PROJECT_ROOT/scripts/lol-cli.sh"
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR"
-    lol_cmd_update
+    lol_cmd_update "$TMP_DIR"
 )
 
 # Verify .claude/ was created

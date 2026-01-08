@@ -11,10 +11,7 @@ touch "$TMP_DIR/existing-file.txt"
 # Attempting to create SDK in non-empty directory (should fail)
 if (
     source "$PROJECT_ROOT/scripts/lol-cli.sh"
-    export AGENTIZE_PROJECT_NAME="test_mode_3"
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR"
-    export AGENTIZE_PROJECT_LANG="python"
-    lol_cmd_init
+    lol_cmd_init "$TMP_DIR" "test_mode_3" "python"
 ) 2>&1 | grep -q "exists and is not empty"; then
     cleanup_dir "$TMP_DIR"
     test_pass "init mode correctly rejects non-empty directory"

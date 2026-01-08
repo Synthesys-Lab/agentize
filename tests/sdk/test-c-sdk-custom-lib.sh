@@ -10,11 +10,7 @@ TMP_DIR=$(make_temp_dir "c-sdk-test-lib")
 # Creating C SDK with custom source path (lib/)
 (
     source "$PROJECT_ROOT/scripts/lol-cli.sh"
-    export AGENTIZE_PROJECT_NAME="test-c-sdk-lib"
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR"
-    export AGENTIZE_PROJECT_LANG="c"
-    export AGENTIZE_SOURCE_PATH="lib"
-    lol_cmd_init
+    lol_cmd_init "$TMP_DIR" "test-c-sdk-lib" "c" "lib"
 )
 
 # Verify lib/ directory exists and src/ does not

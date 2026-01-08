@@ -11,10 +11,7 @@ rm -rf "$TMP_DIR"
 # Creating SDK in non-existent directory
 (
     source "$PROJECT_ROOT/scripts/lol-cli.sh"
-    export AGENTIZE_PROJECT_NAME="test_mode_1"
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR"
-    export AGENTIZE_PROJECT_LANG="python"
-    lol_cmd_init
+    lol_cmd_init "$TMP_DIR" "test_mode_1" "python"
 )
 
 if [ ! -d "$TMP_DIR" ]; then

@@ -16,10 +16,7 @@ rm -rf "$TMP_DIR"
 echo "Creating Python SDK..."
 (
     source "$PROJECT_ROOT/scripts/lol-cli.sh"
-    export AGENTIZE_PROJECT_NAME="test_python_sdk"
-    export AGENTIZE_PROJECT_PATH="$TMP_DIR"
-    export AGENTIZE_PROJECT_LANG="python"
-    lol_cmd_init
+    lol_cmd_init "$TMP_DIR" "test_python_sdk" "python"
 )
 
 # Verify test_python_sdk/ directory exists (project_name renamed)
