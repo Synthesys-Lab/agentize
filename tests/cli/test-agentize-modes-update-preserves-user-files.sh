@@ -9,10 +9,11 @@ TMP_DIR=$(make_temp_dir "mode-test-update-preserves-user-files")
 
 # First creating a valid SDK
 (
+    source "$PROJECT_ROOT/scripts/lol-cli.sh"
     export AGENTIZE_PROJECT_NAME="test_mode_7"
     export AGENTIZE_PROJECT_PATH="$TMP_DIR"
     export AGENTIZE_PROJECT_LANG="python"
-    "$PROJECT_ROOT/scripts/agentize-init.sh"
+    lol_cmd_init
 )
 
 # Add custom user files
@@ -23,8 +24,9 @@ echo "# My Custom Command" > "$TMP_DIR/.claude/commands/my-custom-command/COMMAN
 
 # Running update to sync template files
 (
+    source "$PROJECT_ROOT/scripts/lol-cli.sh"
     export AGENTIZE_PROJECT_PATH="$TMP_DIR"
-    "$PROJECT_ROOT/scripts/agentize-update.sh"
+    lol_cmd_update
 )
 
 # Verify custom user files still exist

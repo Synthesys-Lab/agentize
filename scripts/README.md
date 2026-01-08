@@ -65,17 +65,8 @@ These scripts delegate to `src/cli/lol.sh` for backwards compatibility:
 
 - `lol-cli.sh` - SDK CLI wrapper (sources `src/cli/lol.sh`)
   - Canonical source: `src/cli/lol.sh`
-  - Provides `lol` and `lol_complete` functions when sourced
-
-- `agentize-init.sh` - Init command wrapper (calls `lol_cmd_init`)
-  - Usage: Called by `lol init` command or directly with environment variables
-  - Environment variables: `AGENTIZE_PROJECT_PATH`, `AGENTIZE_PROJECT_NAME`, `AGENTIZE_PROJECT_LANG`
-  - Exit codes: 0 (success), 1 (failure)
-
-- `agentize-update.sh` - Update command wrapper (calls `lol_cmd_update`)
-  - Usage: Called by `lol update` command or directly with environment variables
-  - Environment variables: `AGENTIZE_PROJECT_PATH`
-  - Exit codes: 0 (success), 1 (failure)
+  - Provides `lol`, `lol_complete`, `lol_cmd_init`, `lol_cmd_update`, and other functions when sourced
+  - For tests/scripts: source this file then call `lol_cmd_init` or `lol_cmd_update` directly
 
 - `agentize-project.sh` - Project command wrapper (calls `lol_cmd_project`)
   - Usage: Called by `lol project` command or directly with environment variables

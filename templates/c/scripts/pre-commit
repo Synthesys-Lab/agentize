@@ -21,7 +21,7 @@ REPO_ROOT="$(git rev-parse --show-toplevel)"
 #   - Result: Tests from main run, which may have different code/failures
 #
 # Solution: Explicitly set AGENTIZE_HOME=$REPO_ROOT before running tests
-# This ensures test-all.sh and agentize-init.sh use the current worktree's code
+# This ensures test-all.sh and lol CLI commands use the current worktree's code
 export AGENTIZE_HOME="$REPO_ROOT"
 
 # Run documentation linter first (skip if not available)

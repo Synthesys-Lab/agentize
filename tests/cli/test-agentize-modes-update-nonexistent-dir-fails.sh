@@ -10,8 +10,9 @@ rm -rf "$TMP_DIR"
 
 # Attempting to update non-existent directory (should fail)
 if (
+    source "$PROJECT_ROOT/scripts/lol-cli.sh"
     export AGENTIZE_PROJECT_PATH="$TMP_DIR"
-    "$PROJECT_ROOT/scripts/agentize-update.sh"
+    lol_cmd_update
 ) 2>&1 | grep -q "does not exist"; then
     test_pass "update mode correctly rejects non-existent directory"
 else
