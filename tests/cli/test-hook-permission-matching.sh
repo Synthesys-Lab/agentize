@@ -55,7 +55,8 @@ decision=$(run_hook_with_fixture "bash_git_push")
 # Test 7: No match defaults to ask
 test_info "Test 7: Unknown tool → ask (default)"
 input='{"tool_name":"UnknownTool","tool_input":{},"session_id":"test"}'
-decision=$(echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision')
+# Unset Telegram to ensure test isolation
+decision=$(unset AGENTIZE_USE_TG; echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision')
 [ "$decision" = "ask" ] || test_fail "Expected 'ask' for unknown tool, got '$decision'"
 
 # Test 8: Malformed pattern falls back to ask (fail-safe)

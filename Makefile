@@ -36,6 +36,7 @@ setup:
 	@echo '# This file is local-only and gitignored' >> setup.sh
 	@echo '' >> setup.sh
 	@echo 'export AGENTIZE_HOME="$(CURDIR)"' >> setup.sh
+	@echo 'export PYTHONPATH="$$AGENTIZE_HOME/python:$$PYTHONPATH"' >> setup.sh
 	@echo 'source "$$AGENTIZE_HOME/src/cli/wt.sh"' >> setup.sh
 	@echo 'source "$$AGENTIZE_HOME/src/cli/lol.sh"' >> setup.sh
 	@echo '' >> setup.sh
