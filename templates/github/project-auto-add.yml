@@ -88,7 +88,7 @@ jobs:
           echo "$linked_issues" | jq -c '.[]' | while read -r issue; do
             issue_number=$(echo "$issue" | jq -r '.number')
             echo "Closing issue #$issue_number..."
-            gh issue close $issue_number --reason "completed"
+            gh issue close "$issue_number" --reason "completed"
             echo "  Issue #$issue_number closed"
           done
 
@@ -139,7 +139,7 @@ jobs:
           item_id=""
           cursor=""
           page=1
-          max_pages=5
+          max_pages=5  # Limit to 500 items; very large projects should use GitHub's built-in auto-archive
 
           while [ $page -le $max_pages ]; do
             echo "  Fetching page $page..."
