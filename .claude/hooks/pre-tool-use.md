@@ -126,3 +126,61 @@ When `HANDSOFF_DEBUG=1`:
 - Writes tool usage to `.tmp/hooked-sessions/tool-used.txt`
 - Format: `[timestamp] [session_id] [workflow] tool | target`
 - Preserved regardless of permission decision
+
+## Telegram Approval Integration
+
+When `AGENTIZE_USE_TG=1|true|on` is set with valid `TG_API_TOKEN` and `TG_CHAT_ID`, the hook can request remote approval via Telegram for `ask` decisions.
+
+### Configuration
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `AGENTIZE_USE_TG` | Yes | Enable Telegram (`1\|true\|on`) |
+| `TG_API_TOKEN` | Yes | Bot token from @BotFather |
+| `TG_CHAT_ID` | Yes | Chat ID for approval messages |
+| `TG_APPROVAL_TIMEOUT_SEC` | No | Max wait time (default: 60) |
+| `TG_POLL_INTERVAL_SEC` | No | Poll interval (default: 5) |
+| `TG_ALLOWED_USER_IDS` | No | Comma-separated allowed user IDs |
+
+### Decision Flow
+
+```
+Permission check result = 'ask'
+        ↓
+Telegram enabled? (AGENTIZE_USE_TG=1|true|on)
+        ↓ No → return 'ask' (prompt local user)
+        ↓ Yes
+TG_API_TOKEN and TG_CHAT_ID set?
+        ↓ No → log warning, return 'ask'
+        ↓ Yes
+Send approval request to Telegram
+        ↓
+Poll for response (up to TG_APPROVAL_TIMEOUT_SEC)
+        ↓
+Response received?
+        ↓ No (timeout) → return 'ask'
+        ↓ Yes
+Parse response: /allow → 'allow', /deny → 'deny'
+        ↓
+Return decision
+```
+
+### Message Format
+
+Approval request sent to Telegram:
+```
+🔧 Tool Approval Request
+
+Tool: Bash
+Target: git push origin main
+Session: abc123
+
+Reply /allow or /deny
+```
+
+### Error Handling
+
+- Missing `TG_API_TOKEN` or `TG_CHAT_ID`: Logs warning, returns `ask`
+- Telegram API error: Logs error, returns `ask`
+- Timeout (no response): Returns `ask`
+- Invalid response (not /allow or /deny): Continues polling until timeout

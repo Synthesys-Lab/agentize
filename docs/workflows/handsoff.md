@@ -77,6 +77,43 @@ Set in shell environment or `.claude/settings.json`:
 - **Log file:** `.tmp/hooked-sessions/tool-used.txt`
 - **Example:** `export HANDSOFF_DEBUG=1`
 
+### Telegram Approval (Optional)
+
+When configured, enables remote approval of tool usage via Telegram. When a PreToolUse decision is `ask`, the hook sends a Telegram message allowing you to approve or deny from your phone.
+
+**`AGENTIZE_USE_TG`**
+- **Purpose:** Enable Telegram approval integration
+- **Values:** `1|true|on` (enabled), `0` (disabled, default)
+- **Example:** `export AGENTIZE_USE_TG=1`
+
+**`TG_API_TOKEN`**
+- **Purpose:** Telegram bot token from @BotFather
+- **Example:** `export TG_API_TOKEN=123456:ABC-DEF...`
+
+**`TG_CHAT_ID`**
+- **Purpose:** Telegram chat/channel ID for approval messages
+- **Example:** `export TG_CHAT_ID=12345678`
+
+**`TG_APPROVAL_TIMEOUT_SEC`**
+- **Purpose:** Maximum wait time for Telegram response
+- **Default:** `60` seconds
+- **Example:** `export TG_APPROVAL_TIMEOUT_SEC=120`
+
+**`TG_POLL_INTERVAL_SEC`**
+- **Purpose:** Interval between Telegram API polls
+- **Default:** `5` seconds
+- **Example:** `export TG_POLL_INTERVAL_SEC=3`
+
+**`TG_ALLOWED_USER_IDS`** (optional)
+- **Purpose:** Comma-separated list of Telegram user IDs allowed to approve
+- **Example:** `export TG_ALLOWED_USER_IDS=123456,789012`
+
+**Behavior:**
+- When Telegram is enabled and configured, `ask` decisions are sent to Telegram
+- User can reply with `/allow` or `/deny` to approve or reject
+- On timeout or API error, falls back to `ask` (prompts local user)
+- Missing configuration logs a warning and falls back to `ask`
+
 ### Settings.json Configuration
 
 ```json
