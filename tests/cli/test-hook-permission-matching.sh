@@ -69,4 +69,42 @@ decision=$(echo "$input" | python3 "$HOOK_SCRIPT" 2>/dev/null | jq -r '.hookSpec
 [ "$decision" = "allow" ] || [ "$decision" = "deny" ] || [ "$decision" = "ask" ] || \
     test_fail "Hook returned invalid decision: '$decision'"
 
+# Test 9: Python3 command should result in ask (per rules)
+test_info "Test 9: Bash python3 → ask"
+decision=$(run_hook_with_fixture "bash_ask_python")
+[ "$decision" = "ask" ] || test_fail "Expected 'ask' for python3 command, got '$decision'"
+
+# Test 10: gh api command should result in ask (per rules)
+test_info "Test 10: Bash gh api → ask"
+decision=$(run_hook_with_fixture "bash_ask_gh_api")
+[ "$decision" = "ask" ] || test_fail "Expected 'ask' for gh api command, got '$decision'"
+
+# Test 11: Telegram config gating - disabled when AGENTIZE_USE_TG is not set
+test_info "Test 11: Telegram disabled by default (no env)"
+# Unset all Telegram-related vars and verify ask decision still works
+(
+    unset AGENTIZE_USE_TG TG_API_TOKEN TG_CHAT_ID
+    decision=$(run_hook_with_fixture "bash_ask_python")
+    [ "$decision" = "ask" ] || test_fail "Expected 'ask' when Telegram disabled, got '$decision'"
+)
+
+# Test 12: Telegram config gating - missing TG_API_TOKEN returns ask
+test_info "Test 12: Telegram with missing token returns ask"
+(
+    export AGENTIZE_USE_TG=1
+    unset TG_API_TOKEN TG_CHAT_ID
+    decision=$(run_hook_with_fixture "bash_ask_python")
+    [ "$decision" = "ask" ] || test_fail "Expected 'ask' with missing TG_API_TOKEN, got '$decision'"
+)
+
+# Test 13: Telegram config gating - missing TG_CHAT_ID returns ask
+test_info "Test 13: Telegram with missing chat ID returns ask"
+(
+    export AGENTIZE_USE_TG=1
+    export TG_API_TOKEN="test_token"
+    unset TG_CHAT_ID
+    decision=$(run_hook_with_fixture "bash_ask_python")
+    [ "$decision" = "ask" ] || test_fail "Expected 'ask' with missing TG_CHAT_ID, got '$decision'"
+)
+
 test_pass "PreToolUse hook permission matching works correctly"

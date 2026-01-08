@@ -6,6 +6,9 @@ import os
 import datetime
 import re
 import subprocess
+import time
+import urllib.request
+import urllib.error
 from logger import log_tool_decision
 
 # This hook logs tools used in HANDSOFF_MODE and enforces permission rules.
@@ -205,6 +208,183 @@ def normalize_bash_command(command):
     command = strip_shell_prefixes(command)
     return command
 
+
+# Telegram approval integration
+def is_telegram_enabled():
+    """Check if Telegram approval is enabled and configured."""
+    use_tg = os.getenv('AGENTIZE_USE_TG', '0').lower()
+    return use_tg in ['1', 'true', 'on']
+
+
+def get_telegram_config():
+    """Get Telegram configuration from environment.
+
+    Returns:
+        dict with keys: token, chat_id, timeout, poll_interval, allowed_user_ids
+        or None if required config is missing
+    """
+    token = os.getenv('TG_API_TOKEN', '')
+    chat_id = os.getenv('TG_CHAT_ID', '')
+
+    if not token or not chat_id:
+        return None
+
+    timeout = int(os.getenv('TG_APPROVAL_TIMEOUT_SEC', '60'))
+    poll_interval = int(os.getenv('TG_POLL_INTERVAL_SEC', '5'))
+
+    # Parse allowed user IDs (optional)
+    allowed_ids_str = os.getenv('TG_ALLOWED_USER_IDS', '')
+    allowed_user_ids = []
+    if allowed_ids_str:
+        allowed_user_ids = [int(uid.strip()) for uid in allowed_ids_str.split(',') if uid.strip()]
+
+    return {
+        'token': token,
+        'chat_id': chat_id,
+        'timeout': timeout,
+        'poll_interval': poll_interval,
+        'allowed_user_ids': allowed_user_ids
+    }
+
+
+def tg_api_request(token, method, payload=None):
+    """Make a request to Telegram Bot API.
+
+    Args:
+        token: Bot API token
+        method: API method (e.g., 'sendMessage', 'getUpdates')
+        payload: Request payload dict (optional)
+
+    Returns:
+        dict: API response or None on error
+    """
+    url = f'https://api.telegram.org/bot{token}/{method}'
+    try:
+        if payload:
+            data = json.dumps(payload).encode('utf-8')
+            req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+        else:
+            req = urllib.request.Request(url)
+
+        with urllib.request.urlopen(req, timeout=10) as response:
+            return json.loads(response.read().decode('utf-8'))
+    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, TimeoutError) as e:
+        log_tool_decision(hook_input.get('session_id', 'unknown'), '', 'Telegram', method, f'API_ERROR: {str(e)}')
+        return None
+
+
+def telegram_approval_decision(tool, target, session_id, raw_target):
+    """Request approval via Telegram for an 'ask' decision.
+
+    Args:
+        tool: Tool name
+        target: Normalized target (for display)
+        session_id: Current session ID
+        raw_target: Original target (for display)
+
+    Returns:
+        'allow', 'deny', or None (on timeout/error, caller should return 'ask')
+    """
+    if not is_telegram_enabled():
+        return None
+
+    config = get_telegram_config()
+    if not config:
+        log_tool_decision(session_id, '', tool, raw_target, 'TG_CONFIG_MISSING')
+        return None
+
+    token = config['token']
+    chat_id = config['chat_id']
+    timeout = config['timeout']
+    poll_interval = config['poll_interval']
+    allowed_user_ids = config['allowed_user_ids']
+
+    # Get current update_id offset to ignore old messages
+    updates_resp = tg_api_request(token, 'getUpdates', {'limit': 1, 'offset': -1})
+    if updates_resp and updates_resp.get('ok') and updates_resp.get('result'):
+        last_update = updates_resp['result'][-1]
+        update_offset = last_update.get('update_id', 0) + 1
+    else:
+        update_offset = 0
+
+    # Send approval request message
+    message_text = (
+        f"🔧 Tool Approval Request\n\n"
+        f"Tool: {tool}\n"
+        f"Target: {raw_target[:200]}\n"
+        f"Session: {session_id[:8]}\n\n"
+        f"Reply /allow or /deny"
+    )
+
+    send_resp = tg_api_request(token, 'sendMessage', {
+        'chat_id': chat_id,
+        'text': message_text
+    })
+
+    if not send_resp or not send_resp.get('ok'):
+        log_tool_decision(session_id, '', tool, raw_target, 'TG_SEND_FAILED')
+        return None
+
+    message_id = send_resp.get('result', {}).get('message_id')
+    log_tool_decision(session_id, '', tool, raw_target, f'TG_SENT message_id={message_id}')
+
+    # Poll for response
+    start_time = time.monotonic()
+    while (time.monotonic() - start_time) < timeout:
+        updates_resp = tg_api_request(token, 'getUpdates', {
+            'offset': update_offset,
+            'timeout': min(poll_interval, 30)  # Long polling, max 30s
+        })
+
+        if not updates_resp or not updates_resp.get('ok'):
+            time.sleep(poll_interval)
+            continue
+
+        for update in updates_resp.get('result', []):
+            update_offset = update.get('update_id', 0) + 1
+
+            msg = update.get('message', {})
+            text = msg.get('text', '').strip().lower()
+            from_user = msg.get('from', {})
+            user_id = from_user.get('id')
+
+            # Check if response is from allowed user (if configured)
+            if allowed_user_ids and user_id not in allowed_user_ids:
+                continue
+
+            # Check for /allow or /deny commands
+            if text == '/allow' or text.startswith('/allow '):
+                log_tool_decision(session_id, '', tool, raw_target, f'TG_ALLOW user_id={user_id}')
+                # Send confirmation
+                tg_api_request(token, 'sendMessage', {
+                    'chat_id': chat_id,
+                    'text': f"✅ Allowed: {tool}",
+                    'reply_to_message_id': msg.get('message_id')
+                })
+                return 'allow'
+            elif text == '/deny' or text.startswith('/deny '):
+                log_tool_decision(session_id, '', tool, raw_target, f'TG_DENY user_id={user_id}')
+                # Send confirmation
+                tg_api_request(token, 'sendMessage', {
+                    'chat_id': chat_id,
+                    'text': f"❌ Denied: {tool}",
+                    'reply_to_message_id': msg.get('message_id')
+                })
+                return 'deny'
+
+        # Small sleep between poll cycles if no updates
+        if not updates_resp.get('result'):
+            time.sleep(poll_interval)
+
+    # Timeout reached
+    log_tool_decision(session_id, '', tool, raw_target, f'TG_TIMEOUT after {timeout}s')
+    tg_api_request(token, 'sendMessage', {
+        'chat_id': chat_id,
+        'text': f"⏰ Timeout: No response for {tool}, falling back to local prompt",
+        'reply_to_message_id': message_id
+    })
+    return None
+
 def verify_force_push_to_own_branch(command):
     """Check if force push targets the current branch (issue-* branches only).
 
@@ -242,15 +422,17 @@ def verify_force_push_to_own_branch(command):
 def check_permission(tool, target, raw_target):
     """
     Check permission for tool usage against PERMISSION_RULES.
-    Returns: (decision, source) where decision is 'allow'/'deny'/'ask' and source is 'rules' or 'haiku'
+    Returns: (decision, source) where decision is 'allow'/'deny'/'ask' and source is 'rules', 'haiku', or 'telegram'
     Priority: deny → ask → allow (first match wins)
-    Default: ask Haiku if no match or error
+    Default: ask Haiku if no match or error, then try Telegram if enabled
 
     Args:
         tool: Tool name
         target: Normalized target (for rule matching)
         raw_target: Original target (for logging/Haiku context)
     """
+    session_id = hook_input.get('session_id', 'unknown')
+
     try:
         # Special check: force push to issue branches requires current branch verification
         if tool == 'Bash':
@@ -264,6 +446,11 @@ def check_permission(tool, target, raw_target):
                 if rule_tool == tool:
                     try:
                         if re.search(pattern, target):
+                            # For 'ask' decisions, try Telegram approval if enabled
+                            if decision == 'ask':
+                                tg_decision = telegram_approval_decision(tool, target, session_id, raw_target)
+                                if tg_decision:
+                                    return (tg_decision, 'telegram')
                             return (decision, 'rules')
                     except re.error:
                         # Malformed pattern, fail safe to 'ask'
@@ -271,14 +458,29 @@ def check_permission(tool, target, raw_target):
 
         # No match, ask Haiku (use raw_target for context)
         haiku_decision = ask_haiku_first(tool, raw_target)
+
+        # If Haiku returns 'ask', try Telegram approval
+        if haiku_decision == 'ask':
+            tg_decision = telegram_approval_decision(tool, target, session_id, raw_target)
+            if tg_decision:
+                return (tg_decision, 'telegram')
+
         return (haiku_decision, 'haiku')
     except Exception as e:
         # Any error, ask Haiku as fallback
         try:
             haiku_decision = ask_haiku_first(tool, raw_target)
+            # If Haiku returns 'ask', try Telegram approval
+            if haiku_decision == 'ask':
+                tg_decision = telegram_approval_decision(tool, target, session_id, raw_target)
+                if tg_decision:
+                    return (tg_decision, 'telegram')
             return (haiku_decision, 'haiku')
         except Exception:
-            # If even Haiku fails, default to 'ask'
+            # If even Haiku fails, try Telegram as last resort
+            tg_decision = telegram_approval_decision(tool, target, session_id, raw_target)
+            if tg_decision:
+                return (tg_decision, 'telegram')
             return ('ask', 'error')
 
 hook_input = json.load(sys.stdin)
@@ -360,7 +562,7 @@ if os.getenv('HANDSOFF_MODE', '0').lower() in ['1', 'true', 'on', 'enable'] and 
         except (json.JSONDecodeError, Exception):
             pass
 
-    # Log tool usage - separate files for rules vs haiku decisions
+    # Log tool usage - separate files for rules vs haiku vs telegram decisions
     # Use raw_target for logging to preserve original command
     time = datetime.datetime.now().isoformat()
     if decision_source == 'rules' and permission_decision == 'allow':
@@ -370,6 +572,10 @@ if os.getenv('HANDSOFF_MODE', '0').lower() in ['1', 'true', 'on', 'enable'] and 
     elif decision_source == 'haiku':
         # Haiku-determined tools go to their own file
         with open('.tmp/hooked-sessions/tool-haiku-determined.txt', 'a') as f:
+            f.write(f'[{time}] [{session}] [{workflow}] [{permission_decision}] {tool} | {raw_target}\n')
+    elif decision_source == 'telegram':
+        # Telegram-determined tools go to their own file
+        with open('.tmp/hooked-sessions/tool-telegram-determined.txt', 'a') as f:
             f.write(f'[{time}] [{session}] [{workflow}] [{permission_decision}] {tool} | {raw_target}\n')
 
 output = {

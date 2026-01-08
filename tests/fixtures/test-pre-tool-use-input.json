@@ -40,5 +40,19 @@
       "command": "git push origin main"
     },
     "session_id": "test-session"
+  },
+  "bash_ask_python": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "python3 script.py"
+    },
+    "session_id": "test-session"
+  },
+  "bash_ask_gh_api": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "gh api repos/owner/repo"
+    },
+    "session_id": "test-session"
   }
 }
