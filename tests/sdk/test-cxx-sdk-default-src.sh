@@ -9,10 +9,11 @@ TMP_DIR=$(make_temp_dir "cxx-sdk-test-src")
 
 # Creating C++ SDK with default source path
 (
+    source "$PROJECT_ROOT/scripts/lol-cli.sh"
     export AGENTIZE_PROJECT_NAME="test-cxx-sdk-src"
     export AGENTIZE_PROJECT_PATH="$TMP_DIR"
     export AGENTIZE_PROJECT_LANG="cxx"
-    "$PROJECT_ROOT/scripts/agentize-init.sh"
+    lol_cmd_init
 )
 
 # Verify src/ directory exists

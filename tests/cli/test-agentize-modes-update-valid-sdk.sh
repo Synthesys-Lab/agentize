@@ -9,10 +9,11 @@ TMP_DIR=$(make_temp_dir "mode-test-update-valid-sdk")
 
 # First creating a valid SDK
 (
+    source "$PROJECT_ROOT/scripts/lol-cli.sh"
     export AGENTIZE_PROJECT_NAME="test_mode_6"
     export AGENTIZE_PROJECT_PATH="$TMP_DIR"
     export AGENTIZE_PROJECT_LANG="python"
-    "$PROJECT_ROOT/scripts/agentize-init.sh"
+    lol_cmd_init
 )
 
 # Modify a file in .claude/ to verify backup
@@ -20,8 +21,9 @@ echo "# Modified by test" >> "$TMP_DIR/.claude/settings.json"
 
 # Now updating the SDK
 (
+    source "$PROJECT_ROOT/scripts/lol-cli.sh"
     export AGENTIZE_PROJECT_PATH="$TMP_DIR"
-    "$PROJECT_ROOT/scripts/agentize-update.sh"
+    lol_cmd_update
 )
 
 # Verify backup was created

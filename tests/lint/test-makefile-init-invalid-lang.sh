@@ -8,12 +8,15 @@ test_info "Init mode with invalid LANG (should fail)"
 TMP_DIR=$(make_temp_dir "makefile-invalid-lang")
 OUTPUT_FILE="$TMP_DIR/output.txt"
 
-# Run make with invalid language
+# Run init with invalid language
 set +e
-AGENTIZE_PROJECT_NAME="test_proj" \
-AGENTIZE_PROJECT_PATH="$TMP_DIR" \
-AGENTIZE_PROJECT_LANG="rust" \
-"$PROJECT_ROOT/scripts/agentize-init.sh" > "$OUTPUT_FILE" 2>&1
+(
+    source "$PROJECT_ROOT/scripts/lol-cli.sh"
+    export AGENTIZE_PROJECT_NAME="test_proj"
+    export AGENTIZE_PROJECT_PATH="$TMP_DIR"
+    export AGENTIZE_PROJECT_LANG="rust"
+    lol_cmd_init
+) > "$OUTPUT_FILE" 2>&1
 exit_code=$?
 set -e
 

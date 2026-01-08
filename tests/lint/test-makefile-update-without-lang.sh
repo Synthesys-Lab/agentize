@@ -11,11 +11,14 @@ OUTPUT_FILE="$OUTPUT_DIR/output.txt"
 
 # Setup: Create a valid SDK structure first
 set +e
-AGENTIZE_HOME="$PROJECT_ROOT" \
-AGENTIZE_PROJECT_NAME="test_proj" \
-AGENTIZE_PROJECT_PATH="$TMP_DIR" \
-AGENTIZE_PROJECT_LANG="python" \
-"$PROJECT_ROOT/scripts/agentize-init.sh" > "$OUTPUT_FILE" 2>&1
+(
+    source "$PROJECT_ROOT/scripts/lol-cli.sh"
+    export AGENTIZE_HOME="$PROJECT_ROOT"
+    export AGENTIZE_PROJECT_NAME="test_proj"
+    export AGENTIZE_PROJECT_PATH="$TMP_DIR"
+    export AGENTIZE_PROJECT_LANG="python"
+    lol_cmd_init
+) > "$OUTPUT_FILE" 2>&1
 setup_exit=$?
 set -e
 
@@ -27,9 +30,12 @@ fi
 
 # Test: Update without LANG or NAME
 set +e
-AGENTIZE_HOME="$PROJECT_ROOT" \
-AGENTIZE_PROJECT_PATH="$TMP_DIR" \
-"$PROJECT_ROOT/scripts/agentize-update.sh" > "$OUTPUT_FILE" 2>&1
+(
+    source "$PROJECT_ROOT/scripts/lol-cli.sh"
+    export AGENTIZE_HOME="$PROJECT_ROOT"
+    export AGENTIZE_PROJECT_PATH="$TMP_DIR"
+    lol_cmd_update
+) > "$OUTPUT_FILE" 2>&1
 exit_code=$?
 set -e
 

@@ -81,7 +81,7 @@ Each template includes:
 ## Related Documentation
 
 - [templates/](../../templates/) - SDK template source files
-- [scripts/agentize-init.sh](../../scripts/agentize-init.sh) - Template instantiation logic
+- [src/cli/lol.sh](../../src/cli/lol.sh) - Canonical CLI implementation (template instantiation via `lol_cmd_init`)
 - [scripts/detect-lang.sh](../../scripts/detect-lang.sh) - Language detection for auto-inference
 - [tests/cli/test-agentize-modes-init-*.sh](../cli/) - CLI-level init tests
 - [tests/README.md](../README.md) - Test suite overview

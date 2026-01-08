@@ -10,9 +10,12 @@ OUTPUT_FILE="$TMP_DIR/output.txt"
 
 # Run script without AGENTIZE_PROJECT_LANG in init mode
 set +e
-AGENTIZE_PROJECT_NAME="test_proj" \
-AGENTIZE_PROJECT_PATH="$TMP_DIR" \
-"$PROJECT_ROOT/scripts/agentize-init.sh" > "$OUTPUT_FILE" 2>&1
+(
+    source "$PROJECT_ROOT/scripts/lol-cli.sh"
+    export AGENTIZE_PROJECT_NAME="test_proj"
+    export AGENTIZE_PROJECT_PATH="$TMP_DIR"
+    lol_cmd_init
+) > "$OUTPUT_FILE" 2>&1
 exit_code=$?
 set -e
 

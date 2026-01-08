@@ -9,10 +9,11 @@ TMP_DIR=$(make_temp_dir "mode-test-init-empty-dir")
 
 # Creating SDK in empty existing directory
 (
+    source "$PROJECT_ROOT/scripts/lol-cli.sh"
     export AGENTIZE_PROJECT_NAME="test_mode_2"
     export AGENTIZE_PROJECT_PATH="$TMP_DIR"
     export AGENTIZE_PROJECT_LANG="python"
-    "$PROJECT_ROOT/scripts/agentize-init.sh"
+    lol_cmd_init
 )
 
 if [ ! -d "$TMP_DIR/.claude" ]; then
