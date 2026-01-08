@@ -9,9 +9,17 @@ import subprocess
 import time
 import urllib.request
 import urllib.error
+from typing import Optional, Dict, Any, Tuple, List
 from logger import log_tool_decision
 
 # This hook logs tools used in HANDSOFF_MODE and enforces permission rules.
+
+# Constants
+TELEGRAM_API_TIMEOUT_SEC = 10
+HAIKU_SUBPROCESS_TIMEOUT_SEC = 30
+TARGET_DISPLAY_MAX_LEN = 200
+SESSION_ID_DISPLAY_LEN = 8
+TELEGRAM_LONG_POLL_MAX_SEC = 30
 
 # Permission rules: (tool_name, regex_pattern)
 # Priority: deny → ask → allow (first match wins)
@@ -122,13 +130,13 @@ PERMISSION_RULES = {
     ]
 }
 
-def strip_env_vars(command):
+def strip_env_vars(command: str) -> str:
     """Strip leading ENV=value pairs from bash commands."""
     # Match one or more ENV=value patterns at the start
     env_pattern = re.compile(r'^(\w+=\S+\s+)+')
     return env_pattern.sub('', command)
 
-def strip_shell_prefixes(command):
+def strip_shell_prefixes(command: str) -> str:
     """Strip leading shell option prefixes from bash commands.
 
     Common prefixes like 'set -x && ' or 'set -e && ' are debugging/safety
@@ -138,7 +146,7 @@ def strip_shell_prefixes(command):
     prefix_pattern = re.compile(r'^(set\s+-[exo]\s+[a-z]*\s*&&\s*)+', re.IGNORECASE)
     return prefix_pattern.sub('', command)
 
-def ask_haiku_first(tool, target):
+def ask_haiku_first(tool: str, target: str) -> str:
     global hook_input
 
     if os.getenv('HANDSOFF_AUTO_PERMISSION', '0').lower() not in ['1', 'true', 'on', 'enable']:
@@ -175,7 +183,7 @@ Reply with allow, deny, or ask as the first word. Brief reasoning is optional.''
             ['claude', '--model', 'haiku', '-p'],
             input=prompt,
             text=True,
-            timeout=30
+            timeout=HAIKU_SUBPROCESS_TIMEOUT_SEC
         )
         full_response = result.strip().lower()
 
@@ -202,7 +210,7 @@ Reply with allow, deny, or ask as the first word. Brief reasoning is optional.''
         log_tool_decision(hook_input['session_id'], transcript, tool, target, f'ERROR subprocess: {str(e)}')
         return 'ask'
 
-def normalize_bash_command(command):
+def normalize_bash_command(command: str) -> str:
     """Normalize bash command by stripping env vars and shell prefixes."""
     command = strip_env_vars(command)
     command = strip_shell_prefixes(command)
@@ -210,13 +218,13 @@ def normalize_bash_command(command):
 
 
 # Telegram approval integration
-def is_telegram_enabled():
+def is_telegram_enabled() -> bool:
     """Check if Telegram approval is enabled and configured."""
     use_tg = os.getenv('AGENTIZE_USE_TG', '0').lower()
     return use_tg in ['1', 'true', 'on']
 
 
-def get_telegram_config():
+def get_telegram_config() -> Optional[Dict[str, Any]]:
     """Get Telegram configuration from environment.
 
     Returns:
@@ -234,7 +242,7 @@ def get_telegram_config():
 
     # Parse allowed user IDs (optional)
     allowed_ids_str = os.getenv('TG_ALLOWED_USER_IDS', '')
-    allowed_user_ids = []
+    allowed_user_ids: List[int] = []
     if allowed_ids_str:
         allowed_user_ids = [int(uid.strip()) for uid in allowed_ids_str.split(',') if uid.strip()]
 
@@ -247,13 +255,14 @@ def get_telegram_config():
     }
 
 
-def tg_api_request(token, method, payload=None):
+def tg_api_request(token: str, method: str, payload: Optional[Dict[str, Any]] = None, session_id: str = 'unknown') -> Optional[Dict[str, Any]]:
     """Make a request to Telegram Bot API.
 
     Args:
         token: Bot API token
         method: API method (e.g., 'sendMessage', 'getUpdates')
         payload: Request payload dict (optional)
+        session_id: Session ID for logging (optional)
 
     Returns:
         dict: API response or None on error
@@ -266,14 +275,14 @@ def tg_api_request(token, method, payload=None):
         else:
             req = urllib.request.Request(url)
 
-        with urllib.request.urlopen(req, timeout=10) as response:
+        with urllib.request.urlopen(req, timeout=TELEGRAM_API_TIMEOUT_SEC) as response:
             return json.loads(response.read().decode('utf-8'))
     except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, TimeoutError) as e:
-        log_tool_decision(hook_input.get('session_id', 'unknown'), '', 'Telegram', method, f'API_ERROR: {str(e)}')
+        log_tool_decision(session_id, '', 'Telegram', method, f'API_ERROR: {str(e)[:100]}')
         return None
 
 
-def telegram_approval_decision(tool, target, session_id, raw_target):
+def telegram_approval_decision(tool: str, target: str, session_id: str, raw_target: str) -> Optional[str]:
     """Request approval via Telegram for an 'ask' decision.
 
     Args:
@@ -293,14 +302,14 @@ def telegram_approval_decision(tool, target, session_id, raw_target):
         log_tool_decision(session_id, '', tool, raw_target, 'TG_CONFIG_MISSING')
         return None
 
-    token = config['token']
-    chat_id = config['chat_id']
-    timeout = config['timeout']
-    poll_interval = config['poll_interval']
-    allowed_user_ids = config['allowed_user_ids']
+    token: str = config['token']
+    chat_id: str = config['chat_id']
+    timeout: int = config['timeout']
+    poll_interval: int = config['poll_interval']
+    allowed_user_ids: List[int] = config['allowed_user_ids']
 
     # Get current update_id offset to ignore old messages
-    updates_resp = tg_api_request(token, 'getUpdates', {'limit': 1, 'offset': -1})
+    updates_resp = tg_api_request(token, 'getUpdates', {'limit': 1, 'offset': -1}, session_id)
     if updates_resp and updates_resp.get('ok') and updates_resp.get('result'):
         last_update = updates_resp['result'][-1]
         update_offset = last_update.get('update_id', 0) + 1
@@ -311,15 +320,15 @@ def telegram_approval_decision(tool, target, session_id, raw_target):
     message_text = (
         f"🔧 Tool Approval Request\n\n"
         f"Tool: {tool}\n"
-        f"Target: {raw_target[:200]}\n"
-        f"Session: {session_id[:8]}\n\n"
+        f"Target: {raw_target[:TARGET_DISPLAY_MAX_LEN]}\n"
+        f"Session: {session_id[:SESSION_ID_DISPLAY_LEN]}\n\n"
         f"Reply /allow or /deny"
     )
 
     send_resp = tg_api_request(token, 'sendMessage', {
         'chat_id': chat_id,
         'text': message_text
-    })
+    }, session_id)
 
     if not send_resp or not send_resp.get('ok'):
         log_tool_decision(session_id, '', tool, raw_target, 'TG_SEND_FAILED')
@@ -333,8 +342,8 @@ def telegram_approval_decision(tool, target, session_id, raw_target):
     while (time.monotonic() - start_time) < timeout:
         updates_resp = tg_api_request(token, 'getUpdates', {
             'offset': update_offset,
-            'timeout': min(poll_interval, 30)  # Long polling, max 30s
-        })
+            'timeout': min(poll_interval, TELEGRAM_LONG_POLL_MAX_SEC)
+        }, session_id)
 
         if not updates_resp or not updates_resp.get('ok'):
             time.sleep(poll_interval)
@@ -360,7 +369,7 @@ def telegram_approval_decision(tool, target, session_id, raw_target):
                     'chat_id': chat_id,
                     'text': f"✅ Allowed: {tool}",
                     'reply_to_message_id': msg.get('message_id')
-                })
+                }, session_id)
                 return 'allow'
             elif text == '/deny' or text.startswith('/deny '):
                 log_tool_decision(session_id, '', tool, raw_target, f'TG_DENY user_id={user_id}')
@@ -369,12 +378,8 @@ def telegram_approval_decision(tool, target, session_id, raw_target):
                     'chat_id': chat_id,
                     'text': f"❌ Denied: {tool}",
                     'reply_to_message_id': msg.get('message_id')
-                })
+                }, session_id)
                 return 'deny'
-
-        # Small sleep between poll cycles if no updates
-        if not updates_resp.get('result'):
-            time.sleep(poll_interval)
 
     # Timeout reached
     log_tool_decision(session_id, '', tool, raw_target, f'TG_TIMEOUT after {timeout}s')
@@ -382,10 +387,10 @@ def telegram_approval_decision(tool, target, session_id, raw_target):
         'chat_id': chat_id,
         'text': f"⏰ Timeout: No response for {tool}, falling back to local prompt",
         'reply_to_message_id': message_id
-    })
+    }, session_id)
     return None
 
-def verify_force_push_to_own_branch(command):
+def verify_force_push_to_own_branch(command: str) -> Optional[str]:
     """Check if force push targets the current branch (issue-* branches only).
 
     Returns 'allow' if pushing to own issue branch, 'deny' otherwise.
@@ -419,7 +424,7 @@ def verify_force_push_to_own_branch(command):
     except Exception:
         return None  # Can't verify, let other rules handle it
 
-def check_permission(tool, target, raw_target):
+def check_permission(tool: str, target: str, raw_target: str) -> Tuple[str, str]:
     """
     Check permission for tool usage against PERMISSION_RULES.
     Returns: (decision, source) where decision is 'allow'/'deny'/'ask' and source is 'rules', 'haiku', or 'telegram'
