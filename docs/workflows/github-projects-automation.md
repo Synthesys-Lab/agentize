@@ -68,6 +68,7 @@ For more control over automation (e.g., setting custom field values, complex fil
 - Automatically adds new issues and PRs to the project board
 - Sets Stage field to "proposed" for newly opened issues
 - Closes linked issues when associated PRs are merged (using GitHub's `closingIssuesReferences`)
+- Archives merged PR items from the project board (declutters active views)
 
 **Advantages:**
 - Fine-grained control over automation logic
@@ -80,6 +81,7 @@ For more control over automation (e.g., setting custom field values, complex fil
 - Requires workflow file maintenance
 - Consumes GitHub Actions minutes
 - May hit API rate limits on large repos
+- Archives only merged PR items (manual issue archival not included; use GitHub's built-in auto-archive for broader lifecycle handling)
 
 ## Setting Custom Field Values
 

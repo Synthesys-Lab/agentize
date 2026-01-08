@@ -253,6 +253,7 @@ The generated template:
 - Automatically adds new issues and PRs to the project board
 - Sets Stage field to "proposed" for newly opened issues
 - Closes linked issues when associated PRs are merged
+- Archives merged PR items from the project board
 
 **Automatic configuration:**
 - Checks if "Stage" field exists in your project

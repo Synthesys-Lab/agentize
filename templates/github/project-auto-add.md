@@ -42,6 +42,26 @@ Runs when PRs are closed and merged.
 
 **Technology**: Uses GitHub CLI (`gh`) for both GraphQL queries and issue closing
 
+### Job 3: `archive-pr-on-merge`
+
+Runs when PRs are closed and merged to archive the PR item from the project board.
+
+**Trigger**: `pull_request.closed` with `merged == true`
+
+**Process**:
+1. **Fetch project node ID**: Queries organization's project by number to get the GraphQL node ID
+2. **Find PR item**: Searches project items (paginated, 100 per page) to find the item matching the merged PR's node ID
+3. **Archive item**: Calls `archiveProjectV2Item` mutation to archive the item if found
+
+**Technology**: Uses GitHub CLI (`gh`) for GraphQL queries and mutations
+
+**Why archive on merge?**
+- Completed PRs clutter active board views
+- Archiving keeps them searchable but out of the way
+- Aligns with GitHub's recommended project hygiene practices
+
+**Note**: This job only archives PR items. For broader lifecycle archival (e.g., closed issues), use GitHub's built-in auto-archive feature in project settings.
+
 ## Configuration Requirements
 
 ### Environment Variables
@@ -296,6 +316,10 @@ To set a Stage value for newly opened PRs:
 3. **Single-select fields only**: The mutation uses `singleSelectOptionId`. For other field types (text, number, date), different mutation syntax is required.
 
 4. **No cross-repository support**: Issues must be in the same repository as the PR. Cross-repo closing is not supported by `closingIssuesReferences`.
+
+5. **PR archival only**: The `archive-pr-on-merge` job only archives merged PR items. Manual issue closing, abandoned PRs, and other lifecycle events are not archived. Use GitHub's built-in auto-archive for broader coverage.
+
+6. **Large projects pagination**: PR item lookup iterates up to 5 pages (500 items). For very large projects with more than 500 active items, the PR may not be found and archival will be skipped (logged but no error).
 
 ## Reference Links
 
