@@ -9,7 +9,7 @@ TMP_DIR=$(make_temp_dir "c-sdk-test-src")
 
 # Creating C SDK with default source path
 (
-    source "$PROJECT_ROOT/scripts/lol-cli.sh"
+    source "$PROJECT_ROOT/src/cli/lol.sh"
     lol_cmd_init "$TMP_DIR" "test-c-sdk-src" "c"
 )
 

@@ -10,7 +10,7 @@ touch "$TMP_DIR/some-file.txt"
 
 # Updating directory without SDK structure (should create .claude/)
 (
-    source "$PROJECT_ROOT/scripts/lol-cli.sh"
+    source "$PROJECT_ROOT/src/cli/lol.sh"
     lol_cmd_update "$TMP_DIR"
 )
 

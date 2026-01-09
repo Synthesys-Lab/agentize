@@ -10,7 +10,7 @@ rm -rf "$TMP_DIR"
 
 # Attempting to update non-existent directory (should fail)
 if (
-    source "$PROJECT_ROOT/scripts/lol-cli.sh"
+    source "$PROJECT_ROOT/src/cli/lol.sh"
     lol_cmd_update "$TMP_DIR"
 ) 2>&1 | grep -q "does not exist"; then
     test_pass "update mode correctly rejects non-existent directory"

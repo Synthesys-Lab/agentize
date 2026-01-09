@@ -10,7 +10,7 @@ rm -rf "$TMP_DIR"
 
 # Creating SDK in non-existent directory
 (
-    source "$PROJECT_ROOT/scripts/lol-cli.sh"
+    source "$PROJECT_ROOT/src/cli/lol.sh"
     lol_cmd_init "$TMP_DIR" "test_mode_1" "python"
 )
 

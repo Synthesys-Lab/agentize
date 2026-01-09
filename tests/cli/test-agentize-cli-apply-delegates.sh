@@ -4,7 +4,7 @@
 source "$(dirname "$0")/../common.sh"
 source "$(dirname "$0")/../helpers-worktree.sh"
 
-LOL_CLI="$PROJECT_ROOT/scripts/lol-cli.sh"
+LOL_CLI="$PROJECT_ROOT/src/cli/lol.sh"
 
 test_info "lol apply delegates correctly to init/update modes"
 

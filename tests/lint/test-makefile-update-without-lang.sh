@@ -12,7 +12,7 @@ OUTPUT_FILE="$OUTPUT_DIR/output.txt"
 # Setup: Create a valid SDK structure first
 set +e
 (
-    source "$PROJECT_ROOT/scripts/lol-cli.sh"
+    source "$PROJECT_ROOT/src/cli/lol.sh"
     lol_cmd_init "$TMP_DIR" "test_proj" "python"
 ) > "$OUTPUT_FILE" 2>&1
 setup_exit=$?
@@ -27,7 +27,7 @@ fi
 # Test: Update without LANG or NAME
 set +e
 (
-    source "$PROJECT_ROOT/scripts/lol-cli.sh"
+    source "$PROJECT_ROOT/src/cli/lol.sh"
     lol_cmd_update "$TMP_DIR"
 ) > "$OUTPUT_FILE" 2>&1
 exit_code=$?

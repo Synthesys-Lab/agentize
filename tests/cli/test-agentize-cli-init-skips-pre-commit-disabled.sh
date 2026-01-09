@@ -3,7 +3,7 @@
 
 source "$(dirname "$0")/../common.sh"
 
-LOL_CLI="$PROJECT_ROOT/scripts/lol-cli.sh"
+LOL_CLI="$PROJECT_ROOT/src/cli/lol.sh"
 
 test_info "lol init skips hook when pre_commit.enabled is false"
 

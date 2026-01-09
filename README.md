@@ -151,7 +151,6 @@ agentize/
 │   └── lol.sh              # SDK CLI library (canonical source)
 ├── scripts/                # Shell scripts and wrapper entrypoints
 │   ├── wt-cli.sh           # Worktree CLI wrapper (sources src/cli/wt.sh)
-│   ├── lol-cli.sh          # SDK CLI wrapper (sources src/cli/lol.sh)
 │   └── agentize-*.sh       # SDK command wrappers
 ├── templates/              # Templates for SDK generation
 ├── .claude/                # Core agent rules for Claude Code

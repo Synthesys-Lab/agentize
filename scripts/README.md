@@ -61,12 +61,7 @@ This directory contains utility scripts, git hooks, and wrapper entrypoints for 
 
 ### SDK CLI Wrappers
 
-These scripts delegate to `src/cli/lol.sh` for backwards compatibility:
-
-- `lol-cli.sh` - SDK CLI wrapper (sources `src/cli/lol.sh`)
-  - Canonical source: `src/cli/lol.sh`
-  - Provides `lol`, `lol_complete`, `lol_cmd_init`, `lol_cmd_update`, and other functions when sourced
-  - For tests/scripts: source this file then call `lol_cmd_init` or `lol_cmd_update` directly
+These scripts delegate to `src/cli/lol.sh`:
 
 - `agentize-project.sh` - Project command wrapper (calls `lol_cmd_project`)
   - Usage: Called by `lol project` command or directly with environment variables

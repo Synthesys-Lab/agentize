@@ -9,7 +9,7 @@ TMP_DIR=$(make_temp_dir "mode-test-update-preserves-user-files")
 
 # First creating a valid SDK
 (
-    source "$PROJECT_ROOT/scripts/lol-cli.sh"
+    source "$PROJECT_ROOT/src/cli/lol.sh"
     lol_cmd_init "$TMP_DIR" "test_mode_7" "python"
 )
 
@@ -21,7 +21,7 @@ echo "# My Custom Command" > "$TMP_DIR/.claude/commands/my-custom-command/COMMAN
 
 # Running update to sync template files
 (
-    source "$PROJECT_ROOT/scripts/lol-cli.sh"
+    source "$PROJECT_ROOT/src/cli/lol.sh"
     lol_cmd_update "$TMP_DIR"
 )
 

@@ -9,7 +9,7 @@ TMP_DIR=$(make_temp_dir "mode-test-init-empty-dir")
 
 # Creating SDK in empty existing directory
 (
-    source "$PROJECT_ROOT/scripts/lol-cli.sh"
+    source "$PROJECT_ROOT/src/cli/lol.sh"
     lol_cmd_init "$TMP_DIR" "test_mode_2" "python"
 )
 

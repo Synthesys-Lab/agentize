@@ -11,7 +11,7 @@ OUTPUT_FILE="$TMP_DIR/output.txt"
 # Run init with invalid language
 set +e
 (
-    source "$PROJECT_ROOT/scripts/lol-cli.sh"
+    source "$PROJECT_ROOT/src/cli/lol.sh"
     lol_cmd_init "$TMP_DIR" "test_proj" "rust"
 ) > "$OUTPUT_FILE" 2>&1
 exit_code=$?

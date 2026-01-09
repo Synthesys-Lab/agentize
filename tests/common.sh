@@ -29,6 +29,10 @@ if [ -z "$PROJECT_ROOT" ]; then
   exit 1
 fi
 
+# Export AGENTIZE_HOME for tests - this is the framework installation path
+# Tests use the current project root as the framework location
+export AGENTIZE_HOME="$PROJECT_ROOT"
+
 TESTS_DIR="$PROJECT_ROOT/tests"
 
 # ============================================================

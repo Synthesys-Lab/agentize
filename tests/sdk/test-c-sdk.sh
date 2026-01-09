@@ -21,7 +21,7 @@ rm -rf "$TMP_DIR_SRC"
 
 echo "Creating C SDK with default source path..."
 (
-    source "$PROJECT_ROOT/scripts/lol-cli.sh"
+    source "$PROJECT_ROOT/src/cli/lol.sh"
     lol_cmd_init "$TMP_DIR_SRC" "test-c-sdk-src" "c"
 )
 
@@ -95,7 +95,7 @@ rm -rf "$TMP_DIR_LIB"
 
 echo "Creating C SDK with custom source path (lib/)..."
 (
-    source "$PROJECT_ROOT/scripts/lol-cli.sh"
+    source "$PROJECT_ROOT/src/cli/lol.sh"
     lol_cmd_init "$TMP_DIR_LIB" "test-c-sdk-lib" "c" "lib"
 )
 

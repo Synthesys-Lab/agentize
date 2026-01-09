@@ -11,7 +11,7 @@ OUTPUT_FILE="$TMP_DIR/output.txt"
 # Run script without AGENTIZE_PROJECT_LANG in init mode
 set +e
 (
-    source "$PROJECT_ROOT/scripts/lol-cli.sh"
+    source "$PROJECT_ROOT/src/cli/lol.sh"
     # Call without lang parameter - should fail
     lol_cmd_init "$TMP_DIR" "test_proj"
 ) > "$OUTPUT_FILE" 2>&1

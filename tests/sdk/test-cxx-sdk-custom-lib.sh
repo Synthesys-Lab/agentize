@@ -9,7 +9,7 @@ TMP_DIR=$(make_temp_dir "cxx-sdk-test-lib")
 
 # Creating C++ SDK with custom source path (lib/)
 (
-    source "$PROJECT_ROOT/scripts/lol-cli.sh"
+    source "$PROJECT_ROOT/src/cli/lol.sh"
     lol_cmd_init "$TMP_DIR" "test-cxx-sdk-lib" "cxx" "lib"
 )
 
