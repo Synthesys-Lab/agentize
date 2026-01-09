@@ -175,9 +175,9 @@ Session: abc123
 **Features:**
 - HTML `<code>` tags provide syntax highlighting for tool names and targets
 - Inline keyboard buttons (`[✅ Allow]` and `[❌ Deny]`) for one-tap approval
-- Text commands (`/allow` and `/deny`) still work as fallback
 - Button presses trigger immediate acknowledgment (no spinner delay)
 - Original message is edited to show decision result
+- On timeout, the original message is updated to show "⏰ Timed Out" status with buttons removed
 
 **Callback data format:** `allow:{message_id}` or `deny:{message_id}`
 

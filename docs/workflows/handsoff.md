@@ -111,9 +111,9 @@ When configured, enables remote approval of tool usage via Telegram. When a PreT
 **Behavior:**
 - When Telegram is enabled and configured, `ask` decisions are sent to Telegram
 - Approval messages display inline keyboard buttons (`[✅ Allow]` and `[❌ Deny]`) for one-tap approval
-- Text commands (`/allow` and `/deny`) still work as fallback for older clients
 - Button presses provide immediate acknowledgment and update the original message
-- On timeout or API error, falls back to `ask` (prompts local user)
+- On timeout, the original message is edited to show "⏰ Timed Out" status with buttons removed
+- On API error, falls back to `ask` (prompts local user)
 - Missing configuration logs a warning and falls back to `ask`
 
 ### Settings.json Configuration
