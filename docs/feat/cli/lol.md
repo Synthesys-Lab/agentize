@@ -4,7 +4,9 @@ This document provides detailed reference documentation for the `lol` command us
 
 **Quick Reference:** Use `lol --help` for a concise summary of options.
 
-**Implementation:** The `lol` command is implemented in `src/cli/lol.sh` as a source-first library. For function-level interface documentation, see `src/cli/lol.md`.
+**Implementation:** The `lol` command is implemented as a source-first library in `src/cli/lol/` (modular shell files) with an optional Python entrypoint (`python -m agentize.cli`). The shell implementation is canonical; Python delegates to shell functions.
+
+For function-level interface documentation, see `src/cli/lol.md`.
 
 ## Quick Reference
 

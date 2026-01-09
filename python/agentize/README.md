@@ -7,6 +7,8 @@ Python SDK for AI-powered software engineering workflows.
 ```
 python/agentize/
 ├── __init__.py           # Package root
+├── cli.py                # Python CLI entrypoint (python -m agentize.cli)
+├── cli.md                # CLI interface documentation
 └── permission/           # PreToolUse hook permission module
     ├── __init__.py       # Exports determine()
     ├── determine.py      # Main permission logic
@@ -16,6 +18,16 @@ python/agentize/
 ```
 
 ## Usage
+
+### CLI Entrypoint
+
+```bash
+python -m agentize.cli <command> [options]
+```
+
+The Python CLI delegates to shell functions via `bash -lc` with `AGENTIZE_HOME` set. It provides argparse-style parsing while preserving shell as the canonical implementation. See `cli.md` for interface details.
+
+### Permission Module
 
 The primary entry point is `agentize.permission.determine()`:
 

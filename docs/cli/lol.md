@@ -2,6 +2,21 @@
 
 The `lol` command provides SDK initialization, project management, and automation server capabilities.
 
+## Entrypoints
+
+**Shell (canonical):**
+```bash
+source setup.sh  # Sources src/cli/lol.sh
+lol <command> [options]
+```
+
+**Python (optional):**
+```bash
+python -m agentize.cli <command> [options]
+```
+
+The Python entrypoint delegates to shell functions via `bash -lc` with `AGENTIZE_HOME` set. Use it for non-sourced environments or scripting contexts where argparse-style parsing is preferred.
+
 ## Commands
 
 ### lol init

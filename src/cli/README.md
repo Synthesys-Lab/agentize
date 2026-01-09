@@ -15,11 +15,19 @@ Source-first libraries for Agentize CLI commands. These files are the canonical 
   - Integrates with GitHub via `gh` CLI for issue validation
   - Interface documentation: `wt.md`
 
-- `lol.sh` - SDK CLI library (canonical source)
-  - Implements `lol` command for SDK initialization and management
-  - Handles subcommands: `init`, `update`, `upgrade`, `project`, `version`
-  - Command implementations run in subshell functions to preserve `set -e` semantics
+- `lol.sh` - SDK CLI library (canonical source, thin loader)
+  - Sources modular files from `lol/` directory
+  - Exports `lol` command for SDK initialization and management
+  - Handles subcommands: `apply`, `init`, `update`, `upgrade`, `project`, `serve`, `version`
   - Interface documentation: `lol.md`
+
+- `lol/` - SDK CLI modular implementation
+  - `helpers.sh` - Language detection and utility functions
+  - `completion.sh` - Shell-agnostic completion helper
+  - `commands.sh` - Command implementations (lol_cmd_*)
+  - `dispatch.sh` - Main dispatcher, help text, and entry point
+  - `parsers.sh` - Argument parsing for each command
+  - See `lol/README.md` for module map and load order
 
 ## Usage
 
