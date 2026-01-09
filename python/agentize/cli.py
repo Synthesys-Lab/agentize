@@ -11,42 +11,14 @@ Usage:
 
 import argparse
 import os
-import subprocess
 import sys
-from pathlib import Path
 
-
-def get_agentize_home() -> str:
-    """Get AGENTIZE_HOME from environment or derive from repo root."""
-    if "AGENTIZE_HOME" in os.environ:
-        return os.environ["AGENTIZE_HOME"]
-
-    # Try to derive from this file's location
-    # cli.py is at python/agentize/cli.py, so repo root is ../../..
-    cli_path = Path(__file__).resolve()
-    repo_root = cli_path.parent.parent.parent
-    if (repo_root / "Makefile").exists() and (repo_root / "src" / "cli" / "lol.sh").exists():
-        return str(repo_root)
-
-    raise RuntimeError(
-        "AGENTIZE_HOME not set and could not be derived.\n"
-        "Please set AGENTIZE_HOME to point to your agentize repository."
-    )
+from agentize.shell import get_agentize_home, run_shell_function
 
 
 def run_shell_command(cmd: str, agentize_home: str) -> int:
     """Run a shell command with AGENTIZE_HOME set."""
-    env = os.environ.copy()
-    env["AGENTIZE_HOME"] = agentize_home
-
-    # Source setup.sh and run the command
-    full_cmd = f'source "$AGENTIZE_HOME/setup.sh" && {cmd}'
-
-    result = subprocess.run(
-        ["bash", "-lc", full_cmd],
-        env=env,
-        cwd=os.getcwd(),
-    )
+    result = run_shell_function(cmd, agentize_home=agentize_home)
     return result.returncode
 
 

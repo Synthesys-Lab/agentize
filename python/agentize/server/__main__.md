@@ -66,6 +66,4 @@ Check if a worktree exists for the given issue number.
 
 Spawn a new worktree for the given issue via `wt spawn`.
 
-### `_run_wt(args: str, capture_output: bool = False) -> subprocess.CompletedProcess`
-
-Run wt command via bash (wt is a shell function, not an executable).
+Note: Uses `run_shell_function()` from `agentize.shell` for shell invocation.

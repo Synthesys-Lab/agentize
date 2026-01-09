@@ -9,6 +9,9 @@ python/agentize/
 ├── __init__.py           # Package root
 ├── cli.py                # Python CLI entrypoint (python -m agentize.cli)
 ├── cli.md                # CLI interface documentation
+├── shell.py              # Shared shell function invocation utilities
+├── server/               # Polling server module
+│   └── __main__.py       # Server entry point (python -m agentize.server)
 └── permission/           # PreToolUse hook permission module
     ├── __init__.py       # Exports determine()
     ├── determine.py      # Main permission logic
@@ -25,7 +28,22 @@ python/agentize/
 python -m agentize.cli <command> [options]
 ```
 
-The Python CLI delegates to shell functions via `bash -lc` with `AGENTIZE_HOME` set. It provides argparse-style parsing while preserving shell as the canonical implementation. See `cli.md` for interface details.
+The Python CLI delegates to shell functions via the shared `shell.py` module with `AGENTIZE_HOME` set. It provides argparse-style parsing while preserving shell as the canonical implementation. See `cli.md` for interface details.
+
+### Shell Utilities
+
+```python
+from agentize.shell import get_agentize_home, run_shell_function
+
+# Auto-detect AGENTIZE_HOME
+home = get_agentize_home()
+
+# Run shell functions with AGENTIZE_HOME set
+result = run_shell_function("wt spawn 123", capture_output=True)
+print(result.returncode, result.stdout)
+```
+
+The `shell.py` module provides a unified interface for invoking shell functions from Python. It handles `AGENTIZE_HOME` auto-detection and sources `setup.sh` before running commands.
 
 ### Permission Module
 
