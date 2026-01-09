@@ -68,9 +68,12 @@ Tool: {tool}
 Target: {target}
 
 Risk categories:
-- allow: Read-only operations, file search, git status, safe builds, test runs
-- deny: Destructive ops (rm -rf, git reset --hard), secrets access, sudo, force push
-- ask: Unclear intent, external API writes, untrusted script execution
+- allow: Read-only operations, file search, git status, safe builds, test runs,
+  or auto coder linters and formmatters
+- deny: Destructive ops (rm -rf, git reset --hard), secrets access (e.g. env to see all env vars),
+  sudo, force push to non-dev branches, overriding anything outside this repo or tmp
+- ask: Unclear intent, external API writes, untrusted script execution, something between ---
+  not that dangerous as direct denial, not as safe as direct allow
 
 Context (last transcript entry):
 {transcript}
