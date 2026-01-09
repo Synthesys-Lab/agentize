@@ -185,13 +185,13 @@ Direct invocation with 3 report paths - the script handles everything and output
 
 [Summary of balanced approach...]
 
-## Design Decisions
+## Codebase Analysis
 
-[Decisions from each perspective...]
+**File changes:**
 
-## Architecture
-
-[Component descriptions...]
+| File | Level | Purpose |
+|------|-------|---------|
+| `path/to/file` | major/medium/minor/remove | Description |
 
 ## Implementation Steps
 
@@ -210,6 +210,12 @@ Direct invocation with 3 report paths - the script handles everything and output
 
 [Risk table...]
 ```
+
+**Modification levels:**
+- **minor**: <10 LOC, cosmetic changes
+- **medium**: 10-50 LOC, no interface changes
+- **major**: >50 LOC, interface changes, or new files
+- **remove**: File deletion
 
 **Script output on stdout (last line):**
 ```

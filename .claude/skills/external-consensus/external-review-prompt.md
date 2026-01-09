@@ -90,15 +90,21 @@ Generate a final implementation plan that follows the plan-guideline structure a
 - [File path 1]: [What was verified]
 - [File path 2]: [What was verified]
 
-**Files to modify:**
-- `path/to/file1` - Purpose
-- `path/to/file2` - Purpose
+**File changes:**
 
-**Files to create:**
-- `path/to/new/file1` - Purpose (Estimated: X LOC)
+| File | Level | Purpose |
+|------|-------|---------|
+| `path/to/file1` | major | Significant changes description |
+| `path/to/file2` | medium | Moderate changes description |
+| `path/to/file3` | minor | Small changes description |
+| `path/to/new/file` (new) | major | New file purpose (Est: X LOC) |
+| `path/to/deprecated/file` | remove | Reason for removal |
 
-**Files to delete:**
-- `path/to/deprecated/file` - Reason
+**Modification level definitions:**
+- **minor**: Cosmetic or trivial changes (comments, formatting, <10 LOC changed)
+- **medium**: Moderate changes to existing logic (10-50 LOC, no interface changes)
+- **major**: Significant structural changes (>50 LOC, interface changes, or new files)
+- **remove**: File deletion
 
 **Current architecture notes:**
 [Key observations about existing code]
@@ -228,6 +234,7 @@ Your consensus plan should:
 ✅ **Address risks**: Mitigate critical concerns from critique
 ✅ **Stay simple**: Remove unnecessary complexity per reducer
 ✅ **Correct measurement**: Use LOC estimates only; no time-based estimates
+✅ **Accurate modification levels**: Every file must have correct level (minor/medium/major/remove)
 
 ❌ **Avoid**: Over-engineering, ignoring risks, excessive scope creep, vague specifications, or "audit the codebase" steps
 
