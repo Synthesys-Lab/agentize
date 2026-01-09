@@ -35,12 +35,13 @@ Invoke the command: `/ultra-planner [feature-description]` or `/ultra-planner --
 
 ## What This Command Does
 
-This command orchestrates a three-agent debate system to generate high-quality implementation plans:
+This command orchestrates a multi-agent debate system to generate high-quality implementation plans:
 
-1. **Three-agent debate**: Launch bold-proposer first, then critique and reducer analyze its output
-2. **Combine reports**: Merge all three perspectives into single document
-3. **External consensus**: Invoke external-consensus skill to synthesize balanced plan
-4. **Draft issue creation**: Automatically create draft GitHub issue via open-issue skill
+1. **Context gathering**: Launch understander agent to gather codebase context
+2. **Three-agent debate**: Launch bold-proposer (with context) first, then critique and reducer analyze its output
+3. **Combine reports**: Merge all three perspectives into single document
+4. **External consensus**: Invoke external-consensus skill to synthesize balanced plan
+5. **Draft issue creation**: Automatically create draft GitHub issue via open-issue skill
 
 ## Inputs
 
@@ -71,6 +72,7 @@ This command orchestrates a three-agent debate system to generate high-quality i
 **This command produces planning documents only. No code changes are made.**
 
 **Files created:**
+- `.tmp/issue-[refine-]{N}-context.md` - Understander context summary
 - `.tmp/issue-[refine-]{N}-bold.md` - Bold proposer agent report
 - `.tmp/issue-[refine-]{N}-critique.md` - Critique agent report
 - `.tmp/issue-[refine-]{N}-reducer.md` - Reducer agent report
@@ -146,33 +148,60 @@ ISSUE_URL=$(echo "$OPEN_ISSUE_OUTPUT" | grep -o 'https://[^ ]*')
 ISSUE_NUMBER=$(echo "$ISSUE_URL" | grep -o '[0-9]*$')
 ```
 
-**Use `ISSUE_NUMBER` for all artifact filenames going forward** (Steps 4-6).
+**Use `ISSUE_NUMBER` for all artifact filenames going forward** (Steps 4-8).
 
 **Error handling:**
 - If placeholder creation fails, stop execution and report error (cannot proceed without issue number)
 
-### Step 4: Invoke Bold-Proposer Agent
+### Step 4: Invoke Understander Agent
 
-**REQUIRED TOOL CALL #1:**
+**REQUIRED TOOL CALL (before Bold-Proposer):**
 
-Use the Task tool to launch the bold-proposer agent:
+Use the Task tool to launch the understander agent to gather codebase context:
 
 ```
 Task tool parameters:
-  subagent_type: "bold-proposer"
-  prompt: "Research and propose an innovative solution for: {FEATURE_DESC}"
-  description: "Research SOTA solutions"
-  model: "opus"
+  subagent_type: "understander"
+  prompt: "Gather codebase context for the following feature request: {FEATURE_DESC}"
+  description: "Gather codebase context"
+  model: "sonnet"
 ```
 
 **Wait for agent completion** (blocking operation, do not proceed to Step 5 until done).
 
 **Extract output:**
+- Generate filename: `CONTEXT_FILE=".tmp/issue-${ISSUE_NUMBER}-context.md"`
+- Save the agent's full response to `$CONTEXT_FILE`
+- Also store in variable `UNDERSTANDER_OUTPUT` for passing to Bold-proposer in Step 5
+
+### Step 5: Invoke Bold-Proposer Agent
+
+**REQUIRED TOOL CALL #1:**
+
+Use the Task tool to launch the bold-proposer agent with understander context:
+
+```
+Task tool parameters:
+  subagent_type: "bold-proposer"
+  prompt: "Research and propose an innovative solution for: {FEATURE_DESC}
+
+CODEBASE CONTEXT (from understander):
+{UNDERSTANDER_OUTPUT}
+
+Use this context as your starting point for understanding the codebase.
+Focus your exploration on SOTA research and innovation."
+  description: "Research SOTA solutions"
+  model: "opus"
+```
+
+**Wait for agent completion** (blocking operation, do not proceed to Step 6 until done).
+
+**Extract output:**
 - Generate filename: `BOLD_FILE=".tmp/issue-${ISSUE_NUMBER}-bold-proposal.md"`
 - Save the agent's full response to `$BOLD_FILE`
-- Also store in variable `BOLD_PROPOSAL` for passing to critique and reducer agents in Step 5
+- Also store in variable `BOLD_PROPOSAL` for passing to critique and reducer agents in Step 6
 
-### Step 5: Invoke Critique and Reducer Agents
+### Step 6: Invoke Critique and Reducer Agents
 
 **REQUIRED TOOL CALLS #2 & #3:**
 
@@ -223,7 +252,7 @@ Identify unnecessary complexity and propose simpler alternatives."
 - Critique: Risk analysis and feasibility assessment of Bold's proposal
 - Reducer: Simplified version of Bold's proposal with complexity analysis
 
-### Step 6: Invoke External Consensus Skill
+### Step 7: Invoke External Consensus Skill
 
 **REQUIRED SKILL CALL:**
 
@@ -271,7 +300,7 @@ Consensus plan saved to: {CONSENSUS_PLAN_FILE}
 **Extract:**
 - Save the consensus plan file path as `CONSENSUS_PLAN_FILE`
 
-### Step 7: Update Placeholder Issue with Consensus Plan
+### Step 8: Update Placeholder Issue with Consensus Plan
 
 **REQUIRED SKILL CALL:**
 
@@ -301,7 +330,7 @@ To refine: /ultra-planner --refine ${ISSUE_NUMBER}
 To implement: /issue-to-impl ${ISSUE_NUMBER}
 ```
 
-### Step 8: Add "agentize:plan" Label to Finalize Issue
+### Step 9: Add "agentize:plan" Label to Finalize Issue
 
 **REQUIRED BASH COMMAND:**
 

@@ -12,7 +12,8 @@ The ultra-planner workflow creates implementation plans through multi-agent deba
 graph TD
     A[User provides requirements] --> B[Create placeholder issue]
     B --> B2[doc-architect: Generate diff previews]
-    B2 --> C[Bold-proposer: Research SOTA & propose innovation]
+    B2 --> U[Understander: Gather codebase context]
+    U --> C[Bold-proposer: Research SOTA & propose innovation]
     C --> D
     C --> E
     D[Critique: Validate assumptions & feasibility] --> F
@@ -22,7 +23,7 @@ graph TD
     G[External consensus: Synthesize plan with diffs] --> H[Update issue with consensus plan]
     H --> I{User reviews plan}
     I -->|Refine| J["/ultra-planner --refine"]
-    J --> C
+    J --> U
     I -->|Implement| K["/issue-to-impl for implementation"]
     I -->|Abandon| Z(Close issue)
 
@@ -30,6 +31,7 @@ graph TD
     style I fill:#ffcccc
     style B fill:#ccddff
     style B2 fill:#ccddff
+    style U fill:#ccddff
     style C fill:#ccddff
     style D fill:#ccddff
     style E fill:#ccddff
@@ -179,25 +181,26 @@ After reviewing a plan issue:
 
 ### Ultra-Planner Initial Run
 
-**Duration:** 5-10 minutes end-to-end
+**Duration:** 6-12 minutes end-to-end
 
 **Breakdown:**
-- Bold-proposer agent: 2-3 minutes (research + proposal)
+- Understander agent: 1-2 minutes (codebase exploration)
+- Bold-proposer agent: 2-3 minutes (research + proposal, with context)
 - Critique + Reducer agents (parallel): 2-3 minutes
 - External consensus review: 1-2 minutes
 - Draft issue creation: <10 seconds
 
-**Cost:** ~$2-5 per planning session (3 Opus agents + 1 external review)
+**Cost:** ~$2.50-6 per planning session (1 Sonnet + 3 Opus agents + 1 external review)
 
 ### Refinement Run (--refine mode)
 
-**Duration:** 5-10 minutes end-to-end (same as initial run)
+**Duration:** 6-12 minutes end-to-end (same as initial run)
 
 **Breakdown:**
-- Same agent execution times as ultra-planner
+- Same agent execution times as ultra-planner (includes understander)
 - Issue fetch/update: <5 seconds
 
-**Cost:** ~$2-5 per refinement (same as initial planning)
+**Cost:** ~$2.50-6 per refinement (same as initial planning)
 
 ## Lifecycle States
 
