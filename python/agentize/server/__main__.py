@@ -224,7 +224,14 @@ def worktree_exists(issue_no: int) -> bool:
 def spawn_worktree(issue_no: int) -> bool:
     """Spawn a new worktree for the given issue."""
     print(f"Spawning worktree for issue #{issue_no}...")
-    result = subprocess.run(['wt', 'spawn', str(issue_no)])
+    agentize_home = os.environ.get('AGENTIZE_HOME', '')
+    if not agentize_home:
+        print("Error: AGENTIZE_HOME not set")
+        return False
+    # wt is a shell function, must source setup.sh first
+    result = subprocess.run(
+        ['bash', '-c', f'source "{agentize_home}/setup.sh" && wt spawn {issue_no}']
+    )
     return result.returncode == 0
 
 
