@@ -33,6 +33,10 @@ After running `make setup` and sourcing `setup.sh`, the `wt` command is availabl
   - `--yolo`: skip permission prompts by passing `--dangerously-skip-permissions` to Claude
     - **WARNING**: When active, Claude will run with all permission checks bypassed
     - A warning message will be displayed on stderr before Claude invocation
+  - `--headless`: run Claude in non-interactive mode for server daemon use
+    - Uses `claude --print` for non-interactive execution
+    - Logs output to `.tmp/logs/issue-<N>-<timestamp>.log`
+    - Returns immediately with PID and log file path
 - `wt remove <issue-no>`: remove the worktree for the given issue number
   - `--delete-branch`: delete the branch as well, even if unmerged
   - `-D` / `--force`: legacy aliases for `--delete-branch`
@@ -73,7 +77,7 @@ The `wt` command provides tab-completion support for zsh users. After running `m
 
 **Features:**
 - Subcommand completion (`wt <TAB>` shows: common, init, goto, spawn, list, remove, prune, purge, help)
-- Flag completion for `spawn` (`--yolo`, `--no-agent`) — flags can appear before or after `<issue-no>`
+- Flag completion for `spawn` (`--yolo`, `--no-agent`, `--headless`) — flags can appear before or after `<issue-no>`
 - Flag completion for `remove` (`--delete-branch`, `-D`, `--force`) — flags can appear before or after `<issue-no>`
 - Target completion for `goto` (`main` and `issue-<N>-*` worktrees)
 
@@ -96,7 +100,7 @@ wt --complete <topic>
 
 **Topics:**
 - `commands` - List available subcommands (common, init, goto, spawn, list, remove, prune, purge, help)
-- `spawn-flags` - List flags for `wt spawn` (--yolo, --no-agent)
+- `spawn-flags` - List flags for `wt spawn` (--yolo, --no-agent, --headless)
 - `remove-flags` - List flags for `wt remove` (--delete-branch, -D, --force)
 - `goto-targets` - List available targets for `wt goto` (main and issue-<N>-* worktrees)
 
@@ -118,6 +122,7 @@ help
 $ wt --complete spawn-flags
 --yolo
 --no-agent
+--headless
 
 $ wt --complete goto-targets
 main
