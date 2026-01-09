@@ -236,22 +236,24 @@ Handsoff mode is implemented via three Claude Code hooks (see [.claude/hooks/REA
 
 ### `pre-tool-use.py`
 - **Event:** `PreToolUse` (before tool execution)
-- **Purpose:** Enforce permission rules and log tool usage
+- **Purpose:** Thin wrapper delegating to `python/agentize/permission/` module
 - **Location:** `.claude/hooks/pre-tool-use.py`
 
 **Key logic:**
-- Defines permission rules as Python tuples: `(tool_name, regex_pattern)`
+- Imports and calls `agentize.permission.determine()` for all permission decisions
+- Rules are sourced from `python/agentize/permission/rules.py` (canonical location)
 - Matches tool usage against deny → ask → allow rules (first match wins)
 - Returns `allow/deny/ask` decision to Claude Code
 - Logs tool usage when `HANDSOFF_DEBUG=1`
+- Falls back to `ask` on any import/execution errors
 
-**Permission rules are defined in Python code instead of `.claude/settings.json`.** This approach:
-- Eliminates JSON parsing complexity
-- Enables regex pattern matching with Python `re` module
-- Provides single source of truth for permissions
-- Allows fail-safe defaults (`ask` on errors)
+**Architecture notes:**
+- The hook is a minimal wrapper (~15 LOC) that delegates to the permission module
+- Permission rules are defined in Python code instead of `.claude/settings.json`
+- Single source of truth: `python/agentize/permission/rules.py`
+- Fail-safe behavior: returns `ask` on any errors
 
-See [.claude/hooks/pre-tool-use.md](../../.claude/hooks/pre-tool-use.md) for rule syntax and interface details.
+See [.claude/hooks/pre-tool-use.md](../../.claude/hooks/pre-tool-use.md) for interface details.
 
 ### `user-prompt-submit.py`
 - **Event:** `UserPromptSubmit` (before prompt is sent to Claude Code)

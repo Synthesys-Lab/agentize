@@ -81,8 +81,38 @@ test_info "Test 10: Bash gh api → ask"
 decision=$(run_hook_with_fixture "bash_ask_gh_api")
 [ "$decision" = "ask" ] || test_fail "Expected 'ask' for gh api command, got '$decision'"
 
-# Test 11: Telegram config gating - disabled when AGENTIZE_USE_TG is not set
-test_info "Test 11: Telegram disabled by default (no env)"
+# Test 11: Grep tool should be allowed (module rules include search tools)
+test_info "Test 11: Grep tool → allow"
+decision=$(run_hook_with_fixture "grep_allowed")
+[ "$decision" = "allow" ] || test_fail "Expected 'allow' for Grep tool, got '$decision'"
+
+# Test 12: Glob tool should be allowed (module rules include search tools)
+test_info "Test 12: Glob tool → allow"
+decision=$(run_hook_with_fixture "glob_allowed")
+[ "$decision" = "allow" ] || test_fail "Expected 'allow' for Glob tool, got '$decision'"
+
+# Test 13: LSP tool should be allowed (module rules include code intelligence)
+test_info "Test 13: LSP tool → allow"
+decision=$(run_hook_with_fixture "lsp_allowed")
+[ "$decision" = "allow" ] || test_fail "Expected 'allow' for LSP tool, got '$decision'"
+
+# Test 14: Task tool should be allowed (module rules include agent exploration)
+test_info "Test 14: Task tool → allow"
+decision=$(run_hook_with_fixture "task_allowed")
+[ "$decision" = "allow" ] || test_fail "Expected 'allow' for Task tool, got '$decision'"
+
+# Test 15: TodoWrite tool should be allowed (module rules include user interaction)
+test_info "Test 15: TodoWrite tool → allow"
+decision=$(run_hook_with_fixture "todowrite_allowed")
+[ "$decision" = "allow" ] || test_fail "Expected 'allow' for TodoWrite tool, got '$decision'"
+
+# Test 16: AskUserQuestion tool should be allowed (module rules include user interaction)
+test_info "Test 16: AskUserQuestion tool → allow"
+decision=$(run_hook_with_fixture "askuserquestion_allowed")
+[ "$decision" = "allow" ] || test_fail "Expected 'allow' for AskUserQuestion tool, got '$decision'"
+
+# Test 17: Telegram config gating - disabled when AGENTIZE_USE_TG is not set
+test_info "Test 17: Telegram disabled by default (no env)"
 # Unset all Telegram-related vars and verify ask decision still works
 (
     unset AGENTIZE_USE_TG TG_API_TOKEN TG_CHAT_ID
@@ -90,8 +120,8 @@ test_info "Test 11: Telegram disabled by default (no env)"
     [ "$decision" = "ask" ] || test_fail "Expected 'ask' when Telegram disabled, got '$decision'"
 )
 
-# Test 12: Telegram config gating - missing TG_API_TOKEN returns ask
-test_info "Test 12: Telegram with missing token returns ask"
+# Test 18: Telegram config gating - missing TG_API_TOKEN returns ask
+test_info "Test 18: Telegram with missing token returns ask"
 (
     export AGENTIZE_USE_TG=1
     unset TG_API_TOKEN TG_CHAT_ID
@@ -99,8 +129,8 @@ test_info "Test 12: Telegram with missing token returns ask"
     [ "$decision" = "ask" ] || test_fail "Expected 'ask' with missing TG_API_TOKEN, got '$decision'"
 )
 
-# Test 13: Telegram config gating - missing TG_CHAT_ID returns ask
-test_info "Test 13: Telegram with missing chat ID returns ask"
+# Test 19: Telegram config gating - missing TG_CHAT_ID returns ask
+test_info "Test 19: Telegram with missing chat ID returns ask"
 (
     export AGENTIZE_USE_TG=1
     export TG_API_TOKEN="test_token"
@@ -109,8 +139,8 @@ test_info "Test 13: Telegram with missing chat ID returns ask"
     [ "$decision" = "ask" ] || test_fail "Expected 'ask' with missing TG_CHAT_ID, got '$decision'"
 )
 
-# Test 14: HTML escape function handles special characters correctly
-test_info "Test 14: HTML escape handles <, >, & correctly"
+# Test 20: HTML escape function handles special characters correctly
+test_info "Test 20: HTML escape handles <, >, & correctly"
 # Test the pure function logic directly without loading the entire module
 escaped=$(python3 -c "
 def escape_html(text):
@@ -120,8 +150,8 @@ print(escape_html('<script>alert(1)</script> & \"test\"'))
 expected='&lt;script&gt;alert(1)&lt;/script&gt; &amp; "test"'
 [ "$escaped" = "$expected" ] || test_fail "Expected '$expected', got '$escaped'"
 
-# Test 15: Inline keyboard payload structure validation
-test_info "Test 15: Inline keyboard structure is valid"
+# Test 21: Inline keyboard payload structure validation
+test_info "Test 21: Inline keyboard structure is valid"
 keyboard=$(python3 -c "
 import json
 def build_inline_keyboard(message_id):
@@ -144,8 +174,8 @@ deny_data=$(echo "$keyboard" | jq -r '.inline_keyboard[0][1].callback_data')
 [ "$allow_data" = "allow:12345" ] || test_fail "Expected 'allow:12345', got '$allow_data'"
 [ "$deny_data" = "deny:12345" ] || test_fail "Expected 'deny:12345', got '$deny_data'"
 
-# Test 16: Callback data format validation (parse and extract)
-test_info "Test 16: Callback data parsing extracts action and message_id"
+# Test 22: Callback data format validation (parse and extract)
+test_info "Test 22: Callback data parsing extracts action and message_id"
 result=$(python3 -c "
 def parse_callback_data(callback_data):
     parts = callback_data.split(':', 1)
