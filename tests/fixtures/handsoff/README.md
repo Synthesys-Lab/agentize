@@ -8,8 +8,8 @@ JSON fixtures providing mock tool use responses for testing the handsoff agent's
 
 ### Fixture Files
 
-- `bash-add-plan-label.json` - Mock response for Bash tool adding [plan] label to issues
-  - Simulates `gh issue edit --add-label "plan"` command execution
+- `bash-add-plan-label.json` - Mock response for Bash tool adding [agentize:plan] label to issues
+  - Simulates `gh issue edit --add-label "agentize:plan"` command execution
   - Used to test issue labeling automation
 
 - `posttooluse-milestone.json` - Mock post-tool-use event for milestone creation

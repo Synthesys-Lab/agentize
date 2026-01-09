@@ -301,24 +301,24 @@ To refine: /ultra-planner --refine ${ISSUE_NUMBER}
 To implement: /issue-to-impl ${ISSUE_NUMBER}
 ```
 
-### Step 8: Add "plan" Label to Finalize Issue
+### Step 8: Add "agentize:plan" Label to Finalize Issue
 
 **REQUIRED BASH COMMAND:**
 
-Add the "plan" label to mark the issue as a finalized plan:
+Add the "agentize:plan" label to mark the issue as a finalized plan:
 
 ```bash
-gh issue edit ${ISSUE_NUMBER} --add-label "plan"
+gh issue edit ${ISSUE_NUMBER} --add-label "agentize:plan"
 ```
 
 **What this does:**
-1. Adds "plan" label to the issue (creates label if it doesn't exist)
+1. Adds "agentize:plan" label to the issue (creates label if it doesn't exist)
 2. Triggers hands-off state machine transition to `done` state
 3. Marks the issue as ready for review/implementation
 
 **Expected output:**
 ```
-Label "plan" added to issue #${ISSUE_NUMBER}
+Label "agentize:plan" added to issue #${ISSUE_NUMBER}
 ```
 
 Display the final output to the user. Command completes successfully.
