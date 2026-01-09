@@ -190,24 +190,43 @@ def query_project_items(org: str, project_number: int) -> list[dict]:
 
 def filter_ready_issues(items: list[dict]) -> list[int]:
     """Filter items to issues with 'Plan Accepted' status and 'agentize:plan' label."""
+    debug = os.getenv('HANDSOFF_DEBUG')
     ready = []
+    skip_status = 0
+    skip_label = 0
+
     for item in items:
         content = item.get('content')
         if not content or 'number' not in content:
             continue
 
+        issue_no = content['number']
+        status_field = item.get('fieldValueByName') or {}
+        status_name = status_field.get('name', '')
+        labels = content.get('labels', {}).get('nodes', [])
+        label_names = [l['name'] for l in labels]
+
         # Check status
-        status = item.get('fieldValueByName', {})
-        if not status or status.get('name') != 'Plan Accepted':
+        if status_name != 'Plan Accepted':
+            if debug:
+                print(f"[issue-filter] #{issue_no} status={status_name} labels={label_names} -> SKIP (status != Plan Accepted)", file=sys.stderr)
+            skip_status += 1
             continue
 
         # Check label
-        labels = content.get('labels', {}).get('nodes', [])
-        label_names = [l['name'] for l in labels]
         if 'agentize:plan' not in label_names:
+            if debug:
+                print(f"[issue-filter] #{issue_no} status={status_name} labels={label_names} -> SKIP (missing agentize:plan label)", file=sys.stderr)
+            skip_label += 1
             continue
 
-        ready.append(content['number'])
+        if debug:
+            print(f"[issue-filter] #{issue_no} status={status_name} labels={label_names} -> READY", file=sys.stderr)
+        ready.append(issue_no)
+
+    if debug:
+        total_skip = skip_status + skip_label
+        print(f"[issue-filter] Summary: {len(ready)} ready, {total_skip} skipped ({skip_status} wrong status, {skip_label} missing label)", file=sys.stderr)
 
     return ready
 
