@@ -7,13 +7,11 @@ Polls GitHub Projects v2 for issues with "Plan Accepted" status and
 
 import argparse
 import json
-import os
 import signal
 import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Optional
 
 
 # GraphQL query for project items with Status field
