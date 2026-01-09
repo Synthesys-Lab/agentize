@@ -47,3 +47,7 @@ When Telegram credentials are configured, the server sends a startup message inc
 - Project identifier (org/id)
 - Polling period
 - Working directory
+
+## Debug Logging
+
+Set `HANDSOFF_DEBUG=1` to enable detailed logging of issue filtering decisions. See [docs/feat/server.md](../../../docs/feat/server.md#issue-filtering-debug-logs) for output format and examples.
