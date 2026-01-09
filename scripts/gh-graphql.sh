@@ -34,6 +34,12 @@ return_fixture() {
         list-fields)
             fixture_file="$FIXTURES_DIR/list-fields-response.json"
             ;;
+        get-issue-project-item)
+            fixture_file="$FIXTURES_DIR/get-issue-project-item-response.json"
+            ;;
+        update-field)
+            fixture_file="$FIXTURES_DIR/update-field-response.json"
+            ;;
         *)
             echo "Error: Unknown fixture operation '$operation'" >&2
             exit 1
@@ -144,6 +150,62 @@ graphql_list_fields() {
         }' -f projectId="$project_id"
 }
 
+# Execute GraphQL query for get-issue-project-item
+graphql_get_issue_project_item() {
+    local owner="$1"
+    local repo="$2"
+    local issue_number="$3"
+
+    if [ "$FIXTURE_MODE" = "1" ]; then
+        return_fixture "get-issue-project-item"
+        return 0
+    fi
+
+    gh api graphql -f query='
+        query($owner: String!, $repo: String!, $number: Int!) {
+            repository(owner: $owner, name: $repo) {
+                issue(number: $number) {
+                    id
+                    projectItems(first: 20) {
+                        nodes {
+                            id
+                            project {
+                                id
+                            }
+                        }
+                    }
+                }
+            }
+        }' -f owner="$owner" -f repo="$repo" -F number="$issue_number"
+}
+
+# Execute GraphQL mutation for update-field
+graphql_update_field() {
+    local project_id="$1"
+    local item_id="$2"
+    local field_id="$3"
+    local option_id="$4"
+
+    if [ "$FIXTURE_MODE" = "1" ]; then
+        return_fixture "update-field"
+        return 0
+    fi
+
+    gh api graphql -f query='
+        mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+            updateProjectV2ItemFieldValue(input: {
+                projectId: $projectId,
+                itemId: $itemId,
+                fieldId: $fieldId,
+                value: { singleSelectOptionId: $optionId }
+            }) {
+                projectV2Item {
+                    id
+                }
+            }
+        }' -f projectId="$project_id" -f itemId="$item_id" -f fieldId="$field_id" -f optionId="$option_id"
+}
+
 # Main execution
 main() {
     local operation="$1"
@@ -162,6 +224,12 @@ main() {
         list-fields)
             graphql_list_fields "$@"
             ;;
+        get-issue-project-item)
+            graphql_get_issue_project_item "$@"
+            ;;
+        update-field)
+            graphql_update_field "$@"
+            ;;
         *)
             echo "Error: Unknown operation '$operation'" >&2
             echo "" >&2
@@ -170,6 +238,8 @@ main() {
             echo "  $0 lookup-project <org> <project-number>" >&2
             echo "  $0 add-item <project-id> <content-id>" >&2
             echo "  $0 list-fields <project-id>" >&2
+            echo "  $0 get-issue-project-item <owner> <repo> <issue-number>" >&2
+            echo "  $0 update-field <project-id> <item-id> <field-id> <option-id>" >&2
             exit 1
             ;;
     esac
