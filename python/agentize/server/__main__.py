@@ -15,7 +15,20 @@ import sys
 import time
 import urllib.request
 import urllib.error
+from datetime import datetime
 from pathlib import Path
+
+
+def _log(msg: str, level: str = "INFO") -> None:
+    """Log with timestamp and source location."""
+    frame = sys._getframe(1)
+    filename = os.path.basename(frame.f_code.co_filename)
+    lineno = frame.f_lineno
+    func = frame.f_code.co_name
+    timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+
+    output = f"[{timestamp}] [{level}] [{filename}:{lineno}:{func}] {msg}"
+    print(output, file=sys.stderr if level == "ERROR" else sys.stdout)
 
 
 # GraphQL query for project items with Status field
@@ -85,7 +98,7 @@ def send_telegram_message(token: str, chat_id: str, text: str) -> bool:
             result = json.loads(response.read().decode('utf-8'))
             return result.get('ok', False)
     except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, TimeoutError) as e:
-        print(f"Failed to send Telegram message: {e}", file=sys.stderr)
+        _log(f"Failed to send Telegram message: {e}", level="ERROR")
         return False
 
 
@@ -150,17 +163,20 @@ def load_config() -> tuple[str, int]:
 def query_project_items(org: str, project_number: int) -> list[dict]:
     """Query GitHub Projects v2 for items."""
     query = GRAPHQL_QUERY.strip()
-    variables = json.dumps({'org': org, 'projectNumber': project_number})
 
     result = subprocess.run(
         ['gh', 'api', 'graphql',
          '-f', f'query={query}',
-         '-f', f'variables={variables}'],
+         '-f', f'org={org}',
+         '-F', f'projectNumber={project_number}'],
         capture_output=True, text=True
     )
 
     if result.returncode != 0:
-        print(f"GraphQL query failed: {result.stderr}", file=sys.stderr)
+        _log(f"GraphQL query failed: {result.stderr}", level="ERROR")
+        if os.getenv('HANDSOFF_DEBUG'):
+            _log(f"Query: {query[:100]}...", level="ERROR")
+            _log(f"Variables: org={org}, projectNumber={project_number}", level="ERROR")
         return []
 
     data = json.loads(result.stdout)
@@ -168,7 +184,7 @@ def query_project_items(org: str, project_number: int) -> list[dict]:
         items = data['data']['organization']['projectV2']['items']['nodes']
         return items
     except (KeyError, TypeError):
-        print(f"Unexpected response structure: {result.stdout}", file=sys.stderr)
+        _log(f"Unexpected response structure: {result.stdout}", level="ERROR")
         return []
 
 
@@ -258,7 +274,7 @@ def run_server(period: int, tg_token: str | None = None, tg_chat_id: str | None 
                 time.sleep(period)
 
         except Exception as e:
-            print(f"Error during poll: {e}", file=sys.stderr)
+            _log(f"Error during poll: {e}", level="ERROR")
             if running[0]:
                 time.sleep(period)
 
