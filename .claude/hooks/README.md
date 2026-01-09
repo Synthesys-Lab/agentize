@@ -34,12 +34,14 @@ Hooks enable automated behaviors and integrations at key points in the Claude Co
 ### pre-tool-use.py
 **Event**: PreToolUse (before tool execution)
 
-**Purpose**: Logs tool usage and enforces permission rules
+**Purpose**: Thin wrapper delegating to `python/agentize/permission/` module
 
 **Behavior**:
-- Checks tool usage against Python-defined permission rules
+- Delegates to `agentize.permission.determine()` for permission decisions
+- Rules are sourced from `python/agentize/permission/rules.py`
 - Returns `allow/deny/ask` decision based on pattern matching
 - Logs tool usage when `HANDSOFF_DEBUG=1`
+- Falls back to `ask` on import/execution errors
 - See [pre-tool-use.md](pre-tool-use.md) for interface details
 
 ### user-prompt-submit.py
