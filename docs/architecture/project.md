@@ -169,6 +169,18 @@ For issues, we use GitHub Projects v2's **default Status field** with 4 options 
 3. **In Progress**: Implementation has started. Use **assignees** to indicate who is working on it, and **linked PRs** to track progress.
 4. **Done**: Implementation is complete. GitHub's built-in automation can move issues here when they are closed.
 
+### Local Status Update via `wt spawn`
+
+When `wt spawn <issue-no>` runs, it attempts to set the issue's Status to "In Progress" on the associated GitHub Projects v2 board. This is a **best-effort** operation:
+
+- Requires `.agentize.yaml` with `project.org` and `project.id` configured
+- The issue must already be on the configured project board
+- Status update occurs **after** successful worktree creation
+- Failures are logged but do not block worktree creation or Claude invocation
+- If the Status field or "In Progress" option is not found, a warning is emitted
+
+This local update provides visibility on the kanban board that work has started, complementing GitHub Actions workflows that handle issue/PR lifecycle automation.
+
 **Why use the default Status field?**
 
 - **Board View Affinity**: GitHub's Board view is designed around the Status field—columns automatically map to Status options, and drag-and-drop updates the Status field.

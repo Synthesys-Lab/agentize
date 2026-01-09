@@ -28,6 +28,7 @@ After running `make setup` and sourcing `setup.sh`, the `wt` command is availabl
   - Both `main` and `issue-<issue-no>` should be auto-completable
 - `wt spawn <issue-no>`: create a new worktree for the given issue number from the `main` branch
   - Before creating the worktree, it rebases onto the latest default branch from the bare repo
+  - After creating the worktree, attempts to update the issue's GitHub Projects v2 Status to "In Progress" (best-effort)
   - `--no-agent`: skip automatic Claude invocation after worktree creation
   - `--yolo`: skip permission prompts by passing `--dangerously-skip-permissions` to Claude
     - **WARNING**: When active, Claude will run with all permission checks bypassed

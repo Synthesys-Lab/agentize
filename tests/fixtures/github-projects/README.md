@@ -52,6 +52,41 @@ mutation {
 }
 ```
 
+### get-issue-project-item-response.json
+Mock response for looking up an issue's project items. Used when testing `wt spawn` status claim functionality.
+
+**Query:**
+```graphql
+query($owner:String!, $repo:String!, $number:Int!) {
+  repository(owner:$owner, name:$repo) {
+    issue(number:$number) {
+      id
+      projectItems(first: 20) {
+        nodes {
+          id
+          project { id }
+        }
+      }
+    }
+  }
+}
+```
+
+### update-field-response.json
+Mock response for updating a project field value. Used when testing `wt spawn` status claim functionality.
+
+**Query:**
+```graphql
+mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+  updateProjectV2ItemFieldValue(input: {
+    projectId: $projectId, itemId: $itemId, fieldId: $fieldId,
+    value: { singleSelectOptionId: $optionId }
+  }) {
+    projectV2Item { id }
+  }
+}
+```
+
 ## Usage in Tests
 
 Tests should set `AGENTIZE_GH_API` environment variable to use fixtures instead of live API:
