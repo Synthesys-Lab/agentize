@@ -335,6 +335,7 @@ cmd_spawn() {
     local issue_no=""
     local no_agent=false
     local yolo=false
+    local headless=false
 
     # Parse arguments
     while [ $# -gt 0 ]; do
@@ -345,6 +346,10 @@ cmd_spawn() {
                 ;;
             --yolo)
                 yolo=true
+                shift
+                ;;
+            --headless)
+                headless=true
                 shift
                 ;;
             -*)
@@ -453,11 +458,24 @@ cmd_spawn() {
             echo "WARNING: --yolo active; Claude will run with --dangerously-skip-permissions" >&2
             claude_flags="--dangerously-skip-permissions"
         fi
+        if [ "$headless" = true ]; then
+            claude_flags="$claude_flags --print"
+        fi
 
-        echo "Invoking Claude Code..."
-        cd "$worktree_path" && claude $claude_flags "/issue-to-impl $issue_no" || {
-            echo "Warning: Failed to invoke Claude Code" >&2
-        }
+        if [ "$headless" = true ]; then
+            # Setup log file for headless mode
+            local log_dir="${AGENTIZE_HOME:-.}/.tmp/logs"
+            mkdir -p "$log_dir"
+            local log_file="$log_dir/issue-${issue_no}-$(date +%Y%m%d-%H%M%S).log"
+            echo "Invoking Claude Code in headless mode..."
+            cd "$worktree_path" && claude $claude_flags "/issue-to-impl $issue_no" > "$log_file" 2>&1 &
+            echo "Claude running in background (PID: $!), log: $log_file"
+        else
+            echo "Invoking Claude Code..."
+            cd "$worktree_path" && claude $claude_flags "/issue-to-impl $issue_no" || {
+                echo "Warning: Failed to invoke Claude Code" >&2
+            }
+        fi
     fi
 
     return 0
@@ -700,6 +718,7 @@ wt() {
                 spawn-flags)
                     echo "--yolo"
                     echo "--no-agent"
+                    echo "--headless"
                     ;;
                 remove-flags)
                     echo "--delete-branch"

@@ -251,7 +251,7 @@ def worktree_exists(issue_no: int) -> bool:
 def spawn_worktree(issue_no: int) -> bool:
     """Spawn a new worktree for the given issue."""
     print(f"Spawning worktree for issue #{issue_no}...")
-    result = _run_wt(f'spawn {issue_no}')
+    result = _run_wt(f'spawn {issue_no} --headless')
     return result.returncode == 0
 
 
