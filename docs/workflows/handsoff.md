@@ -97,7 +97,8 @@ When configured, enables remote approval of tool usage via Telegram. When a PreT
 **`TG_APPROVAL_TIMEOUT_SEC`**
 - **Purpose:** Maximum wait time for Telegram response
 - **Default:** `60` seconds
-- **Example:** `export TG_APPROVAL_TIMEOUT_SEC=120`
+- **Maximum:** `7200` seconds (2 hours) - limited by hook timeout in `.claude/settings.json`
+- **Example:** `export TG_APPROVAL_TIMEOUT_SEC=1800` (30 minutes)
 
 **`TG_POLL_INTERVAL_SEC`**
 - **Purpose:** Interval between Telegram API polls
