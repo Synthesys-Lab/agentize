@@ -29,3 +29,21 @@ project:
   org: <organization>
   id: <project-number>
 ```
+
+## Troubleshooting
+
+### GraphQL Errors
+
+Error messages include source location (file:line:function) for quick debugging:
+
+```
+[2026-01-09T12:30:47] [ERROR] [__main__.py:163:query_project_items] GraphQL query failed: ...
+```
+
+For additional context (query and variables), set `HANDSOFF_DEBUG=1`:
+
+```bash
+HANDSOFF_DEBUG=1 lol serve --tg-token=<token> --tg-chat-id=<id>
+```
+
+This logs the GraphQL query and variables on failures, helping diagnose variable type mismatches or query syntax issues.
