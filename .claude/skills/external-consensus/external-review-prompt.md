@@ -60,6 +60,9 @@ Generate a final implementation plan that follows the plan-guideline structure a
 
 **Out of scope:**
 - [What we're not doing]
+- However, it it a good idea for future work?
+  - If so, briefly describe it here. ✅ Good to have in the future: Briefly describe it in 1-2 sentences. 
+  - If not, explain why it's excluded. ❌ Not needed: Explain why it is a bad idea.
 
 ## Bug Reproduction
 *(Optional - include only for bug fixes where reproduction was attempted)*
