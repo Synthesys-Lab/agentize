@@ -1,0 +1,19 @@
+{
+  "data": {
+    "repository": {
+      "issue": {
+        "id": "I_kwDOABcDef5ZxYz",
+        "projectItems": {
+          "nodes": [
+            {
+              "id": "PVTI_laDpZ4woBzA1234",
+              "project": {
+                "id": "PVT_kwDOABcDef4Ag5YZ"
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
