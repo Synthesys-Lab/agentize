@@ -206,6 +206,7 @@ Create new worktree for issue from default branch.
 **Flags:**
 - `--no-agent`: Skip automatic Claude invocation
 - `--yolo`: Skip permission prompts (pass to Claude)
+- `--headless`: Run Claude in non-interactive mode (uses `--print`, logs to `.tmp/logs/`)
 
 **Prerequisites:**
 - Trees directory must exist (wt init must be run)

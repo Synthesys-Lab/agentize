@@ -642,6 +642,7 @@ COMMANDS:
 OPTIONS (spawn):
   --no-agent          Skip automatic Claude invocation
   --yolo              Skip permission prompts
+  --headless          Run Claude in non-interactive mode (for server daemon)
 
 OPTIONS (remove):
   --delete-branch     Delete branch even if unmerged
@@ -696,6 +697,10 @@ wt() {
             ;;
         purge)
             cmd_purge "$@"
+            ;;
+        resolve)
+            # Internal command for programmatic worktree existence check
+            wt_resolve_worktree "$@"
             ;;
         help|--help|-h|"")
             cmd_help
