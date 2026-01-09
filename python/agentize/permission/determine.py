@@ -157,8 +157,12 @@ def _tg_api_request(token: str, method: str, payload: Optional[Dict[str, Any]] =
         session_id: Session ID for logging (optional)
 
     Returns:
-        dict: API response or None on error
+        dict: API response or None on error/disabled
     """
+    # Safety guard: return immediately if Telegram is disabled
+    if not _is_telegram_enabled():
+        return None
+
     url = f'https://api.telegram.org/bot{token}/{method}'
     try:
         if payload:

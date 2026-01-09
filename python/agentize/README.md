@@ -50,3 +50,7 @@ The permission module evaluates Claude Code tool use requests and returns allow/
 | `TG_APPROVAL_TIMEOUT_SEC` | Telegram approval timeout (default: 60) |
 | `TG_POLL_INTERVAL_SEC` | Telegram polling interval (default: 5) |
 | `TG_ALLOWED_USER_IDS` | Comma-separated list of allowed Telegram user IDs |
+
+### Test Isolation
+
+Tests automatically clear Telegram-related environment variables (`AGENTIZE_USE_TG`, `TG_API_TOKEN`, `TG_CHAT_ID`, `TG_ALLOWED_USER_IDS`, `TG_APPROVAL_TIMEOUT_SEC`, `TG_POLL_INTERVAL_SEC`) via `tests/common.sh` to prevent external API calls during test runs. The Telegram API request functions also include an internal guard that returns `None` immediately when Telegram is disabled.

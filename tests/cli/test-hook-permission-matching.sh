@@ -198,4 +198,21 @@ print(f'{action}:{msg_id}')
 ")
 [ "$result" = "deny:67890" ] || test_fail "Expected 'deny:67890', got '$result'"
 
+# Test 17: _tg_api_request guard - returns None when Telegram is disabled
+test_info "Test 17: _tg_api_request returns None when Telegram disabled"
+guard_result=$(python3 -c "
+import os
+import sys
+sys.path.insert(0, '$PROJECT_ROOT/python')
+# Ensure Telegram is disabled
+os.environ.pop('AGENTIZE_USE_TG', None)
+from agentize.permission.determine import _tg_api_request, _is_telegram_enabled
+# Verify Telegram is disabled
+assert not _is_telegram_enabled(), 'Telegram should be disabled'
+# Call _tg_api_request - should return None without making any HTTP request
+result = _tg_api_request('fake_token', 'sendMessage', {'chat_id': '123', 'text': 'test'})
+print('None' if result is None else 'ERROR')
+")
+[ "$guard_result" = "None" ] || test_fail "Expected 'None' when Telegram disabled, got '$guard_result'"
+
 test_pass "PreToolUse hook permission matching works correctly"

@@ -5,6 +5,13 @@
 set -e
 
 # ============================================================
+# Test isolation: Clear Telegram environment variables
+# ============================================================
+# Prevents tests from accidentally sending Telegram API requests
+# when developer environments have these variables set
+unset AGENTIZE_USE_TG TG_API_TOKEN TG_CHAT_ID TG_ALLOWED_USER_IDS TG_APPROVAL_TIMEOUT_SEC TG_POLL_INTERVAL_SEC
+
+# ============================================================
 # Project root detection
 # ============================================================
 
