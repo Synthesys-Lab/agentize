@@ -2,6 +2,20 @@
 
 Implementation of the `lol` SDK CLI for AI-powered project management.
 
+## Module Structure
+
+The implementation is split into sourced modules in `lol/`:
+
+| Module | Purpose |
+|--------|---------|
+| `helpers.sh` | Language detection and utility functions |
+| `completion.sh` | Shell-agnostic completion helper (`lol_complete`) |
+| `commands.sh` | Command implementations (`lol_cmd_*`) |
+| `dispatch.sh` | Main dispatcher, help text, and `lol` function |
+| `parsers.sh` | Argument parsing for each command |
+
+`lol.sh` sources these modules in order. External interfaces remain unchanged.
+
 ## External Interface
 
 Functions exported for shell usage when sourced.
