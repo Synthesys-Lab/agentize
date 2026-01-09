@@ -61,6 +61,7 @@ lol_complete() {
             echo "update"
             echo "upgrade"
             echo "project"
+            echo "serve"
             ;;
         apply-flags)
             echo "--init"
@@ -87,6 +88,11 @@ lol_complete() {
             ;;
         project-automation-flags)
             echo "--write"
+            ;;
+        serve-flags)
+            echo "--tg-token"
+            echo "--tg-chat-id"
+            echo "--period"
             ;;
         lang-values)
             echo "c"
@@ -1018,6 +1024,52 @@ lol_cmd_project() (
     esac
 )
 
+# lol_cmd_serve: Run polling server for GitHub Projects automation
+# Runs in subshell to preserve set -e semantics
+# Usage: lol_cmd_serve <period> <tg_token> <tg_chat_id>
+lol_cmd_serve() (
+    set -e
+
+    local period="$1"
+    local tg_token="$2"
+    local tg_chat_id="$3"
+
+    # Validate required arguments
+    if [ -z "$tg_token" ]; then
+        echo "Error: --tg-token is required"
+        exit 1
+    fi
+
+    if [ -z "$tg_chat_id" ]; then
+        echo "Error: --tg-chat-id is required"
+        exit 1
+    fi
+
+    # Check if in a bare repo with wt initialized
+    if ! wt_is_bare_repo 2>/dev/null; then
+        echo "Error: lol serve requires a bare git repository"
+        echo ""
+        echo "Please run from a bare repository with wt init completed."
+        exit 1
+    fi
+
+    # Check if gh is authenticated
+    if ! gh auth status &>/dev/null; then
+        echo "Error: GitHub CLI is not authenticated"
+        echo ""
+        echo "Please authenticate: gh auth login"
+        exit 1
+    fi
+
+    # Export TG credentials for spawned sessions
+    export AGENTIZE_USE_TG=1
+    export TG_API_TOKEN="$tg_token"
+    export TG_CHAT_ID="$tg_chat_id"
+
+    # Invoke Python server module
+    exec python -m agentize.server --period="$period"
+)
+
 # ============================================================================
 # SECTION 4: MAIN DISPATCHER
 # ============================================================================
@@ -1084,6 +1136,9 @@ lol() {
         project)
             _lol_parse_project "$@"
             ;;
+        serve)
+            _lol_parse_serve "$@"
+            ;;
         version)
             lol_cmd_version
             ;;
@@ -1100,6 +1155,7 @@ lol() {
             echo "  lol project --create [--org <org>] [--title <title>]"
             echo "  lol project --associate <org>/<id>"
             echo "  lol project --automation [--write <path>]"
+            echo "  lol serve --tg-token=<token> --tg-chat-id=<id> [--period=5m]"
             echo ""
             echo "Flags:"
             echo "  --version           Display version information"
@@ -1116,6 +1172,9 @@ lol() {
             echo "  --write <path>      Write automation template to file (project)"
             echo "  --org <org>         GitHub organization (project --create)"
             echo "  --title <title>     Project title (project --create)"
+            echo "  --tg-token=<token>  Telegram bot token (serve, required)"
+            echo "  --tg-chat-id=<id>   Telegram chat ID (serve, required)"
+            echo "  --period=<period>   Polling interval (serve, default: 5m)"
             echo ""
             echo "Examples:"
             echo "  lol apply --init --name my-project --lang python --path /path/to/project"
@@ -1128,6 +1187,7 @@ lol() {
             echo "  lol project --create --org Synthesys-Lab --title \"My Project\""
             echo "  lol project --associate Synthesys-Lab/3"
             echo "  lol project --automation --write .github/workflows/add-to-project.yml"
+            echo "  lol serve --tg-token=xxx --tg-chat-id=xxx --period=30s"
             return 1
             ;;
     esac
@@ -1434,4 +1494,49 @@ _lol_parse_project() {
             lol_cmd_project "automation" "$write_path"
             ;;
     esac
+}
+
+# Parse serve command arguments and call lol_cmd_serve
+_lol_parse_serve() {
+    local period="5m"
+    local tg_token=""
+    local tg_chat_id=""
+
+    # Parse arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --period=*)
+                period="${1#*=}"
+                shift
+                ;;
+            --tg-token=*)
+                tg_token="${1#*=}"
+                shift
+                ;;
+            --tg-chat-id=*)
+                tg_chat_id="${1#*=}"
+                shift
+                ;;
+            *)
+                echo "Error: Unknown option '$1'"
+                echo "Usage: lol serve --tg-token=<token> --tg-chat-id=<id> [--period=5m]"
+                return 1
+                ;;
+        esac
+    done
+
+    # Validate required arguments
+    if [ -z "$tg_token" ]; then
+        echo "Error: --tg-token is required"
+        echo "Usage: lol serve --tg-token=<token> --tg-chat-id=<id> [--period=5m]"
+        return 1
+    fi
+
+    if [ -z "$tg_chat_id" ]; then
+        echo "Error: --tg-chat-id is required"
+        echo "Usage: lol serve --tg-token=<token> --tg-chat-id=<id> [--period=5m]"
+        return 1
+    fi
+
+    lol_cmd_serve "$period" "$tg_token" "$tg_chat_id"
 }
