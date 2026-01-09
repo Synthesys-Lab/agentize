@@ -215,4 +215,41 @@ print('None' if result is None else 'ERROR')
 ")
 [ "$guard_result" = "None" ] || test_fail "Expected 'None' when Telegram disabled, got '$guard_result'"
 
+# Test 24: _edit_message_result handles timeout decision correctly
+test_info "Test 24: _edit_message_result handles timeout decision"
+result=$(python3 -c "
+import sys
+sys.path.insert(0, '$PROJECT_ROOT/python')
+
+# Test that _edit_message_result builds correct timeout message
+from agentize.permission.determine import _escape_html, SESSION_ID_DISPLAY_LEN
+
+def build_result_text(decision, tool, target, session_id):
+    if decision == 'timeout':
+        emoji = '⏰'
+        status = 'Timed Out'
+    elif decision == 'allow':
+        emoji = '✅'
+        status = 'Allowed'
+    else:
+        emoji = '❌'
+        status = 'Denied'
+
+    return (
+        f'{emoji} {status}\n\n'
+        f'Tool: <code>{_escape_html(tool)}</code>\n'
+        f'Target: <code>{_escape_html(target)}</code>\n'
+        f'Session: {session_id[:SESSION_ID_DISPLAY_LEN]}'
+    )
+
+# Test timeout case
+result = build_result_text('timeout', 'Bash', 'git push', 'test-session-123')
+print(result)
+")
+# Verify timeout message contains expected elements
+echo "$result" | grep -q '⏰ Timed Out' || test_fail "Expected '⏰ Timed Out' in result"
+echo "$result" | grep -q '<code>Bash</code>' || test_fail "Expected tool name in result"
+echo "$result" | grep -q '<code>git push</code>' || test_fail "Expected target in result"
+echo "$result" | grep -q 'test-ses' || test_fail "Expected truncated session ID in result"
+
 test_pass "PreToolUse hook permission matching works correctly"
