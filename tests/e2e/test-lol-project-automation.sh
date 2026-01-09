@@ -44,16 +44,10 @@ EOF
         test_fail "Automation template missing id substitution"
     fi
 
-    # Check for Stage field configuration (only STAGE_FIELD_ID needed)
-    if ! echo "$output" | grep -q "STAGE_FIELD_ID:"; then
+    # Verify STAGE_FIELD_ID is NOT present (uses Status field by name, no ID needed)
+    if echo "$output" | grep -q "STAGE_FIELD_ID:"; then
         cleanup_dir "$TMP_DIR"
-        test_fail "Automation template missing STAGE_FIELD_ID env var"
-    fi
-
-    # Verify STAGE_DONE_OPTION_ID is NOT present (simplified workflow)
-    if echo "$output" | grep -q "STAGE_DONE_OPTION_ID:"; then
-        cleanup_dir "$TMP_DIR"
-        test_fail "Automation template should not have STAGE_DONE_OPTION_ID (simplified to issue closing)"
+        test_fail "Automation template should not have STAGE_FIELD_ID (uses Status field by name)"
     fi
 
     # Check for status-field/status-value in issue add step

@@ -34,9 +34,6 @@ return_fixture() {
         list-fields)
             fixture_file="$FIXTURES_DIR/list-fields-response.json"
             ;;
-        create-field)
-            fixture_file="$FIXTURES_DIR/create-field-response.json"
-            ;;
         *)
             echo "Error: Unknown fixture operation '$operation'" >&2
             exit 1
@@ -147,43 +144,6 @@ graphql_list_fields() {
         }' -f projectId="$project_id"
 }
 
-# Execute GraphQL query for create-field
-graphql_create_field() {
-    local project_id="$1"
-    local field_name="$2"
-
-    if [ "$FIXTURE_MODE" = "1" ]; then
-        return_fixture "create-field"
-        return 0
-    fi
-
-    gh api graphql -f query='
-        mutation($projectId: ID!, $name: String!) {
-            createProjectV2Field(
-                input: {
-                    projectId: $projectId
-                    dataType: SINGLE_SELECT
-                    name: $name
-                    singleSelectOptions: [
-                        { name: "proposed", color: GRAY, description: "" }
-                        { name: "accepted", color: GREEN, description: "" }
-                    ]
-                }
-            ) {
-                projectV2Field {
-                    ... on ProjectV2SingleSelectField {
-                        id
-                        name
-                        options {
-                            id
-                            name
-                        }
-                    }
-                }
-            }
-        }' -f projectId="$project_id" -f name="$field_name"
-}
-
 # Main execution
 main() {
     local operation="$1"
@@ -202,9 +162,6 @@ main() {
         list-fields)
             graphql_list_fields "$@"
             ;;
-        create-field)
-            graphql_create_field "$@"
-            ;;
         *)
             echo "Error: Unknown operation '$operation'" >&2
             echo "" >&2
@@ -213,7 +170,6 @@ main() {
             echo "  $0 lookup-project <org> <project-number>" >&2
             echo "  $0 add-item <project-id> <content-id>" >&2
             echo "  $0 list-fields <project-id>" >&2
-            echo "  $0 create-field <project-id> <field-name>" >&2
             exit 1
             ;;
     esac

@@ -44,9 +44,9 @@ For more control over automation (e.g., setting custom field values, complex fil
    ```
 
    This command will:
-   - Automatically check if a "Stage" field exists in your project
-   - Create the "Stage" field with options (proposed, accepted) if it doesn't exist
-   - Auto-fill the `STAGE_FIELD_ID` in the generated workflow file
+   - Query the project's default Status field
+   - Configure the Status field with agentize options (Proposed, Plan Accepted, In Progress, Done) if needed
+   - Generate a workflow that uses `status-field: Status` and `status-value: Proposed`
    - Write the fully configured workflow to the specified path
 
 2. Set up the Personal Access Token (see [Security: Personal Access Token (PAT)](#security-personal-access-token-pat) section below)
@@ -66,16 +66,17 @@ For more control over automation (e.g., setting custom field values, complex fil
 
 **Automation capabilities:**
 - Automatically adds new issues and PRs to the project board
-- Sets Stage field to "proposed" for newly opened issues
+- Sets Status to "Proposed" for newly opened issues (using the default Status field)
 - Closes linked issues when associated PRs are merged (using GitHub's `closingIssuesReferences`)
 - Archives merged PR items from the project board (declutters active views)
+- Board view columns automatically reflect the 4 Status options
 
 **Advantages:**
 - Fine-grained control over automation logic
-- Automatic lifecycle management (proposed → closed)
+- Uses default Status field for Board view integration
 - Native PR-to-issue linking via GitHub's closingIssuesReferences
 - Supports complex filtering conditions
-- **Automatic Stage field creation and configuration**
+- No custom field creation needed—uses built-in Status field
 
 **Limitations:**
 - Requires workflow file maintenance
@@ -85,7 +86,7 @@ For more control over automation (e.g., setting custom field values, complex fil
 
 ## Setting Custom Field Values
 
-The generated workflow template automatically sets the Stage field to "proposed" for new issues using the `actions/add-to-project` action's built-in `status-field` and `status-value` parameters.
+The generated workflow template automatically sets the Status field to "Proposed" for new issues using the `actions/add-to-project` action's built-in `status-field` and `status-value` parameters.
 
 **For basic customization:**
 
@@ -110,16 +111,16 @@ See the [`actions/add-to-project` documentation](https://github.com/actions/add-
 
 **When is manual configuration needed?**
 
-The `lol project --automation --write` command automatically configures the Stage field for you. However, manual configuration may be needed if:
+The `lol project --automation --write` command automatically configures the Status field for you. However, manual configuration may be needed if:
 - You're not authenticated with GitHub CLI (`gh auth login`)
 - The project doesn't exist or you don't have access to it
-- You want to use a different field name (not "Stage")
+- The project's Status field options need manual adjustment
 
 If automatic configuration fails, the command will generate a template with placeholder values and provide instructions for manual setup.
 
 ### Manual Field ID Lookup
 
-The generated workflow template uses the `actions/add-to-project` action to set the Stage field to "proposed" for new issues. If you need to manually configure this, follow these steps to look up the Stage field ID for your project.
+The generated workflow template uses the `actions/add-to-project` action to set the Status field to "Proposed" for new issues. If you need to manually configure this, follow these steps.
 
 **Step 1: Get your project's GraphQL ID**
 
@@ -165,24 +166,21 @@ query {
 }'
 ```
 
-**Step 3: Identify the Stage field ID**
+**Step 3: Verify Status field options**
 
-From the query output, locate the `id` of your Stage field (e.g., `PVTSSF_xxx`).
+From the query output, locate the "Status" field and verify it has the expected options (Proposed, Plan Accepted, In Progress, Done). The `actions/add-to-project` action uses the field name ("Status") and option name ("Proposed") directly—no field IDs are needed in the workflow.
 
 **Step 4: Update the workflow environment variables**
 
-Replace the placeholder values in your workflow file:
+The simplified workflow only requires org and project ID:
 
 ```yaml
 env:
   PROJECT_ORG: YOUR_ORG_HERE
   PROJECT_ID: YOUR_PROJECT_ID_HERE
-  STAGE_FIELD_ID: PVTSSF_xxx  # From Step 3
 ```
 
-**Note:** The `STAGE_FIELD_ID` is only used by the `actions/add-to-project` action to set the initial "proposed" status. The workflow no longer requires option IDs since issue closing is handled via `gh issue close` instead of GraphQL field mutations.
-
-Field IDs are stable and don't change unless you delete and recreate the field. You only need to look them up once during initial configuration.
+**Note:** The workflow uses `status-field: Status` and `status-value: Proposed` to set the initial status. No field IDs are required since the `actions/add-to-project` action resolves field names automatically.
 
 ## Security: Personal Access Token (PAT)
 

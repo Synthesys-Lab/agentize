@@ -251,16 +251,17 @@ Prints or writes a GitHub Actions workflow template for project automation with 
 
 The generated template:
 - Automatically adds new issues and PRs to the project board
-- Sets Stage field to "proposed" for newly opened issues
+- Sets Status to "Proposed" for newly opened issues (using the default Status field)
 - Closes linked issues when associated PRs are merged
 - Archives merged PR items from the project board
+- Board view columns automatically reflect the 4 Status options
 
 **Automatic configuration:**
-- Checks if "Stage" field exists in your project
-- Creates the "Stage" field (proposed, accepted) if it doesn't exist
-- Auto-fills `STAGE_FIELD_ID` in the generated workflow
+- Queries the project's default Status field
+- Configures Status field options (Proposed, Plan Accepted, In Progress, Done) if needed
+- Uses `status-field: Status` and `status-value: Proposed` in the workflow
 
-Configuration required: PAT with project permissions. Stage field is configured automatically if you have project access.
+Configuration required: PAT with project permissions.
 
 - `--write` - Write template to file (optional, defaults to stdout)
 

@@ -54,41 +54,32 @@ query {
 }'
 ```
 
-### Creating Custom Fields
+### Configuring the Default Status Field
 
-Use the returned GraphQL ID (`PVT_xxx`) to create custom fields:
+GitHub Projects v2 includes a built-in **Status** field that integrates natively with the Board view. The `lol project --automation` command configures this default Status field with agentize-specific options.
 
-```bash
-gh api graphql -f query='
-mutation {
-  createProjectV2Field(
-    input: {
-      projectId: "PVT_xxx"
-      dataType: SINGLE_SELECT
-      name: "Stage"
-      singleSelectOptions: [
-        { name: "proposed" }
-        { name: "accepted" }
-      ]
-    }
-  ) {
-    projectV2Field {
-      id
-      name
-    }
-  }
-}'
-```
+**Why use the default Status field?**
 
-**Note:** The Stage field uses a two-layer model for tracking work:
-- **Stage field (Approval tracking)**: `proposed` → `accepted`
-- **GitHub Issue status (Completion tracking)**: `Open` → `Closed`
+- **Board View Affinity**: GitHub's Board view is designed around the Status field—columns automatically map to Status options, and drag-and-drop updates the Status field seamlessly.
+- **Built-in Automations**: GitHub's native automations (e.g., "Item closed → Done") work with the Status field out of the box.
+- **No Custom Field Maintenance**: Using the built-in field eliminates the need to create and maintain custom fields.
 
-This design delegates completion tracking to GitHub's native issue lifecycle, keeping the custom Stage field focused solely on approval workflow.
+**Status field options:**
+
+| Option | Description | Board Column |
+|--------|-------------|--------------|
+| Proposed | Plan proposed by agentize, awaiting approval | Leftmost |
+| Plan Accepted | Plan approved, ready for implementation | Second |
+| In Progress | Actively being worked on | Third |
+| Done | Implementation complete | Rightmost |
+
+**Automatic configuration:**
+
+The `lol project --automation --write` command automatically queries and configures the Status field options via GraphQL. If you need to manually add options, use the `updateProjectV2` mutation (see GitHub's GraphQL API documentation).
 
 ### Querying Issue Project Fields
 
-Look up an issue's project field values (including Stage):
+Look up an issue's project field values (including Status):
 
 ```bash
 gh api graphql -f query='
@@ -120,7 +111,7 @@ query($owner:String!, $repo:String!, $number:Int!) {
 }' -f owner='OWNER' -f repo='REPO' -F number=ISSUE_NUMBER
 ```
 
-This returns all project associations and their field values, allowing you to index issues by their stage.
+This returns all project associations and their field values, allowing you to index issues by their status.
 
 ### Listing Field and Option IDs for Automation
 
@@ -160,38 +151,30 @@ Automation workflows can dump and version control your project field configurati
 
 We have two Kanban boards for plans (GitHub Issues) and implementations (Pull Requests).
 
-### Issue Status: Two-Layer Model
+### Issue Status: Board View Integration
 
-For issues, we use a **two-layer model** that separates approval tracking from completion tracking:
+For issues, we use GitHub Projects v2's **default Status field** with 4 options that map directly to Board view columns:
 
-**Layer 1: Stage Field (Approval Workflow)**
+| Status | Description | Board Column |
+|--------|-------------|--------------|
+| Proposed | Plan proposed by agentize, awaiting approval | Leftmost |
+| Plan Accepted | Plan approved, ready for implementation | Second |
+| In Progress | Actively being worked on | Third |
+| Done | Implementation complete | Rightmost |
 
-A `Stage` custom field (Single Selection) tracks whether an issue is approved for implementation:
-- `proposed`: The issue is proposed but not yet approved for implementation.
-  - All issues created by AI agents start with this stage.
-  - Issues at this stage are under review or awaiting stakeholder approval.
-- `accepted`: The issue is approved and ready for implementation.
-  - `/issue-to-impl` command requires issues to be at `accepted` stage.
-  - Moving an issue to this stage signals green light for development work.
+**Workflow:**
 
-**Layer 2: GitHub Issue Status (Completion Tracking)**
+1. **Proposed**: All issues created by AI agents start with this status. Issues are under review or awaiting stakeholder approval.
+2. **Plan Accepted**: The issue plan is approved and ready for implementation. `/issue-to-impl` command requires issues to be at this status.
+3. **In Progress**: Implementation has started. Use **assignees** to indicate who is working on it, and **linked PRs** to track progress.
+4. **Done**: Implementation is complete. GitHub's built-in automation can move issues here when they are closed.
 
-GitHub's native issue status tracks implementation progress and completion:
-- `Open`: Issue is either awaiting implementation or currently in progress.
-  - Use **assignees** to indicate work-in-progress (assigned = someone is working on it).
-  - Use **linked PRs** to track implementation progress.
-- `Closed`: Issue implementation is complete or abandoned.
-  - Use close reason `completed` when PR is merged.
-  - Use close reason `not planned` when issue is abandoned or no longer relevant.
+**Why use the default Status field?**
 
-**Why this design?**
-
-- **Simplicity**: Only 2 Stage options instead of 6, reducing cognitive overhead.
-- **Delegation**: Leverages GitHub's native issue lifecycle instead of duplicating it in custom fields.
-- **Clarity**: Separates "Is this approved?" (Stage) from "Is this done?" (Issue status).
-- **Automation**: GitHub automatically closes issues when linked PRs merge, no custom field updates needed.
-
-We use a `Single Selection` field for Stage instead of labels because labels cannot enforce mutual exclusivity.
+- **Board View Affinity**: GitHub's Board view is designed around the Status field—columns automatically map to Status options, and drag-and-drop updates the Status field.
+- **4 Clear States**: Covers the full lifecycle from proposal to completion without excessive granularity.
+- **Built-in Automations**: GitHub's native automations (e.g., "Item closed → Done") work seamlessly.
+- **No Custom Field**: Uses the built-in field instead of creating a custom "Stage" field, simplifying setup.
 
 ### Pull Request Status
 

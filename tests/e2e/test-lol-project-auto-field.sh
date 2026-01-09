@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Test: lol project --automation auto-creates Stage field
+# Test: lol project --automation configures Status field
 
 source "$(dirname "$0")/../common.sh"
 
-test_info "lol project --automation auto-creates Stage field"
+test_info "lol project --automation configures default Status field"
 
 TMP_DIR=$(make_temp_dir "lol-project-auto-field")
 
@@ -31,10 +31,10 @@ EOF
     # Run automation command
     output=$("$PROJECT_ROOT/scripts/agentize-project.sh" 2>&1) || true
 
-    # Check that Stage field was found/created
-    if ! echo "$output" | grep -q "Configuring Stage field"; then
+    # Check that Status field was configured
+    if ! echo "$output" | grep -q "Configuring Status field"; then
         cleanup_dir "$TMP_DIR"
-        test_fail "Automation should attempt to configure Stage field"
+        test_fail "Automation should attempt to configure Status field"
     fi
 
     # Check that workflow file was created
@@ -46,17 +46,21 @@ EOF
     # Read the generated workflow file
     workflow_content=$(cat ".github/workflows/project.yml")
 
-    # Verify STAGE_FIELD_ID is NOT a placeholder (should be auto-filled)
-    # In fixture mode, it should find existing Status field or create new Stage field
-    if echo "$workflow_content" | grep -q "STAGE_FIELD_ID: YOUR_STAGE_FIELD_ID_HERE"; then
+    # Verify STAGE_FIELD_ID is NOT present (uses Status field by name)
+    if echo "$workflow_content" | grep -q "STAGE_FIELD_ID:"; then
         cleanup_dir "$TMP_DIR"
-        test_fail "STAGE_FIELD_ID should be auto-filled, not placeholder"
+        test_fail "STAGE_FIELD_ID should not be present (uses Status field by name)"
     fi
 
-    # Verify STAGE_FIELD_ID has a real value
-    if ! echo "$workflow_content" | grep -q "STAGE_FIELD_ID: PVTSSF_"; then
+    # Verify workflow uses status-field: Status and status-value: Proposed
+    if ! echo "$workflow_content" | grep -q "status-field: Status"; then
         cleanup_dir "$TMP_DIR"
-        test_fail "STAGE_FIELD_ID should have real GraphQL ID (PVTSSF_*)"
+        test_fail "Workflow should use status-field: Status"
+    fi
+
+    if ! echo "$workflow_content" | grep -q "status-value: Proposed"; then
+        cleanup_dir "$TMP_DIR"
+        test_fail "Workflow should use status-value: Proposed"
     fi
 
     # Verify org and id are filled
@@ -71,5 +75,5 @@ EOF
     fi
 
     cleanup_dir "$TMP_DIR"
-    test_pass "Stage field auto-configured successfully"
+    test_pass "Status field configured successfully"
 )

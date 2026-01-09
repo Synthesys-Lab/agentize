@@ -12,7 +12,6 @@ on:
 env:
   PROJECT_ORG: Synthesys-Lab  # Replace with your GitHub organization
   PROJECT_ID: 3  # Replace with your project number (e.g., 3)
-  STAGE_FIELD_ID: PVTSSF_lADOChdS084BLmMFzg7i_c8  # Replace with your Stage field ID (e.g., PVTSSF_xxx)
 
 jobs:
   add-to-project:
@@ -20,15 +19,15 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.action == 'opened'
     steps:
-      # Add issues to project with Stage "proposed"
+      # Add issues to project with Status "Proposed"
       - name: Add issue to project
         if: github.event_name == 'issues'
         uses: actions/add-to-project@v1.0.2
         with:
           project-url: https://github.com/orgs/${{ env.PROJECT_ORG }}/projects/${{ env.PROJECT_ID }}
           github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
-          status-field: Stage
-          status-value: proposed
+          status-field: Status
+          status-value: Proposed
 
       # Add PRs to project without setting status
       - name: Add PR to project

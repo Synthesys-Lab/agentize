@@ -9,14 +9,18 @@
             "options": [
               {
                 "id": "f75ad846",
-                "name": "Todo"
+                "name": "Proposed"
               },
               {
                 "id": "47fc9ee4",
-                "name": "In Progress"
+                "name": "Plan Accepted"
               },
               {
                 "id": "98236657",
+                "name": "In Progress"
+              },
+              {
+                "id": "a1b2c3d4",
                 "name": "Done"
               }
             ]

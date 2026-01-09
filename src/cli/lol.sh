@@ -905,17 +905,15 @@ lol_cmd_project() (
             project_id="YOUR_PROJECT_ID_HERE"
         fi
 
-        # Get or create Stage field
-        local stage_field_id="YOUR_STAGE_FIELD_ID_HERE"
-
+        # Check Status field configuration
         if [ "$org" != "YOUR_ORG_HERE" ] && [ "$project_id" != "YOUR_PROJECT_ID_HERE" ]; then
-            echo "Configuring Stage field for project automation..."
+            echo "Configuring Status field for project automation..."
             echo ""
 
             # Get project GraphQL ID
             local result
             result="$("$AGENTIZE_HOME/scripts/gh-graphql.sh" lookup-project "$org" "$project_id")" || {
-                echo "Warning: Failed to look up project, using placeholder for STAGE_FIELD_ID"
+                echo "Warning: Failed to look up project"
                 echo ""
             }
 
@@ -924,41 +922,27 @@ lol_cmd_project() (
                 project_graphql_id="$(echo "$result" | jq -r '.data.organization.projectV2.id')"
 
                 if [ -n "$project_graphql_id" ] && [ "$project_graphql_id" != "null" ]; then
-                    # List existing fields
+                    # List existing fields to verify Status field exists
                     local fields_result
                     fields_result="$("$AGENTIZE_HOME/scripts/gh-graphql.sh" list-fields "$project_graphql_id")" || {
-                        echo "Warning: Failed to list fields, using placeholder for STAGE_FIELD_ID"
+                        echo "Warning: Failed to list fields"
                         echo ""
                     }
 
                     if [ -n "$fields_result" ]; then
-                        # Check if Stage field already exists
-                        local existing_stage_id
-                        existing_stage_id="$(echo "$fields_result" | jq -r '.data.node.fields.nodes[] | select(.name == "Stage") | .id')"
+                        # Check if Status field exists
+                        local status_options
+                        status_options="$(echo "$fields_result" | jq -r '.data.node.fields.nodes[] | select(.name == "Status") | .options[].name' | tr '\n' ', ' | sed 's/, $//')"
 
-                        if [ -n "$existing_stage_id" ] && [ "$existing_stage_id" != "null" ]; then
-                            echo "Found existing Stage field: $existing_stage_id"
-                            stage_field_id="$existing_stage_id"
+                        if [ -n "$status_options" ]; then
+                            echo "Found Status field with options: $status_options"
+                            echo ""
+                            echo "The workflow will use:"
+                            echo "  status-field: Status"
+                            echo "  status-value: Proposed"
                         else
-                            echo "Stage field not found, creating..."
-
-                            # Create Stage field
-                            local create_result
-                            create_result="$("$AGENTIZE_HOME/scripts/gh-graphql.sh" create-field "$project_graphql_id" "Stage")" || {
-                                echo "Warning: Failed to create Stage field, using placeholder for STAGE_FIELD_ID"
-                                echo ""
-                            }
-
-                            if [ -n "$create_result" ]; then
-                                local new_field_id
-                                new_field_id="$(echo "$create_result" | jq -r '.data.createProjectV2Field.projectV2Field.id')"
-
-                                if [ -n "$new_field_id" ] && [ "$new_field_id" != "null" ]; then
-                                    echo "Created Stage field: $new_field_id"
-                                    echo "  Options: proposed, accepted"
-                                    stage_field_id="$new_field_id"
-                                fi
-                            fi
+                            echo "Note: Status field not found or has no options"
+                            echo "The workflow expects Status field options: Proposed, Plan Accepted, In Progress, Done"
                         fi
                     fi
                 fi
@@ -971,8 +955,7 @@ lol_cmd_project() (
         local workflow_content
         workflow_content="$(cat "$AGENTIZE_HOME/templates/github/project-auto-add.yml" | \
             sed "s/YOUR_ORG_HERE/$org/g" | \
-            sed "s/YOUR_PROJECT_ID_HERE/$project_id/g" | \
-            sed "s/YOUR_STAGE_FIELD_ID_HERE/$stage_field_id/g")"
+            sed "s/YOUR_PROJECT_ID_HERE/$project_id/g")"
 
         if [ -n "$write_path" ]; then
             # Write to file
@@ -982,47 +965,6 @@ lol_cmd_project() (
             echo "$workflow_content" > "$write_path"
             echo "Automation workflow written to: $write_path"
             echo ""
-
-            if [ "$stage_field_id" = "YOUR_STAGE_FIELD_ID_HERE" ]; then
-                echo "STAGE_FIELD_ID not configured automatically"
-                echo ""
-                echo "Manual configuration required:"
-                echo ""
-                echo "1. Get your project's GraphQL ID:"
-                echo "   gh api graphql -f query='"
-                echo "     query {"
-                echo "       organization(login: \"$org\") {"
-                echo "         projectV2(number: $project_id) {"
-                echo "           id"
-                echo "         }"
-                echo "       }"
-                echo "     }'"
-                echo ""
-                echo "2. Create Stage field (if not exists):"
-                echo "   gh api graphql -f query='"
-                echo "     mutation {"
-                echo "       createProjectV2Field("
-                echo "         input: {"
-                echo "           projectId: \"<PROJECT_ID>\""
-                echo "           dataType: SINGLE_SELECT"
-                echo "           name: \"Stage\""
-                echo "           singleSelectOptions: ["
-                echo "             { name: \"proposed\" }"
-                echo "             { name: \"accepted\" }"
-                echo "           ]"
-                echo "         }"
-                echo "       ) {"
-                echo "         projectV2Field {"
-                echo "           ... on ProjectV2SingleSelectField {"
-                echo "             id"
-                echo "           }"
-                echo "         }"
-                echo "       }"
-                echo "     }'"
-                echo ""
-                echo "3. Update STAGE_FIELD_ID in $write_path"
-                echo ""
-            fi
 
             echo "Next steps:"
             echo ""

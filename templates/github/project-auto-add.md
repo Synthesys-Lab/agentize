@@ -7,7 +7,7 @@ This document explains how the `project-auto-add.yml` workflow template works an
 The workflow provides automated issue lifecycle management for GitHub Projects v2:
 
 1. **Auto-add**: Automatically adds new issues and PRs to your project board
-2. **Stage "proposed"**: Sets newly opened issues to Stage "proposed"
+2. **Status "Proposed"**: Sets newly opened issues to Status "Proposed" (using the default Status field)
 3. **Auto-close**: Closes linked issues when PRs are merged
 
 ## Workflow Architecture
@@ -22,7 +22,7 @@ Runs when issues or PRs are opened.
 
 **For issues**:
 - Adds issue to project board
-- Sets `Stage` field to `proposed` using the `actions/add-to-project` action's built-in parameters
+- Sets the default `Status` field to `Proposed` using the `actions/add-to-project` action's built-in parameters
 
 **For PRs**:
 - Adds PR to project board
@@ -72,60 +72,13 @@ You must configure these values in the `env:` section:
 env:
   PROJECT_ORG: YOUR_ORG_HERE              # Your GitHub organization name
   PROJECT_ID: YOUR_PROJECT_ID_HERE        # Project number (e.g., 3)
-  STAGE_FIELD_ID: YOUR_STAGE_FIELD_ID_HERE           # GraphQL ID of Stage field
 ```
 
 **How to find these values**:
 
-1. **PROJECT_ORG and PROJECT_ID**: These are substituted automatically by `lol project --automation` when you have project metadata in `.agentize.yaml`
+- **PROJECT_ORG and PROJECT_ID**: These are substituted automatically by `lol project --automation` when you have project metadata in `.agentize.yaml`
 
-2. **STAGE_FIELD_ID**: You must look this up manually using GraphQL queries (see next section)
-
-### Finding Field ID
-
-**Step 1: Get your project's GraphQL ID**
-
-```bash
-gh api graphql -f query='
-query {
-  organization(login: "YOUR_ORG") {
-    projectV2(number: YOUR_PROJECT_NUMBER) {
-      id
-      title
-    }
-  }
-}'
-```
-
-Save the `id` value (looks like `PVT_xxx`).
-
-**Step 2: List all fields**
-
-```bash
-gh api graphql -f query='
-query {
-  node(id: "PVT_xxx") {
-    ... on ProjectV2 {
-      fields(first: 20) {
-        nodes {
-          ... on ProjectV2SingleSelectField {
-            id
-            name
-            options {
-              id
-              name
-            }
-          }
-        }
-      }
-    }
-  }
-}'
-```
-
-From the output, find the `id` where `name` is `"Stage"` → This is your `STAGE_FIELD_ID`
-
-**Note:** You only need the field ID for setting the initial "proposed" status. Option IDs are not required since issue closing is handled via `gh issue close` instead of GraphQL field mutations.
+**Note:** The workflow uses the default Status field by name (`status-field: Status`), so no field IDs are required. The `actions/add-to-project` action resolves field names automatically.
 
 ### Repository Secret
 
@@ -156,8 +109,8 @@ When an issue is opened, the workflow:
 2. Calls `actions/add-to-project` with:
    - `project-url`: Constructed from `PROJECT_ORG` and `PROJECT_ID`
    - `github-token`: Uses the `ADD_TO_PROJECT_PAT` secret
-   - `status-field: Stage`: Tells the action to set the Stage field
-   - `status-value: proposed`: Sets the value to "proposed"
+   - `status-field: Status`: Tells the action to set the default Status field
+   - `status-value: Proposed`: Sets the value to "Proposed"
 
 The action handles all the GraphQL complexity internally.
 
@@ -169,7 +122,7 @@ When a PR is opened, the workflow:
 2. Calls `actions/add-to-project` with:
    - `project-url`: Constructed from `PROJECT_ORG` and `PROJECT_ID`
    - `github-token`: Uses the `ADD_TO_PROJECT_PAT` secret
-   - No `status-field`/`status-value` (PRs don't get initial Stage value)
+   - No `status-field`/`status-value` (PRs don't get initial Status value)
 
 ### Step 3: Close Linked Issues (PR Merge)
 
@@ -216,28 +169,16 @@ The close reason "completed" helps distinguish successful completion from abando
 
 ## Customization
 
-### Changing the Stage Field Name
+### Changing the Initial Status Value
 
-If your project uses a different field name (e.g., "Status" instead of "Stage"):
-
-1. Update the issue add step:
-   ```yaml
-   status-field: Status  # Changed from "Stage"
-   status-value: proposed
-   ```
-
-2. Look up the field ID for "Status" and update `STAGE_FIELD_ID` accordingly
-
-3. The mutation in the PR-merge job will use the correct field ID automatically
-
-### Changing the "Proposed" Value
-
-To set newly opened issues to a different initial value:
+To set newly opened issues to a different initial status:
 
 ```yaml
-status-field: Stage
-status-value: Backlog  # Changed from "proposed"
+status-field: Status
+status-value: Backlog  # Changed from "Proposed"
 ```
+
+The `actions/add-to-project` action resolves field and option names automatically, so no field IDs are needed.
 
 ### Changing the Close Reason
 
@@ -251,7 +192,7 @@ Valid close reasons: `completed`, `not planned`
 
 ### Adding PR Status on Open
 
-To set a Stage value for newly opened PRs:
+To set a Status value for newly opened PRs:
 
 ```yaml
 - name: Add PR to project
@@ -260,7 +201,7 @@ To set a Stage value for newly opened PRs:
   with:
     project-url: https://github.com/orgs/${{ env.PROJECT_ORG }}/projects/${{ env.PROJECT_ID }}
     github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
-    status-field: Stage
+    status-field: Status
     status-value: In Review  # Add this
 ```
 
@@ -270,9 +211,9 @@ To set a Stage value for newly opened PRs:
 
 **Symptom**: Workflow fails with error about field not found
 
-**Cause**: `STAGE_FIELD_ID` is incorrect or the field was deleted and recreated
+**Cause**: The specified `status-field` name doesn't match any field in the project
 
-**Fix**: Re-run the GraphQL query to get the current field ID
+**Fix**: Verify that the Status field exists in your project. Check the field name exactly matches (case-sensitive)
 
 ### Issues not being closed
 
