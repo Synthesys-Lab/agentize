@@ -264,11 +264,18 @@ def _edit_message_result(token: str, chat_id: str, message_id: int, tool: str,
         message_id: ID of the message to edit
         tool: Tool name for display
         target: Target string for display (truncated)
-        decision: 'allow' or 'deny'
+        decision: 'allow', 'deny', or 'timeout'
         session_id: Session ID for logging
     """
-    emoji = '✅' if decision == 'allow' else '❌'
-    status = 'Allowed' if decision == 'allow' else 'Denied'
+    if decision == 'timeout':
+        emoji = '⏰'
+        status = 'Timed Out'
+    elif decision == 'allow':
+        emoji = '✅'
+        status = 'Allowed'
+    else:
+        emoji = '❌'
+        status = 'Denied'
 
     # Preserve original message content with updated status
     result_text = (
@@ -326,8 +333,7 @@ def _telegram_approval_decision(tool: str, target: str, session_id: str, raw_tar
         f"🔧 Tool Approval Request\n\n"
         f"Tool: <code>{_escape_html(tool)}</code>\n"
         f"Target: <code>{_escape_html(truncated_target)}</code>\n"
-        f"Session: {session_id[:SESSION_ID_DISPLAY_LEN]}\n\n"
-        f"<i>Or reply /allow or /deny</i>"
+        f"Session: {session_id[:SESSION_ID_DISPLAY_LEN]}"
     )
 
     send_resp = _tg_api_request(token, 'sendMessage', {
@@ -425,12 +431,7 @@ def _telegram_approval_decision(tool: str, target: str, session_id: str, raw_tar
 
     # Timeout reached
     log_tool_decision(session_id, '', tool, raw_target, f'TG_TIMEOUT after {timeout}s')
-    _tg_api_request(token, 'sendMessage', {
-        'chat_id': chat_id,
-        'text': f"⏰ Timeout: No response for <code>{_escape_html(tool)}</code>, falling back to local prompt",
-        'parse_mode': 'HTML',
-        'reply_to_message_id': message_id
-    }, session_id)
+    _edit_message_result(token, chat_id, message_id, tool, truncated_target, 'timeout', session_id)
     return None
 
 
