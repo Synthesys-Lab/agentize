@@ -236,7 +236,7 @@ def filter_ready_issues(items: list[dict]) -> list[int]:
 
 def worktree_exists(issue_no: int) -> bool:
     """Check if a worktree exists for the given issue number."""
-    result = run_shell_function(f'wt resolve {issue_no}', capture_output=True)
+    result = run_shell_function(f'wt pathto {issue_no}', capture_output=True)
     return result.returncode == 0
 
 
