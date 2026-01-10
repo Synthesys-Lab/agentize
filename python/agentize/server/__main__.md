@@ -78,6 +78,23 @@ Query GitHub Projects v2 for items. Uses label-first discovery via `gh issue lis
 Filter items to issues with "Plan Accepted" status and `agentize:plan` label.
 When `HANDSOFF_DEBUG=1`, logs per-issue inspection with status, labels, and rejection reasons.
 
+### `filter_ready_refinements(items: list[dict]) -> list[int]`
+
+Filter items to issues eligible for refinement: Status "Proposed" + labels include both `agentize:plan` and `agentize:refine`.
+When `HANDSOFF_DEBUG=1`, logs per-issue inspection with `[refine-filter]` prefix.
+
+### `spawn_refinement(issue_no: int) -> tuple[bool, int | None]`
+
+Spawn a refinement session for the given issue.
+
+**Operations:**
+1. Creates worktree via `wt spawn --no-agent` (if not exists)
+2. Sets issue status to "Refining" (best-effort claim)
+3. Runs `/ultra-planner --refine` headlessly
+4. Returns (success, pid) tuple
+
+**Returns:** Tuple of (success, pid). pid is None if spawn failed.
+
 ### `worktree_exists(issue_no: int) -> bool`
 
 Check if a worktree exists for the given issue number.

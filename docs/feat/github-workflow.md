@@ -49,16 +49,18 @@ For more control over automation (e.g., setting custom field values, complex fil
    - Generate a workflow that uses `status-field: Status` and `status-value: Proposed`
    - Write the fully configured workflow to the specified path
 
-2. Set up the Personal Access Token (see [Security: Personal Access Token (PAT)](#security-personal-access-token-pat) section below)
+2. **Important:** If you're using agentize's refinement workflow, manually add a "Refining" option to the Status field in your project (between "Proposed" and "Plan Accepted"). This is needed for the server's auto-refinement feature.
 
-3. Commit and push:
+3. Set up the Personal Access Token (see [Security: Personal Access Token (PAT)](#security-personal-access-token-pat) section below)
+
+4. Commit and push:
    ```bash
    git add .github/workflows/add-to-project.yml
    git commit -m "Add GitHub Projects automation workflow"
    git push
    ```
 
-4. Verify the workflow runs on the **Actions** tab
+5. Verify the workflow runs on the **Actions** tab
 
 **Note:** If the command cannot access your project (e.g., not authenticated or project doesn't exist), it will generate a template with placeholder values that you'll need to configure manually. See [Manual Configuration](#manual-configuration) below.
 

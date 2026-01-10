@@ -113,6 +113,7 @@ lol serve --tg-token=<token> --tg-chat-id=<chat_id> [--period=5m] [--num-workers
 
 #### Behavior
 
+**Implementation Discovery:**
 1. Discovers candidate issues using `gh issue list --label agentize:plan --state open`
 2. For each candidate, checks project status via per-issue GraphQL lookup
 3. Filters issues by:
@@ -120,7 +121,19 @@ lol serve --tg-token=<token> --tg-chat-id=<chat_id> [--period=5m] [--num-workers
    - Label = `agentize:plan` (discovery filter)
 4. For each matching issue without an existing worktree:
    - Invokes `wt spawn <issue-number>` with TG credentials
-5. Continues polling until interrupted (Ctrl+C)
+
+**Refinement Discovery:**
+1. Discovers refinement candidates with both `agentize:plan` and `agentize:refine` labels
+2. Filters issues by:
+   - Project Status field = "Proposed"
+   - Labels include both `agentize:plan` and `agentize:refine`
+3. For each matching issue:
+   - Sets status to "Refining" (best-effort claim)
+   - Runs `/ultra-planner --refine` headlessly
+   - On completion: resets status to "Proposed" and removes `agentize:refine` label
+
+**Polling Loop:**
+- Continues polling until interrupted (Ctrl+C)
 
 #### Environment Variables
 
