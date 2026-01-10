@@ -25,6 +25,7 @@ echo "$output" | grep -q "^remove$" || test_fail "Missing command: remove"
 echo "$output" | grep -q "^prune$" || test_fail "Missing command: prune"
 echo "$output" | grep -q "^purge$" || test_fail "Missing command: purge"
 echo "$output" | grep -q "^pathto$" || test_fail "Missing command: pathto"
+echo "$output" | grep -q "^rebase$" || test_fail "Missing command: rebase"
 echo "$output" | grep -q "^help$" || test_fail "Missing command: help"
 
 # Verify legacy 'main' alias is NOT included (undocumented, compatibility only)

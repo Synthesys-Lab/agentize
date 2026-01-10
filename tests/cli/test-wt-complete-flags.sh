@@ -49,6 +49,18 @@ if echo "$remove_output" | grep -q " "; then
   test_fail "remove-flags output should be newline-delimited"
 fi
 
+# Test rebase-flags
+rebase_output=$(wt --complete rebase-flags 2>/dev/null)
+
+if ! echo "$rebase_output" | grep -q "^--headless$"; then
+  test_fail "rebase-flags missing: --headless"
+fi
+
+# Verify rebase-flags output is newline-delimited
+if echo "$rebase_output" | grep -q " "; then
+  test_fail "rebase-flags output should be newline-delimited"
+fi
+
 # Test unknown topic returns empty
 unknown_output=$(wt --complete unknown-topic 2>/dev/null)
 if [ -n "$unknown_output" ]; then
