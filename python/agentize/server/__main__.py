@@ -569,6 +569,62 @@ def filter_ready_issues(items: list[dict]) -> list[int]:
     return ready
 
 
+def filter_ready_refinements(items: list[dict]) -> list[int]:
+    """Filter items to issues eligible for refinement.
+
+    Requirements:
+    - Status = 'Proposed'
+    - Labels include both 'agentize:plan' and 'agentize:refine'
+    """
+    debug = os.getenv('HANDSOFF_DEBUG')
+    ready = []
+    skip_status = 0
+    skip_plan_label = 0
+    skip_refine_label = 0
+
+    for item in items:
+        content = item.get('content')
+        if not content or 'number' not in content:
+            continue
+
+        issue_no = content['number']
+        status_field = item.get('fieldValueByName') or {}
+        status_name = status_field.get('name', '')
+        labels = content.get('labels', {}).get('nodes', [])
+        label_names = [l['name'] for l in labels]
+
+        # Check status
+        if status_name != 'Proposed':
+            if debug:
+                print(f"[refine-filter] #{issue_no} status={status_name} labels={label_names} -> SKIP (status != Proposed)", file=sys.stderr)
+            skip_status += 1
+            continue
+
+        # Check agentize:plan label
+        if 'agentize:plan' not in label_names:
+            if debug:
+                print(f"[refine-filter] #{issue_no} status={status_name} labels={label_names} -> SKIP (missing agentize:plan label)", file=sys.stderr)
+            skip_plan_label += 1
+            continue
+
+        # Check agentize:refine label
+        if 'agentize:refine' not in label_names:
+            if debug:
+                print(f"[refine-filter] #{issue_no} status={status_name} labels={label_names} -> SKIP (missing agentize:refine label)", file=sys.stderr)
+            skip_refine_label += 1
+            continue
+
+        if debug:
+            print(f"[refine-filter] #{issue_no} status={status_name} labels={label_names} -> READY", file=sys.stderr)
+        ready.append(issue_no)
+
+    if debug:
+        total_skip = skip_status + skip_plan_label + skip_refine_label
+        print(f"[refine-filter] Summary: {len(ready)} ready, {total_skip} skipped ({skip_status} wrong status, {skip_plan_label} missing agentize:plan, {skip_refine_label} missing agentize:refine)", file=sys.stderr)
+
+    return ready
+
+
 def discover_candidate_prs(owner: str, repo: str) -> list[dict]:
     """Discover open PRs with agentize:pr label.
 
@@ -651,6 +707,133 @@ def resolve_issue_from_pr(pr: dict) -> int | None:
             return int(body_match.group(1))
 
     return None
+
+
+def query_refinement_items(org: str, project_number: int, owner: str, repo: str) -> list[dict]:
+    """Query refinement candidates with label-first discovery.
+
+    Uses gh issue list to discover candidates with both agentize:plan and agentize:refine
+    labels, then performs per-issue GraphQL queries to check project status.
+    """
+    # Lookup project GraphQL ID for status matching
+    project_id = lookup_project_graphql_id(org, project_number)
+    if not project_id:
+        if os.getenv('HANDSOFF_DEBUG'):
+            _log("Failed to lookup project GraphQL ID for refinement")
+        return []
+
+    # Discover candidates via label query (both labels required)
+    candidates = discover_refinement_candidates(owner, repo)
+    if not candidates:
+        if os.getenv('HANDSOFF_DEBUG'):
+            _log("No refinement candidates found")
+        return []
+
+    if os.getenv('HANDSOFF_DEBUG'):
+        _log(f"Found {len(candidates)} refinement candidates")
+
+    # Build items list with per-issue status lookups
+    items = []
+    for candidate in candidates:
+        issue_no = candidate.get('number')
+        if not issue_no:
+            continue
+
+        status = query_issue_project_status(owner, repo, issue_no, project_id)
+
+        # Build item in the format expected by filter_ready_refinements
+        labels_nodes = [{'name': lbl['name']} for lbl in candidate.get('labels', [])]
+        item = {
+            'content': {
+                'number': issue_no,
+                'labels': {'nodes': labels_nodes}
+            },
+            'fieldValueByName': {'name': status} if status else None
+        }
+        items.append(item)
+
+    return items
+
+
+def discover_refinement_candidates(owner: str, repo: str) -> list[dict]:
+    """Discover open issues with both agentize:plan and agentize:refine labels.
+
+    Returns:
+        List of issue metadata dicts with number and labels.
+    """
+    result = subprocess.run(
+        ['gh', 'issue', 'list',
+         '-R', f'{owner}/{repo}',
+         '--label', 'agentize:plan,agentize:refine',
+         '--state', 'open',
+         '--json', 'number,labels'],
+        capture_output=True, text=True
+    )
+
+    if result.returncode != 0:
+        _log(f"Failed to list refinement candidates: {result.stderr}", level="ERROR")
+        return []
+
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError as e:
+        _log(f"Failed to parse refinement candidates response: {e}", level="ERROR")
+        return []
+
+
+def spawn_refinement(issue_no: int) -> tuple[bool, int | None]:
+    """Spawn a refinement session for the given issue.
+
+    Operations:
+    1. Creates worktree via wt spawn --no-agent (if not exists)
+    2. Sets issue status to "Refining" (best-effort claim via wt_claim_issue_status)
+    3. Runs /ultra-planner --refine headlessly
+
+    Returns:
+        Tuple of (success, pid). pid is None if spawn failed.
+    """
+    _log(f"Starting refinement for issue #{issue_no}...")
+
+    # Step 1: Ensure worktree exists (create with --no-agent if needed)
+    if not worktree_exists(issue_no):
+        _log(f"Creating worktree for issue #{issue_no}...")
+        result = run_shell_function(f'wt spawn {issue_no} --no-agent', capture_output=True)
+        if result.returncode != 0:
+            _log(f"Failed to create worktree for issue #{issue_no}", level="ERROR")
+            return False, None
+
+    # Step 2: Get worktree path
+    result = run_shell_function(f'wt pathto {issue_no}', capture_output=True)
+    if result.returncode != 0:
+        _log(f"Failed to resolve worktree path for issue #{issue_no}", level="ERROR")
+        return False, None
+    worktree_path = result.stdout.strip()
+
+    # Step 3: Set status to "Refining" (best-effort claim)
+    run_shell_function(
+        f'wt_claim_issue_status {issue_no} "{worktree_path}" "Refining"',
+        capture_output=True
+    )
+
+    # Step 4: Run /ultra-planner --refine headlessly
+    log_dir = Path(os.getenv('AGENTIZE_HOME', '.')) / '.tmp' / 'logs'
+    log_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+    log_file = log_dir / f'refine-{issue_no}-{timestamp}.log'
+
+    # Use subprocess directly to run claude in the worktree
+    cmd = ['claude', '--print', f'/ultra-planner --refine {issue_no}']
+    with open(log_file, 'w') as f:
+        process = subprocess.Popen(
+            cmd,
+            cwd=worktree_path,
+            stdin=subprocess.DEVNULL,
+            stdout=f,
+            stderr=subprocess.STDOUT
+        )
+
+    _log(f"Refinement started for issue #{issue_no}, PID: {process.pid}, Log: {log_file}")
+    return True, process.pid
 
 
 def rebase_worktree(pr_no: int) -> tuple[bool, int | None]:
@@ -1024,6 +1207,44 @@ def run_server(
                             _log(f"Failed to rebase PR #{pr_no}", level="ERROR")
             except RuntimeError as e:
                 _log(f"Error during PR discovery: {e}", level="ERROR")
+
+            # Plan refinement: discover refinement candidates and spawn refinement sessions
+            try:
+                owner, repo = get_repo_owner_name()
+                refinement_items = query_refinement_items(org, project_id, owner, repo)
+                ready_refinements = filter_ready_refinements(refinement_items)
+
+                for issue_no in ready_refinements:
+                    # Skip if worktree exists and is busy (implementation in progress)
+                    # Refinement should only run for issues in "Proposed" state
+                    if worktree_exists(issue_no):
+                        if os.getenv('HANDSOFF_DEBUG'):
+                            _log(f"Issue #{issue_no}: worktree exists, skipping refinement")
+                        continue
+
+                    # Check worker availability (if bounded)
+                    if num_workers > 0:
+                        worker_id = get_free_worker(num_workers)
+                        if worker_id is None:
+                            _log(f"All {num_workers} workers busy, skipping refinement for now")
+                            break
+
+                        # Mark worker as busy before starting refinement
+                        write_worker_status(worker_id, 'BUSY', issue_no, None)
+                        success, pid = spawn_refinement(issue_no)
+                        if success:
+                            write_worker_status(worker_id, 'BUSY', issue_no, pid)
+                            _log(f"Issue #{issue_no} refinement started, assigned to worker {worker_id}")
+                        else:
+                            write_worker_status(worker_id, 'FREE', None, None)
+                            _log(f"Failed to spawn refinement for issue #{issue_no}", level="ERROR")
+                    else:
+                        # Unlimited workers mode
+                        success, _ = spawn_refinement(issue_no)
+                        if not success:
+                            _log(f"Failed to spawn refinement for issue #{issue_no}", level="ERROR")
+            except RuntimeError as e:
+                _log(f"Error during refinement discovery: {e}", level="ERROR")
 
             if running[0]:
                 time.sleep(period)

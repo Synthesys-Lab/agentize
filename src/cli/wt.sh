@@ -118,14 +118,16 @@ wt_resolve_worktree() {
 # SECTION 1.5: PROJECT STATUS HELPERS
 # ============================================================================
 
-# Attempt to set issue status to "In Progress" on the associated GitHub Projects board
+# Attempt to set issue status on the associated GitHub Projects board
 # This is best-effort: failures are logged but do not block worktree creation
 # Arguments:
 #   $1 - issue number
 #   $2 - worktree path (for context in log messages)
+#   $3 - target status name (default: "In Progress")
 wt_claim_issue_status() {
     local issue_no="$1"
     local worktree_path="$2"
+    local status_name="${3:-In Progress}"
 
     # Check for required tools
     if ! command -v jq >/dev/null 2>&1; then
@@ -212,15 +214,15 @@ wt_claim_issue_status() {
         return 0
     fi
 
-    # Step 3: Get Status field ID and "In Progress" option ID
-    local fields_response status_field_id in_progress_option_id
+    # Step 3: Get Status field ID and target option ID
+    local fields_response status_field_id target_option_id
     fields_response=$("$gh_graphql_script" list-fields "$project_graphql_id" 2>/dev/null)
     if [ $? -ne 0 ] || [ -z "$fields_response" ]; then
         echo "Note: Could not list project fields" >&2
         return 0
     fi
 
-    # Find Status field and "In Progress" option
+    # Find Status field and target status option
     status_field_id=$(echo "$fields_response" | jq -r \
         '.data.node.fields.nodes[] | select(.name == "Status") | .id // empty' 2>/dev/null | head -1)
     if [ -z "$status_field_id" ]; then
@@ -228,22 +230,22 @@ wt_claim_issue_status() {
         return 0
     fi
 
-    in_progress_option_id=$(echo "$fields_response" | jq -r \
-        '.data.node.fields.nodes[] | select(.name == "Status") | .options[] | select(.name == "In Progress") | .id // empty' 2>/dev/null | head -1)
-    if [ -z "$in_progress_option_id" ]; then
-        echo "Note: 'In Progress' status option not found in project" >&2
+    target_option_id=$(echo "$fields_response" | jq -r --arg status "$status_name" \
+        '.data.node.fields.nodes[] | select(.name == "Status") | .options[] | select(.name == $status) | .id // empty' 2>/dev/null | head -1)
+    if [ -z "$target_option_id" ]; then
+        echo "Note: '$status_name' status option not found in project" >&2
         return 0
     fi
 
     # Step 4: Update the field value
     local update_response
-    update_response=$("$gh_graphql_script" update-field "$project_graphql_id" "$item_id" "$status_field_id" "$in_progress_option_id" 2>/dev/null)
+    update_response=$("$gh_graphql_script" update-field "$project_graphql_id" "$item_id" "$status_field_id" "$target_option_id" 2>/dev/null)
     if [ $? -ne 0 ]; then
         echo "Note: Failed to update issue status" >&2
         return 0
     fi
 
-    echo "Updated issue #$issue_no status to In Progress"
+    echo "Updated issue #$issue_no status to $status_name"
     return 0
 }
 

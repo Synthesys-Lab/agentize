@@ -83,6 +83,14 @@ When `HANDSOFF_DEBUG=1`, logs per-issue inspection with status, labels, and reje
 Filter items to issues eligible for refinement: Status "Proposed" + labels include both `agentize:plan` and `agentize:refine`.
 When `HANDSOFF_DEBUG=1`, logs per-issue inspection with `[refine-filter]` prefix.
 
+### `query_refinement_items(org: str, project_number: int, owner: str, repo: str) -> list[dict]`
+
+Query refinement candidates with label-first discovery. Discovers issues with both `agentize:plan` and `agentize:refine` labels, then queries per-issue project status via GraphQL.
+
+### `discover_refinement_candidates(owner: str, repo: str) -> list[dict]`
+
+Discover open issues with both `agentize:plan` and `agentize:refine` labels using `gh issue list`. Returns list of issue metadata dicts with number and labels.
+
 ### `spawn_refinement(issue_no: int) -> tuple[bool, int | None]`
 
 Spawn a refinement session for the given issue.
