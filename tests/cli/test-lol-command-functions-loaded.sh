@@ -21,9 +21,10 @@ EXPECTED_FUNCTIONS=(
     "lol_cmd_claude_clean"
 )
 
-# Check each function is defined
+# Check each function is defined (shell-agnostic approach)
 for func in "${EXPECTED_FUNCTIONS[@]}"; do
-    if [ "$(type -t "$func")" != "function" ]; then
+    # Use 'type' output which works in both bash and zsh
+    if ! type "$func" 2>/dev/null | grep -q "function"; then
         test_fail "Function '$func' is not defined after sourcing lol.sh"
     fi
 done

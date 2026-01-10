@@ -6,7 +6,8 @@
 # Module structure:
 #   lol/helpers.sh    - Language detection and utility functions
 #   lol/completion.sh - Shell-agnostic completion helper
-#   lol/commands.sh   - Command implementations (lol_cmd_*)
+#   lol/commands.sh   - Thin loader that sources commands/*.sh
+#   lol/commands/     - Per-command implementations (lol_cmd_*)
 #   lol/parsers.sh    - Argument parsing for each command
 #   lol/dispatch.sh   - Main dispatcher and help text
 
