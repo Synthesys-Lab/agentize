@@ -78,6 +78,54 @@ The server first looks for explicit `PID:` lines, then falls back to regex match
 
 On startup, the server reads existing status files and checks PID liveness. Workers with dead PIDs are automatically marked as FREE, enabling recovery after unexpected shutdowns.
 
+## PR Auto-Rebase Workflow
+
+The server automatically detects PRs with merge conflicts and rebases their corresponding worktrees.
+
+### PR Discovery
+
+PRs created by agentize are labeled with `agentize:pr`. The server periodically scans for these PRs:
+
+```bash
+gh pr list --label agentize:pr --state open --json number,headRefName,mergeable
+```
+
+### Mergeable State Handling
+
+GitHub's `mergeable` field has three possible values:
+
+| Value | Meaning | Server Action |
+|-------|---------|---------------|
+| `MERGEABLE` | No conflicts | Skip (healthy) |
+| `CONFLICTING` | Has conflicts | Queue rebase |
+| `UNKNOWN` | Still computing | Skip and retry next poll |
+
+The `UNKNOWN` state occurs when GitHub is computing merge status. The server skips these PRs to avoid flapping and retries on the next poll cycle.
+
+### Rebase Dispatch
+
+When a PR with `mergeable=CONFLICTING` is detected, the server:
+
+1. Resolves the issue number from PR metadata
+2. Locates the corresponding worktree via `wt pathto <issue-no>`
+3. Executes `wt rebase <pr-no> --headless` using the worker pool
+4. Logs output to `.tmp/logs/rebase-<pr-no>-<timestamp>.log`
+
+If rebase fails due to conflicts:
+- The rebase is aborted (`git rebase --abort`)
+- The worker is marked FREE
+- An error is logged with the log file path for manual review
+
+### Debug Logging
+
+When `HANDSOFF_DEBUG=1` is set, the server logs PR discovery and filtering decisions:
+
+```
+[pr-rebase] #123 mergeable=CONFLICTING -> QUEUE
+[pr-rebase] #124 mergeable=UNKNOWN -> SKIP (retry next poll)
+[pr-rebase] #125 mergeable=MERGEABLE -> SKIP (healthy)
+```
+
 ## Configuration
 
 The server reads project association from `.agentize.yaml` in your repository root:

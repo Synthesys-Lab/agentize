@@ -246,7 +246,7 @@ git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null
 Once confirmed and the branch is on remote, create the PR using the GitHub CLI:
 
 ```bash
-gh pr create --title "TITLE_HERE" --body-file - <<'EOF'
+gh pr create --title "TITLE_HERE" --label "agentize:pr" --body-file - <<'EOF'
 BODY_CONTENT_HERE
 EOF
 ```
@@ -255,6 +255,7 @@ EOF
 - Use `--body-file -` with heredoc to preserve markdown formatting and handle special characters safely
 - The body should include all sections from Summary onwards (not the title)
 - The PR will be created against the default branch (usually main/master)
+- Always add the `agentize:pr` label to enable automatic PR management by the agentize server
 - After successful creation, display the PR URL to the user
 - Confirm: "Pull request created successfully: [URL]"
 

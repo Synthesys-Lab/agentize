@@ -16,7 +16,7 @@ wt <command> [options]
 ```
 
 **Parameters:**
-- `$1`: Command name (clone, common, init, goto, spawn, list, remove, prune, purge, pathto, help, --complete)
+- `$1`: Command name (clone, common, init, goto, spawn, list, remove, prune, purge, pathto, rebase, help, --complete)
 - `$@`: Remaining arguments passed to command implementation
 
 **Return codes:**
@@ -34,6 +34,7 @@ wt <command> [options]
 - `prune`: Clean up stale worktree metadata
 - `purge`: Remove worktrees for closed GitHub issues
 - `pathto <target>`: Print absolute path to worktree (main or issue number)
+- `rebase <pr-no>`: Rebase worktree for PR onto default branch
 - `help`: Display help message
 - `--complete <topic>`: Shell completion helper
 
@@ -385,6 +386,56 @@ wt pathto main     # Prints /path/to/repo.git/trees/main
 wt pathto 42       # Prints /path/to/repo.git/trees/issue-42
 ```
 
+### cmd_rebase()
+
+Rebase a PR's worktree onto the default branch.
+
+**Parameters:**
+- `$1-$n`: PR number and optional flags
+
+**Flags:**
+- `--headless`: Run in non-interactive mode for server daemon use
+
+**Prerequisites:**
+- gh CLI must be available
+- PR must exist
+- Worktree must exist for the resolved issue
+
+**Operations:**
+1. Parse arguments (PR number and flags)
+2. Validate PR number (numeric)
+3. Fetch PR metadata via `gh pr view`
+4. Resolve issue number using fallbacks:
+   - Branch name pattern `issue-<N>`
+   - `closingIssuesReferences` from PR
+   - `#<N>` token in PR body
+5. Locate worktree via `wt_resolve_worktree()`
+6. Fetch origin and rebase onto `origin/<default-branch>`
+7. On conflict: abort rebase and handle based on mode
+
+**Return codes:**
+- `0`: Rebase successful
+- `1`: Invalid arguments, PR not found, worktree not found, rebase failed
+
+**Error conditions:**
+- Missing PR number → Usage error
+- Non-numeric PR → Error message
+- PR not found → Error with gh CLI hint
+- Issue resolution failed → Error with resolution path
+- Worktree not found → Error message
+- Rebase conflict → Abort and guidance (interactive) or exit non-zero (headless)
+
+**Headless mode:**
+- Logs output to `.tmp/logs/rebase-<pr-no>-<timestamp>.log`
+- Returns immediately with `PID:` and `Log:` output
+- Aborts rebase on conflict and exits non-zero
+
+**Example:**
+```bash
+wt rebase 123              # Rebase PR #123's worktree interactively
+wt rebase 123 --headless   # Rebase in headless mode for automation
+```
+
 ### cmd_help()
 
 Display help message.
@@ -414,6 +465,7 @@ Provides completion data for shell completion systems.
 - `commands`: List all commands (newline-delimited, includes `clone`)
 - `spawn-flags`: List spawn flags (--yolo, --no-agent, --headless)
 - `remove-flags`: List remove flags (--delete-branch, -D, --force)
+- `rebase-flags`: List rebase flags (--headless)
 - `goto-targets`: List available worktree targets (main + issue-*)
 
 **Return codes:**

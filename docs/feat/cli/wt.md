@@ -60,6 +60,21 @@ After running `make setup` and sourcing `setup.sh`, the `wt` command is availabl
   - `wt pathto <issue-no>`: prints path to `trees/issue-<issue-no>*`
   - Exits `0` on success, `1` if worktree not found
   - Useful for scripting and programmatic worktree lookups
+- `wt rebase <pr-no>`: rebase the worktree for the given PR onto the default branch
+  - Fetches origin and rebases onto `origin/<default-branch>`
+  - Resolves issue/worktree from PR metadata using fallbacks:
+    1. Branch name pattern `issue-<N>`
+    2. `closingIssuesReferences` from PR
+    3. `#<N>` token in PR body
+  - `--headless`: run rebase in non-interactive mode for server daemon use
+    - Aborts rebase on conflict and exits non-zero
+    - Logs output to `.tmp/logs/rebase-<pr-no>-<timestamp>.log`
+    - Returns immediately with structured output:
+      ```
+      PID: <rebase-pid>
+      Log: <log-file-path>
+      ```
+  - On conflict in interactive mode: aborts rebase and prints guidance
 - `wt help`: show help message
 
 ## Bare Repository Requirement
@@ -91,9 +106,10 @@ cd trees/main
 The `wt` command provides tab-completion support for zsh users. After running `make setup` and sourcing `setup.sh`, completions are automatically enabled.
 
 **Features:**
-- Subcommand completion (`wt <TAB>` shows: clone, common, init, goto, spawn, list, remove, prune, purge, pathto, help)
+- Subcommand completion (`wt <TAB>` shows: clone, common, init, goto, spawn, list, remove, prune, purge, pathto, rebase, help)
 - Flag completion for `spawn` (`--yolo`, `--no-agent`, `--headless`) — flags can appear before or after `<issue-no>`
 - Flag completion for `remove` (`--delete-branch`, `-D`, `--force`) — flags can appear before or after `<issue-no>`
+- Flag completion for `rebase` (`--headless`) — flags can appear before or after `<pr-no>`
 - Target completion for `goto` (`main` and `issue-<N>-*` worktrees)
 - Target completion for `pathto` (same targets as `goto`)
 
@@ -115,9 +131,10 @@ wt --complete <topic>
 ```
 
 **Topics:**
-- `commands` - List available subcommands (clone, common, init, goto, spawn, list, remove, prune, purge, pathto, help)
+- `commands` - List available subcommands (clone, common, init, goto, spawn, list, remove, prune, purge, pathto, rebase, help)
 - `spawn-flags` - List flags for `wt spawn` (--yolo, --no-agent, --headless)
 - `remove-flags` - List flags for `wt remove` (--delete-branch, -D, --force)
+- `rebase-flags` - List flags for `wt rebase` (--headless)
 - `goto-targets` - List available targets for `wt goto` (main and issue-<N>-* worktrees)
 
 **Output format:** Newline-delimited tokens, no descriptions.
@@ -135,6 +152,7 @@ remove
 prune
 purge
 pathto
+rebase
 help
 
 $ wt --complete spawn-flags
@@ -146,6 +164,9 @@ $ wt --complete goto-targets
 main
 issue-42
 issue-45
+
+$ wt --complete rebase-flags
+--headless
 ```
 
 This helper is used by the zsh completion system and can be used by other shells in the future.
