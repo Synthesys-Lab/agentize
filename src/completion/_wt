@@ -17,6 +17,7 @@ _wt() {
     # Fallback to static command list if dynamic fetch failed
     if (( ${#commands} == 0 )); then
         commands=(
+            'clone:Clone repository as bare and initialize worktrees'
             'common:Print git common directory (bare repo path)'
             'init:Initialize worktree environment (creates trees/main)'
             'goto:Change directory to worktree target'
@@ -33,6 +34,7 @@ _wt() {
         local -a commands_with_desc
         for cmd in $commands; do
             case $cmd in
+                clone) commands_with_desc+=('clone:Clone repository as bare and initialize worktrees') ;;
                 common) commands_with_desc+=('common:Print git common directory (bare repo path)') ;;
                 init) commands_with_desc+=('init:Initialize worktree environment (creates trees/main)') ;;
                 goto) commands_with_desc+=('goto:Change directory to worktree target') ;;

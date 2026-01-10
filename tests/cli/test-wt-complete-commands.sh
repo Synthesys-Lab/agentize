@@ -15,6 +15,7 @@ output=$(wt --complete commands 2>/dev/null)
 
 # Verify documented commands are present
 # Check each command individually (shell-neutral approach)
+echo "$output" | grep -q "^clone$" || test_fail "Missing command: clone"
 echo "$output" | grep -q "^common$" || test_fail "Missing command: common"
 echo "$output" | grep -q "^init$" || test_fail "Missing command: init"
 echo "$output" | grep -q "^goto$" || test_fail "Missing command: goto"

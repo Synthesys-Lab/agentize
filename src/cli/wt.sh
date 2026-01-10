@@ -299,6 +299,56 @@ cmd_init() {
     fi
 }
 
+# wt clone: Clone repository as bare and initialize worktree environment
+cmd_clone() {
+    local url="$1"
+    local dest="$2"
+
+    # Validate URL is provided
+    if [ -z "$url" ]; then
+        echo "Error: Missing URL. Usage: wt clone <url> [destination]" >&2
+        return 1
+    fi
+
+    # Infer destination if not provided
+    if [ -z "$dest" ]; then
+        # Get basename from URL, remove .git suffix if present, then add .git
+        local base
+        base=$(basename "$url")
+        base="${base%.git}"
+        dest="${base}.git"
+    fi
+
+    # Check if destination already exists
+    if [ -e "$dest" ]; then
+        echo "Error: Destination '$dest' already exists" >&2
+        return 1
+    fi
+
+    # Clone as bare repository
+    if ! git clone --bare "$url" "$dest"; then
+        echo "Error: Failed to clone repository" >&2
+        return 1
+    fi
+
+    # Change into the bare repo and initialize
+    cd "$dest" || {
+        echo "Error: Failed to change into $dest" >&2
+        return 1
+    }
+
+    # Initialize worktree environment
+    if ! cmd_init; then
+        echo "Error: Failed to initialize worktree environment" >&2
+        return 1
+    fi
+
+    # Change to trees/main (only works when sourced)
+    cmd_goto main
+
+    return 0
+}
+
 # wt goto: Change directory to worktree
 cmd_goto() {
     local target="$1"
@@ -637,6 +687,7 @@ USAGE:
   wt <command> [options]
 
 COMMANDS:
+  clone <url> [dest]  Clone repository as bare and initialize worktrees
   common              Print the git common directory (bare repo path)
   init                Initialize worktree environment (run once per repo)
   goto <target>       Change directory to worktree (target: main or issue-no)
@@ -658,10 +709,11 @@ OPTIONS (remove):
   -D, --force         Alias for --delete-branch
 
 REQUIREMENTS:
-  - Bare git repository (create with: git clone --bare)
+  - Bare git repository (create with: git clone --bare, or wt clone)
   - gh CLI (for spawn validation and purge)
 
 EXAMPLES:
+  wt clone https://github.com/org/repo.git   # Clone and initialize
   wt init                    # Initialize worktree environment
   wt goto main               # Go to main worktree
   wt spawn 42                # Create worktree for issue #42
@@ -683,6 +735,9 @@ wt() {
     [ $# -gt 0 ] && shift
 
     case "$command" in
+        clone)
+            cmd_clone "$@"
+            ;;
         common)
             cmd_common "$@"
             ;;
@@ -718,6 +773,7 @@ wt() {
             local topic="$1"
             case "$topic" in
                 commands)
+                    echo "clone"
                     echo "common"
                     echo "init"
                     echo "goto"

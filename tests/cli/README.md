@@ -11,6 +11,7 @@ Unit tests for command-line interface commands (`wt`, `lol`) validating individu
 Tests for the `wt` (worktree) command:
 
 - `test-wt-bare-repo-required.sh` - Validates worktree commands require bare repo
+- `test-wt-clone-basic.sh` - Tests `wt clone` for bare repo creation and initialization
 - `test-wt-complete-commands.sh` - Tests shell completion for wt subcommands
 - `test-wt-complete-flags.sh` - Tests shell completion for wt flags
 - `test-wt-goto.sh` - Tests worktree navigation with `wt goto`
