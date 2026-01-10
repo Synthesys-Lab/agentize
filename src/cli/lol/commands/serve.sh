@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# lol_cmd_serve: Run polling server for GitHub Projects automation
 
 # lol_cmd_serve: Run polling server for GitHub Projects automation
 # Runs in subshell to preserve set -e semantics

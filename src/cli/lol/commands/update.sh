@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# lol_cmd_update: Update existing project with latest agentize configs
 
 # lol_cmd_update: Update existing project with latest agentize configs
 # Runs in subshell to preserve set -e semantics

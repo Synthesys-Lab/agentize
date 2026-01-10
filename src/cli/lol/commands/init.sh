@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# lol_cmd_init: Initialize new SDK project
 
 # lol_cmd_init: Initialize new SDK project
 # Runs in subshell to preserve set -e semantics

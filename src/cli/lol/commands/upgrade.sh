@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# lol_cmd_upgrade: Upgrade agentize installation
 
 # lol_cmd_upgrade: Upgrade agentize installation
 # Runs in subshell to preserve set -e semantics

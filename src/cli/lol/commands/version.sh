@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# lol_cmd_version: Display version information
 
 # lol_cmd_version: Display version information
 lol_cmd_version() {

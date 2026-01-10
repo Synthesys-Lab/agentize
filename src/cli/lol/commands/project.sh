@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# lol_cmd_project: GitHub Projects v2 integration
 
 # lol_cmd_project: GitHub Projects v2 integration
 # Runs in subshell to preserve set -e semantics
