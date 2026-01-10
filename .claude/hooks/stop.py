@@ -4,6 +4,13 @@ import sys
 import json
 from logger import logger
 
+
+def _session_dir():
+    """Get session directory path using AGENTIZE_HOME fallback."""
+    base = os.getenv('AGENTIZE_HOME', '.')
+    return os.path.join(base, '.tmp', 'hooked-sessions')
+
+
 def main():
 
     handsoff = os.getenv('HANDSOFF_MODE', '0')
@@ -27,8 +34,9 @@ def main():
         logger(session_id, f"Could not parse last transcript entry: {e}")
 
 
-    # Check the file existence
-    fname = f'.tmp/hooked-sessions/{session_id}.json'
+    # Check the file existence using AGENTIZE_HOME fallback
+    session_dir = _session_dir()
+    fname = os.path.join(session_dir, f'{session_id}.json')
     if os.path.exists(fname):
         logger(session_id, f"Found existing state file: {fname}")
         with open(fname, 'r') as f:

@@ -3,9 +3,40 @@
 import os
 import sys
 import json
+import re
 import shutil
 
 from logger import logger
+
+
+def _session_dir():
+    """Get session directory path using AGENTIZE_HOME fallback."""
+    base = os.getenv('AGENTIZE_HOME', '.')
+    return os.path.join(base, '.tmp', 'hooked-sessions')
+
+
+def _extract_issue_no(prompt):
+    """Extract issue number from workflow command arguments.
+
+    Patterns:
+    - /issue-to-impl <number>
+    - /ultra-planner --refine <number>
+
+    Returns:
+        int or None if no issue number found
+    """
+    # Pattern for /issue-to-impl <number>
+    match = re.match(r'^/issue-to-impl\s+(\d+)', prompt)
+    if match:
+        return int(match.group(1))
+
+    # Pattern for /ultra-planner --refine <number>
+    match = re.search(r'--refine\s+(\d+)', prompt)
+    if match:
+        return int(match.group(1))
+
+    return None
+
 
 def main():
 
@@ -46,12 +77,19 @@ def main():
         state['state'] = 'initial'
 
     if state:
-        state['continuation_count'] = 0
-        # Create the folder if it doesn't exist
-        os.makedirs('.tmp', exist_ok=True)
-        os.makedirs('.tmp/hooked-sessions', exist_ok=True)
+        # Extract optional issue number from command arguments
+        issue_no = _extract_issue_no(prompt)
+        if issue_no is not None:
+            state['issue_no'] = issue_no
 
-        with open(f'.tmp/hooked-sessions/{session_id}.json', 'w') as f:
+        state['continuation_count'] = 0
+
+        # Create session directory using AGENTIZE_HOME fallback
+        session_dir = _session_dir()
+        os.makedirs(session_dir, exist_ok=True)
+
+        session_file = os.path.join(session_dir, f'{session_id}.json')
+        with open(session_file, 'w') as f:
             logger(session_id, f"Writing state: {state}")
             json.dump(state, f)
     else:

@@ -491,6 +491,12 @@ def _check_permission(tool: str, target: str, raw_target: str) -> Tuple[str, str
             return ('ask', 'error')
 
 
+def _session_dir() -> str:
+    """Get session directory path using AGENTIZE_HOME fallback."""
+    base = os.getenv('AGENTIZE_HOME', '.')
+    return os.path.join(base, '.tmp', 'hooked-sessions')
+
+
 def _log_debug_info(session: str, workflow: str, tool: str, raw_target: str,
                     permission_decision: str, decision_source: str) -> None:
     """Log debug information when HANDSOFF_DEBUG is enabled."""
@@ -499,28 +505,28 @@ def _log_debug_info(session: str, workflow: str, tool: str, raw_target: str,
     if os.getenv('HANDSOFF_DEBUG', '0').lower() not in ['1', 'true', 'on', 'enable']:
         return
 
-    os.makedirs('.tmp', exist_ok=True)
-    os.makedirs('.tmp/hooked-sessions', exist_ok=True)
+    session_dir = _session_dir()
+    os.makedirs(session_dir, exist_ok=True)
 
     # Log tool usage - separate files for rules vs haiku vs telegram decisions
     time_str = datetime.datetime.now().isoformat()
     if decision_source == 'rules' and permission_decision == 'allow':
         # Automatically approved tools go to tool-used.txt
-        with open('.tmp/hooked-sessions/tool-used.txt', 'a') as f:
+        with open(os.path.join(session_dir, 'tool-used.txt'), 'a') as f:
             f.write(f'[{time_str}] [{session}] [{workflow}] {tool} | {raw_target}\n')
     elif decision_source == 'haiku':
         # Haiku-determined tools go to their own file
-        with open('.tmp/hooked-sessions/tool-haiku-determined.txt', 'a') as f:
+        with open(os.path.join(session_dir, 'tool-haiku-determined.txt'), 'a') as f:
             f.write(f'[{time_str}] [{session}] [{workflow}] [{permission_decision}] {tool} | {raw_target}\n')
     elif decision_source == 'telegram':
         # Telegram-determined tools go to their own file
-        with open('.tmp/hooked-sessions/tool-telegram-determined.txt', 'a') as f:
+        with open(os.path.join(session_dir, 'tool-telegram-determined.txt'), 'a') as f:
             f.write(f'[{time_str}] [{session}] [{workflow}] [{permission_decision}] {tool} | {raw_target}\n')
 
 
 def _detect_workflow(session: str) -> str:
     """Detect workflow state from session state file."""
-    state_file = f'.tmp/hooked-sessions/{session}.json'
+    state_file = os.path.join(_session_dir(), f'{session}.json')
     if not os.path.exists(state_file):
         return 'unknown'
 
