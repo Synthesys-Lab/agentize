@@ -22,6 +22,7 @@ lol --version
 lol project --create [--org <org>] [--title <title>]
 lol project --associate <org>/<id>
 lol project --automation [--write <path>]
+lol usage [--today | --week]
 lol claude-clean [--dry-run]
 ```
 
@@ -299,6 +300,49 @@ lol project --automation --write .github/workflows/add-to-project.yml
 - [Metadata schema](../architecture/metadata.md)
 - [Project management](../architecture/project.md)
 
+### `lol usage`
+
+Reports Claude Code token usage statistics aggregated by time bucket. Parses JSONL files from `~/.claude/projects/**/*.jsonl` to extract token consumption data.
+
+**Usage:**
+```bash
+lol usage [--today | --week]
+```
+
+**Flags:**
+- `--today` (default) - Show usage by hour for the last 24 hours
+- `--week` - Show usage by day for the last 7 days
+
+**Output format:**
+```
+Today's Usage (2026-01-10):
+00:00   2 sessions,    1.2K input,    0.8K output
+01:00   0 sessions,       0 input,       0 output
+...
+23:00   5 sessions,   45.3K input,   12.1K output
+
+Total: 15 sessions, 156.7K input, 89.2K output
+```
+
+**Behavior:**
+- Filters JSONL files by modification time (today = last 24h, week = last 7 days)
+- Extracts `input_tokens` and `output_tokens` from assistant messages
+- Counts unique sessions (one JSONL file = one session)
+- Gracefully handles missing `~/.claude/projects` directory
+
+**Examples:**
+
+Show today's usage by hour:
+```bash
+lol usage
+lol usage --today
+```
+
+Show weekly usage by day:
+```bash
+lol usage --week
+```
+
 ### `lol claude-clean`
 
 Removes stale project entries from Claude's global configuration file (`~/.claude.json`). Cleans up `.projects` keys and `.githubRepoPaths` arrays for directories that no longer exist.
@@ -332,11 +376,12 @@ lol claude-clean
 The `lol` command provides tab-completion support for zsh users. After running `make setup` and sourcing `setup.sh`, completions are automatically enabled.
 
 **Features:**
-- Subcommand completion (`lol <TAB>` shows: apply, init, update, upgrade, version, project)
+- Subcommand completion (`lol <TAB>` shows: apply, init, update, upgrade, version, project, usage, claude-clean)
 - Flag completion for `apply` (`--init`, `--update`, plus all init/update flags)
 - Flag completion for `init` (`--name`, `--lang`, `--path`, `--source`, `--metadata-only`)
 - Flag completion for `update` (`--path`)
 - Flag completion for `project` (`--create`, `--associate`, `--automation`)
+- Flag completion for `usage` (`--today`, `--week`)
 - Value completion for `--lang` (c, cxx, python)
 - Path completion for path-related flags
 
@@ -356,13 +401,14 @@ lol --complete <topic>
 ```
 
 **Topics:**
-- `commands` - List available subcommands (apply, init, update, upgrade, version, project)
+- `commands` - List available subcommands (apply, init, update, upgrade, version, project, usage, claude-clean)
 - `apply-flags` - List flags for `lol apply` (--init, --update)
 - `init-flags` - List flags for `lol init` (--name, --lang, --path, --source, --metadata-only)
 - `update-flags` - List flags for `lol update` (--path)
 - `project-modes` - List project mode flags (--create, --associate, --automation)
 - `project-create-flags` - List flags for `lol project --create` (--org, --title)
 - `project-automation-flags` - List flags for `lol project --automation` (--write)
+- `usage-flags` - List flags for `lol usage` (--today, --week)
 - `lang-values` - List supported language values (c, cxx, python)
 
 **Output format:** Newline-delimited tokens, no descriptions.
