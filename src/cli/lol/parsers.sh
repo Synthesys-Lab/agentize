@@ -350,3 +350,25 @@ _lol_parse_serve() {
 
     lol_cmd_serve "$period" "$tg_token" "$tg_chat_id" "$num_workers"
 }
+
+# Parse claude-clean command arguments and call lol_cmd_claude_clean
+_lol_parse_claude_clean() {
+    local dry_run="0"
+
+    # Parse arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --dry-run)
+                dry_run="1"
+                shift
+                ;;
+            *)
+                echo "Error: Unknown option '$1'"
+                echo "Usage: lol claude-clean [--dry-run]"
+                return 1
+                ;;
+        esac
+    done
+
+    lol_cmd_claude_clean "$dry_run"
+}

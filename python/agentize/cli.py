@@ -78,6 +78,13 @@ def handle_serve(args: argparse.Namespace, agentize_home: str) -> int:
     return run_shell_command(cmd, agentize_home)
 
 
+def handle_claude_clean(args: argparse.Namespace, agentize_home: str) -> int:
+    """Handle claude-clean command."""
+    dry_run = "1" if args.dry_run else "0"
+    cmd = f'lol_cmd_claude_clean "{dry_run}"'
+    return run_shell_command(cmd, agentize_home)
+
+
 def handle_apply(args: argparse.Namespace, agentize_home: str) -> int:
     """Handle apply command."""
     if args.init:
@@ -158,6 +165,14 @@ def main() -> int:
     serve_parser.add_argument("--tg-chat-id", required=True, help="Telegram chat ID")
     serve_parser.add_argument("--period", default="5m", help="Polling interval (default: 5m)")
 
+    # claude-clean command
+    claude_clean_parser = subparsers.add_parser(
+        "claude-clean", help="Remove stale project entries from ~/.claude.json"
+    )
+    claude_clean_parser.add_argument(
+        "--dry-run", action="store_true", help="Preview changes without modifying"
+    )
+
     # version command
     subparsers.add_parser("version", help="Display version information")
 
@@ -183,6 +198,8 @@ def main() -> int:
         return handle_project(args, agentize_home)
     elif args.command == "serve":
         return handle_serve(args, agentize_home)
+    elif args.command == "claude-clean":
+        return handle_claude_clean(args, agentize_home)
     elif args.command == "version":
         return handle_version(agentize_home)
     else:

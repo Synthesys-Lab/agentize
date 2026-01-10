@@ -67,6 +67,9 @@ lol() {
         serve)
             _lol_parse_serve "$@"
             ;;
+        claude-clean)
+            _lol_parse_claude_clean "$@"
+            ;;
         version)
             lol_cmd_version
             ;;
@@ -84,6 +87,7 @@ lol() {
             echo "  lol project --associate <org>/<id>"
             echo "  lol project --automation [--write <path>]"
             echo "  lol serve --tg-token=<token> --tg-chat-id=<id> [--period=5m]"
+            echo "  lol claude-clean [--dry-run]"
             echo ""
             echo "Flags:"
             echo "  --version           Display version information"
@@ -103,6 +107,7 @@ lol() {
             echo "  --tg-token=<token>  Telegram bot token (serve, required)"
             echo "  --tg-chat-id=<id>   Telegram chat ID (serve, required)"
             echo "  --period=<period>   Polling interval (serve, default: 5m)"
+            echo "  --dry-run           Preview changes without modifying (claude-clean)"
             echo ""
             echo "Examples:"
             echo "  lol apply --init --name my-project --lang python --path /path/to/project"
@@ -116,6 +121,8 @@ lol() {
             echo "  lol project --associate Synthesys-Lab/3"
             echo "  lol project --automation --write .github/workflows/add-to-project.yml"
             echo "  lol serve --tg-token=xxx --tg-chat-id=xxx --period=30s"
+            echo "  lol claude-clean --dry-run    # Preview stale entries"
+            echo "  lol claude-clean              # Remove stale entries"
             return 1
             ;;
     esac

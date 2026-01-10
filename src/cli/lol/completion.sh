@@ -15,6 +15,7 @@ lol_complete() {
             echo "upgrade"
             echo "project"
             echo "serve"
+            echo "claude-clean"
             ;;
         apply-flags)
             echo "--init"
@@ -47,6 +48,9 @@ lol_complete() {
             echo "--tg-chat-id"
             echo "--period"
             echo "--num-workers"
+            ;;
+        claude-clean-flags)
+            echo "--dry-run"
             ;;
         lang-values)
             echo "c"
