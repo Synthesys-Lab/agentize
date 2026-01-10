@@ -23,6 +23,7 @@ echo "$output" | grep -q "^list$" || test_fail "Missing command: list"
 echo "$output" | grep -q "^remove$" || test_fail "Missing command: remove"
 echo "$output" | grep -q "^prune$" || test_fail "Missing command: prune"
 echo "$output" | grep -q "^purge$" || test_fail "Missing command: purge"
+echo "$output" | grep -q "^pathto$" || test_fail "Missing command: pathto"
 echo "$output" | grep -q "^help$" || test_fail "Missing command: help"
 
 # Verify legacy 'main' alias is NOT included (undocumented, compatibility only)
@@ -33,6 +34,11 @@ fi
 # Verify legacy 'create' alias is NOT included (not documented)
 if echo "$output" | grep -q "^create$"; then
   test_fail "Should not include undocumented 'create' alias"
+fi
+
+# Verify legacy 'resolve' is NOT included (replaced by pathto)
+if echo "$output" | grep -q "^resolve$"; then
+  test_fail "Should not include removed 'resolve' command (use pathto instead)"
 fi
 
 # Verify output is newline-delimited (no spaces, commas, etc.)
