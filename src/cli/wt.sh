@@ -80,6 +80,35 @@ wt_get_default_branch() {
     return 0
 }
 
+# Configure proper fetch refspec and prune settings for bare repositories
+# Arguments:
+#   $1 - Repository directory (optional, defaults to current directory)
+# Returns:
+#   0 - Success or if no origin remote exists
+#   1 - Configuration failure
+wt_configure_origin_tracking() {
+    local repo_dir="${1:-.}"
+
+    # Check if origin remote exists
+    if ! git -C "$repo_dir" remote get-url origin >/dev/null 2>&1; then
+        return 0  # No origin remote, skip silently
+    fi
+
+    # Set fetch refspec for origin
+    if ! git -C "$repo_dir" config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"; then
+        echo "Error: Failed to set remote.origin.fetch" >&2
+        return 1
+    fi
+
+    # Enable fetch.prune
+    if ! git -C "$repo_dir" config fetch.prune true; then
+        echo "Error: Failed to set fetch.prune" >&2
+        return 1
+    fi
+
+    return 0
+}
+
 # Resolve worktree path by issue number or name
 wt_resolve_worktree() {
     local target="$1"
@@ -281,6 +310,9 @@ cmd_init() {
         return 0
     fi
 
+    # Configure origin remote tracking if origin exists
+    wt_configure_origin_tracking "$common_dir"
+
     # Create trees directory
     mkdir -p "$trees_dir"
 
@@ -338,6 +370,12 @@ cmd_clone() {
         echo "Error: Failed to change into $dest" >&2
         return 1
     }
+
+    # Configure origin remote tracking (refspec + prune)
+    wt_configure_origin_tracking "."
+
+    # Best-effort fetch to populate origin/* refs
+    git fetch origin >/dev/null 2>&1 || true
 
     # Initialize worktree environment
     if ! cmd_init; then

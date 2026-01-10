@@ -18,6 +18,22 @@ if [ ! -d "trees/main" ]; then
   test_fail "trees/main was not created by wt init"
 fi
 
+# Verify refspec and prune config after init (when origin exists)
+# The test repo created by helpers-worktree.sh has an origin remote from clone
+if git remote get-url origin >/dev/null 2>&1; then
+  refspec=$(git config --get remote.origin.fetch 2>/dev/null)
+  if [ "$refspec" != "+refs/heads/*:refs/remotes/origin/*" ]; then
+    cleanup_test_repo
+    test_fail "remote.origin.fetch not set correctly after init: got '$refspec'"
+  fi
+
+  prune_setting=$(git config --get fetch.prune 2>/dev/null)
+  if [ "$prune_setting" != "true" ]; then
+    cleanup_test_repo
+    test_fail "fetch.prune not set to true after init: got '$prune_setting'"
+  fi
+fi
+
 # Test: wt goto main
 cd "$TEST_REPO_DIR"
 wt goto main 2>/dev/null
