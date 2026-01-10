@@ -46,6 +46,7 @@ lol_complete() {
             echo "--tg-token"
             echo "--tg-chat-id"
             echo "--period"
+            echo "--num-workers"
             ;;
         lang-values)
             echo "c"

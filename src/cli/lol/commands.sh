@@ -918,13 +918,14 @@ lol_cmd_project() (
 
 # lol_cmd_serve: Run polling server for GitHub Projects automation
 # Runs in subshell to preserve set -e semantics
-# Usage: lol_cmd_serve <period> <tg_token> <tg_chat_id>
+# Usage: lol_cmd_serve <period> <tg_token> <tg_chat_id> [num_workers]
 lol_cmd_serve() (
     set -e
 
     local period="$1"
     local tg_token="$2"
     local tg_chat_id="$3"
+    local num_workers="${4:-5}"
 
     # Validate required arguments
     if [ -z "$tg_token" ]; then
@@ -959,5 +960,5 @@ lol_cmd_serve() (
     export TG_CHAT_ID="$tg_chat_id"
 
     # Invoke Python server module
-    exec python -m agentize.server --period="$period"
+    exec python -m agentize.server --period="$period" --num-workers="$num_workers"
 )
