@@ -16,6 +16,7 @@ echo "$output" | grep -q "^init$" || test_fail "--complete commands missing: ini
 echo "$output" | grep -q "^update$" || test_fail "--complete commands missing: update"
 echo "$output" | grep -q "^upgrade$" || test_fail "--complete commands missing: upgrade"
 echo "$output" | grep -q "^project$" || test_fail "--complete commands missing: project"
+echo "$output" | grep -q "^claude-clean$" || test_fail "--complete commands missing: claude-clean"
 
 # Test 2: --version exits 0 and prints expected labels
 output=$(python3 -m agentize.cli --version 2>&1)

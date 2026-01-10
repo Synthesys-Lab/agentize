@@ -42,6 +42,7 @@ lol <command> [options]
 - `update`: Update existing project configuration
 - `upgrade`: Upgrade agentize installation
 - `project`: GitHub Projects v2 integration
+- `claude-clean`: Remove stale project entries from `~/.claude.json`
 - `--version`: Display version information
 - `--complete <topic>`: Shell completion helper
 
@@ -70,6 +71,7 @@ Shell-agnostic completion helper for completion systems.
 - `project-modes`: List project mode flags
 - `project-create-flags`: List flags for `lol project --create`
 - `project-automation-flags`: List flags for `lol project --automation`
+- `claude-clean-flags`: List flags for `lol claude-clean`
 - `lang-values`: List supported language values
 
 **Example:**
@@ -222,6 +224,31 @@ lol_cmd_project <mode> [arg1] [arg2] [arg3]
 **Return codes:**
 - `0`: Operation successful
 - `1`: Invalid mode, project not found, or API error
+
+### lol_cmd_claude_clean()
+
+Remove stale project entries from `~/.claude.json`.
+
+**Signature:**
+```bash
+lol_cmd_claude_clean <dry_run>
+```
+
+**Parameters:**
+- `dry_run`: "1" for preview mode, "0" for apply mode (required)
+
+**Operations:**
+1. Resolve config path (`$HOME/.claude.json`)
+2. Verify `jq` is available
+3. Extract paths from `.projects` keys and `.githubRepoPaths` arrays
+4. Check each path for existence via `test -d`
+5. If `dry_run=1`, print summary and exit
+6. Otherwise, apply jq filter to remove stale entries
+7. Write atomically via temp file and `mv`
+
+**Return codes:**
+- `0`: Operation successful (or no stale entries found)
+- `1`: Missing dependency (jq) or write failed
 
 ### lol_cmd_version()
 

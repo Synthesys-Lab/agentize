@@ -22,6 +22,7 @@ lol --version
 lol project --create [--org <org>] [--title <title>]
 lol project --associate <org>/<id>
 lol project --automation [--write <path>]
+lol claude-clean [--dry-run]
 ```
 
 ### Flags
@@ -297,6 +298,34 @@ lol project --automation --write .github/workflows/add-to-project.yml
 - [GitHub Projects automation guide](../workflows/github-projects-automation.md)
 - [Metadata schema](../architecture/metadata.md)
 - [Project management](../architecture/project.md)
+
+### `lol claude-clean`
+
+Removes stale project entries from Claude's global configuration file (`~/.claude.json`). Cleans up `.projects` keys and `.githubRepoPaths` arrays for directories that no longer exist.
+
+**Optional flags:**
+- `--dry-run` - Show what would be removed without modifying the file
+
+**Behavior:**
+
+1. Reads `$HOME/.claude.json` (exits with friendly message if missing)
+2. Verifies `jq` is available (required for JSON manipulation)
+3. Extracts paths from `.projects` keys and `.githubRepoPaths` arrays
+4. Checks each path for existence via `test -d`
+5. If `--dry-run`, prints summary and list of stale entries, then exits
+6. Otherwise, removes stale entries using jq filter and writes atomically
+
+**Examples:**
+
+Preview stale entries:
+```bash
+lol claude-clean --dry-run
+```
+
+Remove stale entries:
+```bash
+lol claude-clean
+```
 
 ## Shell Completion (zsh)
 

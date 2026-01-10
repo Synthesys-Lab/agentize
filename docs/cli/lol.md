@@ -55,6 +55,39 @@ lol project --automation [--write <path>]
 
 See [Project Management](../architecture/project.md) for details.
 
+### lol claude-clean
+
+Remove stale project entries from Claude's global configuration file (`~/.claude.json`).
+
+```bash
+lol claude-clean [--dry-run]
+```
+
+#### Options
+
+| Option | Required | Default | Description |
+|--------|----------|---------|-------------|
+| `--dry-run` | No | - | Show what would be removed without modifying the file |
+
+#### Behavior
+
+1. Reads `$HOME/.claude.json` (exits gracefully if missing)
+2. Verifies `jq` is available (required dependency)
+3. Scans `.projects` keys for non-existent directories
+4. Scans `.githubRepoPaths` arrays for non-existent directories
+5. If `--dry-run`, prints what would be removed and exits
+6. Otherwise, removes stale entries and writes changes atomically
+
+#### Example
+
+```bash
+# Preview what would be removed
+lol claude-clean --dry-run
+
+# Remove stale entries
+lol claude-clean
+```
+
 ### lol serve
 
 Long-running server that polls GitHub Projects for "Plan Accepted" issues and automatically invokes `wt spawn` to start implementation.

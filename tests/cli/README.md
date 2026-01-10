@@ -25,6 +25,7 @@ Tests for the `lol` (agentize) command:
 - `test-lol-complete-flags.sh` - Tests shell completion for lol flags
 - `test-lol-help-text.sh` - Validates help text formatting and content
 - `test-lol-version.sh` - Tests version command output
+- `test-lol-claude-clean.sh` - Tests `lol claude-clean` command for cleaning stale entries
 - `test-agentize-cli-init-*.sh` - Tests for `lol init` command
 - `test-agentize-cli-update-*.sh` - Tests for `lol update` command
 - `test-agentize-cli-metadata-*.sh` - Tests for metadata-only mode

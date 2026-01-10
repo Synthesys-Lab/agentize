@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Test: lol usage text includes lol upgrade
+# Test: lol usage text includes documented commands
 
 source "$(dirname "$0")/../common.sh"
 
 LOL_CLI="$PROJECT_ROOT/src/cli/lol.sh"
 
-test_info "lol usage text includes lol upgrade"
+test_info "lol usage text includes documented commands"
 
 export AGENTIZE_HOME="$PROJECT_ROOT"
 source "$LOL_CLI"
@@ -20,4 +20,7 @@ echo "$output" | grep -q "lol upgrade" || test_fail "Usage text missing 'lol upg
 # Verify usage text includes --version flag
 echo "$output" | grep -q "\-\-version" || test_fail "Usage text missing '--version' flag"
 
-test_pass "lol usage text includes lol upgrade and --version flag"
+# Verify usage text includes claude-clean command
+echo "$output" | grep -q "claude-clean" || test_fail "Usage text missing 'claude-clean' command"
+
+test_pass "lol usage text includes documented commands"

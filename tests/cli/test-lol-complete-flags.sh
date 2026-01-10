@@ -48,6 +48,11 @@ project_automation_output=$(lol --complete project-automation-flags 2>/dev/null)
 
 echo "$project_automation_output" | grep -q "^--write$" || test_fail "project-automation-flags missing: --write"
 
+# Test claude-clean-flags
+claude_clean_output=$(lol --complete claude-clean-flags 2>/dev/null)
+
+echo "$claude_clean_output" | grep -q "^--dry-run$" || test_fail "claude-clean-flags missing: --dry-run"
+
 # Test lang-values
 lang_output=$(lol --complete lang-values 2>/dev/null)
 
