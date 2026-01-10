@@ -52,6 +52,10 @@ Sent when the server starts, including hostname, project identifier, polling per
 
 Sent when an issue is successfully assigned to a worker, including issue number, title, worker ID, and GitHub issue link (when `git.remote_url` is configured in `.agentize.yaml`).
 
+### Worker Completion Notification
+
+Sent when a worker PID is found dead and the associated session's state is `done`, indicating successful completion. Includes issue number, worker ID, and GitHub issue link (when available). Issue index files are removed after notification to prevent duplicates.
+
 ## Debug Logging
 
 Set `HANDSOFF_DEBUG=1` to enable detailed logging of issue filtering decisions. See [docs/feat/server.md](../../../docs/feat/server.md#issue-filtering-debug-logs) for output format and examples.

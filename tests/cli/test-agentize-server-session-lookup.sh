@@ -104,4 +104,26 @@ if [ "$output" != "OK" ]; then
   test_fail "_get_session_state_for_issue missing: $output"
 fi
 
+# Test 7: _remove_issue_index removes the file
+output=$(AGENTIZE_HOME="$TMP_DIR" PYTHONPATH="$PROJECT_ROOT/python" python3 -c "
+from agentize.server.__main__ import _resolve_session_dir, _remove_issue_index
+from pathlib import Path
+
+session_dir = _resolve_session_dir()
+index_file = session_dir / 'by-issue' / '42.json'
+assert index_file.exists(), 'Index file should exist before removal'
+
+_remove_issue_index(42, session_dir)
+assert not index_file.exists(), 'Index file should be removed'
+
+# Removing again should not error (missing_ok=True)
+_remove_issue_index(42, session_dir)
+
+print('OK')
+")
+
+if [ "$output" != "OK" ]; then
+  test_fail "_remove_issue_index: $output"
+fi
+
 test_pass "server session lookup helpers work correctly"

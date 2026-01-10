@@ -106,3 +106,52 @@ Returns `None` if the URL format is not recognized.
 Build an HTML-formatted Telegram message for worker assignment notification.
 
 Includes issue link when `issue_url` is provided, otherwise displays issue number only.
+
+### `_format_worker_completion_message(issue_no: int, worker_id: int, issue_url: str | None) -> str`
+
+Build an HTML-formatted Telegram message for worker completion notification.
+
+Includes issue link when `issue_url` is provided, otherwise displays issue number only.
+
+### `_resolve_session_dir(base_dir: str | None = None) -> Path`
+
+Returns hooked-sessions directory path using `AGENTIZE_HOME` fallback.
+
+**Parameters:**
+- `base_dir`: Optional base directory override. If None, uses `AGENTIZE_HOME` or `.`
+
+**Returns:** Path to `{base}/.tmp/hooked-sessions/` directory.
+
+### `_load_issue_index(issue_no: int, session_dir: Path) -> str | None`
+
+Reads issue index file and returns session_id.
+
+**Parameters:**
+- `issue_no`: GitHub issue number
+- `session_dir`: Path to hooked-sessions directory
+
+**Returns:** session_id string or None if index file not found.
+
+### `_load_session_state(session_id: str, session_dir: Path) -> dict | None`
+
+Loads session state JSON file.
+
+**Parameters:**
+- `session_id`: Session identifier
+- `session_dir`: Path to hooked-sessions directory
+
+**Returns:** Session state dict or None if not found.
+
+### `_get_session_state_for_issue(issue_no: int, session_dir: Path) -> dict | None`
+
+Combined lookup: issue index -> session state.
+
+**Parameters:**
+- `issue_no`: GitHub issue number
+- `session_dir`: Path to hooked-sessions directory
+
+**Returns:** Session state dict or None if not found.
+
+### `_remove_issue_index(issue_no: int, session_dir: Path) -> None`
+
+Remove issue index file after notification to prevent duplicates.
