@@ -453,11 +453,11 @@ cmd_spawn() {
 
     # Invoke Claude if not disabled
     if [ "$no_agent" = false ] && command -v claude >/dev/null 2>&1; then
-        local yolo=""
+        local yolo_flag=""
         local print_flag=""
         if [ "$yolo" = true ]; then
             echo "WARNING: --yolo active; Claude will run with --dangerously-skip-permissions" >&2
-            yolo="--dangerously-skip-permissions"
+            yolo_flag="--dangerously-skip-permissions"
         fi
         if [ "$headless" = true ]; then
             print_flag="--print"
@@ -469,11 +469,18 @@ cmd_spawn() {
             mkdir -p "$log_dir"
             local log_file="$log_dir/issue-${issue_no}-$(date +%Y%m%d-%H%M%S).log"
             echo "Invoking Claude Code in headless mode..."
-            cd "$worktree_path" && claude $yolo $print_flag "/issue-to-impl $issue_no" > "$log_file" 2>&1 &
-            echo "Claude running in background (PID: $!), log: $log_file"
+            # Run claude in a subshell with exec to fully detach from parent process.
+            # Redirect stdin from /dev/null and stdout/stderr to log file to prevent
+            # fd inheritance that would block the parent when using capture_output.
+            (
+                cd "$worktree_path" && exec claude $yolo_flag $print_flag "/issue-to-impl $issue_no"
+            ) </dev/null >"$log_file" 2>&1 &
+            local claude_pid=$!
+            echo "PID: $claude_pid"
+            echo "Log: $log_file"
         else
             echo "Invoking Claude Code..."
-            cd "$worktree_path" && claude $yolo "/issue-to-impl $issue_no" || {
+            cd "$worktree_path" && claude $yolo_flag "/issue-to-impl $issue_no" || {
                 echo "Warning: Failed to invoke Claude Code" >&2
             }
         fi
