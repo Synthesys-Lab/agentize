@@ -165,7 +165,7 @@ For issues, we use GitHub Projects v2's **default Status field** with 4 options 
 **Workflow:**
 
 1. **Proposed**: All issues created by AI agents start with this status. Issues are under review or awaiting stakeholder approval.
-2. **Plan Accepted**: The issue plan is approved and ready for implementation. `/issue-to-impl` command requires issues to be at this status.
+2. **Plan Accepted**: The issue plan is approved and ready for implementation. `/issue-to-impl` command and `lol serve` require issues to be at this status (the "approval gate"). Note: The `agentize:plan` label is used for discovery but does NOT replace the Plan Accepted status gate.
 3. **In Progress**: Implementation has started. Use **assignees** to indicate who is working on it, and **linked PRs** to track progress.
 4. **Done**: Implementation is complete. GitHub's built-in automation can move issues here when they are closed.
 

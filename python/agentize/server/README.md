@@ -6,9 +6,9 @@ Polling server for GitHub Projects v2 automation.
 
 This module implements a long-running server that:
 1. Sends a Telegram startup notification (if configured)
-2. Polls GitHub Projects v2 at configurable intervals
-3. Identifies issues with "Plan Accepted" status and `agentize:plan` label
-4. Spawns worktrees for implementation via `wt spawn`
+2. Discovers candidate issues using `gh issue list --label agentize:plan --state open`
+3. Checks per-issue project status via GraphQL to enforce the "Plan Accepted" approval gate
+4. Spawns worktrees for ready issues via `wt spawn`
 
 ## Files
 

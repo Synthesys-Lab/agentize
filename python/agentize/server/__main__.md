@@ -53,9 +53,25 @@ Load project org, ID, and optional remote URL from `.agentize.yaml`.
 
 Returns: `(org, project_id, remote_url)` where `remote_url` is the `git.remote_url` value or `None` if not configured.
 
+### `get_repo_owner_name() -> tuple[str, str]`
+
+Resolve repository owner and name from git remote origin. Returns `(owner, repo)` tuple.
+
+### `lookup_project_graphql_id(org: str, project_number: int) -> str`
+
+Convert organization and project number into ProjectV2 GraphQL ID. Result is cached to avoid repeated lookups.
+
+### `discover_candidate_issues(owner: str, repo: str) -> list[int]`
+
+Discover open issues with `agentize:plan` label using `gh issue list`. Returns list of issue numbers.
+
+### `query_issue_project_status(owner: str, repo: str, issue_no: int, project_id: str) -> str`
+
+Fetch an issue's Status field value for the configured project via GraphQL. Returns the status string (e.g., "Plan Accepted") or empty string if not found.
+
 ### `query_project_items(org: str, project_number: int) -> list[dict]`
 
-Query GitHub Projects v2 for items via GraphQL.
+Query GitHub Projects v2 for items. Uses label-first discovery via `gh issue list` followed by per-issue status lookups via GraphQL. Returns list of items with status and labels attached.
 
 ### `filter_ready_issues(items: list[dict]) -> list[int]`
 

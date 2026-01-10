@@ -80,13 +80,14 @@ lol serve --tg-token=<token> --tg-chat-id=<chat_id> [--period=5m] [--num-workers
 
 #### Behavior
 
-1. Polls GitHub Projects v2 at the specified interval
-2. Filters issues by:
-   - Status field = "Plan Accepted"
-   - Label = `agentize:plan`
-3. For each matching issue without an existing worktree:
+1. Discovers candidate issues using `gh issue list --label agentize:plan --state open`
+2. For each candidate, checks project status via per-issue GraphQL lookup
+3. Filters issues by:
+   - Project Status field = "Plan Accepted" (approval gate)
+   - Label = `agentize:plan` (discovery filter)
+4. For each matching issue without an existing worktree:
    - Invokes `wt spawn <issue-number>` with TG credentials
-4. Continues polling until interrupted (Ctrl+C)
+5. Continues polling until interrupted (Ctrl+C)
 
 #### Environment Variables
 

@@ -6,9 +6,9 @@ Polling server for GitHub Projects v2 automation.
 
 A long-running server that monitors your GitHub Projects kanban board and automatically executes approved plans:
 
-1. Polls GitHub Projects v2 at configurable intervals
-2. Identifies issues with "Plan Accepted" status and `agentize:plan` label
-3. Spawns worktrees for implementation via `wt spawn`
+1. Discovers candidate issues using `gh issue list --label agentize:plan --state open`
+2. Checks per-issue project status via GraphQL to enforce the "Plan Accepted" approval gate
+3. Spawns worktrees for ready issues via `wt spawn`
 4. Manages concurrent workers with bounded concurrency (default: 5 workers)
 
 ## Usage
@@ -90,12 +90,16 @@ project:
 
 ## Troubleshooting
 
-### GraphQL Errors
+### Issue Discovery Errors
+
+If `gh issue list` fails (e.g., network error, auth issue), the server returns an empty candidate list without crashing, and logs the error for investigation.
+
+### Per-Issue Status Lookup Errors
 
 Error messages include source location (file:line:function) for quick debugging:
 
 ```
-[2026-01-09T12:30:47] [ERROR] [__main__.py:163:query_project_items] GraphQL query failed: ...
+[2026-01-09T12:30:47] [ERROR] [__main__.py:163:query_issue_project_status] GraphQL query failed: ...
 ```
 
 For additional context (query and variables), set `HANDSOFF_DEBUG=1`:
