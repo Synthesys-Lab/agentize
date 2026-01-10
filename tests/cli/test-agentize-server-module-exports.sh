@@ -34,6 +34,7 @@ from agentize.server.__main__ import (
     rebase_worktree,
     discover_candidate_issues,
     filter_ready_issues,
+    filter_ready_refinements,
     query_issue_project_status,
     query_project_items,
     discover_candidate_prs,
