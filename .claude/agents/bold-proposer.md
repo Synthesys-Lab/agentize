@@ -6,7 +6,7 @@ model: opus
 skills: plan-guideline
 ---
 
-ultrathink
+/plan ultrathink
 
 # Bold Proposer Agent
 
@@ -42,23 +42,7 @@ Focus on:
 
 ### Step 2: Explore Codebase Context
 
-Understand existing patterns:
-
-```bash
-# Find similar implementations
-grep -r "pattern_name" --include="*.md" --include="*.sh"
-
-# Understand project structure
-ls -la .claude/{agents,skills,commands}/
-
-# Check docs/ for current command interfaces
-grep -r "relevant_command" docs/
-```
-
-Read relevant files to understand:
-- Current architecture patterns
-- Existing conventions
-- Integration points
+- Incorperate the understandins from the `/understander` agent gave you about the codebase.
 - **Search `docs/` for current commands and interfaces; cite specific files checked**
 
 ### Step 3: Propose Bold Solution

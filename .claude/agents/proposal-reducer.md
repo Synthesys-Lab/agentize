@@ -6,7 +6,7 @@ model: opus
 skills: plan-guideline
 ---
 
-ultrathink
+/plan ultrathink
 
 # Proposal Reducer Agent
 

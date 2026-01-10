@@ -115,10 +115,32 @@ Generate a final implementation plan that follows the plan-guideline structure a
 ## Interface Design
 
 **New interfaces:**
-- [Interface signatures and descriptions]
+- Interface signatures and descriptions. Especially talk about:
+  - Exposed functionalities to internal use or user usage
+  - Internal implmentation based on the complexity
+    - If it is less than 20 LoC, you can just talk about the semantics of the interface omit this
+    - If it is with for loop and complicated conditional logics, put the steps here:
+      - Step 1: Get ready for input
+      - Step 2: Iterate over the input
+        - Step 2.1: Check condition A
+        - Step 2.2: Check condition B
+        - Step 2.3: If condition A and B met, do X, if not go back to Step 2
+        - Step 2.3: Return output based on conditionals
+      - Step 3: Return final output
+  - If any data structures or bookkeepings are needed, describe them here
+    - What attributes are needed?
+    - What are they recording?
+    - Do they have any member methods associated?
 
 **Modified interfaces:**
 - [Before/after comparisons]
+- It is preferred to have `diff` format if the change is less than 20 LoC:
+```diff
+- old line 1
+- old line 2
++ new line 1
++ new line 2
+```
 
 **Documentation changes:**
 - [Doc files to update with sections]
@@ -137,6 +159,13 @@ Generate a final implementation plan that follows the plan-guideline structure a
 
 **Interface docs:**
 - Source file companion `.md` files documenting interfaces
+
+Each document modifications should be as details as using `diff` format:
+```diff
+- Old document on interface(a, b, c)
++ New document on new_interface(a, b, c, d)
++ d handles the new feature by...
+```
 
 **Format:**
 ```markdown
