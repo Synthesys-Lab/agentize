@@ -20,6 +20,7 @@ from datetime import datetime
 from pathlib import Path
 
 from agentize.shell import run_shell_function
+from agentize.telegram_utils import escape_html
 
 
 def _log(msg: str, level: str = "INFO") -> None:
@@ -132,8 +133,70 @@ def notify_server_start(token: str, chat_id: str, org: str, project_id: int, per
         print("Warning: Failed to send Telegram startup notification", file=sys.stderr)
 
 
-def load_config() -> tuple[str, int]:
-    """Load project config from .agentize.yaml."""
+def _extract_repo_slug(remote_url: str) -> str | None:
+    """Extract org/repo slug from a GitHub remote URL.
+
+    Handles:
+    - https://github.com/org/repo
+    - https://github.com/org/repo.git
+    - git@github.com:org/repo.git
+
+    Returns:
+        org/repo string or None if URL format not recognized
+    """
+    if not remote_url:
+        return None
+
+    # HTTPS format: https://github.com/org/repo[.git]
+    https_match = re.match(r'https://github\.com/([^/]+)/([^/]+?)(?:\.git)?$', remote_url)
+    if https_match:
+        return f"{https_match.group(1)}/{https_match.group(2)}"
+
+    # SSH format: git@github.com:org/repo.git
+    ssh_match = re.match(r'git@github\.com:([^/]+)/([^/]+?)(?:\.git)?$', remote_url)
+    if ssh_match:
+        return f"{ssh_match.group(1)}/{ssh_match.group(2)}"
+
+    return None
+
+
+def _format_worker_assignment_message(
+    issue_no: int,
+    issue_title: str,
+    worker_id: int,
+    issue_url: str | None
+) -> str:
+    """Build HTML-formatted Telegram message for worker assignment.
+
+    Args:
+        issue_no: GitHub issue number
+        issue_title: Issue title (will be HTML-escaped)
+        worker_id: Worker slot ID
+        issue_url: Full GitHub issue URL or None
+
+    Returns:
+        HTML-formatted message for Telegram
+    """
+    escaped_title = escape_html(issue_title)
+
+    if issue_url:
+        issue_ref = f'<a href="{issue_url}">#{issue_no}</a>'
+    else:
+        issue_ref = f'#{issue_no}'
+
+    return (
+        f"🔧 <b>Worker Assignment</b>\n\n"
+        f"Issue: {issue_ref} {escaped_title}\n"
+        f"Worker: {worker_id}"
+    )
+
+
+def load_config() -> tuple[str, int, str | None]:
+    """Load project config from .agentize.yaml.
+
+    Returns:
+        Tuple of (org, project_id, remote_url) where remote_url may be None.
+    """
     yaml_path = Path('.agentize.yaml')
     if not yaml_path.exists():
         # Search parent directories
@@ -149,6 +212,7 @@ def load_config() -> tuple[str, int]:
     # Simple YAML parsing (no external deps)
     org = None
     project_id = None
+    remote_url = None
     with open(yaml_path) as f:
         for line in f:
             line = line.strip()
@@ -156,11 +220,17 @@ def load_config() -> tuple[str, int]:
                 org = line.split(':', 1)[1].strip()
             elif line.startswith('id:'):
                 project_id = int(line.split(':', 1)[1].strip())
+            elif line.startswith('remote_url:'):
+                remote_url = line.split(':', 1)[1].strip()
+                # Handle URLs with : in them (e.g., https://...)
+                if remote_url.startswith('https') or remote_url.startswith('git@'):
+                    # Re-read the full value after 'remote_url:'
+                    remote_url = line.split('remote_url:', 1)[1].strip()
 
     if not org or not project_id:
         raise ValueError(".agentize.yaml missing project.org or project.id")
 
-    return org, project_id
+    return org, project_id, remote_url
 
 
 def query_project_items(org: str, project_number: int) -> list[dict]:
@@ -413,8 +483,11 @@ def run_server(
         tg_chat_id: Telegram chat ID (optional, falls back to TG_CHAT_ID env)
         num_workers: Maximum concurrent workers (0 = unlimited)
     """
-    org, project_id = load_config()
+    org, project_id, remote_url = load_config()
     print(f"Starting server: org={org}, project={project_id}, period={period}s, workers={num_workers}")
+
+    # Extract repo slug for issue links (computed once)
+    repo_slug = _extract_repo_slug(remote_url) if remote_url else None
 
     # Initialize worker status files (if num_workers > 0)
     if num_workers > 0:
@@ -450,6 +523,13 @@ def run_server(
             items = query_project_items(org, project_id)
             ready_issues = filter_ready_issues(items)
 
+            # Build issue titles map (without changing filter_ready_issues return type)
+            issue_titles: dict[int, str] = {}
+            for item in items:
+                content = item.get('content')
+                if content and 'number' in content:
+                    issue_titles[content['number']] = content.get('title', '')
+
             for issue_no in ready_issues:
                 if worktree_exists(issue_no):
                     print(f"Issue #{issue_no}: worktree already exists, skipping")
@@ -468,6 +548,13 @@ def run_server(
                     if success:
                         write_worker_status(worker_id, 'BUSY', issue_no, pid)
                         print(f"issue #{issue_no} is assigned to worker {worker_id}")
+
+                        # Send Telegram notification if configured
+                        if token and chat_id:
+                            issue_title = issue_titles.get(issue_no, '')
+                            issue_url = f"https://github.com/{repo_slug}/issues/{issue_no}" if repo_slug else None
+                            msg = _format_worker_assignment_message(issue_no, issue_title, worker_id, issue_url)
+                            send_telegram_message(token, chat_id, msg)
                     else:
                         write_worker_status(worker_id, 'FREE', None, None)
                         _log(f"Failed to spawn worktree for issue #{issue_no}", level="ERROR")

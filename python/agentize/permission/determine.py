@@ -16,6 +16,7 @@ from typing import Optional, Dict, Any, Tuple, List
 from .rules import match_rule
 from .strips import normalize_bash_command
 from .parser import parse_hook_input, extract_target
+from agentize.telegram_utils import escape_html as _shared_escape_html
 
 # Import logger from hooks directory (stays in place per plan)
 import sys
@@ -186,7 +187,7 @@ def _escape_html(text: str) -> str:
 
     Telegram HTML mode requires escaping: < > &
     """
-    return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+    return _shared_escape_html(text)
 
 
 def _build_inline_keyboard(message_id: int) -> Dict[str, Any]:
