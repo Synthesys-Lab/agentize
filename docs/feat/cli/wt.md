@@ -45,6 +45,11 @@ After running `make setup` and sourcing `setup.sh`, the `wt` command is availabl
 - `wt purge`
   - It iterates over each worktree starting with `issue-` and checks the corresponding issue on `gh` CLI. If the issue is closed, remove both the worktree and the branch.
   - Each removal should also have the branch removed, and dump a "Branch and worktree of issue-<issue-no> removed." message on stdout.
+- `wt pathto <target>`: print the absolute path to a worktree
+  - `wt pathto main`: prints path to `trees/main`
+  - `wt pathto <issue-no>`: prints path to `trees/issue-<issue-no>*`
+  - Exits `0` on success, `1` if worktree not found
+  - Useful for scripting and programmatic worktree lookups
 - `wt help`: show help message
 
 ## Bare Repository Requirement
@@ -76,10 +81,11 @@ cd trees/main
 The `wt` command provides tab-completion support for zsh users. After running `make setup` and sourcing `setup.sh`, completions are automatically enabled.
 
 **Features:**
-- Subcommand completion (`wt <TAB>` shows: common, init, goto, spawn, list, remove, prune, purge, help)
+- Subcommand completion (`wt <TAB>` shows: common, init, goto, spawn, list, remove, prune, purge, pathto, help)
 - Flag completion for `spawn` (`--yolo`, `--no-agent`, `--headless`) — flags can appear before or after `<issue-no>`
 - Flag completion for `remove` (`--delete-branch`, `-D`, `--force`) — flags can appear before or after `<issue-no>`
 - Target completion for `goto` (`main` and `issue-<N>-*` worktrees)
+- Target completion for `pathto` (same targets as `goto`)
 
 **Setup:**
 1. Run `make setup` to generate `setup.sh`
@@ -99,7 +105,7 @@ wt --complete <topic>
 ```
 
 **Topics:**
-- `commands` - List available subcommands (common, init, goto, spawn, list, remove, prune, purge, help)
+- `commands` - List available subcommands (common, init, goto, spawn, list, remove, prune, purge, pathto, help)
 - `spawn-flags` - List flags for `wt spawn` (--yolo, --no-agent, --headless)
 - `remove-flags` - List flags for `wt remove` (--delete-branch, -D, --force)
 - `goto-targets` - List available targets for `wt goto` (main and issue-<N>-* worktrees)
@@ -117,6 +123,7 @@ list
 remove
 prune
 purge
+pathto
 help
 
 $ wt --complete spawn-flags

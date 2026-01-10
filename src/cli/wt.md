@@ -16,7 +16,7 @@ wt <command> [options]
 ```
 
 **Parameters:**
-- `$1`: Command name (common, init, goto, spawn, list, remove, prune, purge, help, --complete)
+- `$1`: Command name (common, init, goto, spawn, list, remove, prune, purge, pathto, help, --complete)
 - `$@`: Remaining arguments passed to command implementation
 
 **Return codes:**
@@ -32,6 +32,7 @@ wt <command> [options]
 - `remove <issue-no>`: Remove worktree for issue
 - `prune`: Clean up stale worktree metadata
 - `purge`: Remove worktrees for closed GitHub issues
+- `pathto <target>`: Print absolute path to worktree (main or issue number)
 - `help`: Display help message
 - `--complete <topic>`: Shell completion helper
 
@@ -316,6 +317,25 @@ Remove worktrees for closed GitHub issues.
 - gh CLI not available → Error message
 - Not in git repository → Error message
 
+### cmd_pathto()
+
+Print absolute path to worktree for target.
+
+**Parameters:**
+- `$1`: Target (main | issue number)
+
+**Output:** Absolute path to worktree directory
+
+**Return codes:**
+- `0`: Worktree found, path printed
+- `1`: Worktree not found
+
+**Example:**
+```bash
+wt pathto main     # Prints /path/to/repo.git/trees/main
+wt pathto 42       # Prints /path/to/repo.git/trees/issue-42
+```
+
 ### cmd_help()
 
 Display help message.
@@ -343,7 +363,7 @@ Provides completion data for shell completion systems.
 
 **Topics:**
 - `commands`: List all commands (newline-delimited)
-- `spawn-flags`: List spawn flags (--yolo, --no-agent)
+- `spawn-flags`: List spawn flags (--yolo, --no-agent, --headless)
 - `remove-flags`: List remove flags (--delete-branch, -D, --force)
 - `goto-targets`: List available worktree targets (main + issue-*)
 
