@@ -211,4 +211,62 @@ if [ "$status_missing_output" != "status=[]" ]; then
   test_fail "query_issue_project_status should return empty string for missing project, got: $status_missing_output"
 fi
 
+# Test 9: filter_ready_refinements returns issues with Proposed status + agentize:plan + agentize:refine labels
+REFINEMENT_ITEMS='[
+  {"content": {"number": 42, "labels": {"nodes": [{"name": "agentize:plan"}, {"name": "agentize:refine"}]}}, "fieldValueByName": {"name": "Proposed"}},
+  {"content": {"number": 43, "labels": {"nodes": [{"name": "agentize:plan"}]}}, "fieldValueByName": {"name": "Proposed"}},
+  {"content": {"number": 44, "labels": {"nodes": [{"name": "agentize:plan"}, {"name": "agentize:refine"}]}}, "fieldValueByName": {"name": "Plan Accepted"}},
+  {"content": {"number": 45, "labels": {"nodes": [{"name": "agentize:refine"}]}}, "fieldValueByName": {"name": "Proposed"}}
+]'
+
+refine_output=$(PYTHONPATH="$PROJECT_ROOT/python" python3 -c "
+import json
+from agentize.server.__main__ import filter_ready_refinements
+
+items = json.loads('''$REFINEMENT_ITEMS''')
+ready = filter_ready_refinements(items)
+print(' '.join(map(str, ready)))
+")
+
+if [ "$refine_output" != "42" ]; then
+  test_fail "Expected refinement issues [42], got [$refine_output]"
+fi
+
+# Test 10: filter_ready_refinements debug output contains [refine-filter] prefix
+refine_debug_output=$(PYTHONPATH="$PROJECT_ROOT/python" HANDSOFF_DEBUG=1 python3 -c "
+import json
+from agentize.server.__main__ import filter_ready_refinements
+
+items = json.loads('''$REFINEMENT_ITEMS''')
+filter_ready_refinements(items)
+" 2>&1)
+
+if ! echo "$refine_debug_output" | grep -q '\[refine-filter\]'; then
+  test_fail "Refinement debug output missing [refine-filter] prefix"
+fi
+
+if ! echo "$refine_debug_output" | grep -q 'missing agentize:refine'; then
+  test_fail "Refinement debug output missing 'missing agentize:refine' reason"
+fi
+
+if ! echo "$refine_debug_output" | grep -q 'status != Proposed'; then
+  test_fail "Refinement debug output missing 'status != Proposed' reason"
+fi
+
+# Test 11: filter_ready_refinements excludes issues with only agentize:refine (no agentize:plan)
+refine_no_plan_output=$(PYTHONPATH="$PROJECT_ROOT/python" python3 -c "
+import json
+from agentize.server.__main__ import filter_ready_refinements
+
+items = [
+  {'content': {'number': 45, 'labels': {'nodes': [{'name': 'agentize:refine'}]}}, 'fieldValueByName': {'name': 'Proposed'}}
+]
+ready = filter_ready_refinements(items)
+print(len(ready))
+")
+
+if [ "$refine_no_plan_output" != "0" ]; then
+  test_fail "Expected 0 refinement issues (missing agentize:plan), got count: $refine_no_plan_output"
+fi
+
 test_pass "server filter_ready_issues filtering and debug logs work correctly"
