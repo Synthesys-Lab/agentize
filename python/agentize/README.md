@@ -10,6 +10,7 @@ python/agentize/
 ├── cli.py                # Python CLI entrypoint (python -m agentize.cli)
 ├── cli.md                # CLI interface documentation
 ├── shell.py              # Shared shell function invocation utilities
+├── usage.py              # Claude Code token usage statistics
 ├── telegram_utils.py     # Shared Telegram API utilities
 ├── telegram_utils.md     # Telegram utilities interface documentation
 ├── server/               # Polling server module

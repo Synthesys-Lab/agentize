@@ -14,6 +14,7 @@ import os
 import sys
 
 from agentize.shell import get_agentize_home, run_shell_function
+from agentize.usage import count_usage, format_output
 
 
 def run_shell_command(cmd: str, agentize_home: str) -> int:
@@ -96,6 +97,15 @@ def handle_apply(args: argparse.Namespace, agentize_home: str) -> int:
         return 1
 
 
+def handle_usage(args: argparse.Namespace) -> int:
+    """Handle usage command."""
+    mode = "week" if args.week else "today"
+    buckets = count_usage(mode)
+    output = format_output(buckets, mode)
+    print(output)
+    return 0
+
+
 def main() -> int:
     """Main entry point."""
     try:
@@ -165,6 +175,18 @@ def main() -> int:
     serve_parser.add_argument("--tg-chat-id", required=True, help="Telegram chat ID")
     serve_parser.add_argument("--period", default="5m", help="Polling interval (default: 5m)")
 
+    # usage command
+    usage_parser = subparsers.add_parser(
+        "usage", help="Report Claude Code token usage statistics"
+    )
+    usage_group = usage_parser.add_mutually_exclusive_group()
+    usage_group.add_argument(
+        "--today", action="store_true", default=True, help="Show usage by hour (default)"
+    )
+    usage_group.add_argument(
+        "--week", action="store_true", help="Show usage by day for last 7 days"
+    )
+
     # claude-clean command
     claude_clean_parser = subparsers.add_parser(
         "claude-clean", help="Remove stale project entries from ~/.claude.json"
@@ -198,6 +220,8 @@ def main() -> int:
         return handle_project(args, agentize_home)
     elif args.command == "serve":
         return handle_serve(args, agentize_home)
+    elif args.command == "usage":
+        return handle_usage(args)
     elif args.command == "claude-clean":
         return handle_claude_clean(args, agentize_home)
     elif args.command == "version":
