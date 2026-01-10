@@ -270,3 +270,20 @@ Sent when a worker PID is found dead and the associated session's state is `done
 - Session state is not `done` (e.g., `initial`, `in_progress`)
 - Issue index file is missing (workflow not invoked with issue number)
 - Telegram credentials are not configured
+
+## Implementation Layout (Internal)
+
+The server is organized into focused modules for maintainability:
+
+```
+python/agentize/server/
+├── __main__.py    # CLI entry point and polling coordinator
+├── github.py      # GitHub issue/PR discovery and GraphQL helpers
+├── workers.py     # Worktree spawn/rebase and worker status files
+├── notify.py      # Telegram message formatting and sending
+├── session.py     # Session state file lookups
+├── log.py         # Shared logging helper
+└── README.md      # Module layout and re-export policy
+```
+
+All public functions are re-exported from `__main__.py` to preserve backward compatibility with existing test imports (e.g., `from agentize.server.__main__ import read_worker_status`).

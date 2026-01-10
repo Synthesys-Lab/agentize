@@ -12,10 +12,46 @@ This module implements a long-running server that:
    - "Proposed" + `agentize:refine` label (for refinement via `/ultra-planner --refine`)
 4. Spawns worktrees for ready issues via `wt spawn` or triggers refinement headlessly
 
-## Files
+## Module Layout
 
-- `__init__.py` - Module exports
-- `__main__.py` - Main polling loop and CLI entry point
+| File | Purpose |
+|------|---------|
+| `__main__.py` | CLI entry point, polling coordinator, and re-export hub |
+| `github.py` | GitHub issue/PR discovery via `gh` CLI and GraphQL queries |
+| `workers.py` | Worktree spawn/rebase via `wt` CLI and worker status file management |
+| `notify.py` | Telegram message formatting (startup, assignment, completion) |
+| `session.py` | Session state file lookups for completion detection |
+| `log.py` | Shared `_log` helper with source location formatting |
+
+## Import Policy
+
+All public functions are re-exported from `__main__.py`:
+
+```python
+# Tests and external code should use this pattern:
+from agentize.server.__main__ import read_worker_status
+
+# Internal modules import from specific files:
+from agentize.server.log import _log
+from agentize.server.workers import spawn_worktree
+```
+
+This re-export policy preserves backward compatibility with existing tests that import from `__main__`.
+
+## Module Dependencies
+
+```
+__main__.py
+    ├── github.py
+    │       └── log.py
+    ├── workers.py
+    │       └── log.py
+    ├── notify.py
+    │       └── log.py
+    └── session.py
+```
+
+Leaf module `log.py` has no internal dependencies to avoid import cycles.
 
 ## Usage
 
@@ -41,22 +77,6 @@ project:
   org: <organization>
   id: <project-number>
 ```
-
-## Telegram Notifications
-
-When Telegram credentials are configured, the server sends:
-
-### Startup Notification
-
-Sent when the server starts, including hostname, project identifier, polling period, and working directory.
-
-### Worker Assignment Notification
-
-Sent when an issue is successfully assigned to a worker, including issue number, title, worker ID, and GitHub issue link (when `git.remote_url` is configured in `.agentize.yaml`).
-
-### Worker Completion Notification
-
-Sent when a worker PID is found dead and the associated session's state is `done`, indicating successful completion. Includes issue number, worker ID, and GitHub issue link (when available). Issue index files are removed after notification to prevent duplicates.
 
 ## Debug Logging
 
