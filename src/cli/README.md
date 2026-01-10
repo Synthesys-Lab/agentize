@@ -8,12 +8,18 @@ Source-first libraries for Agentize CLI commands. These files are the canonical 
 
 ### Key Files
 
-- `wt.sh` - Worktree CLI library (canonical source)
-  - Implements `wt` command for managing git worktrees
-  - Handles subcommands: `init`, `spawn`, `list`, `remove`, `prune`, `goto`, `help`
-  - Provides both executable and sourceable interfaces
-  - Integrates with GitHub via `gh` CLI for issue validation
+- `wt.sh` - Worktree CLI library (canonical source, thin loader)
+  - Sources modular files from `wt/` directory
+  - Exports `wt` command for managing git worktrees
+  - Handles subcommands: `clone`, `common`, `init`, `goto`, `spawn`, `list`, `remove`, `prune`, `purge`, `pathto`, `rebase`, `help`
   - Interface documentation: `wt.md`
+
+- `wt/` - Worktree CLI modular implementation
+  - `helpers.sh` - Repository detection, path resolution, and project status helpers
+  - `completion.sh` - Shell-agnostic completion helper
+  - `commands.sh` - Command implementations (cmd_*)
+  - `dispatch.sh` - Main dispatcher and entry point
+  - See `wt/README.md` for module map and load order
 
 - `lol.sh` - SDK CLI library (canonical source, thin loader)
   - Sources modular files from `lol/` directory

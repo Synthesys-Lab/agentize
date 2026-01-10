@@ -2,6 +2,20 @@
 
 Implementation of the `wt` git worktree helper for bare repositories.
 
+## Module Structure
+
+The `wt` command is implemented as a thin loader (`wt.sh`) that sources modular files from `wt/`:
+
+```
+wt.sh           - Loader: determines script dir, sources modules
+wt/helpers.sh   - Repository detection and path resolution
+wt/completion.sh - Shell-agnostic completion helper
+wt/commands.sh  - Command implementations (cmd_*)
+wt/dispatch.sh  - Main dispatcher and entry point
+```
+
+See `wt/README.md` for module map and load order.
+
 ## External Interface
 
 Functions exported for shell usage when sourced.

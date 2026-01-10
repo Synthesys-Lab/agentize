@@ -13,7 +13,7 @@ After running `make setup` and sourcing `setup.sh`, the `wt` command is availabl
 - Worktrees are created under `trees/` directory in the bare repo root
 - The installer creates this structure: `<repo>.git/trees/main` where `make setup` generates `setup.sh`
 
-> NOTE: `wt` is implemented in `scripts/wt-cli.sh` which is both executable and sourceable. The `wt` function wrapper is exported via `setup.sh`.
+> NOTE: `wt` is implemented as a thin loader (`src/cli/wt.sh`) that sources modular files from `src/cli/wt/`. The `wt` function wrapper is exported via `setup.sh`. See `src/cli/wt/README.md` for module map.
 
 - `wt clone <url> [destination]`: clone a repository as bare, initialize worktrees, and set up `trees/main`
   - Equivalent to: `git clone --bare <url> <dest>` followed by `wt init` and `wt goto main`
