@@ -32,6 +32,24 @@ When `AGENTIZE_HOME` is set, session files are stored centrally, enabling cross-
 }
 ```
 
+### Issue Index Files
+
+When a workflow is invoked with an issue number (e.g., `/issue-to-impl 42`), the `UserPromptSubmit` hook also creates an issue index file:
+
+```
+${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/by-issue/{issue_no}.json
+```
+
+**Index file structure:**
+```json
+{
+  "session_id": "<session_id>",
+  "workflow": "issue-to-impl"
+}
+```
+
+This index enables the server to look up which session is handling a given issue, supporting completion notifications when workers finish.
+
 ### Auto-Continuation Flow
 
 ```
@@ -272,6 +290,7 @@ See [.claude/hooks/pre-tool-use.md](../../.claude/hooks/pre-tool-use.md) for int
 - Detects workflow commands: `/ultra-planner`, `/issue-to-impl`
 - Creates `$AGENTIZE_HOME/.tmp/hooked-sessions/{session_id}.json` with initial state (falls back to worktree-local `.tmp/` if `AGENTIZE_HOME` is unset)
 - Sets `continuation_count = 0`
+- When issue number is present, creates issue index file at `$AGENTIZE_HOME/.tmp/hooked-sessions/by-issue/{issue_no}.json`
 
 ### `stop.py`
 - **Event:** `Stop` (before Claude Code stops execution)

@@ -86,4 +86,40 @@ if [ "$output" != "OK" ]; then
   test_fail "_format_worker_assignment_message content: $output"
 fi
 
+# Test 5: _format_worker_completion_message basic formatting
+output=$(PYTHONPATH="$PROJECT_ROOT/python" python3 -c "
+from agentize.server.__main__ import _format_worker_completion_message
+
+# Basic completion message without URL
+msg = _format_worker_completion_message(42, 1, None)
+assert '#42' in msg, 'Should include issue number'
+assert 'Worker: 1' in msg, 'Should include worker ID'
+assert 'Completed' in msg or 'Complete' in msg, 'Should indicate completion'
+
+print('OK')
+")
+
+if [ "$output" != "OK" ]; then
+  test_fail "_format_worker_completion_message basic: $output"
+fi
+
+# Test 6: _format_worker_completion_message with URL
+output=$(PYTHONPATH="$PROJECT_ROOT/python" python3 -c "
+from agentize.server.__main__ import _format_worker_completion_message
+
+# Completion message with URL
+msg = _format_worker_completion_message(42, 1, 'https://github.com/org/repo/issues/42')
+assert 'href=\"https://github.com/org/repo/issues/42\"' in msg, f'Should include issue link. Got: {msg}'
+
+# Without URL
+msg_no_url = _format_worker_completion_message(42, 1, None)
+assert 'href=' not in msg_no_url, 'Should not include href when URL is None'
+
+print('OK')
+")
+
+if [ "$output" != "OK" ]; then
+  test_fail "_format_worker_completion_message link handling: $output"
+fi
+
 test_pass "server Telegram notification helpers work correctly"

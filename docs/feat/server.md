@@ -149,3 +149,23 @@ Sent when an issue is successfully assigned to a worker, including:
 - GitHub issue link (when `git.remote_url` is configured in `.agentize.yaml`)
 
 The issue link is derived from `git.remote_url` in `.agentize.yaml`. If the URL cannot be parsed or is not configured, the notification omits the link without error.
+
+### Worker Completion Notification
+
+Sent when a worker PID is found dead and the associated session's state is `done`, indicating successful completion:
+- Issue number
+- Worker ID
+- GitHub issue link (when available)
+
+**Requirements for completion notification:**
+1. Worker PID must be dead (process exited)
+2. Session state file must exist at `${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/{session_id}.json`
+3. Session state must be `done`
+4. Issue index file must exist at `${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/by-issue/{issue_no}.json`
+
+**Deduplication:** After a successful completion notification, the issue index file is removed to prevent duplicate notifications across server restart cycles.
+
+**Failure cases (no notification sent):**
+- Session state is not `done` (e.g., `initial`, `in_progress`)
+- Issue index file is missing (workflow not invoked with issue number)
+- Telegram credentials are not configured
