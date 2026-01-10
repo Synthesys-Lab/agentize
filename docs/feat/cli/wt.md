@@ -135,7 +135,7 @@ wt --complete <topic>
 - `spawn-flags` - List flags for `wt spawn` (--yolo, --no-agent, --headless)
 - `remove-flags` - List flags for `wt remove` (--delete-branch, -D, --force)
 - `rebase-flags` - List flags for `wt rebase` (--headless, --yolo)
-- `goto-targets` - List available targets for `wt goto` (main and issue-<N>-* worktrees)
+- `goto-targets` - List available targets for `wt goto` (main plus issue numbers derived from issue-<N>-* worktrees)
 
 **Output format:** Newline-delimited tokens, no descriptions.
 
@@ -162,8 +162,8 @@ $ wt --complete spawn-flags
 
 $ wt --complete goto-targets
 main
-issue-42
-issue-45
+42
+45
 
 $ wt --complete rebase-flags
 --headless
