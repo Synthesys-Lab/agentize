@@ -4,11 +4,11 @@ Polling server for GitHub Projects v2 automation.
 
 ## Overview
 
-A long-running server that monitors your GitHub Projects kanban board and automatically executes approved plans:
+A long-running server that monitors your GitHub Projects kanban board and automatically executes approved plans and refinement requests:
 
 1. Discovers candidate issues using `gh issue list --label agentize:plan --state open`
-2. Checks per-issue project status via GraphQL to enforce the "Plan Accepted" approval gate
-3. Spawns worktrees for ready issues via `wt spawn`
+2. Checks per-issue project status via GraphQL to enforce the "Plan Accepted" approval gate (for implementation) or detect "Proposed" + `agentize:refine` label (for refinement)
+3. Spawns worktrees for ready issues via `wt spawn` or triggers refinement via `/ultra-planner --refine`
 4. Manages concurrent workers with bounded concurrency (default: 5 workers)
 
 ## Usage
@@ -125,6 +125,59 @@ When `HANDSOFF_DEBUG=1` is set, the server logs PR discovery and filtering decis
 [pr-rebase] #124 mergeable=UNKNOWN -> SKIP (retry next poll)
 [pr-rebase] #125 mergeable=MERGEABLE -> SKIP (healthy)
 ```
+
+## Plan Refinement Workflow
+
+The server automatically discovers and processes plan refinement candidates.
+
+### Refinement Discovery
+
+Issues eligible for refinement must have:
+1. Status = `Proposed`
+2. Labels include both `agentize:plan` and `agentize:refine`
+
+The server polls for these candidates using:
+```bash
+gh issue list --label agentize:plan,agentize:refine --state open
+```
+
+### Refinement State Machine
+
+When a refinement candidate is found:
+
+1. **Claim**: Server sets Status to `Refining` (best-effort concurrency control)
+2. **Spawn**: Server creates a worktree and runs `/ultra-planner --refine` headlessly
+3. **Cleanup**: After refinement completes:
+   - Status returns to `Proposed`
+   - The `agentize:refine` label is removed
+
+### Debug Logging (Refinement)
+
+When `HANDSOFF_DEBUG=1` is set:
+
+```
+[refine-filter] #42 status=Proposed labels=[agentize:plan, agentize:refine] -> READY
+[refine-filter] #43 status=Proposed labels=[agentize:plan] -> SKIP (missing agentize:refine label)
+[refine-filter] #44 status=Plan Accepted labels=[agentize:plan, agentize:refine] -> SKIP (status != Proposed)
+```
+
+### Manual Refinement Trigger
+
+To trigger refinement for an issue:
+1. Ensure the issue is in `Proposed` status
+2. Add the `agentize:refine` label
+3. Wait for the next server poll cycle
+
+The label can be added via GitHub UI or CLI:
+```bash
+gh issue edit <issue-no> --add-label agentize:refine
+```
+
+### Stuck Refining Recovery
+
+If an issue gets stuck in `Refining` status (e.g., after a server crash):
+1. Manually reset Status to `Proposed` via GitHub Projects UI
+2. Optionally re-add `agentize:refine` label to retry
 
 ## Configuration
 

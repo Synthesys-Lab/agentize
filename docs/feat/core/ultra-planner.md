@@ -106,6 +106,24 @@ Issue #42 updated with refined plan.
 Summary: Reduced LOC 280→150, removed OAuth2, simplified middleware
 ```
 
+### 2a. Label-Triggered Auto Refinement
+
+The server can automatically trigger refinement when the `agentize:refine` label is added to a plan issue. This enables refinement requests without manual `/ultra-planner --refine` invocation.
+
+**To trigger auto refinement:**
+1. Ensure the issue has Status = `Proposed`
+2. Add the `agentize:refine` label (via GitHub UI or `gh issue edit --add-label agentize:refine`)
+3. The server's next poll cycle will:
+   - Detect the refinement candidate
+   - Set Status to `Refining` (concurrency control)
+   - Run `/ultra-planner --refine` headlessly
+   - On completion: reset Status to `Proposed` and remove the label
+
+**Requirements:**
+- Issue must have both `agentize:plan` and `agentize:refine` labels
+- Status must be `Proposed` (not `Plan Accepted` or `In Progress`)
+- Server must be running (`lol serve`)
+
 ### 3. Documentation Planning with Diff Previews
 
 The external consensus process must explicitly identify documentation impacts and produce a **Documentation Planning** section in the final plan. This ensures all documentation changes are identified early and tracked through implementation.

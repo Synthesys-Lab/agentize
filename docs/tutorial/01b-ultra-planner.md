@@ -82,6 +82,20 @@ The agents analyze the current plan and propose improvements. Useful when the in
 /ultra-planner --refine 42 Focus on reducing complexity
 ```
 
+### Label-Based Auto Refinement
+
+When running with `lol serve`, you can trigger refinement without invoking the command manually:
+
+1. Ensure the issue is in `Proposed` status (not `Plan Accepted`)
+2. Add the `agentize:refine` label via GitHub UI or CLI:
+   ```bash
+   gh issue edit 42 --add-label agentize:refine
+   ```
+3. The server will pick up the issue on the next poll and run refinement automatically
+4. After refinement completes, the label is removed and status stays `Proposed`
+
+This enables stakeholders to request plan improvements without CLI access.
+
 ## Tips
 
 1. **Provide context**: "Add JWT auth for API access" (not just "Add auth")

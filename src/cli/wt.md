@@ -456,6 +456,29 @@ Display help message.
 - Options for spawn and remove
 - Examples
 
+### wt_claim_issue_status()
+
+Attempt to set an issue's status on the associated GitHub Projects board.
+
+**Parameters:**
+- `$1`: Issue number
+- `$2`: Worktree path (for locating `.agentize.yaml`)
+- `$3`: Target status name (default: "In Progress")
+
+**Returns:**
+- Return code: Always `0` (best-effort, failures are logged but don't block)
+
+**Error conditions:**
+- Missing `jq` → silently skipped
+- Missing `.agentize.yaml` → silently skipped
+- Status option not found → warning logged
+
+**Example:**
+```bash
+wt_claim_issue_status 42 "/path/to/worktree"              # Sets "In Progress"
+wt_claim_issue_status 42 "/path/to/worktree" "Refining"   # Sets "Refining"
+```
+
 ## Internal Helpers
 
 Helper functions not intended for external use.

@@ -69,8 +69,9 @@ GitHub Projects v2 includes a built-in **Status** field that integrates natively
 | Option | Description | Board Column |
 |--------|-------------|--------------|
 | Proposed | Plan proposed by agentize, awaiting approval | Leftmost |
-| Plan Accepted | Plan approved, ready for implementation | Second |
-| In Progress | Actively being worked on | Third |
+| Refining | Plan is being refined by `/ultra-planner --refine` | Second |
+| Plan Accepted | Plan approved, ready for implementation | Third |
+| In Progress | Actively being worked on | Fourth |
 | Done | Implementation complete | Rightmost |
 
 **Automatic configuration:**
@@ -158,16 +159,18 @@ For issues, we use GitHub Projects v2's **default Status field** with 4 options 
 | Status | Description | Board Column |
 |--------|-------------|--------------|
 | Proposed | Plan proposed by agentize, awaiting approval | Leftmost |
-| Plan Accepted | Plan approved, ready for implementation | Second |
-| In Progress | Actively being worked on | Third |
+| Refining | Plan is being refined by `/ultra-planner --refine` | Second |
+| Plan Accepted | Plan approved, ready for implementation | Third |
+| In Progress | Actively being worked on | Fourth |
 | Done | Implementation complete | Rightmost |
 
 **Workflow:**
 
 1. **Proposed**: All issues created by AI agents start with this status. Issues are under review or awaiting stakeholder approval.
-2. **Plan Accepted**: The issue plan is approved and ready for implementation. `/issue-to-impl` command and `lol serve` require issues to be at this status (the "approval gate"). Note: The `agentize:plan` label is used for discovery but does NOT replace the Plan Accepted status gate.
-3. **In Progress**: Implementation has started. Use **assignees** to indicate who is working on it, and **linked PRs** to track progress.
-4. **Done**: Implementation is complete. GitHub's built-in automation can move issues here when they are closed.
+2. **Refining**: The plan is being refined by the server via `/ultra-planner --refine`. During refinement, the issue is temporarily locked to prevent concurrent operations.
+3. **Plan Accepted**: The issue plan is approved and ready for implementation. `/issue-to-impl` command and `lol serve` require issues to be at this status (the "approval gate"). Note: The `agentize:plan` label is used for discovery but does NOT replace the Plan Accepted status gate.
+4. **In Progress**: Implementation has started. Use **assignees** to indicate who is working on it, and **linked PRs** to track progress.
+5. **Done**: Implementation is complete. GitHub's built-in automation can move issues here when they are closed.
 
 ### Local Status Update via `wt spawn`
 
