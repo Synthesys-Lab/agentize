@@ -46,6 +46,7 @@ Testing framework, validation, and agent testing:
 
 ### Reference Documentation
 
+- `envvar.md` - Environment variables reference
 - `git-msg-tags.md` - Git commit message tag standards
 
 ## Getting Started
