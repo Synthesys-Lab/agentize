@@ -306,6 +306,7 @@ _lol_parse_serve() {
     local period="5m"
     local tg_token=""
     local tg_chat_id=""
+    local num_workers="5"
 
     # Parse arguments
     while [ $# -gt 0 ]; do
@@ -322,9 +323,13 @@ _lol_parse_serve() {
                 tg_chat_id="${1#*=}"
                 shift
                 ;;
+            --num-workers=*)
+                num_workers="${1#*=}"
+                shift
+                ;;
             *)
                 echo "Error: Unknown option '$1'"
-                echo "Usage: lol serve --tg-token=<token> --tg-chat-id=<id> [--period=5m]"
+                echo "Usage: lol serve --tg-token=<token> --tg-chat-id=<id> [--period=5m] [--num-workers=5]"
                 return 1
                 ;;
         esac
@@ -333,15 +338,15 @@ _lol_parse_serve() {
     # Validate required arguments
     if [ -z "$tg_token" ]; then
         echo "Error: --tg-token is required"
-        echo "Usage: lol serve --tg-token=<token> --tg-chat-id=<id> [--period=5m]"
+        echo "Usage: lol serve --tg-token=<token> --tg-chat-id=<id> [--period=5m] [--num-workers=5]"
         return 1
     fi
 
     if [ -z "$tg_chat_id" ]; then
         echo "Error: --tg-chat-id is required"
-        echo "Usage: lol serve --tg-token=<token> --tg-chat-id=<id> [--period=5m]"
+        echo "Usage: lol serve --tg-token=<token> --tg-chat-id=<id> [--period=5m] [--num-workers=5]"
         return 1
     fi
 
-    lol_cmd_serve "$period" "$tg_token" "$tg_chat_id"
+    lol_cmd_serve "$period" "$tg_token" "$tg_chat_id" "$num_workers"
 }

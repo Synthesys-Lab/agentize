@@ -8,6 +8,7 @@ Polls GitHub Projects v2 for issues with "Plan Accepted" status and
 import argparse
 import json
 import os
+import re
 import signal
 import socket
 import subprocess
@@ -239,23 +240,186 @@ def worktree_exists(issue_no: int) -> bool:
     return result.returncode == 0
 
 
-def spawn_worktree(issue_no: int) -> bool:
-    """Spawn a new worktree for the given issue."""
+def spawn_worktree(issue_no: int) -> tuple[bool, int | None]:
+    """Spawn a new worktree for the given issue.
+
+    Returns:
+        Tuple of (success, pid). pid is None if spawn failed.
+    """
     print(f"Spawning worktree for issue #{issue_no}...")
-    result = run_shell_function(f'wt spawn {issue_no} --headless')
-    return result.returncode == 0
+    result = run_shell_function(f'wt spawn {issue_no} --headless', capture_output=True)
+    if result.returncode != 0:
+        return False, None
+
+    # Parse PID from output (format: "PID: 12345")
+    pid = None
+    for line in result.stdout.splitlines():
+        if 'PID' in line:
+            match = re.search(r'PID[:\s]+(\d+)', line)
+            if match:
+                pid = int(match.group(1))
+                break
+    return True, pid
 
 
-def run_server(period: int, tg_token: str | None = None, tg_chat_id: str | None = None) -> None:
+# Worker status file management
+DEFAULT_WORKERS_DIR = '.tmp/workers'
+
+
+def init_worker_status_files(num_workers: int, workers_dir: str = DEFAULT_WORKERS_DIR) -> None:
+    """Initialize worker status files with state=FREE.
+
+    Creates the workers directory and N status files, one per worker slot.
+    """
+    workers_path = Path(workers_dir)
+    workers_path.mkdir(parents=True, exist_ok=True)
+
+    for i in range(num_workers):
+        status_file = workers_path / f'worker-{i}.status'
+        # Only reset to FREE if file doesn't exist or is corrupted
+        if not status_file.exists():
+            write_worker_status(i, 'FREE', None, None, workers_dir)
+        else:
+            # Validate existing file, reset if corrupted
+            try:
+                status = read_worker_status(i, workers_dir)
+                if 'state' not in status:
+                    write_worker_status(i, 'FREE', None, None, workers_dir)
+            except Exception:
+                write_worker_status(i, 'FREE', None, None, workers_dir)
+
+
+def read_worker_status(worker_id: int, workers_dir: str = DEFAULT_WORKERS_DIR) -> dict:
+    """Read and parse a worker status file.
+
+    Returns:
+        Dict with keys: state (required), issue (optional), pid (optional)
+    """
+    status_file = Path(workers_dir) / f'worker-{worker_id}.status'
+
+    if not status_file.exists():
+        return {'state': 'FREE'}
+
+    # Default to FREE in case file is empty or malformed
+    result = {'state': 'FREE'}
+
+    with open(status_file) as f:
+        for line in f:
+            line = line.strip()
+            if '=' in line:
+                key, value = line.split('=', 1)
+                if key == 'state':
+                    result['state'] = value
+                elif key == 'issue':
+                    try:
+                        result['issue'] = int(value)
+                    except ValueError:
+                        pass  # Skip malformed value
+                elif key == 'pid':
+                    try:
+                        result['pid'] = int(value)
+                    except ValueError:
+                        pass  # Skip malformed value
+
+    return result
+
+
+def write_worker_status(
+    worker_id: int,
+    state: str,
+    issue: int | None,
+    pid: int | None,
+    workers_dir: str = DEFAULT_WORKERS_DIR
+) -> None:
+    """Write worker status to file atomically.
+
+    Uses write-to-temp + rename for atomic updates.
+    """
+    workers_path = Path(workers_dir)
+    workers_path.mkdir(parents=True, exist_ok=True)
+
+    status_file = workers_path / f'worker-{worker_id}.status'
+    tmp_file = workers_path / f'worker-{worker_id}.status.tmp'
+
+    lines = [f'state={state}']
+    if issue is not None:
+        lines.append(f'issue={issue}')
+    if pid is not None:
+        lines.append(f'pid={pid}')
+
+    with open(tmp_file, 'w') as f:
+        f.write('\n'.join(lines) + '\n')
+
+    # Atomic rename
+    tmp_file.rename(status_file)
+
+
+def get_free_worker(num_workers: int, workers_dir: str = DEFAULT_WORKERS_DIR) -> int | None:
+    """Find the first FREE worker slot.
+
+    Returns:
+        Worker ID (0-indexed) or None if all workers are busy.
+    """
+    for i in range(num_workers):
+        status = read_worker_status(i, workers_dir)
+        if status.get('state') == 'FREE':
+            return i
+    return None
+
+
+def check_worker_liveness(worker_id: int, workers_dir: str = DEFAULT_WORKERS_DIR) -> bool:
+    """Check if a worker's PID is still running.
+
+    Returns:
+        True if worker is FREE or BUSY with a live PID.
+        False if worker is BUSY with a dead PID.
+    """
+    status = read_worker_status(worker_id, workers_dir)
+    if status.get('state') != 'BUSY':
+        return True
+
+    pid = status.get('pid')
+    if pid is None:
+        return True  # No PID to check
+
+    # Check if process is still running
+    try:
+        os.kill(pid, 0)  # Signal 0 just checks if process exists
+        return True
+    except OSError:
+        return False
+
+
+def cleanup_dead_workers(num_workers: int, workers_dir: str = DEFAULT_WORKERS_DIR) -> None:
+    """Mark workers with dead PIDs as FREE."""
+    for i in range(num_workers):
+        if not check_worker_liveness(i, workers_dir):
+            status = read_worker_status(i, workers_dir)
+            _log(f"Worker {i} PID {status.get('pid')} is dead, marking as FREE")
+            write_worker_status(i, 'FREE', None, None, workers_dir)
+
+
+def run_server(
+    period: int,
+    tg_token: str | None = None,
+    tg_chat_id: str | None = None,
+    num_workers: int = 5
+) -> None:
     """Main polling loop.
 
     Args:
         period: Polling interval in seconds
         tg_token: Telegram Bot API token (optional, falls back to TG_API_TOKEN env)
         tg_chat_id: Telegram chat ID (optional, falls back to TG_CHAT_ID env)
+        num_workers: Maximum concurrent workers (0 = unlimited)
     """
     org, project_id = load_config()
-    print(f"Starting server: org={org}, project={project_id}, period={period}s")
+    print(f"Starting server: org={org}, project={project_id}, period={period}s, workers={num_workers}")
+
+    # Initialize worker status files (if num_workers > 0)
+    if num_workers > 0:
+        init_worker_status_files(num_workers)
+        cleanup_dead_workers(num_workers)
 
     # Resolve Telegram credentials (CLI args take precedence over env vars)
     token = tg_token or os.getenv('TG_API_TOKEN', '')
@@ -279,14 +443,39 @@ def run_server(period: int, tg_token: str | None = None, tg_chat_id: str | None 
 
     while running[0]:
         try:
+            # Clean up dead workers before polling
+            if num_workers > 0:
+                cleanup_dead_workers(num_workers)
+
             items = query_project_items(org, project_id)
             ready_issues = filter_ready_issues(items)
 
             for issue_no in ready_issues:
-                if not worktree_exists(issue_no):
-                    spawn_worktree(issue_no)
-                else:
+                if worktree_exists(issue_no):
                     print(f"Issue #{issue_no}: worktree already exists, skipping")
+                    continue
+
+                # Check worker availability (if bounded)
+                if num_workers > 0:
+                    worker_id = get_free_worker(num_workers)
+                    if worker_id is None:
+                        print(f"All {num_workers} workers busy, waiting for next poll")
+                        break
+
+                    # Mark worker as busy before spawning
+                    write_worker_status(worker_id, 'BUSY', issue_no, None)
+                    success, pid = spawn_worktree(issue_no)
+                    if success:
+                        write_worker_status(worker_id, 'BUSY', issue_no, pid)
+                        print(f"issue #{issue_no} is assigned to worker {worker_id}")
+                    else:
+                        write_worker_status(worker_id, 'FREE', None, None)
+                        _log(f"Failed to spawn worktree for issue #{issue_no}", level="ERROR")
+                else:
+                    # Unlimited workers mode
+                    success, _ = spawn_worktree(issue_no)
+                    if not success:
+                        _log(f"Failed to spawn worktree for issue #{issue_no}", level="ERROR")
 
             if running[0]:
                 time.sleep(period)
@@ -314,6 +503,10 @@ def main() -> None:
         '--tg-chat-id',
         help='Telegram chat ID (or set TG_CHAT_ID env var)'
     )
+    parser.add_argument(
+        '--num-workers', type=int, default=5,
+        help='Maximum concurrent workers (0 = unlimited). Default: 5'
+    )
     args = parser.parse_args()
 
     try:
@@ -322,7 +515,7 @@ def main() -> None:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
-    run_server(period_seconds, args.tg_token, args.tg_chat_id)
+    run_server(period_seconds, args.tg_token, args.tg_chat_id, args.num_workers)
 
 
 if __name__ == '__main__':

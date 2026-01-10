@@ -35,13 +35,13 @@ echo "$output" | grep -q "^--tg-chat-id$" || test_fail "Missing flag: --tg-chat-
 echo "$output" | grep -q "^--period$" || test_fail "Missing flag: --period"
 echo "$output" | grep -q "^--num-workers$" || test_fail "Missing flag: --num-workers"
 
-# Test 6: --num-workers is accepted (not rejected as unknown)
+# Test 5: --num-workers is accepted (not rejected as unknown)
 output=$(lol serve --tg-token=xxx --tg-chat-id=yyy --num-workers=3 2>&1) || true
 if echo "$output" | grep -q "Error: Unknown option"; then
   test_fail "Should accept --num-workers option"
 fi
 
-# Test 5: serve appears in command completion
+# Test 6: serve appears in command completion
 output=$(lol --complete commands 2>/dev/null)
 echo "$output" | grep -q "^serve$" || test_fail "Missing command: serve"
 
