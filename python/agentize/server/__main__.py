@@ -33,7 +33,7 @@ def _log(msg: str, level: str = "INFO") -> None:
     filename = os.path.basename(frame.f_code.co_filename)
     lineno = frame.f_lineno
     func = frame.f_code.co_name
-    timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    timestamp = datetime.now().strftime("%y-%m-%d-%H:%M:%S")
 
     output = f"[{timestamp}] [{level}] [{filename}:{lineno}:{func}] {msg}"
     print(output, file=sys.stderr if level == "ERROR" else sys.stdout)

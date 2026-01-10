@@ -99,7 +99,7 @@ If `gh issue list` fails (e.g., network error, auth issue), the server returns a
 Error messages include source location (file:line:function) for quick debugging:
 
 ```
-[2026-01-09T12:30:47] [ERROR] [__main__.py:163:query_issue_project_status] GraphQL query failed: ...
+[26-01-09-12:30:47] [ERROR] [__main__.py:163:query_issue_project_status] GraphQL query failed: ...
 ```
 
 For additional context (query and variables), set `HANDSOFF_DEBUG=1`:
