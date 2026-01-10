@@ -10,6 +10,8 @@ python/agentize/
 ├── cli.py                # Python CLI entrypoint (python -m agentize.cli)
 ├── cli.md                # CLI interface documentation
 ├── shell.py              # Shared shell function invocation utilities
+├── telegram_utils.py     # Shared Telegram API utilities
+├── telegram_utils.md     # Telegram utilities interface documentation
 ├── server/               # Polling server module
 │   └── __main__.py       # Server entry point (python -m agentize.server)
 └── permission/           # PreToolUse hook permission module

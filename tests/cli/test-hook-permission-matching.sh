@@ -198,8 +198,8 @@ print(f'{action}:{msg_id}')
 ")
 [ "$result" = "deny:67890" ] || test_fail "Expected 'deny:67890', got '$result'"
 
-# Test 17: _tg_api_request guard - returns None when Telegram is disabled
-test_info "Test 17: _tg_api_request returns None when Telegram disabled"
+# Test 23: _tg_api_request guard - returns None when Telegram is disabled
+test_info "Test 23: _tg_api_request returns None when Telegram disabled"
 guard_result=$(python3 -c "
 import os
 import sys

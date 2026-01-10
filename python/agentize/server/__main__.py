@@ -20,7 +20,7 @@ from datetime import datetime
 from pathlib import Path
 
 from agentize.shell import run_shell_function
-from agentize.telegram_utils import escape_html
+from agentize.telegram_utils import escape_html, telegram_request
 
 
 # Cache for project GraphQL ID (org/project_number -> GraphQL ID)
@@ -65,25 +65,14 @@ def send_telegram_message(token: str, chat_id: str, text: str) -> bool:
     Returns:
         True if successful, False otherwise
     """
-    url = f'https://api.telegram.org/bot{token}/sendMessage'
-    payload = {
-        'chat_id': chat_id,
-        'text': text,
-        'parse_mode': 'HTML'
-    }
-
-    try:
-        data = json.dumps(payload).encode('utf-8')
-        req = urllib.request.Request(
-            url, data=data,
-            headers={'Content-Type': 'application/json'}
-        )
-        with urllib.request.urlopen(req, timeout=TELEGRAM_API_TIMEOUT_SEC) as response:
-            result = json.loads(response.read().decode('utf-8'))
-            return result.get('ok', False)
-    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, TimeoutError) as e:
-        _log(f"Failed to send Telegram message: {e}", level="ERROR")
-        return False
+    result = telegram_request(
+        token=token,
+        method='sendMessage',
+        payload={'chat_id': chat_id, 'text': text, 'parse_mode': 'HTML'},
+        timeout_sec=TELEGRAM_API_TIMEOUT_SEC,
+        on_error=lambda e: _log(f"Failed to send Telegram message: {e}", level="ERROR")
+    )
+    return result.get('ok', False) if result else False
 
 
 def notify_server_start(token: str, chat_id: str, org: str, project_id: int, period: int) -> None:

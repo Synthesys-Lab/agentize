@@ -16,7 +16,7 @@ from typing import Optional, Dict, Any, Tuple, List
 from .rules import match_rule
 from .strips import normalize_bash_command
 from .parser import parse_hook_input, extract_target
-from agentize.telegram_utils import escape_html as _shared_escape_html
+from agentize.telegram_utils import escape_html as _shared_escape_html, telegram_request
 
 # Import logger from hooks directory (stays in place per plan)
 import sys
@@ -167,19 +167,11 @@ def _tg_api_request(token: str, method: str, payload: Optional[Dict[str, Any]] =
     if not _is_telegram_enabled():
         return None
 
-    url = f'https://api.telegram.org/bot{token}/{method}'
-    try:
-        if payload:
-            data = json.dumps(payload).encode('utf-8')
-            req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
-        else:
-            req = urllib.request.Request(url)
-
-        with urllib.request.urlopen(req, timeout=TELEGRAM_API_TIMEOUT_SEC) as response:
-            return json.loads(response.read().decode('utf-8'))
-    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, TimeoutError) as e:
-        log_tool_decision(session_id, '', 'Telegram', method, f'API_ERROR: {str(e)[:100]}')
-        return None
+    return telegram_request(
+        token, method, payload,
+        timeout_sec=TELEGRAM_API_TIMEOUT_SEC,
+        on_error=lambda e: log_tool_decision(session_id, '', 'Telegram', method, f'API_ERROR: {str(e)[:100]}')
+    )
 
 
 def _escape_html(text: str) -> str:
