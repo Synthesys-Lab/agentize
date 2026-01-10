@@ -15,6 +15,11 @@ After running `make setup` and sourcing `setup.sh`, the `wt` command is availabl
 
 > NOTE: `wt` is implemented in `scripts/wt-cli.sh` which is both executable and sourceable. The `wt` function wrapper is exported via `setup.sh`.
 
+- `wt clone <url> [destination]`: clone a repository as bare, initialize worktrees, and set up `trees/main`
+  - Equivalent to: `git clone --bare <url> <dest>` followed by `wt init` and `wt goto main`
+  - If `destination` omitted, defaults to `<basename>.git` (e.g., `repo` from `https://github.com/org/repo.git`)
+  - When sourced, leaves the user in `trees/main` (same as `wt goto` behavior)
+  - Fails if destination directory already exists
 - `wt common`: prints the bare repository path (`git rev-parse --git-common-dir`)
 - `wt init`
   - If `wt common` is not a bare repo, it dumps an error and exits.
@@ -86,7 +91,7 @@ cd trees/main
 The `wt` command provides tab-completion support for zsh users. After running `make setup` and sourcing `setup.sh`, completions are automatically enabled.
 
 **Features:**
-- Subcommand completion (`wt <TAB>` shows: common, init, goto, spawn, list, remove, prune, purge, pathto, help)
+- Subcommand completion (`wt <TAB>` shows: clone, common, init, goto, spawn, list, remove, prune, purge, pathto, help)
 - Flag completion for `spawn` (`--yolo`, `--no-agent`, `--headless`) — flags can appear before or after `<issue-no>`
 - Flag completion for `remove` (`--delete-branch`, `-D`, `--force`) — flags can appear before or after `<issue-no>`
 - Target completion for `goto` (`main` and `issue-<N>-*` worktrees)
@@ -110,7 +115,7 @@ wt --complete <topic>
 ```
 
 **Topics:**
-- `commands` - List available subcommands (common, init, goto, spawn, list, remove, prune, purge, pathto, help)
+- `commands` - List available subcommands (clone, common, init, goto, spawn, list, remove, prune, purge, pathto, help)
 - `spawn-flags` - List flags for `wt spawn` (--yolo, --no-agent, --headless)
 - `remove-flags` - List flags for `wt remove` (--delete-branch, -D, --force)
 - `goto-targets` - List available targets for `wt goto` (main and issue-<N>-* worktrees)
@@ -120,6 +125,7 @@ wt --complete <topic>
 **Example:**
 ```bash
 $ wt --complete commands
+clone
 common
 init
 goto

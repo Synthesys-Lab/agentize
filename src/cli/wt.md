@@ -16,7 +16,7 @@ wt <command> [options]
 ```
 
 **Parameters:**
-- `$1`: Command name (common, init, goto, spawn, list, remove, prune, purge, pathto, help, --complete)
+- `$1`: Command name (clone, common, init, goto, spawn, list, remove, prune, purge, pathto, help, --complete)
 - `$@`: Remaining arguments passed to command implementation
 
 **Return codes:**
@@ -24,6 +24,7 @@ wt <command> [options]
 - `1`: Invalid command, command failed, or help displayed
 
 **Commands:**
+- `clone <url> [dest]`: Clone repository as bare and initialize worktree environment
 - `common`: Print git common directory (bare repo path)
 - `init`: Initialize worktree environment
 - `goto <target>`: Change directory to worktree (main or issue number)
@@ -132,6 +133,54 @@ fi
 ## Command Implementations
 
 Internal command handler functions called by main dispatcher.
+
+### cmd_clone()
+
+Clone a repository as bare and initialize worktree environment.
+
+**Parameters:**
+- `$1`: Repository URL (required)
+- `$2`: Destination directory (optional)
+
+**Destination inference:**
+- If `$2` omitted: `basename "$url"` → remove `.git` suffix → add `.git`
+- Example: `https://github.com/org/repo.git` → `repo.git`
+- Example: `https://github.com/org/repo` → `repo.git`
+
+**Prerequisites:**
+- Destination must not already exist
+
+**Operations:**
+1. Validate URL provided
+2. Infer destination if not specified
+3. Verify destination doesn't exist
+4. `git clone --bare "$url" "$dest"`
+5. Change into bare repo directory
+6. Call `cmd_init` to create `trees/main`
+7. Call `cmd_goto main` (sourced mode only)
+
+**Return codes:**
+- `0`: Clone and initialization successful
+- `1`: Missing URL, destination exists, clone failed, or init failed
+
+**Error conditions:**
+- No URL provided → Usage error
+- Destination exists → Error message
+- `git clone --bare` fails → Error message
+- `cmd_init` fails → Error message
+
+**Directory change behavior:**
+- When sourced: user ends up in `trees/main`
+- When executed: no directory change for calling shell
+
+**Example:**
+```bash
+wt clone https://github.com/org/repo.git
+# Creates repo.git/ with trees/main, user lands in trees/main
+
+wt clone https://github.com/org/repo.git my-repo.git
+# Creates my-repo.git/ with trees/main
+```
 
 ### cmd_common()
 
@@ -362,7 +411,7 @@ Helper functions not intended for external use.
 Provides completion data for shell completion systems.
 
 **Topics:**
-- `commands`: List all commands (newline-delimited)
+- `commands`: List all commands (newline-delimited, includes `clone`)
 - `spawn-flags`: List spawn flags (--yolo, --no-agent, --headless)
 - `remove-flags`: List remove flags (--delete-branch, -D, --force)
 - `goto-targets`: List available worktree targets (main + issue-*)
