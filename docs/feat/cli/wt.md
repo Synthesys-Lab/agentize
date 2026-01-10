@@ -36,7 +36,12 @@ After running `make setup` and sourcing `setup.sh`, the `wt` command is availabl
   - `--headless`: run Claude in non-interactive mode for server daemon use
     - Uses `claude --print` for non-interactive execution
     - Logs output to `.tmp/logs/issue-<N>-<timestamp>.log`
-    - Returns immediately with PID and log file path
+    - Returns immediately (non-blocking) with structured output:
+      ```
+      PID: <claude-pid>
+      Log: <log-file-path>
+      ```
+    - The PID corresponds to the actual `claude` process for liveness tracking
 - `wt remove <issue-no>`: remove the worktree for the given issue number
   - `--delete-branch`: delete the branch as well, even if unmerged
   - `-D` / `--force`: legacy aliases for `--delete-branch`

@@ -64,6 +64,16 @@ When an issue is assigned to a worker:
 issue #42 is assigned to worker 0
 ```
 
+### Headless Spawn Output Parsing
+
+The server parses `wt spawn --headless` output to extract the worker PID. The expected output format is:
+```
+PID: 12345
+Log: .tmp/logs/issue-42-20260110-143022.log
+```
+
+The server first looks for explicit `PID:` lines, then falls back to regex matching `PID[:\s]+(\d+)` for backward compatibility.
+
 ### Crash Recovery
 
 On startup, the server reads existing status files and checks PID liveness. Workers with dead PIDs are automatically marked as FREE, enabling recovery after unexpected shutdowns.
