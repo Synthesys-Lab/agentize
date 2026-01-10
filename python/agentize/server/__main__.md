@@ -4,7 +4,7 @@
 
 Functions exported via `__init__.py`:
 
-### `run_server(period: int, tg_token: str | None = None, tg_chat_id: str | None = None) -> None`
+### `run_server(period: int, tg_token: str | None = None, tg_chat_id: str | None = None, num_workers: int = 5) -> None`
 
 Main polling loop that monitors GitHub Projects for ready issues.
 
@@ -12,12 +12,14 @@ Main polling loop that monitors GitHub Projects for ready issues.
 - `period`: Polling interval in seconds
 - `tg_token`: Telegram Bot API token (optional, falls back to `TG_API_TOKEN` env)
 - `tg_chat_id`: Telegram chat ID (optional, falls back to `TG_CHAT_ID` env)
+- `num_workers`: Maximum concurrent workers (default: 5, 0 = unlimited)
 
 **Behavior:**
 - Loads config from `.agentize.yaml`
 - Sends startup notification if Telegram configured
 - Polls project items at `period` intervals
 - Spawns worktrees for issues with "Plan Accepted" status and `agentize:plan` label
+- Sends worker assignment notification if Telegram configured
 - Handles SIGINT/SIGTERM for graceful shutdown
 
 ### `send_telegram_message(token: str, chat_id: str, text: str) -> bool`
