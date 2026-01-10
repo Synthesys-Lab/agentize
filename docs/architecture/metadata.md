@@ -64,7 +64,7 @@ Git remote repository URL.
 
 **Example:** `https://github.com/synthesys-lab/agentize`
 
-**Usage:** Documentation and tooling reference.
+**Usage:** Documentation and tooling reference. The server uses this to generate GitHub issue links in worker assignment Telegram notifications.
 
 ### git.default_branch (optional but recommended)
 Default branch name for creating worktrees.

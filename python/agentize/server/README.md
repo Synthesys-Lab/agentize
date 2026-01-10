@@ -40,13 +40,17 @@ project:
   id: <project-number>
 ```
 
-## Telegram Startup Notification
+## Telegram Notifications
 
-When Telegram credentials are configured, the server sends a startup message including:
-- Hostname
-- Project identifier (org/id)
-- Polling period
-- Working directory
+When Telegram credentials are configured, the server sends:
+
+### Startup Notification
+
+Sent when the server starts, including hostname, project identifier, polling period, and working directory.
+
+### Worker Assignment Notification
+
+Sent when an issue is successfully assigned to a worker, including issue number, title, worker ID, and GitHub issue link (when `git.remote_url` is configured in `.agentize.yaml`).
 
 ## Debug Logging
 

@@ -118,3 +118,20 @@ Each line includes:
 - Current status value
 - Label list
 - Decision (READY or SKIP with reason)
+
+## Telegram Notifications
+
+When Telegram credentials are configured (`TG_API_TOKEN` and `TG_CHAT_ID` via environment variables or CLI flags), the server sends notifications:
+
+### Startup Notification
+
+Sent when the server starts, including hostname, project identifier, polling period, and working directory.
+
+### Worker Assignment Notification
+
+Sent when an issue is successfully assigned to a worker, including:
+- Issue number and title
+- Worker ID
+- GitHub issue link (when `git.remote_url` is configured in `.agentize.yaml`)
+
+The issue link is derived from `git.remote_url` in `.agentize.yaml`. If the URL cannot be parsed or is not configured, the notification omits the link without error.

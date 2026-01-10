@@ -45,9 +45,11 @@ Log with timestamp and source location (file:line:function).
 
 Parse period string (e.g., "5m", "300s") to seconds.
 
-### `load_config() -> tuple[str, int]`
+### `load_config() -> tuple[str, int, str | None]`
 
-Load project org and ID from `.agentize.yaml`.
+Load project org, ID, and optional remote URL from `.agentize.yaml`.
+
+Returns: `(org, project_id, remote_url)` where `remote_url` is the `git.remote_url` value or `None` if not configured.
 
 ### `query_project_items(org: str, project_number: int) -> list[dict]`
 
@@ -67,3 +69,20 @@ Check if a worktree exists for the given issue number.
 Spawn a new worktree for the given issue via `wt spawn`.
 
 Note: Uses `run_shell_function()` from `agentize.shell` for shell invocation.
+
+### `_extract_repo_slug(remote_url: str) -> str | None`
+
+Extract `org/repo` slug from a GitHub remote URL.
+
+Handles common URL formats:
+- `https://github.com/org/repo`
+- `https://github.com/org/repo.git`
+- `git@github.com:org/repo.git`
+
+Returns `None` if the URL format is not recognized.
+
+### `_format_worker_assignment_message(issue_no: int, issue_title: str, worker_id: int, issue_url: str | None) -> str`
+
+Build an HTML-formatted Telegram message for worker assignment notification.
+
+Includes issue link when `issue_url` is provided, otherwise displays issue number only.
