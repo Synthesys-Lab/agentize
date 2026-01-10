@@ -82,9 +82,11 @@ When `HANDSOFF_DEBUG=1`, logs per-issue inspection with status, labels, and reje
 
 Check if a worktree exists for the given issue number.
 
-### `spawn_worktree(issue_no: int) -> bool`
+### `spawn_worktree(issue_no: int) -> tuple[bool, int | None]`
 
 Spawn a new worktree for the given issue via `wt spawn`.
+
+**Returns:** Tuple of (success, pid). pid is None if spawn failed.
 
 Note: Uses `run_shell_function()` from `agentize.shell` for shell invocation.
 

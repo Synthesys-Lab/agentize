@@ -23,6 +23,10 @@ from agentize.shell import run_shell_function
 from agentize.telegram_utils import escape_html
 
 
+# Cache for project GraphQL ID (org/project_number -> GraphQL ID)
+_project_id_cache: dict[tuple[str, int], str] = {}
+
+
 def _log(msg: str, level: str = "INFO") -> None:
     """Log with timestamp and source location."""
     frame = sys._getframe(1)
@@ -35,36 +39,9 @@ def _log(msg: str, level: str = "INFO") -> None:
     print(output, file=sys.stderr if level == "ERROR" else sys.stdout)
 
 
-# GraphQL query for project items with Status field
-GRAPHQL_QUERY = '''
-query($org: String!, $projectNumber: Int!) {
-  organization(login: $org) {
-    projectV2(number: $projectNumber) {
-      items(first: 100) {
-        nodes {
-          content {
-            ... on Issue {
-              number
-              title
-              labels(first: 10) {
-                nodes { name }
-              }
-            }
-          }
-          fieldValueByName(name: "Status") {
-            ... on ProjectV2ItemFieldSingleSelectValue {
-              name
-            }
-          }
-        }
-      }
-    }
-  }
-}
-'''
-
 # Telegram API timeout in seconds
 TELEGRAM_API_TIMEOUT_SEC = 10
+
 
 
 def parse_period(period_str: str) -> int:
@@ -236,32 +213,215 @@ def load_config() -> tuple[str, int, str | None]:
     return org, project_id, remote_url
 
 
-def query_project_items(org: str, project_number: int) -> list[dict]:
-    """Query GitHub Projects v2 for items."""
-    query = GRAPHQL_QUERY.strip()
+def get_repo_owner_name() -> tuple[str, str]:
+    """Resolve repository owner and name from git remote origin."""
+    result = subprocess.run(
+        ['git', 'remote', 'get-url', 'origin'],
+        capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"Failed to get git remote: {result.stderr}")
 
+    url = result.stdout.strip()
+    # Handle SSH format: git@github.com:owner/repo.git
+    if url.startswith('git@'):
+        path = url.split(':')[1]
+    # Handle HTTPS format: https://github.com/owner/repo.git
+    elif 'github.com' in url:
+        path = url.split('github.com/')[1]
+    else:
+        raise RuntimeError(f"Unrecognized git remote format: {url}")
+
+    # Remove .git suffix and trailing slash properly
+    if path.endswith('/'):
+        path = path[:-1]
+    if path.endswith('.git'):
+        path = path[:-4]
+    parts = path.split('/')
+    if len(parts) >= 2:
+        return parts[0], parts[1]
+    raise RuntimeError(f"Cannot parse owner/repo from: {url}")
+
+
+def lookup_project_graphql_id(org: str, project_number: int) -> str:
+    """Convert organization and project number into ProjectV2 GraphQL ID.
+
+    Result is cached to avoid repeated lookups.
+    """
+    cache_key = (org, project_number)
+    if cache_key in _project_id_cache:
+        return _project_id_cache[cache_key]
+
+    query = '''
+query($org: String!, $projectNumber: Int!) {
+  organization(login: $org) {
+    projectV2(number: $projectNumber) {
+      id
+    }
+  }
+}
+'''
     result = subprocess.run(
         ['gh', 'api', 'graphql',
-         '-f', f'query={query}',
+         '-f', f'query={query.strip()}',
          '-f', f'org={org}',
          '-F', f'projectNumber={project_number}'],
         capture_output=True, text=True
     )
 
     if result.returncode != 0:
-        _log(f"GraphQL query failed: {result.stderr}", level="ERROR")
-        if os.getenv('HANDSOFF_DEBUG'):
-            _log(f"Query: {query[:100]}...", level="ERROR")
-            _log(f"Variables: org={org}, projectNumber={project_number}", level="ERROR")
+        _log(f"Failed to lookup project ID: {result.stderr}", level="ERROR")
+        return ''
+
+    try:
+        data = json.loads(result.stdout)
+        project_id = data['data']['organization']['projectV2']['id']
+        _project_id_cache[cache_key] = project_id
+        return project_id
+    except (KeyError, TypeError, json.JSONDecodeError) as e:
+        _log(f"Failed to parse project ID response: {e}", level="ERROR")
+        return ''
+
+
+def discover_candidate_issues(owner: str, repo: str) -> list[int]:
+    """Discover open issues with agentize:plan label using gh issue list."""
+    result = subprocess.run(
+        ['gh', 'issue', 'list',
+         '-R', f'{owner}/{repo}',
+         '--label', 'agentize:plan',
+         '--state', 'open',
+         '--json', 'number',
+         '--jq', '.[].number'],
+        capture_output=True, text=True
+    )
+
+    if result.returncode != 0:
+        _log(f"Failed to list issues: {result.stderr}", level="ERROR")
         return []
 
-    data = json.loads(result.stdout)
+    issues = []
+    for line in result.stdout.strip().split('\n'):
+        line = line.strip()
+        if line:
+            # Handle both tab-separated format and plain number format
+            try:
+                issue_no = int(line.split('\t')[0])
+                issues.append(issue_no)
+            except (ValueError, IndexError):
+                continue
+    return issues
+
+
+# GraphQL query to get an issue's project status
+ISSUE_STATUS_QUERY = '''
+query($owner: String!, $repo: String!, $number: Int!) {
+  repository(owner: $owner, name: $repo) {
+    issue(number: $number) {
+      projectItems(first: 20) {
+        nodes {
+          project { id }
+          fieldValues(first: 50) {
+            nodes {
+              ... on ProjectV2ItemFieldSingleSelectValue {
+                field { ... on ProjectV2SingleSelectField { name } }
+                name
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+'''
+
+
+def query_issue_project_status(owner: str, repo: str, issue_no: int, project_id: str) -> str:
+    """Fetch an issue's Status field value for the configured project.
+
+    Returns the status string (e.g., "Plan Accepted") or empty string if not found.
+    """
+    result = subprocess.run(
+        ['gh', 'api', 'graphql',
+         '-f', f'query={ISSUE_STATUS_QUERY.strip()}',
+         '-f', f'owner={owner}',
+         '-f', f'repo={repo}',
+         '-F', f'number={issue_no}'],
+        capture_output=True, text=True
+    )
+
+    if result.returncode != 0:
+        _log(f"Failed to query issue #{issue_no} status: {result.stderr}", level="ERROR")
+        if os.getenv('HANDSOFF_DEBUG'):
+            _log(f"Variables: owner={owner}, repo={repo}, number={issue_no}", level="ERROR")
+        return ''
+
     try:
-        items = data['data']['organization']['projectV2']['items']['nodes']
-        return items
-    except (KeyError, TypeError):
-        _log(f"Unexpected response structure: {result.stdout}", level="ERROR")
+        data = json.loads(result.stdout)
+        project_items = data['data']['repository']['issue']['projectItems']['nodes']
+
+        # Find the project item matching our project ID
+        for item in project_items:
+            if item.get('project', {}).get('id') != project_id:
+                continue
+
+            # Find the Status field value
+            for field_value in item.get('fieldValues', {}).get('nodes', []):
+                field_name = field_value.get('field', {}).get('name', '')
+                if field_name == 'Status':
+                    return field_value.get('name', '')
+
+        return ''
+    except (KeyError, TypeError, json.JSONDecodeError) as e:
+        _log(f"Failed to parse issue status response: {e}", level="ERROR")
+        return ''
+
+
+def query_project_items(org: str, project_number: int) -> list[dict]:
+    """Query GitHub Projects v2 for items using label-first discovery.
+
+    Uses gh issue list to discover candidates with agentize:plan label,
+    then performs per-issue GraphQL queries to check project status.
+    """
+    # Get repo owner/name for gh issue list
+    try:
+        owner, repo = get_repo_owner_name()
+    except RuntimeError as e:
+        _log(f"Failed to get repo info: {e}", level="ERROR")
         return []
+
+    # Lookup project GraphQL ID for status matching
+    project_id = lookup_project_graphql_id(org, project_number)
+    if not project_id:
+        _log("Failed to lookup project GraphQL ID", level="ERROR")
+        return []
+
+    # Discover candidates via label-first query
+    candidate_issues = discover_candidate_issues(owner, repo)
+    if not candidate_issues:
+        if os.getenv('HANDSOFF_DEBUG'):
+            _log("No candidate issues found with agentize:plan label")
+        return []
+
+    if os.getenv('HANDSOFF_DEBUG'):
+        _log(f"Found {len(candidate_issues)} candidate issues: {candidate_issues}")
+
+    # Build items list with per-issue status lookups
+    items = []
+    for issue_no in candidate_issues:
+        status = query_issue_project_status(owner, repo, issue_no, project_id)
+
+        # Build item in the same format expected by filter_ready_issues
+        item = {
+            'content': {
+                'number': issue_no,
+                'labels': {'nodes': [{'name': 'agentize:plan'}]}  # Already filtered by label
+            },
+            'fieldValueByName': {'name': status} if status else None
+        }
+        items.append(item)
+
+    return items
 
 
 def filter_ready_issues(items: list[dict]) -> list[int]:
