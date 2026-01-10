@@ -343,7 +343,7 @@ Provides completion data for shell completion systems.
 
 **Topics:**
 - `commands`: List all commands (newline-delimited)
-- `spawn-flags`: List spawn flags (--yolo, --no-agent)
+- `spawn-flags`: List spawn flags (--yolo, --no-agent, --headless)
 - `remove-flags`: List remove flags (--delete-branch, -D, --force)
 - `goto-targets`: List available worktree targets (main + issue-*)
 
