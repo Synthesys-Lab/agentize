@@ -388,16 +388,18 @@ wt pathto 42       # Prints /path/to/repo.git/trees/issue-42
 
 ### cmd_rebase()
 
-Rebase a PR's worktree onto the default branch.
+Rebase a PR's worktree onto the default branch using a Claude Code session.
 
 **Parameters:**
 - `$1-$n`: PR number and optional flags
 
 **Flags:**
-- `--headless`: Run in non-interactive mode for server daemon use
+- `--headless`: Run Claude in non-interactive mode for server daemon use
+- `--yolo`: Skip permission prompts (passes `--dangerously-skip-permissions` to Claude)
 
 **Prerequisites:**
 - gh CLI must be available
+- claude CLI must be available
 - PR must exist
 - Worktree must exist for the resolved issue
 
@@ -410,12 +412,11 @@ Rebase a PR's worktree onto the default branch.
    - `closingIssuesReferences` from PR
    - `#<N>` token in PR body
 5. Locate worktree via `wt_resolve_worktree()`
-6. Fetch origin and rebase onto `origin/<default-branch>`
-7. On conflict: abort rebase and handle based on mode
+6. Invoke Claude Code with `/sync-master` skill to perform the rebase
 
 **Return codes:**
-- `0`: Rebase successful
-- `1`: Invalid arguments, PR not found, worktree not found, rebase failed
+- `0`: Claude session started/completed successfully
+- `1`: Invalid arguments, PR not found, worktree not found, Claude invocation failed
 
 **Error conditions:**
 - Missing PR number → Usage error
@@ -423,17 +424,19 @@ Rebase a PR's worktree onto the default branch.
 - PR not found → Error with gh CLI hint
 - Issue resolution failed → Error with resolution path
 - Worktree not found → Error message
-- Rebase conflict → Abort and guidance (interactive) or exit non-zero (headless)
+- claude CLI not available → Error message
 
 **Headless mode:**
+- Uses `claude --print` for non-interactive execution
 - Logs output to `.tmp/logs/rebase-<pr-no>-<timestamp>.log`
-- Returns immediately with `PID:` and `Log:` output
-- Aborts rebase on conflict and exits non-zero
+- Returns immediately (non-blocking) with `PID:` and `Log:` output
+- The PID corresponds to the actual `claude` process for liveness tracking
 
 **Example:**
 ```bash
-wt rebase 123              # Rebase PR #123's worktree interactively
-wt rebase 123 --headless   # Rebase in headless mode for automation
+wt rebase 123              # Invoke Claude to rebase PR #123's worktree
+wt rebase 123 --headless   # Rebase in headless mode for server automation
+wt rebase 123 --yolo       # Rebase with permission prompts bypassed
 ```
 
 ### cmd_help()
@@ -465,7 +468,7 @@ Provides completion data for shell completion systems.
 - `commands`: List all commands (newline-delimited, includes `clone`)
 - `spawn-flags`: List spawn flags (--yolo, --no-agent, --headless)
 - `remove-flags`: List remove flags (--delete-branch, -D, --force)
-- `rebase-flags`: List rebase flags (--headless)
+- `rebase-flags`: List rebase flags (--headless, --yolo)
 - `goto-targets`: List available worktree targets (main + issue-*)
 
 **Return codes:**

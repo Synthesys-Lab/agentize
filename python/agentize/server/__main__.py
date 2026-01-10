@@ -569,6 +569,112 @@ def filter_ready_issues(items: list[dict]) -> list[int]:
     return ready
 
 
+def discover_candidate_prs(owner: str, repo: str) -> list[dict]:
+    """Discover open PRs with agentize:pr label.
+
+    Returns:
+        List of PR metadata dicts with number, headRefName, mergeable fields.
+    """
+    result = subprocess.run(
+        ['gh', 'pr', 'list',
+         '-R', f'{owner}/{repo}',
+         '--label', 'agentize:pr',
+         '--state', 'open',
+         '--json', 'number,headRefName,mergeable,body,closingIssuesReferences'],
+        capture_output=True, text=True
+    )
+
+    if result.returncode != 0:
+        _log(f"Failed to list PRs: {result.stderr}", level="ERROR")
+        return []
+
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError as e:
+        _log(f"Failed to parse PR list response: {e}", level="ERROR")
+        return []
+
+
+def filter_conflicting_prs(prs: list[dict]) -> list[int]:
+    """Filter PRs to those with merge conflicts.
+
+    Returns PR numbers where mergeable == "CONFLICTING".
+    Skips PRs with mergeable == "UNKNOWN" (retry on next poll).
+    """
+    debug = os.getenv('HANDSOFF_DEBUG')
+    conflicting = []
+
+    for pr in prs:
+        pr_no = pr.get('number')
+        mergeable = pr.get('mergeable', '')
+
+        if mergeable == 'CONFLICTING':
+            if debug:
+                print(f"[pr-rebase] #{pr_no} mergeable=CONFLICTING -> QUEUE", file=sys.stderr)
+            conflicting.append(pr_no)
+        elif mergeable == 'UNKNOWN':
+            if debug:
+                print(f"[pr-rebase] #{pr_no} mergeable=UNKNOWN -> SKIP (retry next poll)", file=sys.stderr)
+        else:
+            if debug:
+                print(f"[pr-rebase] #{pr_no} mergeable={mergeable} -> SKIP (healthy)", file=sys.stderr)
+
+    return conflicting
+
+
+def resolve_issue_from_pr(pr: dict) -> int | None:
+    """Resolve issue number from PR metadata.
+
+    Fallback order:
+    1. Branch name pattern: issue-<N>
+    2. closingIssuesReferences
+    3. PR body #<N> pattern
+    """
+    # Fallback 1: Branch name
+    head_ref = pr.get('headRefName', '')
+    match = re.match(r'issue-(\d+)', head_ref)
+    if match:
+        return int(match.group(1))
+
+    # Fallback 2: closingIssuesReferences
+    closing_refs = pr.get('closingIssuesReferences', [])
+    if closing_refs and len(closing_refs) > 0:
+        first_ref = closing_refs[0]
+        if isinstance(first_ref, dict) and 'number' in first_ref:
+            return first_ref['number']
+
+    # Fallback 3: PR body #N pattern
+    body = pr.get('body', '')
+    if body:
+        body_match = re.search(r'#(\d+)', body)
+        if body_match:
+            return int(body_match.group(1))
+
+    return None
+
+
+def rebase_worktree(pr_no: int) -> tuple[bool, int | None]:
+    """Rebase a PR's worktree using wt rebase command.
+
+    Returns:
+        Tuple of (success, pid). pid is None if rebase failed.
+    """
+    _log(f"Rebasing worktree for PR #{pr_no}...")
+    result = run_shell_function(f'wt rebase {pr_no} --headless', capture_output=True)
+    if result.returncode != 0:
+        return False, None
+
+    # Parse PID from output
+    pid = None
+    for line in result.stdout.splitlines():
+        if 'PID' in line:
+            match = re.search(r'PID[:\s]+(\d+)', line)
+            if match:
+                pid = int(match.group(1))
+                break
+    return True, pid
+
+
 def worktree_exists(issue_no: int) -> bool:
     """Check if a worktree exists for the given issue number."""
     result = run_shell_function(f'wt pathto {issue_no}', capture_output=True)
@@ -873,6 +979,51 @@ def run_server(
                     success, _ = spawn_worktree(issue_no)
                     if not success:
                         _log(f"Failed to spawn worktree for issue #{issue_no}", level="ERROR")
+
+            # PR auto-rebase: discover conflicting PRs and rebase their worktrees
+            try:
+                owner, repo = get_repo_owner_name()
+                prs = discover_candidate_prs(owner, repo)
+                conflicting_prs = filter_conflicting_prs(prs)
+
+                # Build PR metadata map for issue resolution
+                pr_metadata: dict[int, dict] = {pr['number']: pr for pr in prs}
+
+                for pr_no in conflicting_prs:
+                    pr = pr_metadata.get(pr_no, {})
+                    issue_no = resolve_issue_from_pr(pr)
+
+                    if issue_no is None:
+                        _log(f"PR #{pr_no}: could not resolve issue number, skipping rebase", level="ERROR")
+                        continue
+
+                    if not worktree_exists(issue_no):
+                        _log(f"PR #{pr_no}: worktree for issue #{issue_no} does not exist, skipping rebase")
+                        continue
+
+                    # Check worker availability (if bounded)
+                    if num_workers > 0:
+                        worker_id = get_free_worker(num_workers)
+                        if worker_id is None:
+                            _log(f"All {num_workers} workers busy, skipping PR rebase for now")
+                            break
+
+                        # Mark worker as busy before rebasing
+                        write_worker_status(worker_id, 'BUSY', issue_no, None)
+                        success, pid = rebase_worktree(pr_no)
+                        if success:
+                            write_worker_status(worker_id, 'BUSY', issue_no, pid)
+                            _log(f"PR #{pr_no} rebase started, assigned to worker {worker_id}")
+                        else:
+                            write_worker_status(worker_id, 'FREE', None, None)
+                            _log(f"Failed to rebase PR #{pr_no}", level="ERROR")
+                    else:
+                        # Unlimited workers mode
+                        success, _ = rebase_worktree(pr_no)
+                        if not success:
+                            _log(f"Failed to rebase PR #{pr_no}", level="ERROR")
+            except RuntimeError as e:
+                _log(f"Error during PR discovery: {e}", level="ERROR")
 
             if running[0]:
                 time.sleep(period)

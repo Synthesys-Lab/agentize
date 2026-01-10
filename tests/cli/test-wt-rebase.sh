@@ -41,16 +41,27 @@ if echo "$output" | grep -qi "unknown flag"; then
   test_fail "wt rebase --headless should be a valid flag"
 fi
 
-# Test 5: rebase command exists in completion
+# Test 5: --yolo flag is parsed (doesn't fail due to flag parsing)
+output=$(wt rebase --yolo 123 2>&1) || true
+# Should fail for PR not found, not for flag parsing
+if echo "$output" | grep -qi "unknown flag"; then
+  test_fail "wt rebase --yolo should be a valid flag"
+fi
+
+# Test 6: rebase command exists in completion
 output=$(wt --complete commands 2>/dev/null)
 if ! echo "$output" | grep -q "^rebase$"; then
   test_fail "rebase should be in wt --complete commands"
 fi
 
-# Test 6: rebase-flags topic exists in completion
+# Test 7: rebase-flags topic exists in completion
 output=$(wt --complete rebase-flags 2>/dev/null)
 if ! echo "$output" | grep -q "^--headless$"; then
   test_fail "--headless should be in wt --complete rebase-flags"
+fi
+
+if ! echo "$output" | grep -q "^--yolo$"; then
+  test_fail "--yolo should be in wt --complete rebase-flags"
 fi
 
 # Cleanup

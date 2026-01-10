@@ -678,6 +678,154 @@ cmd_purge() {
     return 0
 }
 
+# wt rebase: Rebase PR's worktree onto default branch using Claude Code session
+cmd_rebase() {
+    local pr_no=""
+    local headless=false
+    local yolo=false
+
+    # Parse arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --headless)
+                headless=true
+                shift
+                ;;
+            --yolo)
+                yolo=true
+                shift
+                ;;
+            -*)
+                echo "Error: Unknown flag: $1" >&2
+                return 1
+                ;;
+            *)
+                if [ -z "$pr_no" ]; then
+                    pr_no="$1"
+                else
+                    echo "Error: Multiple PR numbers provided" >&2
+                    return 1
+                fi
+                shift
+                ;;
+        esac
+    done
+
+    if [ -z "$pr_no" ]; then
+        echo "Error: Missing PR number. Usage: wt rebase <pr-no> [--headless] [--yolo]" >&2
+        return 1
+    fi
+
+    # Validate PR number is numeric
+    if ! [[ "$pr_no" =~ ^[0-9]+$ ]]; then
+        echo "Error: PR number must be numeric" >&2
+        return 1
+    fi
+
+    # Check if gh CLI is available
+    if ! command -v gh >/dev/null 2>&1; then
+        echo "Error: gh CLI is required for rebase command" >&2
+        return 1
+    fi
+
+    # Fetch PR metadata
+    local pr_data
+    pr_data=$(gh pr view "$pr_no" --json headRefName,closingIssuesReferences,body 2>&1)
+    if [ $? -ne 0 ]; then
+        echo "Error: PR #$pr_no not found" >&2
+        return 1
+    fi
+
+    # Resolve issue number using fallbacks
+    local issue_no=""
+
+    # Fallback 1: Extract from branch name (issue-N or issue-N-*)
+    local head_ref
+    head_ref=$(echo "$pr_data" | grep -o '"headRefName":"[^"]*"' | sed 's/"headRefName":"//;s/"//')
+    # Shell-neutral regex capture: BASH_REMATCH for bash, match for zsh
+    # One expands to the capture group, the other to empty string
+    if [[ "$head_ref" =~ ^issue-([0-9]+) ]]; then
+        issue_no="${BASH_REMATCH[1]}${match[1]}"
+    fi
+
+    # Fallback 2: closingIssuesReferences (if issue_no still empty)
+    if [ -z "$issue_no" ]; then
+        # Extract first issue number from closingIssuesReferences
+        issue_no=$(echo "$pr_data" | grep -o '"closingIssuesReferences":\[{"number":[0-9]*' | grep -o '[0-9]*$' | head -1)
+    fi
+
+    # Fallback 3: Search PR body for #N pattern
+    if [ -z "$issue_no" ]; then
+        local body
+        body=$(echo "$pr_data" | grep -o '"body":"[^"]*"' | sed 's/"body":"//;s/"$//' | head -1)
+        # Look for #NNN pattern
+        issue_no=$(echo "$body" | grep -oE '#[0-9]+' | head -1 | tr -d '#')
+    fi
+
+    if [ -z "$issue_no" ]; then
+        echo "Error: Could not resolve issue number from PR #$pr_no" >&2
+        echo "Tried:" >&2
+        echo "  - Branch name: $head_ref" >&2
+        echo "  - closingIssuesReferences: (none found)" >&2
+        echo "  - PR body: (no #N pattern found)" >&2
+        return 1
+    fi
+
+    # Resolve worktree path
+    local worktree_path
+    worktree_path=$(wt_resolve_worktree "$issue_no")
+    if [ $? -ne 0 ] || [ -z "$worktree_path" ] || [ ! -d "$worktree_path" ]; then
+        echo "Error: Worktree not found for issue #$issue_no" >&2
+        return 1
+    fi
+
+    # Check if Claude is available
+    if ! command -v claude >/dev/null 2>&1; then
+        echo "Error: claude CLI is required for rebase command" >&2
+        return 1
+    fi
+
+    # Build Claude flags
+    local yolo_flag=""
+    local print_flag=""
+    if [ "$yolo" = true ]; then
+        echo "WARNING: --yolo active; Claude will run with --dangerously-skip-permissions" >&2
+        yolo_flag="--dangerously-skip-permissions"
+    fi
+    if [ "$headless" = true ]; then
+        print_flag="--print"
+    fi
+
+    # Invoke Claude to perform the rebase
+    if [ "$headless" = true ]; then
+        # Headless mode: run in background with logging
+        local log_dir="${AGENTIZE_HOME:-.}/.tmp/logs"
+        mkdir -p "$log_dir"
+        local log_file="$log_dir/rebase-${pr_no}-$(date +%Y%m%d-%H%M%S).log"
+
+        echo "Invoking Claude Code to rebase PR #$pr_no in headless mode..."
+        # Run claude in a subshell with exec to fully detach from parent process.
+        # Redirect stdin from /dev/null and stdout/stderr to log file to prevent
+        # fd inheritance that would block the parent when using capture_output.
+        (
+            cd "$worktree_path" && exec claude $yolo_flag $print_flag "/sync-master"
+        ) </dev/null >"$log_file" 2>&1 &
+        local claude_pid=$!
+
+        echo "PID: $claude_pid"
+        echo "Log: $log_file"
+        return 0
+    else
+        # Interactive mode
+        echo "Invoking Claude Code to rebase PR #$pr_no..."
+        cd "$worktree_path" && claude $yolo_flag "/sync-master" || {
+            echo "Warning: Claude Code rebase session failed" >&2
+            return 1
+        }
+        return 0
+    fi
+}
+
 # wt help: Show help message
 cmd_help() {
     cat <<'EOF'
@@ -697,6 +845,7 @@ COMMANDS:
   prune               Clean up stale worktree metadata
   purge               Remove worktrees for closed GitHub issues
   pathto <target>     Print absolute path to worktree (target: main or issue-no)
+  rebase <pr-no>      Rebase PR's worktree onto default branch
   help                Show this help message
 
 OPTIONS (spawn):
@@ -707,6 +856,10 @@ OPTIONS (spawn):
 OPTIONS (remove):
   --delete-branch     Delete branch even if unmerged
   -D, --force         Alias for --delete-branch
+
+OPTIONS (rebase):
+  --headless          Run Claude in non-interactive mode (for server daemon)
+  --yolo              Skip permission prompts
 
 REQUIREMENTS:
   - Bare git repository (create with: git clone --bare, or wt clone)
@@ -765,6 +918,9 @@ wt() {
         pathto)
             wt_resolve_worktree "$@"
             ;;
+        rebase)
+            cmd_rebase "$@"
+            ;;
         help|--help|-h|"")
             cmd_help
             ;;
@@ -783,6 +939,7 @@ wt() {
                     echo "prune"
                     echo "purge"
                     echo "pathto"
+                    echo "rebase"
                     echo "help"
                     ;;
                 spawn-flags)
@@ -794,6 +951,10 @@ wt() {
                     echo "--delete-branch"
                     echo "-D"
                     echo "--force"
+                    ;;
+                rebase-flags)
+                    echo "--headless"
+                    echo "--yolo"
                     ;;
                 goto-targets)
                     # List available worktrees

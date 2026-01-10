@@ -56,6 +56,10 @@ if ! echo "$rebase_output" | grep -q "^--headless$"; then
   test_fail "rebase-flags missing: --headless"
 fi
 
+if ! echo "$rebase_output" | grep -q "^--yolo$"; then
+  test_fail "rebase-flags missing: --yolo"
+fi
+
 # Verify rebase-flags output is newline-delimited
 if echo "$rebase_output" | grep -q " "; then
   test_fail "rebase-flags output should be newline-delimited"

@@ -60,21 +60,21 @@ After running `make setup` and sourcing `setup.sh`, the `wt` command is availabl
   - `wt pathto <issue-no>`: prints path to `trees/issue-<issue-no>*`
   - Exits `0` on success, `1` if worktree not found
   - Useful for scripting and programmatic worktree lookups
-- `wt rebase <pr-no>`: rebase the worktree for the given PR onto the default branch
-  - Fetches origin and rebases onto `origin/<default-branch>`
+- `wt rebase <pr-no>`: rebase the worktree for the given PR onto the default branch using a Claude Code session
   - Resolves issue/worktree from PR metadata using fallbacks:
     1. Branch name pattern `issue-<N>`
     2. `closingIssuesReferences` from PR
     3. `#<N>` token in PR body
-  - `--headless`: run rebase in non-interactive mode for server daemon use
-    - Aborts rebase on conflict and exits non-zero
+  - Invokes Claude Code with `/sync-master` skill to perform the rebase
+  - `--headless`: run Claude in non-interactive mode for server daemon use
+    - Uses `claude --print` for non-interactive execution
     - Logs output to `.tmp/logs/rebase-<pr-no>-<timestamp>.log`
-    - Returns immediately with structured output:
+    - Returns immediately (non-blocking) with structured output:
       ```
-      PID: <rebase-pid>
+      PID: <claude-pid>
       Log: <log-file-path>
       ```
-  - On conflict in interactive mode: aborts rebase and prints guidance
+  - `--yolo`: skip permission prompts by passing `--dangerously-skip-permissions` to Claude
 - `wt help`: show help message
 
 ## Bare Repository Requirement
@@ -134,7 +134,7 @@ wt --complete <topic>
 - `commands` - List available subcommands (clone, common, init, goto, spawn, list, remove, prune, purge, pathto, rebase, help)
 - `spawn-flags` - List flags for `wt spawn` (--yolo, --no-agent, --headless)
 - `remove-flags` - List flags for `wt remove` (--delete-branch, -D, --force)
-- `rebase-flags` - List flags for `wt rebase` (--headless)
+- `rebase-flags` - List flags for `wt rebase` (--headless, --yolo)
 - `goto-targets` - List available targets for `wt goto` (main and issue-<N>-* worktrees)
 
 **Output format:** Newline-delimited tokens, no descriptions.
@@ -167,6 +167,7 @@ issue-45
 
 $ wt --complete rebase-flags
 --headless
+--yolo
 ```
 
 This helper is used by the zsh completion system and can be used by other shells in the future.
