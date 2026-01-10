@@ -65,6 +65,25 @@ if [ ! -f "$TEST_DIR/$dest_name/trees/main/README.md" ]; then
 fi
 
 # --------------------------------------------------
+# Test 1b: Verify refspec and prune config after clone
+# --------------------------------------------------
+test_info "Test 1b: Verify refspec and prune config after clone"
+
+# Check remote.origin.fetch is set correctly
+refspec=$(git -C "$TEST_DIR/$dest_name" config --get remote.origin.fetch 2>/dev/null)
+if [ "$refspec" != "+refs/heads/*:refs/remotes/origin/*" ]; then
+  rm -rf "$SEED_DIR" "$TEST_DIR"
+  test_fail "remote.origin.fetch not set correctly: got '$refspec'"
+fi
+
+# Check fetch.prune is enabled
+prune_setting=$(git -C "$TEST_DIR/$dest_name" config --get fetch.prune 2>/dev/null)
+if [ "$prune_setting" != "true" ]; then
+  rm -rf "$SEED_DIR" "$TEST_DIR"
+  test_fail "fetch.prune not set to true: got '$prune_setting'"
+fi
+
+# --------------------------------------------------
 # Test 2: wt clone infers destination from URL
 # --------------------------------------------------
 test_info "Test 2: wt clone infers destination from URL"
