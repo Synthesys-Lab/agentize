@@ -105,7 +105,7 @@ _wt_spawn() {
 
     # Fallback to static flags
     if (( ${#spawn_flags} == 0 )); then
-        spawn_flags=( '--yolo' '--no-agent' )
+        spawn_flags=( '--yolo' '--no-agent' '--headless' )
     fi
 
     # Build option specs from flags
@@ -116,6 +116,9 @@ _wt_spawn() {
                 ;;
             --no-agent)
                 option_specs+=('--no-agent[Skip automatic Claude invocation]')
+                ;;
+            --headless)
+                option_specs+=('--headless[Run Claude in non-interactive mode (for server daemon)]')
                 ;;
             *)
                 # Unknown flag, pass through without description

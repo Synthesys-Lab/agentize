@@ -21,6 +21,10 @@ if ! echo "$spawn_output" | grep -q "^--no-agent$"; then
   test_fail "spawn-flags missing: --no-agent"
 fi
 
+if ! echo "$spawn_output" | grep -q "^--headless$"; then
+  test_fail "spawn-flags missing: --headless"
+fi
+
 # Test remove-flags
 remove_output=$(wt --complete remove-flags 2>/dev/null)
 
