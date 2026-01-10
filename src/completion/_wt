@@ -25,6 +25,7 @@ _wt() {
             'remove:Remove worktree and delete branch'
             'prune:Clean up stale worktree metadata'
             'purge:Remove worktrees for closed GitHub issues'
+            'pathto:Print absolute path to worktree target'
             'help:Display help message'
         )
     else
@@ -40,6 +41,7 @@ _wt() {
                 remove) commands_with_desc+=('remove:Remove worktree and delete branch') ;;
                 prune) commands_with_desc+=('prune:Clean up stale worktree metadata') ;;
                 purge) commands_with_desc+=('purge:Remove worktrees for closed GitHub issues') ;;
+                pathto) commands_with_desc+=('pathto:Print absolute path to worktree target') ;;
                 help) commands_with_desc+=('help:Display help message') ;;
             esac
         done
@@ -57,6 +59,9 @@ _wt() {
         args)
             case $line[1] in
                 goto)
+                    _wt_goto
+                    ;;
+                pathto)
                     _wt_goto
                     ;;
                 spawn)

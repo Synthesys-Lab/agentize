@@ -638,6 +638,7 @@ COMMANDS:
   remove <issue-no>   Remove worktree for issue
   prune               Clean up stale worktree metadata
   purge               Remove worktrees for closed GitHub issues
+  pathto <target>     Print absolute path to worktree (target: main or issue-no)
   help                Show this help message
 
 OPTIONS (spawn):
@@ -699,8 +700,7 @@ wt() {
         purge)
             cmd_purge "$@"
             ;;
-        resolve)
-            # Internal command for programmatic worktree existence check
+        pathto)
             wt_resolve_worktree "$@"
             ;;
         help|--help|-h|"")
@@ -719,6 +719,7 @@ wt() {
                     echo "remove"
                     echo "prune"
                     echo "purge"
+                    echo "pathto"
                     echo "help"
                     ;;
                 spawn-flags)
