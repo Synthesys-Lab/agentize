@@ -108,6 +108,26 @@ default_branch=$(wt_get_default_branch)
 echo "Default branch: $default_branch"
 ```
 
+### wt_configure_origin_tracking()
+
+Configure proper fetch refspec and prune settings for bare repositories.
+
+**Parameters:**
+- `$1`: Repository directory (optional, defaults to current directory)
+
+**Returns:**
+- Return code: `0` on success or if no `origin` remote exists, `1` on config failure
+
+**Operations:**
+1. Check if `origin` remote exists via `git remote get-url origin`
+2. If exists, set `remote.origin.fetch` to `+refs/heads/*:refs/remotes/origin/*`
+3. Set `fetch.prune=true`
+
+**Example:**
+```bash
+wt_configure_origin_tracking "$bare_repo_dir"
+```
+
 ### wt_resolve_worktree()
 
 Resolve worktree path by issue number or name.
@@ -157,8 +177,10 @@ Clone a repository as bare and initialize worktree environment.
 3. Verify destination doesn't exist
 4. `git clone --bare "$url" "$dest"`
 5. Change into bare repo directory
-6. Call `cmd_init` to create `trees/main`
-7. Call `cmd_goto main` (sourced mode only)
+6. Configure origin remote tracking (refspec + prune)
+7. Best-effort `git fetch origin` to populate `origin/*` refs
+8. Call `cmd_init` to create `trees/main`
+9. Call `cmd_goto main` (sourced mode only)
 
 **Return codes:**
 - `0`: Clone and initialization successful
@@ -208,7 +230,7 @@ Initialize worktree environment by creating trees/main.
 **Operations:**
 1. Verify bare repository
 2. Determine default branch
-3. Prune stale worktree metadata
+3. Configure origin remote tracking if `origin` exists (refspec + prune)
 4. Create `trees/main` worktree from default branch
 
 **Return codes:**

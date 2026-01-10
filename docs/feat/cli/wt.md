@@ -77,6 +77,19 @@ After running `make setup` and sourcing `setup.sh`, the `wt` command is availabl
   - `--yolo`: skip permission prompts by passing `--dangerously-skip-permissions` to Claude
 - `wt help`: show help message
 
+## Remote Tracking Configuration
+
+Bare repositories created with `git clone --bare` do not include a fetch refspec by default, which prevents `git fetch` from updating remote-tracking refs like `origin/main`. `wt clone` and `wt init` automatically configure proper remote tracking:
+
+- Sets `remote.origin.fetch` to `+refs/heads/*:refs/remotes/origin/*`
+- Enables `fetch.prune=true` for automatic stale ref cleanup
+- Performs a best-effort `git fetch origin` to populate `origin/*` refs
+
+This ensures that workflows depending on `origin/*` refs (such as `/sync-master` and `/issue-to-impl`) work correctly.
+
+**Manual bare repo setup:**
+If you manually create a bare repo without using `wt clone`, run `wt init` to configure remote tracking. If no `origin` remote exists, the configuration step is skipped.
+
 ## Bare Repository Requirement
 
 `wt` is designed for **bare git repositories** only. A bare repository is a git repository without a working directory, typically created with `git clone --bare`.
