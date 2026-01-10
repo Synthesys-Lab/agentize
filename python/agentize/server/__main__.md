@@ -96,12 +96,30 @@ Discover open issues with both `agentize:plan` and `agentize:refine` labels usin
 Spawn a refinement session for the given issue.
 
 **Operations:**
-1. Creates worktree via `wt spawn --no-agent` (if not exists)
-2. Sets issue status to "Refining" (best-effort claim)
-3. Runs `/ultra-planner --refine` headlessly
+1. Creates worktree via `wt spawn --no-agent --headless` (if not exists)
+2. Sets issue status to "Refining" via `wt_claim_issue_status()` (best-effort claim)
+3. Runs `claude --print /ultra-planner --refine <issue-no>` headlessly as background process
 4. Returns (success, pid) tuple
 
 **Returns:** Tuple of (success, pid). pid is None if spawn failed.
+
+### `_check_issue_has_label(issue_no: int, label: str) -> bool`
+
+Check if an issue has a specific label via `gh issue view`.
+
+**Parameters:**
+- `issue_no`: GitHub issue number
+- `label`: Label name to check for
+
+**Returns:** `True` if the issue has the label, `False` otherwise.
+
+### `_cleanup_refinement(issue_no: int) -> None`
+
+Clean up after refinement completion: remove `agentize:refine` label and reset status to "Proposed".
+
+**Operations:**
+1. Remove `agentize:refine` label via `gh issue edit`
+2. Log cleanup action (status reset handled by session state)
 
 ### `worktree_exists(issue_no: int) -> bool`
 
