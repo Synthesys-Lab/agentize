@@ -51,8 +51,9 @@ Hooks enable automated behaviors and integrations at key points in the Claude Co
 
 **Behavior**:
 - Detects `/ultra-planner` and `/issue-to-impl` commands
-- Creates session state files in `.tmp/hooked-sessions/`
-- See [docs/workflows/handsoff.md](../../docs/workflows/handsoff.md) for details
+- Creates session state files in `${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/`
+- Extracts optional `issue_no` from command arguments
+- See [docs/feat/core/handsoff.md](../../docs/feat/core/handsoff.md) for details
 
 ### stop.py
 **Event**: Stop (before Claude Code stops execution)
@@ -60,10 +61,10 @@ Hooks enable automated behaviors and integrations at key points in the Claude Co
 **Purpose**: Auto-continue workflows in handsoff mode
 
 **Behavior**:
-- Reads session state from `.tmp/hooked-sessions/`
+- Reads session state from `${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/`
 - Increments continuation count and checks limits
 - Injects workflow-specific continuation prompts
-- See [docs/workflows/handsoff.md](../../docs/workflows/handsoff.md) for details
+- See [docs/feat/core/handsoff.md](../../docs/feat/core/handsoff.md) for details
 
 ## Hook Invocation Mechanism
 

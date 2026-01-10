@@ -17,15 +17,18 @@ When `HANDSOFF_MODE` is enabled, specific workflows automatically resume after e
 When a supported workflow command is invoked, the `UserPromptSubmit` hook creates a session state file:
 
 ```
-.tmp/hooked-sessions/{session_id}.json
+${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/{session_id}.json
 ```
+
+When `AGENTIZE_HOME` is set, session files are stored centrally, enabling cross-worktree visibility. When unset, files fall back to the current working directory (`./.tmp/hooked-sessions/`).
 
 **Initial state structure:**
 ```json
 {
   "workflow": "ultra-planner",
   "state": "initial",
-  "continuation_count": 0
+  "continuation_count": 0,
+  "issue_no": 42
 }
 ```
 
@@ -74,7 +77,7 @@ Set in shell environment or `.claude/settings.json`:
 **`HANDSOFF_DEBUG`**
 - **Purpose:** Enable detailed debug logging and tool usage tracking
 - **Values:** `1` (enabled), `0` (disabled, default)
-- **Log file:** `.tmp/hooked-sessions/tool-used.txt`
+- **Log file:** `${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/tool-used.txt`
 - **Additional output:** Server issue-filter logs (see [server.md](../server.md#issue-filtering-debug-logs))
 - **Example:** `export HANDSOFF_DEBUG=1`
 
@@ -177,7 +180,7 @@ The ultimate goal of this workflow is to deliver a PR on GitHub that implements 
 View the current session state file:
 
 ```bash
-cat .tmp/hooked-sessions/{session_id}.json
+cat ${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/{session_id}.json
 ```
 
 **Example output:**
@@ -185,9 +188,12 @@ cat .tmp/hooked-sessions/{session_id}.json
 {
   "workflow": "issue-to-impl",
   "state": "initial",
-  "continuation_count": 5
+  "continuation_count": 5,
+  "issue_no": 42
 }
 ```
+
+The `issue_no` field is only present when the workflow was invoked with an issue number argument (e.g., `/issue-to-impl 42` or `/ultra-planner --refine 42`).
 
 ### View Debug Logs
 
@@ -195,7 +201,7 @@ Enable debug logging and view logs:
 
 ```bash
 export HANDSOFF_DEBUG=1
-tail -f .tmp/hook-debug.log
+tail -f ${AGENTIZE_HOME:-.}/.tmp/hook-debug.log
 ```
 
 **Example log entries:**
@@ -213,12 +219,12 @@ To stop auto-continuation before reaching max limit:
 2. Edit the session state file:
    ```bash
    # Set continuation_count to max value
-   echo '{"workflow": "issue-to-impl", "state": "initial", "continuation_count": 10}' > .tmp/hooked-sessions/{session_id}.json
+   echo '{"workflow": "issue-to-impl", "state": "initial", "continuation_count": 10}' > ${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/{session_id}.json
    ```
 
 3. Or delete the session state file entirely:
    ```bash
-   rm .tmp/hooked-sessions/{session_id}.json
+   rm ${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/{session_id}.json
    ```
 
 ### Resume Session with Human Intervention
@@ -299,9 +305,9 @@ See [.claude/hooks/pre-tool-use.md](../../.claude/hooks/pre-tool-use.md) for int
 
 3. **Human checkpoints:** For critical features, consider manual intervention after key milestones rather than full handsoff mode
 
-4. **Clean up state files:** Periodically clean `.tmp/hooked-sessions/` to remove old session states:
+4. **Clean up state files:** Periodically clean `${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/` to remove old session states:
    ```bash
-   rm .tmp/hooked-sessions/*.json
+   rm ${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/*.json
    ```
 
 5. **Enable debug logging:** Use `HANDSOFF_DEBUG=1` during initial handsoff setup to understand behavior
