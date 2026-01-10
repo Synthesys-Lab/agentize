@@ -2,6 +2,8 @@
 
 import os
 import re
+import subprocess
+import time
 from pathlib import Path
 
 from agentize.shell import run_shell_function
@@ -57,6 +59,91 @@ def rebase_worktree(pr_no: int) -> tuple[bool, int | None]:
         return False, None
 
     return True, _parse_pid_from_output(result.stdout)
+
+
+def _check_issue_has_label(issue_no: int, label: str) -> bool:
+    """Check if issue has a specific label.
+
+    Args:
+        issue_no: GitHub issue number
+        label: Label name to check for
+
+    Returns:
+        True if the issue has the label, False otherwise.
+    """
+    result = subprocess.run(
+        ['gh', 'issue', 'view', str(issue_no), '--json', 'labels', '--jq', '.labels[].name'],
+        capture_output=True,
+        text=True
+    )
+    if result.returncode != 0:
+        return False
+    return label in result.stdout.strip().split('\n')
+
+
+def _cleanup_refinement(issue_no: int) -> None:
+    """Clean up after refinement: remove agentize:refine label.
+
+    Args:
+        issue_no: GitHub issue number
+    """
+    # Remove agentize:refine label
+    subprocess.run(
+        ['gh', 'issue', 'edit', str(issue_no), '--remove-label', 'agentize:refine'],
+        capture_output=True,
+        text=True
+    )
+    _log(f"Refinement cleanup for issue #{issue_no}: removed agentize:refine label")
+
+
+def spawn_refinement(issue_no: int) -> tuple[bool, int | None]:
+    """Spawn a refinement session for the given issue.
+
+    Creates worktree if not exists, sets status to Refining, and spawns
+    claude with /ultra-planner --refine headlessly.
+
+    Returns:
+        Tuple of (success, pid). pid is None if spawn failed.
+    """
+    # Create worktree if not exists (reuse if exists)
+    if not worktree_exists(issue_no):
+        result = run_shell_function(f'wt spawn {issue_no} --no-agent --headless', capture_output=True)
+        if result.returncode != 0:
+            _log(f"Failed to create worktree for issue #{issue_no}", level="ERROR")
+            return False, None
+
+    # Get worktree path
+    result = run_shell_function(f'wt pathto {issue_no}', capture_output=True)
+    if result.returncode != 0:
+        _log(f"Failed to get worktree path for issue #{issue_no}", level="ERROR")
+        return False, None
+    worktree_path = result.stdout.strip()
+
+    # Set status to "Refining" (best-effort claim)
+    run_shell_function(
+        f'wt_claim_issue_status {issue_no} "{worktree_path}" Refining',
+        capture_output=True
+    )
+
+    # Create log directory and file
+    log_dir = Path(os.getenv('AGENTIZE_HOME', '.')) / '.tmp' / 'logs'
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / f'refine-{issue_no}-{int(time.time())}.log'
+
+    # Spawn Claude with /ultra-planner --refine
+    # Note: Popen duplicates the file descriptor, so the child process inherits it
+    # and continues writing even after the 'with' block exits
+    with open(log_file, 'w') as f:
+        proc = subprocess.Popen(
+            ['claude', '--print', f'/ultra-planner --refine {issue_no}'],
+            cwd=worktree_path,
+            stdin=subprocess.DEVNULL,
+            stdout=f,
+            stderr=subprocess.STDOUT
+        )
+
+    _log(f"Spawned refinement for issue #{issue_no}, PID: {proc.pid}, log: {log_file}")
+    return True, proc.pid
 
 
 def init_worker_status_files(num_workers: int, workers_dir: str = DEFAULT_WORKERS_DIR) -> None:
@@ -216,6 +303,10 @@ def cleanup_dead_workers(
             if tg_token and tg_chat_id and issue_no and session_dir:
                 session_state = _get_session_state_for_issue(issue_no, session_dir)
                 if session_state and session_state.get('state') == 'done':
+                    # Check if this was a refinement (has agentize:refine label)
+                    if _check_issue_has_label(issue_no, 'agentize:refine'):
+                        _cleanup_refinement(issue_no)
+
                     issue_url = f"https://github.com/{repo_slug}/issues/{issue_no}" if repo_slug else None
                     msg = _format_worker_completion_message(issue_no, i, issue_url)
                     if send_telegram_message(tg_token, tg_chat_id, msg):
