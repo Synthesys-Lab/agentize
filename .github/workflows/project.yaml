@@ -87,7 +87,7 @@ jobs:
           echo "$linked_issues" | jq -c '.[]' | while read -r issue; do
             issue_number=$(echo "$issue" | jq -r '.number')
             echo "Closing issue #$issue_number..."
-            gh issue close "$issue_number" --reason "completed"
+            gh issue close "$issue_number" -R "$GITHUB_REPOSITORY" --reason "completed"
             echo "  Issue #$issue_number closed"
           done
 
