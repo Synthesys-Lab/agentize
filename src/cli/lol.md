@@ -10,11 +10,16 @@ The implementation is split into sourced modules in `lol/`:
 |--------|---------|
 | `helpers.sh` | Language detection and utility functions |
 | `completion.sh` | Shell-agnostic completion helper (`lol_complete`) |
-| `commands.sh` | Command implementations (`lol_cmd_*`) |
+| `commands.sh` | Thin loader that sources `commands/*.sh` |
+| `commands/` | Per-command implementations (`lol_cmd_*`) |
 | `dispatch.sh` | Main dispatcher, help text, and `lol` function |
 | `parsers.sh` | Argument parsing for each command |
 
 `lol.sh` sources these modules in order. External interfaces remain unchanged.
+
+The `commands/` directory contains individual files for each command:
+- `init.sh`, `update.sh`, `upgrade.sh`, `version.sh`
+- `project.sh`, `serve.sh`, `claude-clean.sh`
 
 ## External Interface
 

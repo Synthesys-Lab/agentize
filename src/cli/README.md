@@ -24,7 +24,8 @@ Source-first libraries for Agentize CLI commands. These files are the canonical 
 - `lol/` - SDK CLI modular implementation
   - `helpers.sh` - Language detection and utility functions
   - `completion.sh` - Shell-agnostic completion helper
-  - `commands.sh` - Command implementations (lol_cmd_*)
+  - `commands.sh` - Thin loader that sources `commands/*.sh`
+  - `commands/` - Per-command implementations (init.sh, update.sh, etc.)
   - `dispatch.sh` - Main dispatcher, help text, and entry point
   - `parsers.sh` - Argument parsing for each command
   - See `lol/README.md` for module map and load order
