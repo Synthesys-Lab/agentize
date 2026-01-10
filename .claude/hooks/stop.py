@@ -30,9 +30,16 @@ def main():
     # Check the file existence
     fname = f'.tmp/hooked-sessions/{session_id}.json'
     if os.path.exists(fname):
-        logger(session_id, "Found existing state file: {fname}")
+        logger(session_id, f"Found existing state file: {fname}")
         with open(fname, 'r') as f:
             state = json.load(f)
+
+            # Check for done state first (takes priority over continuation_count)
+            workflow_state = state.get('state', 'initial')
+            if workflow_state == 'done':
+                logger(session_id, "State is 'done', stopping continuation")
+                sys.exit(0)
+
             max_continuations = os.getenv('HANDSOFF_MAX_CONTINUATIONS', '10')
             max_continuations = int(max_continuations)
 
@@ -57,7 +64,8 @@ The ultimate goal of this workflow is to create a comprehensive plan and post it
     - What is blocking you from moving forward
     - What kind of help you need from human collaborators
     - The session ID: {session_id} so that human can `claude -r {session_id}` for a human intervention.
-4. To manually stop further continuations, find {fname} and set `continuation_count` to {max_continuations}.
+4. To stop further continuations, run:
+   jq '.state = "done"' {fname} > {fname}.tmp && mv {fname}.tmp {fname}
 5. When creating issues or PRs, use `--body-file` instead of `--body`, as body content with "--something" will be misinterpreted as flags.'''.strip()
         elif workflow == 'issue-to-impl':
             prompt = f'''
@@ -84,7 +92,8 @@ The ultimate goal of this workflow is to deliver a PR on GitHub that implements 
   - What is blocking you from moving forward
   - What kind of help you need from human collaborators
   - The session ID: {session_id} so that human can `claude -r {session_id}` for a human intervention.
-6. To manually stop further continuations, find {fname} and set the `continuation_count` to {max_continuations}.
+6. To stop further continuations, run:
+   jq '.state = "done"' {fname} > {fname}.tmp && mv {fname}.tmp {fname}
 7. When creating issues or PRs, use `--body-file` instead of `--body`, as body content with "--something" will be misinterpreted as flags.'''
 
         if prompt:
