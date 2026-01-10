@@ -48,6 +48,7 @@ from agentize.server.github import (
 from agentize.server.workers import (
     worktree_exists,
     spawn_worktree,
+    spawn_refinement,
     rebase_worktree,
     init_worker_status_files,
     read_worker_status,
@@ -55,6 +56,8 @@ from agentize.server.workers import (
     get_free_worker,
     check_worker_liveness,
     cleanup_dead_workers,
+    _check_issue_has_label,
+    _cleanup_refinement,
     DEFAULT_WORKERS_DIR,
 )
 
@@ -168,6 +171,38 @@ def run_server(
                     success, _ = spawn_worktree(issue_no)
                     if not success:
                         _log(f"Failed to spawn worktree for issue #{issue_no}", level="ERROR")
+
+            # Process refinement candidates
+            ready_refinements = filter_ready_refinements(items)
+            for issue_no in ready_refinements:
+                # Check worker availability (if bounded)
+                if num_workers > 0:
+                    worker_id = get_free_worker(num_workers)
+                    if worker_id is None:
+                        print(f"All {num_workers} workers busy, waiting for next poll")
+                        break
+
+                    # Mark worker as busy before spawning
+                    write_worker_status(worker_id, 'BUSY', issue_no, None)
+                    success, pid = spawn_refinement(issue_no)
+                    if success:
+                        write_worker_status(worker_id, 'BUSY', issue_no, pid)
+                        print(f"issue #{issue_no} refinement assigned to worker {worker_id}")
+
+                        # Send Telegram notification if configured
+                        if token and chat_id:
+                            issue_title = issue_titles.get(issue_no, '')
+                            issue_url = f"https://github.com/{repo_slug}/issues/{issue_no}" if repo_slug else None
+                            msg = f"🔄 Refinement started: <a href=\"{issue_url}\">#{issue_no}</a> {issue_title}" if issue_url else f"🔄 Refinement started: #{issue_no} {issue_title}"
+                            send_telegram_message(token, chat_id, msg)
+                    else:
+                        write_worker_status(worker_id, 'FREE', None, None)
+                        _log(f"Failed to spawn refinement for issue #{issue_no}", level="ERROR")
+                else:
+                    # Unlimited workers mode
+                    success, _ = spawn_refinement(issue_no)
+                    if not success:
+                        _log(f"Failed to spawn refinement for issue #{issue_no}", level="ERROR")
 
             if running[0]:
                 time.sleep(period)

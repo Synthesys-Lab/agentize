@@ -115,11 +115,11 @@ Check if an issue has a specific label via `gh issue view`.
 
 ### `_cleanup_refinement(issue_no: int) -> None`
 
-Clean up after refinement completion: remove `agentize:refine` label and reset status to "Proposed".
+Clean up after refinement completion: remove `agentize:refine` label.
 
 **Operations:**
 1. Remove `agentize:refine` label via `gh issue edit`
-2. Log cleanup action (status reset handled by session state)
+2. Log cleanup action
 
 ### `worktree_exists(issue_no: int) -> bool`
 
