@@ -20,6 +20,7 @@ The Python CLI supports the same commands as the shell implementation:
 | `upgrade` | Upgrade agentize installation |
 | `project` | GitHub Projects v2 integration |
 | `serve` | GitHub Projects polling server |
+| `usage` | Report Claude Code token usage statistics |
 | `claude-clean` | Remove stale project entries from `~/.claude.json` |
 | `version` | Display version information |
 

@@ -6,7 +6,6 @@ token usage statistics by time bucket.
 """
 
 import json
-import os
 from datetime import datetime, timedelta
 from pathlib import Path
 
