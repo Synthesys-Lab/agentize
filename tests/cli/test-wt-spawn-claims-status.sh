@@ -45,6 +45,9 @@ EOF
     # Copy src/cli/wt.sh as wt-cli.sh for test sourcing
     cp "$PROJECT_ROOT/src/cli/wt.sh" ./wt-cli.sh
 
+    # Copy wt/ module directory for modular loading
+    cp -r "$PROJECT_ROOT/src/cli/wt" ./wt
+
     # Copy scripts/gh-graphql.sh for fixture mode
     mkdir -p scripts
     cp "$PROJECT_ROOT/scripts/gh-graphql.sh" ./scripts/gh-graphql.sh

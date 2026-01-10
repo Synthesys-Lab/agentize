@@ -72,6 +72,9 @@ setup_test_repo() {
     # Copy src/cli/wt.sh as wt-cli.sh for test sourcing
     cp "$PROJECT_ROOT/src/cli/wt.sh" ./wt-cli.sh
 
+    # Copy wt/ module directory for modular loading
+    cp -r "$PROJECT_ROOT/src/cli/wt" ./wt
+
     # Create gh stub for testing
     create_gh_stub
 }
@@ -110,6 +113,9 @@ setup_test_repo_custom_branch() {
 
     # Copy src/cli/wt.sh as wt-cli.sh for test sourcing
     cp "$PROJECT_ROOT/src/cli/wt.sh" ./wt-cli.sh
+
+    # Copy wt/ module directory for modular loading
+    cp -r "$PROJECT_ROOT/src/cli/wt" ./wt
 
     # Create gh stub for testing
     create_gh_stub

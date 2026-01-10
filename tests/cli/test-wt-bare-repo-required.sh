@@ -19,6 +19,10 @@ git commit -m "Initial commit"
 
 # Copy src/cli/wt.sh as wt-cli.sh for test sourcing
 cp "$PROJECT_ROOT/src/cli/wt.sh" ./wt-cli.sh
+
+# Copy wt/ module directory for modular loading
+cp -r "$PROJECT_ROOT/src/cli/wt" ./wt
+
 source ./wt-cli.sh
 
 # Try to run wt init - should fail
