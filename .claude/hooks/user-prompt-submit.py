@@ -92,6 +92,16 @@ def main():
         with open(session_file, 'w') as f:
             logger(session_id, f"Writing state: {state}")
             json.dump(state, f)
+
+        # Create issue index file if issue_no is present
+        if issue_no is not None:
+            by_issue_dir = os.path.join(session_dir, 'by-issue')
+            os.makedirs(by_issue_dir, exist_ok=True)
+            issue_index_file = os.path.join(by_issue_dir, f'{issue_no}.json')
+            with open(issue_index_file, 'w') as f:
+                index_data = {'session_id': session_id, 'workflow': state['workflow']}
+                logger(session_id, f"Writing issue index: {index_data}")
+                json.dump(index_data, f)
     else:
         logger(session_id, "No workflow matched, doing nothing.")
 

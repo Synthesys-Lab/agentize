@@ -160,6 +160,119 @@ def _format_worker_assignment_message(
     )
 
 
+def _format_worker_completion_message(
+    issue_no: int,
+    worker_id: int,
+    issue_url: str | None
+) -> str:
+    """Build HTML-formatted Telegram message for worker completion.
+
+    Args:
+        issue_no: GitHub issue number
+        worker_id: Worker slot ID
+        issue_url: Full GitHub issue URL or None
+
+    Returns:
+        HTML-formatted message for Telegram
+    """
+    if issue_url:
+        issue_ref = f'<a href="{issue_url}">#{issue_no}</a>'
+    else:
+        issue_ref = f'#{issue_no}'
+
+    return (
+        f"✅ <b>Worker Completed</b>\n\n"
+        f"Issue: {issue_ref}\n"
+        f"Worker: {worker_id}"
+    )
+
+
+def _resolve_session_dir(base_dir: str | None = None) -> Path:
+    """Returns hooked-sessions directory using AGENTIZE_HOME fallback.
+
+    Args:
+        base_dir: Optional base directory override. If None, uses AGENTIZE_HOME or '.'
+
+    Returns:
+        Path to hooked-sessions directory
+    """
+    base = base_dir or os.getenv('AGENTIZE_HOME', '.')
+    return Path(base) / '.tmp' / 'hooked-sessions'
+
+
+def _load_issue_index(issue_no: int, session_dir: Path) -> str | None:
+    """Reads issue index and returns session_id.
+
+    Args:
+        issue_no: GitHub issue number
+        session_dir: Path to hooked-sessions directory
+
+    Returns:
+        session_id string or None if index file not found
+    """
+    index_file = session_dir / 'by-issue' / f'{issue_no}.json'
+    if not index_file.exists():
+        return None
+
+    try:
+        with open(index_file) as f:
+            data = json.load(f)
+            return data.get('session_id')
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def _load_session_state(session_id: str, session_dir: Path) -> dict | None:
+    """Loads session JSON.
+
+    Args:
+        session_id: Session identifier
+        session_dir: Path to hooked-sessions directory
+
+    Returns:
+        Session state dict or None if not found
+    """
+    session_file = session_dir / f'{session_id}.json'
+    if not session_file.exists():
+        return None
+
+    try:
+        with open(session_file) as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def _get_session_state_for_issue(issue_no: int, session_dir: Path) -> dict | None:
+    """Combined lookup: issue index -> session state.
+
+    Args:
+        issue_no: GitHub issue number
+        session_dir: Path to hooked-sessions directory
+
+    Returns:
+        Session state dict or None if not found
+    """
+    session_id = _load_issue_index(issue_no, session_dir)
+    if session_id is None:
+        return None
+    return _load_session_state(session_id, session_dir)
+
+
+def _remove_issue_index(issue_no: int, session_dir: Path) -> None:
+    """Remove issue index file after notification to prevent duplicates.
+
+    Args:
+        issue_no: GitHub issue number
+        session_dir: Path to hooked-sessions directory
+    """
+    index_file = session_dir / 'by-issue' / f'{issue_no}.json'
+    try:
+        index_file.unlink(missing_ok=True)
+    except OSError:
+        pass  # Best effort cleanup
+
+
 def load_config() -> tuple[str, int, str | None]:
     """Load project config from .agentize.yaml.
 
@@ -612,12 +725,42 @@ def check_worker_liveness(worker_id: int, workers_dir: str = DEFAULT_WORKERS_DIR
         return False
 
 
-def cleanup_dead_workers(num_workers: int, workers_dir: str = DEFAULT_WORKERS_DIR) -> None:
-    """Mark workers with dead PIDs as FREE."""
+def cleanup_dead_workers(
+    num_workers: int,
+    workers_dir: str = DEFAULT_WORKERS_DIR,
+    *,
+    tg_token: str | None = None,
+    tg_chat_id: str | None = None,
+    repo_slug: str | None = None,
+    session_dir: Path | None = None
+) -> None:
+    """Mark workers with dead PIDs as FREE and send completion notifications.
+
+    Args:
+        num_workers: Number of worker slots
+        workers_dir: Directory containing worker status files
+        tg_token: Telegram Bot API token (optional)
+        tg_chat_id: Telegram chat ID (optional)
+        repo_slug: GitHub repo slug for issue URLs (optional)
+        session_dir: Path to hooked-sessions directory (optional)
+    """
     for i in range(num_workers):
         if not check_worker_liveness(i, workers_dir):
             status = read_worker_status(i, workers_dir)
+            issue_no = status.get('issue')
             _log(f"Worker {i} PID {status.get('pid')} is dead, marking as FREE")
+
+            # Check for completion notification conditions
+            if tg_token and tg_chat_id and issue_no and session_dir:
+                session_state = _get_session_state_for_issue(issue_no, session_dir)
+                if session_state and session_state.get('state') == 'done':
+                    issue_url = f"https://github.com/{repo_slug}/issues/{issue_no}" if repo_slug else None
+                    msg = _format_worker_completion_message(issue_no, i, issue_url)
+                    if send_telegram_message(tg_token, tg_chat_id, msg):
+                        _log(f"Sent completion notification for issue #{issue_no}")
+                        # Remove issue index to prevent duplicate notifications
+                        _remove_issue_index(issue_no, session_dir)
+
             write_worker_status(i, 'FREE', None, None, workers_dir)
 
 
@@ -641,14 +784,23 @@ def run_server(
     # Extract repo slug for issue links (computed once)
     repo_slug = _extract_repo_slug(remote_url) if remote_url else None
 
-    # Initialize worker status files (if num_workers > 0)
-    if num_workers > 0:
-        init_worker_status_files(num_workers)
-        cleanup_dead_workers(num_workers)
-
     # Resolve Telegram credentials (CLI args take precedence over env vars)
     token = tg_token or os.getenv('TG_API_TOKEN', '')
     chat_id = tg_chat_id or os.getenv('TG_CHAT_ID', '')
+
+    # Resolve session directory for completion notifications
+    session_dir = _resolve_session_dir()
+
+    # Initialize worker status files (if num_workers > 0)
+    if num_workers > 0:
+        init_worker_status_files(num_workers)
+        cleanup_dead_workers(
+            num_workers,
+            tg_token=token,
+            tg_chat_id=chat_id,
+            repo_slug=repo_slug,
+            session_dir=session_dir
+        )
 
     # Send startup notification if Telegram is configured
     if token and chat_id:
@@ -670,7 +822,13 @@ def run_server(
         try:
             # Clean up dead workers before polling
             if num_workers > 0:
-                cleanup_dead_workers(num_workers)
+                cleanup_dead_workers(
+                    num_workers,
+                    tg_token=token,
+                    tg_chat_id=chat_id,
+                    repo_slug=repo_slug,
+                    session_dir=session_dir
+                )
 
             items = query_project_items(org, project_id)
             ready_issues = filter_ready_issues(items)
