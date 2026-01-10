@@ -9,16 +9,64 @@ A long-running server that monitors your GitHub Projects kanban board and automa
 1. Polls GitHub Projects v2 at configurable intervals
 2. Identifies issues with "Plan Accepted" status and `agentize:plan` label
 3. Spawns worktrees for implementation via `wt spawn`
+4. Manages concurrent workers with bounded concurrency (default: 5 workers)
 
 ## Usage
 
 ```bash
 # Via lol CLI (recommended)
-lol serve --tg-token=<token> --tg-chat-id=<id> --period=5m
+lol serve --tg-token=<token> --tg-chat-id=<id> --period=5m --num-workers=5
 
 # Direct Python invocation
-python -m agentize.server --period=5m
+python -m agentize.server --period=5m --num-workers=5
 ```
+
+## Worker Pool
+
+The server manages a pool of concurrent workers to process multiple issues simultaneously while respecting resource limits.
+
+### Concurrency Control
+
+- `--num-workers=N`: Maximum concurrent headless Claude sessions (default: 5)
+- `--num-workers=0`: No limit (preserves prior behavior)
+
+### Worker Status Files
+
+Worker state is tracked in `.tmp/workers/` with one status file per worker slot:
+
+```
+.tmp/workers/
+├── worker-0.status
+├── worker-1.status
+├── worker-2.status
+├── worker-3.status
+└── worker-4.status
+```
+
+**File format (key=value per line):**
+
+When free:
+```
+state=FREE
+```
+
+When busy:
+```
+state=BUSY
+issue=42
+pid=12345
+```
+
+### Worker Assignment
+
+When an issue is assigned to a worker:
+```
+issue #42 is assigned to worker 0
+```
+
+### Crash Recovery
+
+On startup, the server reads existing status files and checks PID liveness. Workers with dead PIDs are automatically marked as FREE, enabling recovery after unexpected shutdowns.
 
 ## Configuration
 

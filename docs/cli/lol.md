@@ -60,7 +60,7 @@ See [Project Management](../architecture/project.md) for details.
 Long-running server that polls GitHub Projects for "Plan Accepted" issues and automatically invokes `wt spawn` to start implementation.
 
 ```bash
-lol serve --tg-token=<token> --tg-chat-id=<chat_id> [--period=5m]
+lol serve --tg-token=<token> --tg-chat-id=<chat_id> [--period=5m] [--num-workers=5]
 ```
 
 #### Options
@@ -70,6 +70,7 @@ lol serve --tg-token=<token> --tg-chat-id=<chat_id> [--period=5m]
 | `--tg-token` | Yes | - | Telegram bot token for remote approval |
 | `--tg-chat-id` | Yes | - | Telegram chat ID for approval messages |
 | `--period` | No | 5m | Polling interval (format: Nm or Ns) |
+| `--num-workers` | No | 5 | Maximum concurrent headless workers (0 = unlimited) |
 
 #### Requirements
 
