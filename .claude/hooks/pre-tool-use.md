@@ -116,7 +116,7 @@ This prevents hook failures from blocking Claude Code execution.
 ## Logging Behavior
 
 When `HANDSOFF_DEBUG=1`:
-- Writes tool usage to `.tmp/hooked-sessions/tool-used.txt`
+- Writes tool usage to `$AGENTIZE_HOME/.tmp/hooked-sessions/tool-used.txt` (falls back to worktree-local `.tmp/` if `AGENTIZE_HOME` is unset)
 - Format: `[timestamp] [session_id] [workflow] tool | target`
 - Preserved regardless of permission decision
 

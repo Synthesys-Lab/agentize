@@ -207,7 +207,7 @@ tail -f ${AGENTIZE_HOME:-.}/.tmp/hook-debug.log
 **Example log entries:**
 ```
 [2026-01-07T10:15:23] [abc123] Writing state: {'workflow': 'ultra-planner', 'state': 'initial', 'continuation_count': 0}
-[2026-01-07T10:20:45] [abc123] Found existing state file: .tmp/hooked-sessions/abc123.json
+[2026-01-07T10:20:45] [abc123] Found existing state file: $AGENTIZE_HOME/.tmp/hooked-sessions/abc123.json
 [2026-01-07T10:20:45] [abc123] Updating state for continuation: {'workflow': 'ultra-planner', 'state': 'initial', 'continuation_count': 1}
 ```
 
@@ -270,7 +270,7 @@ See [.claude/hooks/pre-tool-use.md](../../.claude/hooks/pre-tool-use.md) for int
 
 **Key logic:**
 - Detects workflow commands: `/ultra-planner`, `/issue-to-impl`
-- Creates `.tmp/hooked-sessions/{session_id}.json` with initial state
+- Creates `$AGENTIZE_HOME/.tmp/hooked-sessions/{session_id}.json` with initial state (falls back to worktree-local `.tmp/` if `AGENTIZE_HOME` is unset)
 - Sets `continuation_count = 0`
 
 ### `stop.py`
@@ -279,7 +279,7 @@ See [.claude/hooks/pre-tool-use.md](../../.claude/hooks/pre-tool-use.md) for int
 - **Location:** `.claude/hooks/stop.py`
 
 **Key logic:**
-- Reads session state from `.tmp/hooked-sessions/{session_id}.json`
+- Reads session state from `$AGENTIZE_HOME/.tmp/hooked-sessions/{session_id}.json` (falls back to worktree-local `.tmp/` if `AGENTIZE_HOME` is unset)
 - Checks `continuation_count < HANDSOFF_MAX_CONTINUATIONS`
 - Increments `continuation_count`
 - Injects workflow-specific continuation prompt

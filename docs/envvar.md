@@ -6,8 +6,10 @@ Centralized reference for all environment variables used in Agentize.
 
 | Variable | Required | Type | Default | Description |
 |----------|----------|------|---------|-------------|
-| `AGENTIZE_HOME` | Yes | Path | - | Root path of the Agentize installation. Auto-detected by `setup.sh`. |
+| `AGENTIZE_HOME` | Yes | Path | - | Root path of the Agentize installation. Auto-detected by `setup.sh`. Used by hooks for centralized state storage in `$AGENTIZE_HOME/.tmp/`. |
 | `PYTHONPATH` | No | Path | - | Extended by `setup.sh` to include `$AGENTIZE_HOME/python`. |
+
+**Hook path resolution:** When `AGENTIZE_HOME` is set, hooks store session state and logs in `$AGENTIZE_HOME/.tmp/hooked-sessions/`. This enables workflow continuations across worktree switches. If `AGENTIZE_HOME` is unset, hooks use a "soft" fallback: first attempting repo root derivation (via `Makefile` and `src/cli/lol.sh` markers), then falling back to the current worktree (`.`).
 
 ## Handsoff Mode
 
