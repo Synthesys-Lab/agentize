@@ -121,6 +121,42 @@ Clean up after refinement completion: remove `agentize:refine` label.
 1. Remove `agentize:refine` label via `gh issue edit`
 2. Log cleanup action
 
+### `discover_candidate_feat_requests(owner: str, repo: str) -> list[int]`
+
+Discover open issues with `agentize:feat-request` label using `gh issue list`. Returns list of issue numbers.
+
+### `query_feat_request_items(org: str, project_number: int) -> list[dict]`
+
+Query feat-request candidates with label-first discovery. Discovers issues with `agentize:feat-request` label, then queries per-issue project status and full label list via GraphQL.
+
+### `filter_ready_feat_requests(items: list[dict]) -> list[int]`
+
+Filter items to issues eligible for feat-request planning:
+- Has `agentize:feat-request` label
+- Does NOT have `agentize:plan` label (not already planned)
+- Status is NOT "Done" or "In Progress" (terminal statuses)
+
+When `HANDSOFF_DEBUG=1`, logs per-issue inspection with `[feat-request-filter]` prefix.
+
+### `spawn_feat_request(issue_no: int) -> tuple[bool, int | None]`
+
+Spawn a feat-request planning session for the given issue.
+
+**Operations:**
+1. Creates worktree via `wt spawn --no-agent --headless` (if not exists)
+2. Runs `claude --print /ultra-planner --from-issue <issue-no>` headlessly as background process
+3. Returns (success, pid) tuple
+
+**Returns:** Tuple of (success, pid). pid is None if spawn failed.
+
+### `_cleanup_feat_request(issue_no: int) -> None`
+
+Clean up after feat-request planning completion: remove `agentize:feat-request` label.
+
+**Operations:**
+1. Remove `agentize:feat-request` label via `gh issue edit`
+2. Log cleanup action
+
 ### `worktree_exists(issue_no: int) -> bool`
 
 Check if a worktree exists for the given issue number.
