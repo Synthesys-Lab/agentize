@@ -21,6 +21,7 @@ def _extract_issue_no(prompt):
     Patterns:
     - /issue-to-impl <number>
     - /ultra-planner --refine <number>
+    - /ultra-planner --from-issue <number>
 
     Returns:
         int or None if no issue number found
@@ -32,6 +33,11 @@ def _extract_issue_no(prompt):
 
     # Pattern for /ultra-planner --refine <number>
     match = re.search(r'--refine\s+(\d+)', prompt)
+    if match:
+        return int(match.group(1))
+
+    # Pattern for /ultra-planner --from-issue <number>
+    match = re.search(r'--from-issue\s+(\d+)', prompt)
     if match:
         return int(match.group(1))
 

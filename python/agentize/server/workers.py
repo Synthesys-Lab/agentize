@@ -96,6 +96,21 @@ def _cleanup_refinement(issue_no: int) -> None:
     _log(f"Refinement cleanup for issue #{issue_no}: removed agentize:refine label")
 
 
+def _cleanup_feat_request(issue_no: int) -> None:
+    """Clean up after feat-request planning: remove agentize:feat-request label.
+
+    Args:
+        issue_no: GitHub issue number
+    """
+    # Remove agentize:feat-request label
+    subprocess.run(
+        ['gh', 'issue', 'edit', str(issue_no), '--remove-label', 'agentize:feat-request'],
+        capture_output=True,
+        text=True
+    )
+    _log(f"Feat-request cleanup for issue #{issue_no}: removed agentize:feat-request label")
+
+
 def spawn_refinement(issue_no: int) -> tuple[bool, int | None]:
     """Spawn a refinement session for the given issue.
 
@@ -143,6 +158,47 @@ def spawn_refinement(issue_no: int) -> tuple[bool, int | None]:
         )
 
     _log(f"Spawned refinement for issue #{issue_no}, PID: {proc.pid}, log: {log_file}")
+    return True, proc.pid
+
+
+def spawn_feat_request(issue_no: int) -> tuple[bool, int | None]:
+    """Spawn a feat-request planning session for the given issue.
+
+    Creates worktree if not exists, and spawns claude with /ultra-planner --from-issue headlessly.
+
+    Returns:
+        Tuple of (success, pid). pid is None if spawn failed.
+    """
+    # Create worktree if not exists (reuse if exists)
+    if not worktree_exists(issue_no):
+        result = run_shell_function(f'wt spawn {issue_no} --no-agent --headless', capture_output=True)
+        if result.returncode != 0:
+            _log(f"Failed to create worktree for feat-request issue #{issue_no}", level="ERROR")
+            return False, None
+
+    # Get worktree path
+    result = run_shell_function(f'wt pathto {issue_no}', capture_output=True)
+    if result.returncode != 0:
+        _log(f"Failed to get worktree path for issue #{issue_no}", level="ERROR")
+        return False, None
+    worktree_path = result.stdout.strip()
+
+    # Create log directory and file
+    log_dir = Path(os.getenv('AGENTIZE_HOME', '.')) / '.tmp' / 'logs'
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / f'feat-request-{issue_no}-{int(time.time())}.log'
+
+    # Spawn Claude with /ultra-planner --from-issue
+    with open(log_file, 'w') as f:
+        proc = subprocess.Popen(
+            ['claude', '--print', f'/ultra-planner --from-issue {issue_no}'],
+            cwd=worktree_path,
+            stdin=subprocess.DEVNULL,
+            stdout=f,
+            stderr=subprocess.STDOUT
+        )
+
+    _log(f"Spawned feat-request planning for issue #{issue_no}, PID: {proc.pid}, log: {log_file}")
     return True, proc.pid
 
 
@@ -306,6 +362,10 @@ def cleanup_dead_workers(
                     # Check if this was a refinement (has agentize:refine label)
                     if _check_issue_has_label(issue_no, 'agentize:refine'):
                         _cleanup_refinement(issue_no)
+
+                    # Check if this was a feat-request (has agentize:feat-request label)
+                    if _check_issue_has_label(issue_no, 'agentize:feat-request'):
+                        _cleanup_feat_request(issue_no)
 
                     issue_url = f"https://github.com/{repo_slug}/issues/{issue_no}" if repo_slug else None
                     msg = _format_worker_completion_message(issue_no, i, issue_url)

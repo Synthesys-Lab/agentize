@@ -448,3 +448,148 @@ def resolve_issue_from_pr(pr: dict) -> int | None:
             return int(body_match.group(1))
 
     return None
+
+
+def discover_candidate_feat_requests(owner: str, repo: str) -> list[int]:
+    """Discover open issues with agentize:feat-request label using gh issue list."""
+    result = subprocess.run(
+        ['gh', 'issue', 'list',
+         '-R', f'{owner}/{repo}',
+         '--label', 'agentize:feat-request',
+         '--state', 'open',
+         '--json', 'number',
+         '--jq', '.[].number'],
+        capture_output=True, text=True
+    )
+
+    if result.returncode != 0:
+        _log(f"Failed to list feat-request issues: {result.stderr}", level="ERROR")
+        return []
+
+    issues = []
+    for line in result.stdout.strip().split('\n'):
+        line = line.strip()
+        if line:
+            try:
+                issue_no = int(line.split('\t')[0])
+                issues.append(issue_no)
+            except (ValueError, IndexError):
+                continue
+    return issues
+
+
+def query_feat_request_items(org: str, project_number: int) -> list[dict]:
+    """Query GitHub for feat-request items using label-first discovery.
+
+    Uses gh issue list to discover candidates with agentize:feat-request label,
+    then performs per-issue lookups for status and full label list.
+    """
+    try:
+        owner, repo = get_repo_owner_name()
+    except RuntimeError as e:
+        _log(f"Failed to get repo info: {e}", level="ERROR")
+        return []
+
+    # Lookup project GraphQL ID for status matching
+    project_id = lookup_project_graphql_id(org, project_number)
+    if not project_id:
+        _log("Failed to lookup project GraphQL ID", level="ERROR")
+        return []
+
+    # Discover candidates via feat-request label query
+    candidate_issues = discover_candidate_feat_requests(owner, repo)
+    if not candidate_issues:
+        if os.getenv('HANDSOFF_DEBUG'):
+            _log("No candidate issues found with agentize:feat-request label")
+        return []
+
+    if os.getenv('HANDSOFF_DEBUG'):
+        _log(f"Found {len(candidate_issues)} feat-request candidates: {candidate_issues}")
+
+    # Build items list with per-issue status and label lookups
+    items = []
+    for issue_no in candidate_issues:
+        status = query_issue_project_status(owner, repo, issue_no, project_id)
+        labels = _query_issue_labels(owner, repo, issue_no)
+
+        item = {
+            'content': {
+                'number': issue_no,
+                'labels': {'nodes': [{'name': label} for label in labels]}
+            },
+            'fieldValueByName': {'name': status} if status else None
+        }
+        items.append(item)
+
+    return items
+
+
+def _query_issue_labels(owner: str, repo: str, issue_no: int) -> list[str]:
+    """Query an issue's labels via gh issue view."""
+    result = subprocess.run(
+        ['gh', 'issue', 'view', str(issue_no),
+         '-R', f'{owner}/{repo}',
+         '--json', 'labels',
+         '--jq', '.labels[].name'],
+        capture_output=True, text=True
+    )
+
+    if result.returncode != 0:
+        return []
+
+    return [label.strip() for label in result.stdout.strip().split('\n') if label.strip()]
+
+
+def filter_ready_feat_requests(items: list[dict]) -> list[int]:
+    """Filter items to issues eligible for feat-request planning.
+
+    Requirements:
+    - Has 'agentize:feat-request' label
+    - Does NOT have 'agentize:plan' label (not already planned)
+    - Status is NOT 'Done' or 'In Progress' (terminal statuses)
+    """
+    debug = os.getenv('HANDSOFF_DEBUG')
+    ready = []
+    skip_has_plan = 0
+    skip_terminal = 0
+
+    terminal_statuses = {'Done', 'In Progress'}
+
+    for item in items:
+        content = item.get('content')
+        if not content or 'number' not in content:
+            continue
+
+        issue_no = content['number']
+        status_field = item.get('fieldValueByName') or {}
+        status_name = status_field.get('name', '')
+        labels = content.get('labels', {}).get('nodes', [])
+        label_names = [l['name'] for l in labels]
+
+        # Must have agentize:feat-request label (already filtered by discovery)
+        if 'agentize:feat-request' not in label_names:
+            continue
+
+        # Check for agentize:plan label (already planned)
+        if 'agentize:plan' in label_names:
+            if debug:
+                print(f"[feat-request-filter] #{issue_no} labels={label_names} -> SKIP (already has agentize:plan)", file=sys.stderr)
+            skip_has_plan += 1
+            continue
+
+        # Check for terminal status
+        if status_name in terminal_statuses:
+            if debug:
+                print(f"[feat-request-filter] #{issue_no} status={status_name} labels={label_names} -> SKIP (terminal status)", file=sys.stderr)
+            skip_terminal += 1
+            continue
+
+        if debug:
+            print(f"[feat-request-filter] #{issue_no} labels={label_names} status={status_name} -> READY", file=sys.stderr)
+        ready.append(issue_no)
+
+    if debug:
+        total_skip = skip_has_plan + skip_terminal
+        print(f"[feat-request-filter] Summary: {len(ready)} ready, {total_skip} skipped ({skip_has_plan} already planned, {skip_terminal} terminal status)", file=sys.stderr)
+
+    return ready

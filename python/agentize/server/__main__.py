@@ -42,6 +42,9 @@ from agentize.server.github import (
     discover_candidate_prs,
     filter_conflicting_prs,
     resolve_issue_from_pr,
+    discover_candidate_feat_requests,
+    query_feat_request_items,
+    filter_ready_feat_requests,
     ISSUE_STATUS_QUERY,
     _project_id_cache,
 )
@@ -49,6 +52,7 @@ from agentize.server.workers import (
     worktree_exists,
     spawn_worktree,
     spawn_refinement,
+    spawn_feat_request,
     rebase_worktree,
     init_worker_status_files,
     read_worker_status,
@@ -58,6 +62,7 @@ from agentize.server.workers import (
     cleanup_dead_workers,
     _check_issue_has_label,
     _cleanup_refinement,
+    _cleanup_feat_request,
     DEFAULT_WORKERS_DIR,
 )
 
@@ -203,6 +208,38 @@ def run_server(
                     success, _ = spawn_refinement(issue_no)
                     if not success:
                         _log(f"Failed to spawn refinement for issue #{issue_no}", level="ERROR")
+
+            # Process feat-request candidates
+            feat_request_items = query_feat_request_items(org, project_id)
+            ready_feat_requests = filter_ready_feat_requests(feat_request_items)
+            for issue_no in ready_feat_requests:
+                # Check worker availability (if bounded)
+                if num_workers > 0:
+                    worker_id = get_free_worker(num_workers)
+                    if worker_id is None:
+                        print(f"All {num_workers} workers busy, waiting for next poll")
+                        break
+
+                    # Mark worker as busy before spawning
+                    write_worker_status(worker_id, 'BUSY', issue_no, None)
+                    success, pid = spawn_feat_request(issue_no)
+                    if success:
+                        write_worker_status(worker_id, 'BUSY', issue_no, pid)
+                        print(f"issue #{issue_no} feat-request planning assigned to worker {worker_id}")
+
+                        # Send Telegram notification if configured
+                        if token and chat_id:
+                            issue_url = f"https://github.com/{repo_slug}/issues/{issue_no}" if repo_slug else None
+                            msg = f"📝 Feat-request planning started: <a href=\"{issue_url}\">#{issue_no}</a>" if issue_url else f"📝 Feat-request planning started: #{issue_no}"
+                            send_telegram_message(token, chat_id, msg)
+                    else:
+                        write_worker_status(worker_id, 'FREE', None, None)
+                        _log(f"Failed to spawn feat-request planning for issue #{issue_no}", level="ERROR")
+                else:
+                    # Unlimited workers mode
+                    success, _ = spawn_feat_request(issue_no)
+                    if not success:
+                        _log(f"Failed to spawn feat-request planning for issue #{issue_no}", level="ERROR")
 
             if running[0]:
                 time.sleep(period)
