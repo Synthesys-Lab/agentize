@@ -61,4 +61,34 @@ if [ ! -d "$TEST_DIR/.claude" ]; then
 fi
 cleanup_dir "$TEST_DIR"
 
+# Test 5: apply --update without --path finds nearest parent with .claude/
+# This tests the fix for issue #390: Python CLI should match shell behavior
+TEST_DIR=$(make_temp_dir "python-cli-update-path-test")
+mkdir -p "$TEST_DIR/.claude"  # Create .claude in parent
+mkdir -p "$TEST_DIR/child/deep/nested"  # Create nested child directories
+# Run update from deeply nested child without --path
+(
+  cd "$TEST_DIR/child/deep/nested" || exit 1
+  python3 -m agentize.cli apply --update 2>&1
+)
+# Verify .claude/ was NOT created in child directories (should target parent)
+if [ -d "$TEST_DIR/child/.claude" ]; then
+  cleanup_dir "$TEST_DIR"
+  test_fail "apply --update created .claude/ in child instead of targeting parent"
+fi
+if [ -d "$TEST_DIR/child/deep/.claude" ]; then
+  cleanup_dir "$TEST_DIR"
+  test_fail "apply --update created .claude/ in deep child instead of targeting parent"
+fi
+if [ -d "$TEST_DIR/child/deep/nested/.claude" ]; then
+  cleanup_dir "$TEST_DIR"
+  test_fail "apply --update created .claude/ in nested child instead of targeting parent"
+fi
+# Verify parent .claude/ still exists (was the target)
+if [ ! -d "$TEST_DIR/.claude" ]; then
+  cleanup_dir "$TEST_DIR"
+  test_fail "apply --update did not target parent with existing .claude/"
+fi
+cleanup_dir "$TEST_DIR"
+
 test_pass "python -m agentize.cli entrypoint works correctly"

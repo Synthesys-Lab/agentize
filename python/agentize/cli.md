@@ -14,9 +14,8 @@ The Python CLI supports the same commands as the shell implementation:
 
 | Command | Description |
 |---------|-------------|
-| `apply` | Unified init/update entrypoint |
-| `init` | Initialize new SDK project |
-| `update` | Update existing project |
+| `apply --init` | Initialize new SDK project |
+| `apply --update` | Update existing project (finds nearest parent with `.claude/`) |
 | `upgrade` | Upgrade agentize installation |
 | `project` | GitHub Projects v2 integration |
 | `serve` | GitHub Projects polling server |
@@ -57,10 +56,13 @@ This preserves the shell implementation as canonical while enabling:
 
 ```bash
 # Initialize project
-python -m agentize.cli init --name my-project --lang python
+python -m agentize.cli apply --init --name my-project --lang python
 
-# Update project
-python -m agentize.cli update --path /path/to/project
+# Update project (explicit path)
+python -m agentize.cli apply --update --path /path/to/project
+
+# Update project (auto-finds nearest parent with .claude/)
+python -m agentize.cli apply --update
 
 # Get completion hints
 python -m agentize.cli --complete commands

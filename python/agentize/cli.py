@@ -43,9 +43,25 @@ def handle_init(args: argparse.Namespace, agentize_home: str) -> int:
     return run_shell_command(cmd, agentize_home)
 
 
+def resolve_update_path(start_path: str) -> str:
+    """Find nearest parent directory with .claude/ subdirectory.
+
+    Mirrors the shell CLI behavior in _lol_parse_update().
+    """
+    search_path = os.path.abspath(start_path)
+    while True:
+        if os.path.isdir(os.path.join(search_path, ".claude")):
+            return search_path
+        parent = os.path.dirname(search_path)
+        if parent == search_path:
+            # Reached filesystem root, return original path
+            return os.path.abspath(start_path)
+        search_path = parent
+
+
 def handle_update(args: argparse.Namespace, agentize_home: str) -> int:
     """Handle update command."""
-    path = args.path or os.getcwd()
+    path = args.path or resolve_update_path(os.getcwd())
     cmd = f'lol_cmd_update "{path}"'
     return run_shell_command(cmd, agentize_home)
 
