@@ -259,6 +259,25 @@ Refines existing plan issue via multi-agent debate and updates issue body.
 
 **Output:** Updated issue URL and summary of changes
 
+### `/ultra-planner --from-issue <issue-number>`
+
+Creates a plan for an existing issue (typically a feature request) without creating a new placeholder issue.
+
+**Usage:**
+```
+/ultra-planner --from-issue 42
+```
+
+**Behavior:**
+1. Reads issue #42's title and body as the feature description
+2. Runs the full multi-agent debate workflow (same as initial planning)
+3. Updates issue #42 with the consensus plan (adds `[plan]` prefix to title)
+4. Adds `agentize:plan` label to mark as planned
+
+**Use case:** Server-driven feature request planning. When the server discovers issues with `agentize:feat-request` label, it invokes `/ultra-planner --from-issue <N>` to automatically generate implementation plans.
+
+**Output:** Updated issue URL and plan summary
+
 ### `/issue-to-impl <issue-number>`
 
 Implements plan issue.

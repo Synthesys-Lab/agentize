@@ -1,7 +1,7 @@
 ---
 name: ultra-planner
 description: Multi-agent debate-based planning with /ultra-planner command
-argument-hint: [feature-description] or --refine [issue-no] [refine-comments]
+argument-hint: [feature-description] or --refine [issue-no] [refine-comments] or --from-issue [issue-no]
 ---
 
 ultrathink
@@ -63,6 +63,16 @@ This command orchestrates a multi-agent debate system to generate high-quality i
 ```
 - Refines an existing plan by running it through the debate system again
 
+**From-issue mode:**
+
+```
+/ultra-planner --from-issue <issue-no>
+```
+- Creates a plan for an existing issue (typically a feature request)
+- Reads the issue title and body as the feature description
+- Updates the existing issue with the consensus plan (no new issue created)
+- Used by the server for automatic feature request planning
+
 **From conversation context:**
 - If `$ARGUMENTS` is empty, extract feature description from recent messages
 - Look for: "implement...", "add...", "create...", "build..." statements
@@ -95,12 +105,21 @@ This command orchestrates a multi-agent debate system to generate high-quality i
 
 Accept the $ARGUMENTS.
 
-If we have `--refine` at the beginning, the next number is the issue number to be refined,
-and the rest are issue refine comments.
-You should fetch the issue to incoperate the users comments.
+**Refinement mode:** If we have `--refine` at the beginning, the next number is the issue number to be refined,
+and the rest are issue refine comments. You should fetch the issue to incorporate the users comments.
 ```bash
-git issue view <issue-no>
+gh issue view <issue-no>
 ```
+
+**From-issue mode:** If we have `--from-issue` at the beginning, the next number is the issue number to plan.
+Fetch the issue title and body to use as the feature description:
+```bash
+gh issue view <issue-no> --json title,body
+```
+In this mode:
+- The issue number is saved for Step 3 (skip placeholder creation, use existing issue)
+- The feature description is extracted from the issue title and body
+- After consensus, update the existing issue instead of creating a new one
 
 ### Step 2: Validate Feature Description
 
@@ -125,7 +144,12 @@ Please provide more details:
 
 Ask user for clarification.
 
-### Step 3: Create Placeholder Issue
+### Step 3: Create Placeholder Issue (or use existing issue for --from-issue mode)
+
+**For `--from-issue` mode:**
+Skip placeholder creation. Use the issue number from Step 1 as `ISSUE_NUMBER` for all artifact filenames.
+
+**For default mode (new feature):**
 
 **REQUIRED SKILL CALL (before agent execution):**
 
@@ -330,7 +354,7 @@ To refine: /ultra-planner --refine ${ISSUE_NUMBER}
 To implement: /issue-to-impl ${ISSUE_NUMBER}
 ```
 
-### Step 9: Add "agentize:plan" Label to Finalize Issue
+### Step 9: Finalize Issue Labels
 
 **REQUIRED BASH COMMAND:**
 
@@ -340,10 +364,17 @@ Add the "agentize:plan" label to mark the issue as a finalized plan:
 gh issue edit ${ISSUE_NUMBER} --add-label "agentize:plan"
 ```
 
+**For `--from-issue` mode only:** Also remove the "agentize:feat-request" label if present:
+
+```bash
+gh issue edit ${ISSUE_NUMBER} --remove-label "agentize:feat-request"
+```
+
 **What this does:**
 1. Adds "agentize:plan" label to the issue (creates label if it doesn't exist)
-2. Triggers hands-off state machine transition to `done` state
-3. Marks the issue as ready for review/implementation
+2. Removes "agentize:feat-request" label (if from-issue mode) to prevent re-processing
+3. Triggers hands-off state machine transition to `done` state
+4. Marks the issue as ready for review/implementation
 
 **Expected output:**
 ```

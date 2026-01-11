@@ -126,6 +126,55 @@ When `HANDSOFF_DEBUG=1` is set, the server logs PR discovery and filtering decis
 [pr-rebase] #125 mergeable=MERGEABLE -> SKIP (healthy)
 ```
 
+## Feature Request Planning Workflow
+
+The server automatically discovers feature request issues and generates implementation plans using `/ultra-planner`.
+
+### Feature Request Discovery
+
+Issues eligible for feature request planning must have:
+1. Label `agentize:feat-request`
+2. NOT have label `agentize:plan` (not already planned)
+3. Status NOT be `Done` or `In Progress` (terminal statuses)
+
+The server polls for these candidates using:
+```bash
+gh issue list --label agentize:feat-request --state open
+```
+
+### Feature Request State Machine
+
+When a feature request candidate is found:
+
+1. **Discover**: Server finds issues with `agentize:feat-request` label
+2. **Filter**: Server excludes issues that already have `agentize:plan` label or are in terminal status
+3. **Spawn**: Server runs `/ultra-planner --from-issue <issue-no>` headlessly
+4. **Cleanup**: After planning completes:
+   - The `agentize:feat-request` label is removed
+   - The `agentize:plan` label is added (by `/ultra-planner`)
+   - Issue is ready for review/refinement
+
+### Debug Logging (Feature Request)
+
+When `HANDSOFF_DEBUG=1` is set:
+
+```
+[feat-request-filter] #42 labels=[agentize:feat-request] status=Backlog -> READY
+[feat-request-filter] #43 labels=[agentize:feat-request, agentize:plan] -> SKIP (already has agentize:plan)
+[feat-request-filter] #44 labels=[agentize:feat-request] status=Done -> SKIP (terminal status)
+```
+
+### Manual Feature Request Trigger
+
+To trigger feature request planning for an issue:
+1. Add the `agentize:feat-request` label (via GitHub UI or `gh issue edit --add-label agentize:feat-request`)
+2. Wait for the next server poll cycle
+
+The label can be added via GitHub UI or CLI:
+```bash
+gh issue edit <issue-no> --add-label agentize:feat-request
+```
+
 ## Plan Refinement Workflow
 
 The server automatically discovers and processes plan refinement candidates.

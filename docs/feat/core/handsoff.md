@@ -34,7 +34,7 @@ When `AGENTIZE_HOME` is set, session files are stored centrally, enabling cross-
 
 ### Issue Index Files
 
-When a workflow is invoked with an issue number (e.g., `/issue-to-impl 42`), the `UserPromptSubmit` hook also creates an issue index file:
+When a workflow is invoked with an issue number (e.g., `/issue-to-impl 42`, `/ultra-planner --refine 42`, or `/ultra-planner --from-issue 42`), the `UserPromptSubmit` hook also creates an issue index file:
 
 ```
 ${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/by-issue/{issue_no}.json
