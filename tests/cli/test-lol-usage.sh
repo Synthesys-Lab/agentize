@@ -82,4 +82,125 @@ echo "$output" | grep -q -i "total" || {
 
 cleanup_dir "$TEST_HOME"
 
+# Test 4: lol usage --cache flag works and shows cache columns
+TEST_HOME=$(make_temp_dir "usage-cache")
+PROJECTS_DIR="$TEST_HOME/.claude/projects"
+FIXTURE_DIR="$PROJECTS_DIR/test-project"
+mkdir -p "$FIXTURE_DIR"
+
+# Create fixture with cache tokens
+cat > "$FIXTURE_DIR/session.jsonl" << 'EOF'
+{"type":"assistant","message":{"model":"claude-3-5-sonnet-20241022","usage":{"input_tokens":100,"output_tokens":50,"cache_read_input_tokens":30,"cache_creation_input_tokens":20}}}
+{"type":"assistant","message":{"model":"claude-3-5-sonnet-20241022","usage":{"input_tokens":200,"output_tokens":75,"cache_read_input_tokens":50}}}
+EOF
+
+touch "$FIXTURE_DIR/session.jsonl"
+
+output=$(HOME="$TEST_HOME" lol usage --cache 2>&1)
+exit_code=$?
+if [ $exit_code -ne 0 ]; then
+  echo "Output: $output"
+  cleanup_dir "$TEST_HOME"
+  test_fail "lol usage --cache exited with code $exit_code"
+fi
+
+# Verify cache columns appear in output
+echo "$output" | grep -q "cache_read" || {
+  echo "Output: $output"
+  cleanup_dir "$TEST_HOME"
+  test_fail "lol usage --cache output missing cache_read column"
+}
+
+cleanup_dir "$TEST_HOME"
+
+# Test 5: lol usage --cost flag works and shows cost column
+TEST_HOME=$(make_temp_dir "usage-cost")
+PROJECTS_DIR="$TEST_HOME/.claude/projects"
+FIXTURE_DIR="$PROJECTS_DIR/test-project"
+mkdir -p "$FIXTURE_DIR"
+
+# Create fixture with model info for cost calculation
+cat > "$FIXTURE_DIR/session.jsonl" << 'EOF'
+{"type":"assistant","message":{"model":"claude-3-5-sonnet-20241022","usage":{"input_tokens":1000,"output_tokens":500}}}
+{"type":"assistant","message":{"model":"claude-3-5-sonnet-20241022","usage":{"input_tokens":2000,"output_tokens":1000}}}
+EOF
+
+touch "$FIXTURE_DIR/session.jsonl"
+
+output=$(HOME="$TEST_HOME" lol usage --cost 2>&1)
+exit_code=$?
+if [ $exit_code -ne 0 ]; then
+  echo "Output: $output"
+  cleanup_dir "$TEST_HOME"
+  test_fail "lol usage --cost exited with code $exit_code"
+fi
+
+# Verify cost column appears with dollar sign
+echo "$output" | grep -q '\$' || {
+  echo "Output: $output"
+  cleanup_dir "$TEST_HOME"
+  test_fail "lol usage --cost output missing cost value (no \$ found)"
+}
+
+cleanup_dir "$TEST_HOME"
+
+# Test 6: lol usage with unknown model shows warning
+TEST_HOME=$(make_temp_dir "usage-unknown-model")
+PROJECTS_DIR="$TEST_HOME/.claude/projects"
+FIXTURE_DIR="$PROJECTS_DIR/test-project"
+mkdir -p "$FIXTURE_DIR"
+
+# Create fixture with unknown model
+cat > "$FIXTURE_DIR/session.jsonl" << 'EOF'
+{"type":"assistant","message":{"model":"unknown-model-xyz","usage":{"input_tokens":1000,"output_tokens":500}}}
+EOF
+
+touch "$FIXTURE_DIR/session.jsonl"
+
+output=$(HOME="$TEST_HOME" lol usage --cost 2>&1)
+exit_code=$?
+if [ $exit_code -ne 0 ]; then
+  echo "Output: $output"
+  cleanup_dir "$TEST_HOME"
+  test_fail "lol usage --cost with unknown model exited with code $exit_code"
+fi
+
+# Should still work but with warning or N/A cost
+cleanup_dir "$TEST_HOME"
+
+# Test 7: lol usage --cache --cost flags work together
+TEST_HOME=$(make_temp_dir "usage-cache-cost")
+PROJECTS_DIR="$TEST_HOME/.claude/projects"
+FIXTURE_DIR="$PROJECTS_DIR/test-project"
+mkdir -p "$FIXTURE_DIR"
+
+cat > "$FIXTURE_DIR/session.jsonl" << 'EOF'
+{"type":"assistant","message":{"model":"claude-3-5-sonnet-20241022","usage":{"input_tokens":1000,"output_tokens":500,"cache_read_input_tokens":200,"cache_creation_input_tokens":100}}}
+EOF
+
+touch "$FIXTURE_DIR/session.jsonl"
+
+output=$(HOME="$TEST_HOME" lol usage --cache --cost 2>&1)
+exit_code=$?
+if [ $exit_code -ne 0 ]; then
+  echo "Output: $output"
+  cleanup_dir "$TEST_HOME"
+  test_fail "lol usage --cache --cost exited with code $exit_code"
+fi
+
+# Verify both cache and cost columns
+echo "$output" | grep -q "cache_read" || {
+  echo "Output: $output"
+  cleanup_dir "$TEST_HOME"
+  test_fail "lol usage --cache --cost missing cache_read column"
+}
+
+echo "$output" | grep -q '\$' || {
+  echo "Output: $output"
+  cleanup_dir "$TEST_HOME"
+  test_fail "lol usage --cache --cost missing cost column"
+}
+
+cleanup_dir "$TEST_HOME"
+
 test_pass "lol usage command works correctly"
