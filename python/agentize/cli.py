@@ -100,8 +100,10 @@ def handle_apply(args: argparse.Namespace, agentize_home: str) -> int:
 def handle_usage(args: argparse.Namespace) -> int:
     """Handle usage command."""
     mode = "week" if args.week else "today"
-    buckets = count_usage(mode)
-    output = format_output(buckets, mode)
+    include_cache = getattr(args, "cache", False)
+    include_cost = getattr(args, "cost", False)
+    buckets = count_usage(mode, include_cache=include_cache, include_cost=include_cost)
+    output = format_output(buckets, mode, show_cache=include_cache, show_cost=include_cost)
     print(output)
     return 0
 
@@ -185,6 +187,12 @@ def main() -> int:
     )
     usage_group.add_argument(
         "--week", action="store_true", help="Show usage by day for last 7 days"
+    )
+    usage_parser.add_argument(
+        "--cache", action="store_true", help="Show cache read/write token columns"
+    )
+    usage_parser.add_argument(
+        "--cost", action="store_true", help="Show estimated USD cost column"
     )
 
     # claude-clean command

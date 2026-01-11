@@ -57,6 +57,8 @@ lol_complete() {
         usage-flags)
             echo "--today"
             echo "--week"
+            echo "--cache"
+            echo "--cost"
             ;;
         lang-values)
             echo "c"

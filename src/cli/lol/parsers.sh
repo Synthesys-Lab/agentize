@@ -376,6 +376,8 @@ _lol_parse_claude_clean() {
 # Parse usage command arguments and call lol_cmd_usage
 _lol_parse_usage() {
     local mode="today"
+    local cache="0"
+    local cost="0"
 
     # Parse arguments
     while [ $# -gt 0 ]; do
@@ -388,13 +390,21 @@ _lol_parse_usage() {
                 mode="week"
                 shift
                 ;;
+            --cache)
+                cache="1"
+                shift
+                ;;
+            --cost)
+                cost="1"
+                shift
+                ;;
             *)
                 echo "Error: Unknown option '$1'"
-                echo "Usage: lol usage [--today | --week]"
+                echo "Usage: lol usage [--today | --week] [--cache] [--cost]"
                 return 1
                 ;;
         esac
     done
 
-    lol_cmd_usage "$mode"
+    lol_cmd_usage "$mode" "$cache" "$cost"
 }
