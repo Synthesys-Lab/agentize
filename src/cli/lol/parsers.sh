@@ -372,3 +372,29 @@ _lol_parse_claude_clean() {
 
     lol_cmd_claude_clean "$dry_run"
 }
+
+# Parse usage command arguments and call lol_cmd_usage
+_lol_parse_usage() {
+    local mode="today"
+
+    # Parse arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --today)
+                mode="today"
+                shift
+                ;;
+            --week)
+                mode="week"
+                shift
+                ;;
+            *)
+                echo "Error: Unknown option '$1'"
+                echo "Usage: lol usage [--today | --week]"
+                return 1
+                ;;
+        esac
+    done
+
+    lol_cmd_usage "$mode"
+}

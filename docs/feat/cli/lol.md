@@ -420,7 +420,10 @@ apply
 init
 update
 upgrade
+version
 project
+usage
+claude-clean
 
 $ lol --complete apply-flags
 --init

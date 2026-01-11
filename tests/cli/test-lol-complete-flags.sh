@@ -53,6 +53,12 @@ claude_clean_output=$(lol --complete claude-clean-flags 2>/dev/null)
 
 echo "$claude_clean_output" | grep -q "^--dry-run$" || test_fail "claude-clean-flags missing: --dry-run"
 
+# Test usage-flags
+usage_output=$(lol --complete usage-flags 2>/dev/null)
+
+echo "$usage_output" | grep -q "^--today$" || test_fail "usage-flags missing: --today"
+echo "$usage_output" | grep -q "^--week$" || test_fail "usage-flags missing: --week"
+
 # Test lang-values
 lang_output=$(lol --complete lang-values 2>/dev/null)
 

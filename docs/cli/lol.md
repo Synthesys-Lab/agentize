@@ -88,6 +88,33 @@ lol claude-clean --dry-run
 lol claude-clean
 ```
 
+### lol usage
+
+Report Claude Code token usage statistics.
+
+```bash
+lol usage [--today | --week]
+```
+
+Parses JSONL files from `~/.claude/projects/**/*.jsonl` to extract and aggregate token usage statistics by time bucket.
+
+#### Options
+
+| Option | Required | Default | Description |
+|--------|----------|---------|-------------|
+| `--today` | No | Yes | Show usage by hour for the last 24 hours |
+| `--week` | No | - | Show usage by day for the last 7 days |
+
+#### Example
+
+```bash
+# Show today's usage by hour (default)
+lol usage
+
+# Show weekly usage by day
+lol usage --week
+```
+
 ### lol serve
 
 Long-running server that polls GitHub Projects for "Plan Accepted" issues and automatically invokes `wt spawn` to start implementation.

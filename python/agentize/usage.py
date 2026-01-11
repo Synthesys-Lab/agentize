@@ -155,3 +155,48 @@ def format_output(buckets: dict, mode: str) -> str:
     )
 
     return "\n".join(lines)
+
+
+def main(argv=None):
+    """
+    CLI entrypoint for usage statistics.
+
+    Args:
+        argv: Command-line arguments (defaults to sys.argv[1:])
+    """
+    import argparse
+    import sys
+
+    if argv is None:
+        argv = sys.argv[1:]
+
+    parser = argparse.ArgumentParser(
+        prog="usage",
+        description="Report Claude Code token usage statistics"
+    )
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "--today",
+        action="store_true",
+        default=True,
+        help="Show usage by hour for the last 24 hours (default)"
+    )
+    group.add_argument(
+        "--week",
+        action="store_true",
+        help="Show usage by day for the last 7 days"
+    )
+
+    args = parser.parse_args(argv)
+
+    # Determine mode based on arguments
+    mode = "week" if args.week else "today"
+
+    # Get and display usage stats
+    buckets = count_usage(mode)
+    output = format_output(buckets, mode)
+    print(output)
+
+
+if __name__ == "__main__":
+    main()

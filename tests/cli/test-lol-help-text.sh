@@ -23,4 +23,7 @@ echo "$output" | grep -q "\-\-version" || test_fail "Usage text missing '--versi
 # Verify usage text includes claude-clean command
 echo "$output" | grep -q "claude-clean" || test_fail "Usage text missing 'claude-clean' command"
 
+# Verify usage text includes lol usage command
+echo "$output" | grep -q "lol usage" || test_fail "Usage text missing 'lol usage' command"
+
 test_pass "lol usage text includes documented commands"

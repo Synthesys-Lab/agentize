@@ -13,7 +13,9 @@ lol_complete() {
             echo "init"
             echo "update"
             echo "upgrade"
+            echo "version"
             echo "project"
+            echo "usage"
             echo "serve"
             echo "claude-clean"
             ;;
@@ -51,6 +53,10 @@ lol_complete() {
             ;;
         claude-clean-flags)
             echo "--dry-run"
+            ;;
+        usage-flags)
+            echo "--today"
+            echo "--week"
             ;;
         lang-values)
             echo "c"

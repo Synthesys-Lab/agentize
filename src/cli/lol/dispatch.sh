@@ -70,6 +70,9 @@ lol() {
         claude-clean)
             _lol_parse_claude_clean "$@"
             ;;
+        usage)
+            _lol_parse_usage "$@"
+            ;;
         version)
             lol_cmd_version
             ;;
@@ -87,6 +90,7 @@ lol() {
             echo "  lol project --associate <org>/<id>"
             echo "  lol project --automation [--write <path>]"
             echo "  lol serve --tg-token=<token> --tg-chat-id=<id> [--period=5m]"
+            echo "  lol usage [--today | --week]"
             echo "  lol claude-clean [--dry-run]"
             echo ""
             echo "Flags:"

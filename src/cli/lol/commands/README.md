@@ -15,6 +15,7 @@ Per-command implementation files for the `lol` CLI. Each file exports exactly on
 | `project.sh` | `lol_cmd_project` | GitHub Projects v2 integration |
 | `serve.sh` | `lol_cmd_serve` | Run polling server for automation |
 | `claude-clean.sh` | `lol_cmd_claude_clean` | Remove stale entries from ~/.claude.json |
+| `usage.sh` | `lol_cmd_usage` | Report Claude Code token usage statistics |
 
 ## Design
 
