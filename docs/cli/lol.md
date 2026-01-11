@@ -19,20 +19,20 @@ The Python entrypoint delegates to shell functions via `bash -lc` with `AGENTIZE
 
 ## Commands
 
-### lol init
+### lol apply --init
 
 Initialize a new SDK project.
 
 ```bash
-lol init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]
+lol apply --init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]
 ```
 
-### lol update
+### lol apply --update
 
 Update an existing project with the latest agentize configurations.
 
 ```bash
-lol update [--path <path>]
+lol apply --update [--path <path>]
 ```
 
 ### lol upgrade

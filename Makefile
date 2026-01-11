@@ -73,6 +73,6 @@ help:
 	@echo "  make setup               - Generate local setup.sh for development"
 	@echo ""
 	@echo "SDK usage:"
-	@echo "  lol init --name your_project --lang c --path /path/to/project"
-	@echo "  lol update                # From project directory"
+	@echo "  lol apply --init --name your_project --lang c --path /path/to/project"
+	@echo "  lol apply --update        # From project directory"
 	@echo "  lol --help                # For all options"

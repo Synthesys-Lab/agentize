@@ -4,18 +4,14 @@
 
 This tutorial shows you how to set up the Agentize framework in your project.
 
-## Three Ways to Get Started
+## Two Ways to Get Started
 
 ### 1. Create a New Project with Agentize
 
 For a fresh project starting with the Agentize framework:
 
 ```bash
-# Preferred: unified apply command
 lol apply --init --name my_project --lang c --path /path/to/new/project
-
-# Alternative: direct init command
-lol init --name my_project --lang c --path /path/to/new/project
 ```
 
 This creates the initial SDK structure with:
@@ -29,13 +25,8 @@ This creates the initial SDK structure with:
 To add Agentize to your existing codebase or update the framework rules:
 
 ```bash
-# Preferred: unified apply command
 lol apply --update
 lol apply --update --path /path/to/existing/project
-
-# Alternative: direct update command
-lol update
-lol update --path /path/to/existing/project
 ```
 
 This mode:

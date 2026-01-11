@@ -40,7 +40,7 @@ source $HOME/.agentize/setup.sh
 Once installed, create AI-powered SDK projects:
 
 ```bash
-lol init --name your_project_name --lang c --path /path/to/your/project
+lol apply --init --name your_project_name --lang c --path /path/to/your/project
 ```
 
 This creates an initial SDK structure in the specified project path. Use `lol --help` to see all available options.
@@ -83,7 +83,7 @@ Learn Agentize in 15 minutes with our step-by-step tutorials (3-5 min each):
 
 Agentize provides shell functions that work from any directory:
 - `wt` - Manage worktrees in bare git repositories (spawn, list, remove, prune, purge)
-- `lol` - Initialize and update SDK projects (init, update)
+- `lol` - Initialize and update SDK projects (apply --init, apply --update)
 
 For persistence, add `source /path/to/agentize/setup.sh` to your shell RC file (`~/.bashrc`, `~/.zshrc`, etc.).
 
@@ -114,26 +114,28 @@ Ergonomic commands for initializing and updating SDK projects:
 **Initialize a new project:**
 
 ```bash
-lol init --name my-project --lang python --path /path/to/project
+lol apply --init --name my-project --lang python --path /path/to/project
 ```
 
 **Update an existing project:**
 
 From project root or any subdirectory:
 ```bash
-lol update
+lol apply --update
 ```
 
 Or specify explicit path:
 ```bash
-lol update --path /path/to/project
+lol apply --update --path /path/to/project
 ```
 
-The `update` command finds the nearest `.claude/` directory by traversing parent directories, making it convenient to use from anywhere within your project.
+The `apply --update` command finds the nearest `.claude/` directory by traversing parent directories, making it convenient to use from anywhere within your project.
 
 **Available options:**
-- `--name <name>` - Project name (required for init)
-- `--lang <lang>` - Programming language: c, cxx, python (required for init)
+- `--init` - Initialize a new SDK project (requires `--name` and `--lang`)
+- `--update` - Update an existing SDK project
+- `--name <name>` - Project name (required for `--init`)
+- `--lang <lang>` - Programming language: c, cxx, python (required for `--init`)
 - `--path <path>` - Project path (optional, defaults to current directory)
 - `--source <path>` - Source code path relative to project root (optional)
 

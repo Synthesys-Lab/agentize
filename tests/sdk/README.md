@@ -50,7 +50,7 @@ TEST_SHELLS="bash zsh" bash tests/sdk/test-cxx-sdk.sh
 
 SDK tests validate:
 
-1. **Template instantiation**: `lol init` creates correct project structure
+1. **Template instantiation**: `lol apply --init` creates correct project structure
 2. **File generation**: Required files exist (CMakeLists.txt, setup.py, etc.)
 3. **Build configuration**: CMake/setup.py have correct language and library settings
 4. **Directory structure**: Source, test, and build directories follow conventions
@@ -61,7 +61,7 @@ SDK tests validate:
 SDK tests typically:
 
 1. Create temporary project directory
-2. Run `lol init --name {project} --lang {language} --path {temp_dir}`
+2. Run `lol apply --init --name {project} --lang {language} --path {temp_dir}`
 3. Verify generated files exist and contain expected content
 4. Optionally test build system (e.g., `cmake -B build` succeeds)
 5. Clean up temporary directory
