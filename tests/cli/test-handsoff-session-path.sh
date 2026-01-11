@@ -81,6 +81,20 @@ STATE_FILE_4="$CENTRAL_HOME/.tmp/hooked-sessions/$SESSION_ID_4.json"
 ISSUE_NO_4=$(jq -r '.issue_no' "$STATE_FILE_4")
 [ "$ISSUE_NO_4" = "null" ] || test_fail "Expected issue_no=null (absent), got '$ISSUE_NO_4'"
 
+# Test 4b: /ultra-planner --from-issue 456 → issue_no=456
+test_info "Test 4b: /ultra-planner --from-issue 456 → issue_no=456"
+SESSION_ID_4b="test-session-from-issue-4b"
+run_hook "/ultra-planner --from-issue 456" "$SESSION_ID_4b" "$CENTRAL_HOME"
+
+STATE_FILE_4b="$CENTRAL_HOME/.tmp/hooked-sessions/$SESSION_ID_4b.json"
+[ -f "$STATE_FILE_4b" ] || test_fail "Session file not created: $STATE_FILE_4b"
+
+ISSUE_NO_4b=$(jq -r '.issue_no' "$STATE_FILE_4b")
+[ "$ISSUE_NO_4b" = "456" ] || test_fail "Expected issue_no=456, got '$ISSUE_NO_4b'"
+
+WORKFLOW_4b=$(jq -r '.workflow' "$STATE_FILE_4b")
+[ "$WORKFLOW_4b" = "ultra-planner" ] || test_fail "Expected workflow=ultra-planner, got '$WORKFLOW_4b'"
+
 # Test 5: Workflow field is correctly set
 test_info "Test 5: workflow field set correctly for issue-to-impl"
 WORKFLOW_1=$(jq -r '.workflow' "$STATE_FILE_1")
