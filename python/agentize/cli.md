@@ -20,7 +20,7 @@ The Python CLI supports the same commands as the shell implementation:
 | `upgrade` | Upgrade agentize installation |
 | `project` | GitHub Projects v2 integration |
 | `serve` | GitHub Projects polling server |
-| `usage` | Report Claude Code token usage statistics |
+| `usage` | Report Claude Code token usage statistics (--cache, --cost) |
 | `claude-clean` | Remove stale project entries from `~/.claude.json` |
 | `version` | Display version information |
 
@@ -71,6 +71,11 @@ python -m agentize.cli --version
 # Clean stale project entries
 python -m agentize.cli claude-clean --dry-run
 python -m agentize.cli claude-clean
+
+# Usage with cache and cost
+python -m agentize.cli usage --cache
+python -m agentize.cli usage --cost
+python -m agentize.cli usage --week --cache --cost
 ```
 
 ## Related Documentation

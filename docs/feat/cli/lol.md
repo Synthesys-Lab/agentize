@@ -22,7 +22,7 @@ lol --version
 lol project --create [--org <org>] [--title <title>]
 lol project --associate <org>/<id>
 lol project --automation [--write <path>]
-lol usage [--today | --week]
+lol usage [--today | --week] [--cache] [--cost]
 lol claude-clean [--dry-run]
 ```
 
@@ -306,14 +306,16 @@ Reports Claude Code token usage statistics aggregated by time bucket. Parses JSO
 
 **Usage:**
 ```bash
-lol usage [--today | --week]
+lol usage [--today | --week] [--cache] [--cost]
 ```
 
 **Flags:**
 - `--today` (default) - Show usage by hour for the last 24 hours
 - `--week` - Show usage by day for the last 7 days
+- `--cache` - Show cache read/write token columns
+- `--cost` - Show estimated USD cost column
 
-**Output format:**
+**Output format (default):**
 ```
 Today's Usage (2026-01-10):
 00:00   2 sessions,    1.2K input,    0.8K output
@@ -324,11 +326,40 @@ Today's Usage (2026-01-10):
 Total: 15 sessions, 156.7K input, 89.2K output
 ```
 
+**Output format (with --cache):**
+```
+Today's Usage (2026-01-10):
+00:00   2 sessions,    1.2K input,    0.8K output,    0.5K cache_read,    0.2K cache_write
+...
+Total: 15 sessions, 156.7K input, 89.2K output, 45.2K cache_read, 12.1K cache_write
+```
+
+**Output format (with --cost):**
+```
+Today's Usage (2026-01-10):
+00:00   2 sessions,    1.2K input,    0.8K output,   $0.12
+...
+Total: 15 sessions, 156.7K input, 89.2K output, $4.56
+
+⚠ Cost is an estimate based on static per-model rates. Actual billing may vary.
+```
+
 **Behavior:**
 - Filters JSONL files by modification time (today = last 24h, week = last 7 days)
 - Extracts `input_tokens` and `output_tokens` from assistant messages
 - Counts unique sessions (one JSONL file = one session)
 - Gracefully handles missing `~/.claude/projects` directory
+
+**Cache tokens (--cache):**
+- `cache_read` - Tokens read from prompt cache
+- `cache_write` - Tokens written to cache (uses `cache_creation_input_tokens` field)
+- Cache metrics extracted per-message from usage data
+
+**Cost estimation (--cost):**
+- Computes cost per-message using `message.model` field
+- Supports Claude model variants (claude-3-opus, claude-3-sonnet, claude-3-haiku, etc.)
+- Displays warning when unknown models are encountered
+- **Pricing last updated: 2026-01**
 
 **Examples:**
 
@@ -341,6 +372,23 @@ lol usage --today
 Show weekly usage by day:
 ```bash
 lol usage --week
+```
+
+Show usage with cache token breakdown:
+```bash
+lol usage --cache
+lol usage --week --cache
+```
+
+Show usage with estimated USD cost:
+```bash
+lol usage --cost
+lol usage --week --cost
+```
+
+Show all metrics:
+```bash
+lol usage --cache --cost
 ```
 
 ### `lol claude-clean`
@@ -381,7 +429,7 @@ The `lol` command provides tab-completion support for zsh users. After running `
 - Flag completion for `init` (`--name`, `--lang`, `--path`, `--source`, `--metadata-only`)
 - Flag completion for `update` (`--path`)
 - Flag completion for `project` (`--create`, `--associate`, `--automation`)
-- Flag completion for `usage` (`--today`, `--week`)
+- Flag completion for `usage` (`--today`, `--week`, `--cache`, `--cost`)
 - Value completion for `--lang` (c, cxx, python)
 - Path completion for path-related flags
 
@@ -408,7 +456,7 @@ lol --complete <topic>
 - `project-modes` - List project mode flags (--create, --associate, --automation)
 - `project-create-flags` - List flags for `lol project --create` (--org, --title)
 - `project-automation-flags` - List flags for `lol project --automation` (--write)
-- `usage-flags` - List flags for `lol usage` (--today, --week)
+- `usage-flags` - List flags for `lol usage` (--today, --week, --cache, --cost)
 - `lang-values` - List supported language values (c, cxx, python)
 
 **Output format:** Newline-delimited tokens, no descriptions.
