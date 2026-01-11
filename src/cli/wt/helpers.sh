@@ -213,7 +213,8 @@ wt_claim_issue_status() {
         return 0
     fi
 
-    project_graphql_id=$(echo "$project_response" | jq -r '.data.organization.projectV2.id // empty' 2>/dev/null)
+    # Use repositoryOwner response path (works for both organizations and users)
+    project_graphql_id=$(echo "$project_response" | jq -r '.data.repositoryOwner.projectV2.id // empty' 2>/dev/null)
     if [ -z "$project_graphql_id" ]; then
         echo "Note: Project $project_org/$project_id not found" >&2
         return 0

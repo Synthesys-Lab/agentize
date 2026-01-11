@@ -10,8 +10,9 @@ on:
       - closed
 
 env:
-  PROJECT_ORG: YOUR_ORG_HERE  # Replace with your GitHub organization
+  PROJECT_ORG: YOUR_ORG_HERE  # Replace with your GitHub owner (organization or personal user login)
   PROJECT_ID: YOUR_PROJECT_ID_HERE  # Replace with your project number (e.g., 3)
+  # PROJECT_OWNER_PATH: Use "orgs" for organizations (default), "users" for personal accounts
 
 jobs:
   add-to-project:
@@ -106,15 +107,15 @@ jobs:
         run: |
           echo "Fetching project node ID for ${{ env.PROJECT_ORG }}/projects/${{ env.PROJECT_ID }}..."
 
+          # Use repositoryOwner query which works for both organizations and personal user accounts
           project_node_id=$(gh api graphql -f query='
-            query($org: String!, $number: Int!) {
-              organization(login: $org) {
-                projectV2(number: $number) {
-                  id
-                }
+            query($owner: String!, $number: Int!) {
+              repositoryOwner(login: $owner) {
+                ... on Organization { projectV2(number: $number) { id } }
+                ... on User { projectV2(number: $number) { id } }
               }
             }
-          ' -f org="${{ env.PROJECT_ORG }}" -F number="${{ env.PROJECT_ID }}" --jq '.data.organization.projectV2.id')
+          ' -f owner="${{ env.PROJECT_ORG }}" -F number="${{ env.PROJECT_ID }}" --jq '.data.repositoryOwner.projectV2.id')
 
           if [ -z "$project_node_id" ] || [ "$project_node_id" = "null" ]; then
             echo "Error: Could not find project ${{ env.PROJECT_ORG }}/projects/${{ env.PROJECT_ID }}"

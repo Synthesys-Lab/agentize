@@ -126,18 +126,16 @@ The generated workflow template uses the `actions/add-to-project` action to set 
 
 **Step 1: Get your project's GraphQL ID**
 
-Convert your project number to its GraphQL node ID:
+Convert your project number to its GraphQL node ID. Use the `repositoryOwner` query which works for both organizations and personal user accounts:
 
 ```bash
 gh api graphql -f query='
-query {
-  organization(login: "YOUR_ORG") {
-    projectV2(number: YOUR_PROJECT_NUMBER) {
-      id
-      title
-    }
+query($owner: String!, $number: Int!) {
+  repositoryOwner(login: $owner) {
+    ... on Organization { projectV2(number: $number) { id title } }
+    ... on User { projectV2(number: $number) { id title } }
   }
-}'
+}' -f owner="YOUR_OWNER" -F number=YOUR_PROJECT_NUMBER
 ```
 
 Save the `id` value (e.g., `PVT_xxx`) for the next step.
@@ -174,11 +172,12 @@ From the query output, locate the "Status" field and verify it has the expected 
 
 **Step 4: Update the workflow environment variables**
 
-The simplified workflow only requires org and project ID:
+The simplified workflow only requires owner and project ID:
 
 ```yaml
 env:
-  PROJECT_ORG: YOUR_ORG_HERE
+  PROJECT_ORG: YOUR_OWNER_HERE           # Organization or personal user login
+  PROJECT_OWNER_PATH: orgs               # Use "orgs" for organizations, "users" for personal accounts
   PROJECT_ID: YOUR_PROJECT_ID_HERE
 ```
 
@@ -245,7 +244,7 @@ gh secret set ADD_TO_PROJECT_PAT
 ## Related Commands
 
 - `lol project --create` - Create a new GitHub Projects v2 board
-- `lol project --associate <org>/<id>` - Associate an existing project
+- `lol project --associate <owner>/<id>` - Associate an existing project
 - `lol project --automation` - Print the workflow template
 - `lol project --automation --write <path>` - Write template to file
 

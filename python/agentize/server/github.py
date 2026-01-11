@@ -87,19 +87,28 @@ def get_repo_owner_name() -> tuple[str, str]:
 
 
 def lookup_project_graphql_id(org: str, project_number: int) -> str:
-    """Convert organization and project number into ProjectV2 GraphQL ID.
+    """Convert owner (organization or user) and project number into ProjectV2 GraphQL ID.
 
+    Uses repositoryOwner query which works for both organizations and personal user accounts.
     Result is cached to avoid repeated lookups.
     """
     cache_key = (org, project_number)
     if cache_key in _project_id_cache:
         return _project_id_cache[cache_key]
 
+    # Use repositoryOwner query which works for both organizations and users
     query = '''
-query($org: String!, $projectNumber: Int!) {
-  organization(login: $org) {
-    projectV2(number: $projectNumber) {
-      id
+query($owner: String!, $projectNumber: Int!) {
+  repositoryOwner(login: $owner) {
+    ... on Organization {
+      projectV2(number: $projectNumber) {
+        id
+      }
+    }
+    ... on User {
+      projectV2(number: $projectNumber) {
+        id
+      }
     }
   }
 }
@@ -107,7 +116,7 @@ query($org: String!, $projectNumber: Int!) {
     result = subprocess.run(
         ['gh', 'api', 'graphql',
          '-f', f'query={query.strip()}',
-         '-f', f'org={org}',
+         '-f', f'owner={org}',
          '-F', f'projectNumber={project_number}'],
         capture_output=True, text=True
     )
@@ -118,7 +127,8 @@ query($org: String!, $projectNumber: Int!) {
 
     try:
         data = json.loads(result.stdout)
-        project_id = data['data']['organization']['projectV2']['id']
+        # Use repositoryOwner path which works for both Organization and User
+        project_id = data['data']['repositoryOwner']['projectV2']['id']
         _project_id_cache[cache_key] = project_id
         return project_id
     except (KeyError, TypeError, json.JSONDecodeError) as e:

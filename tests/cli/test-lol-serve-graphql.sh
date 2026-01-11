@@ -15,9 +15,9 @@ cat > "$TMP_DIR/bin/gh" << 'STUB'
 # Capture all arguments to a file
 echo "$@" >> "$ARGS_FILE"
 
-# Return minimal valid JSON for query_project_items
+# Return minimal valid JSON for query_project_items (using repositoryOwner response path)
 cat << 'JSON'
-{"data":{"organization":{"projectV2":{"items":{"nodes":[]}}}}}
+{"data":{"repositoryOwner":{"projectV2":{"id":"PVT_xxx"}}}}
 JSON
 STUB
 chmod +x "$TMP_DIR/bin/gh"
@@ -51,9 +51,9 @@ fi
 
 CAPTURED=$(cat "$ARGS_FILE")
 
-# Test 1: Check for -f org=TestOrg (string variable)
-if ! echo "$CAPTURED" | grep -q "\-f org=TestOrg"; then
-  test_fail "Missing -f org=TestOrg in gh args: $CAPTURED"
+# Test 1: Check for -f owner=TestOrg (string variable for repositoryOwner query)
+if ! echo "$CAPTURED" | grep -q "\-f owner=TestOrg"; then
+  test_fail "Missing -f owner=TestOrg in gh args: $CAPTURED"
 fi
 
 # Test 2: Check for -F projectNumber=42 (integer variable)
