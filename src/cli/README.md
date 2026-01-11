@@ -61,10 +61,10 @@ wt remove 42
 
 ```bash
 # Initialize new project
-lol init --name my-project --lang python --path /path/to/project
+lol apply --init --name my-project --lang python --path /path/to/project
 
 # Update existing project
-lol update
+lol apply --update
 
 # Upgrade agentize installation
 lol upgrade

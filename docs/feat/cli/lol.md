@@ -15,8 +15,6 @@ For function-level interface documentation, see `src/cli/lol.md`.
 ```bash
 lol apply --init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]
 lol apply --update [--path <path>]
-lol init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]
-lol update [--path <path>]
 lol upgrade
 lol --version
 lol project --create [--org <org>] [--title <title>]
@@ -28,26 +26,26 @@ lol claude-clean [--dry-run]
 
 ### Flags
 
-- `--name <name>` - Project name (required for init)
-- `--lang <lang>` - Programming language: c, cxx, python (required for init)
+- `--init` - Use init mode (requires `--name` and `--lang`)
+- `--update` - Use update mode
+- `--name <name>` - Project name (required for `--init`)
+- `--lang <lang>` - Programming language: c, cxx, python (required for `--init`)
 - `--path <path>` - Project path (optional, defaults to current directory)
 - `--source <path>` - Source code path relative to project root (optional)
-- `--metadata-only` - Create only .agentize.yaml without SDK templates (optional, init only)
+- `--metadata-only` - Create only .agentize.yaml without SDK templates (optional, `--init` only)
 - `--version` - Display version information
 
 ## Commands
 
 ### `lol apply`
 
-Unified entrypoint that wraps both `lol init` and `lol update` under explicit mode flags. This reduces cognitive load by providing a single command while preserving distinct init/update behaviors.
+Unified entrypoint for SDK initialization and updates. Exactly one of `--init` or `--update` must be specified.
 
 **Required flags (exactly one):**
 - `--init` - Use init mode (requires `--name` and `--lang`)
 - `--update` - Use update mode (`--path` optional)
 
 **Behavior:**
-- `lol apply --init ...` behaves identically to `lol init ...`
-- `lol apply --update ...` behaves identically to `lol update ...`
 - Specifying neither or both `--init` and `--update` will fail with a usage hint
 
 **Examples:**
@@ -63,7 +61,7 @@ lol apply --update
 lol apply --update --path /path/to/project
 ```
 
-### `lol init`
+### `lol apply --init`
 
 Initializes an SDK structure in the specified project path and copies necessary template files.
 
@@ -98,15 +96,15 @@ Initializes an SDK structure in the specified project path and copies necessary 
 
 Standard initialization:
 ```bash
-lol init --name my-project --lang python --path /path/to/project
+lol apply --init --name my-project --lang python --path /path/to/project
 ```
 
 Metadata-only mode (for existing projects):
 ```bash
-lol init --name my-project --lang python --path /path/to/existing-project --metadata-only
+lol apply --init --name my-project --lang python --path /path/to/existing-project --metadata-only
 ```
 
-### `lol update`
+### `lol apply --update`
 
 Updates the AI-related rules and files in an existing SDK structure without affecting user's custom rules. If `.claude/` directory is missing, it will be created automatically.
 
@@ -131,15 +129,15 @@ Updates the AI-related rules and files in an existing SDK structure without affe
   - `make setup` (if Makefile has `setup:` target)
   - Documentation link (if `docs/architecture/architecture.md` exists)
 
-**Difference from `lol init`:**
-- `lol update` only creates the `.claude/` directory and syncs AI configuration files
+**Difference from `lol apply --init`:**
+- `lol apply --update` only creates the `.claude/` directory and syncs AI configuration files
 - It does NOT create language-specific project templates or scaffolding
-- For full project setup with language templates, use `lol init` instead
+- For full project setup with language templates, use `lol apply --init` instead
 
 **Example:**
 ```bash
-lol update                      # From project root or subdirectory
-lol update --path /path/to/project
+lol apply --update                      # From project root or subdirectory
+lol apply --update --path /path/to/project
 ```
 
 ### `lol --version`
@@ -376,10 +374,8 @@ lol claude-clean
 The `lol` command provides tab-completion support for zsh users. After running `make setup` and sourcing `setup.sh`, completions are automatically enabled.
 
 **Features:**
-- Subcommand completion (`lol <TAB>` shows: apply, init, update, upgrade, version, project, usage, claude-clean)
+- Subcommand completion (`lol <TAB>` shows: apply, upgrade, version, project, usage, claude-clean)
 - Flag completion for `apply` (`--init`, `--update`, plus all init/update flags)
-- Flag completion for `init` (`--name`, `--lang`, `--path`, `--source`, `--metadata-only`)
-- Flag completion for `update` (`--path`)
 - Flag completion for `project` (`--create`, `--associate`, `--automation`)
 - Flag completion for `usage` (`--today`, `--week`)
 - Value completion for `--lang` (c, cxx, python)
@@ -401,10 +397,10 @@ lol --complete <topic>
 ```
 
 **Topics:**
-- `commands` - List available subcommands (apply, init, update, upgrade, version, project, usage, claude-clean)
+- `commands` - List available subcommands (apply, upgrade, version, project, usage, claude-clean)
 - `apply-flags` - List flags for `lol apply` (--init, --update)
-- `init-flags` - List flags for `lol init` (--name, --lang, --path, --source, --metadata-only)
-- `update-flags` - List flags for `lol update` (--path)
+- `init-flags` - List flags for `lol apply --init` (--name, --lang, --path, --source, --metadata-only)
+- `update-flags` - List flags for `lol apply --update` (--path)
 - `project-modes` - List project mode flags (--create, --associate, --automation)
 - `project-create-flags` - List flags for `lol project --create` (--org, --title)
 - `project-automation-flags` - List flags for `lol project --automation` (--write)
@@ -417,8 +413,6 @@ lol --complete <topic>
 ```bash
 $ lol --complete commands
 apply
-init
-update
 upgrade
 version
 project
@@ -450,7 +444,7 @@ This helper is used by the zsh completion system and can be used by other shells
 
 Specifies the name of your project. This name will be used in various parts of the generated SDK.
 
-**Required for:** `init`
+**Required for:** `lol apply --init`
 
 ### `--lang <lang>`
 
@@ -461,7 +455,7 @@ Specifies the programming language of your project.
 - `cxx` - C++ language
 - `python` - Python language
 
-**Required for:** `init`
+**Required for:** `lol apply --init`
 
 **Note:** More languages (Java, Rust, Go, JavaScript) will be added in future versions.
 
@@ -469,26 +463,26 @@ Specifies the programming language of your project.
 
 Specifies the file system path where the SDK will be created or updated. Ensure you have write permissions.
 
-**Optional for:** `init`, `update`
-**Default:** Current directory for `init`, nearest `.claude/` directory for `update` (falls back to current directory if none found)
+**Optional for:** `lol apply --init`, `lol apply --update`
+**Default:** Current directory for `--init`, nearest `.claude/` directory for `--update` (falls back to current directory if none found)
 
 ### `--source <path>`
 
 Specifies the path to the source code of your project, relative to the project root.
 
-**Optional for:** `init`
+**Optional for:** `lol apply --init`
 **Default:** For C/C++ projects, both `src/` and `include/` directories are used
 
 **Example:** LLVM uses `lib/` directory for source code:
 ```bash
-lol init --name llvm-project --lang cxx --path /path/to/llvm --source lib
+lol apply --init --name llvm-project --lang cxx --path /path/to/llvm --source lib
 ```
 
 ### `--metadata-only`
 
 Creates only the `.agentize.yaml` metadata file without copying SDK templates or `.claude/` configuration. This is useful for adding agentize metadata to existing projects without full SDK initialization overhead.
 
-**Optional for:** `init`
+**Optional for:** `lol apply --init`
 
 **Use cases:**
 - Adding metadata to existing projects for worktree operations (`wt` command)
@@ -497,5 +491,5 @@ Creates only the `.agentize.yaml` metadata file without copying SDK templates or
 
 **Example:**
 ```bash
-lol init --name existing-project --lang python --metadata-only
+lol apply --init --name existing-project --lang python --metadata-only
 ```

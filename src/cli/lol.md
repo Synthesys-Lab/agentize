@@ -35,7 +35,7 @@ lol <command> [options]
 ```
 
 **Parameters:**
-- `$1`: Command name (init, update, upgrade, project, --version, --complete)
+- `$1`: Command name (apply, upgrade, project, --version, --complete)
 - `$@`: Remaining arguments passed to command implementation
 
 **Return codes:**
@@ -43,8 +43,8 @@ lol <command> [options]
 - `1`: Invalid command, command failed, or help displayed
 
 **Commands:**
-- `init`: Initialize new SDK project
-- `update`: Update existing project configuration
+- `apply --init`: Initialize new SDK project
+- `apply --update`: Update existing project configuration
 - `upgrade`: Upgrade agentize installation
 - `project`: GitHub Projects v2 integration
 - `claude-clean`: Remove stale project entries from `~/.claude.json`
@@ -54,8 +54,8 @@ lol <command> [options]
 **Example:**
 ```bash
 source src/cli/lol.sh
-lol init --name my-project --lang python
-lol update
+lol apply --init --name my-project --lang python
+lol apply --update
 ```
 
 ### lol_complete()
@@ -71,8 +71,9 @@ Shell-agnostic completion helper for completion systems.
 
 **Topics:**
 - `commands`: List available subcommands
-- `init-flags`: List flags for `lol init`
-- `update-flags`: List flags for `lol update`
+- `apply-flags`: List flags for `lol apply` (--init, --update)
+- `init-flags`: List flags for `lol apply --init`
+- `update-flags`: List flags for `lol apply --update`
 - `project-modes`: List project mode flags
 - `project-create-flags`: List flags for `lol project --create`
 - `project-automation-flags`: List flags for `lol project --automation`
@@ -83,8 +84,7 @@ Shell-agnostic completion helper for completion systems.
 ```bash
 lol_complete commands
 # Output:
-# init
-# update
+# apply
 # upgrade
 # project
 ```
@@ -297,7 +297,7 @@ Simple YAML parsing for `.agentize.yaml`:
 **Sourced (primary usage):**
 ```bash
 source setup.sh  # Sources src/cli/lol.sh
-lol init --name my-project --lang python
+lol apply --init --name my-project --lang python
 ```
 
 **Executed (testing):**

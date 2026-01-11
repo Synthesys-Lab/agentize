@@ -4,7 +4,7 @@ This document describes the file structure of SDKs created by the `lol` CLI and 
 
 ## Created SDK File Structure
 
-When you run `lol init`, the following structure is created in your target project:
+When you run `lol apply --init`, the following structure is created in your target project:
 
 ```
 your-project/
@@ -43,21 +43,21 @@ This is a crucial architectural difference that allows:
 1. **Agentize development**: Changes to `.claude/` define the framework
 2. **SDK independence**: Each created SDK has its own configuration that can be customized
 
-## Unified Apply Command
+## Apply Command
 
-The `lol apply` command provides a single entrypoint for both initialization and update operations:
+The `lol apply` command provides the entrypoint for both initialization and update operations:
 
 ```bash
-# Initialize (equivalent to lol init)
+# Initialize a new SDK project
 lol apply --init --name my_project --lang python
 
-# Update (equivalent to lol update)
+# Update an existing SDK project
 lol apply --update --path /path/to/project
 ```
 
-This unified interface reduces cognitive load while preserving the distinct behaviors of init and update modes. Exactly one of `--init` or `--update` must be specified.
+Exactly one of `--init` or `--update` must be specified.
 
-## Initialization Mode (`init`)
+## Initialization Mode (`--init`)
 
 ### Behavior
 
@@ -73,10 +73,10 @@ The `init` mode creates a new SDK project from scratch. It validates directory s
 
 ```bash
 # Create new SDK in non-existent directory
-lol init --name my_project --lang python --path /path/to/my_project
+lol apply --init --name my_project --lang python --path /path/to/my_project
 
 # Error: Will fail if directory exists and contains files
-lol init --name my_project --lang python --path /existing/non-empty/dir
+lol apply --init --name my_project --lang python --path /existing/non-empty/dir
 # Output: Error: Directory '/existing/non-empty/dir' exists and is not empty.
 ```
 
@@ -106,7 +106,7 @@ lol init --name my_project --lang python --path /existing/non-empty/dir
    - Updates imports and references
    - Removes itself after completion
 
-## Update Mode (`update`)
+## Update Mode (`--update`)
 
 ### Behavior
 
@@ -122,13 +122,13 @@ The `update` mode refreshes the Claude Code configuration (`.claude/`) while pre
 
 ```bash
 # Update existing SDK from project root or any subdirectory
-lol update
+lol apply --update
 
 # Or specify explicit path
-lol update --path /path/to/my_project
+lol apply --update --path /path/to/my_project
 
 # Will create .claude/ if missing
-lol update --path /some/random/dir
+lol apply --update --path /some/random/dir
 ```
 
 ### What Gets Updated
@@ -185,7 +185,7 @@ if AGENTIZE_HOME is a git repository:
 
 ```bash
 # 1. Initialize SDK for C project
-lol init --name mylib --lang c --path $HOME/projects/mylib
+lol apply --init --name mylib --lang c --path $HOME/projects/mylib
 
 # 2. Navigate to project
 cd $HOME/projects/mylib
@@ -203,7 +203,7 @@ git pull origin main
 
 # Update your SDK project from project root or any subdirectory
 cd $HOME/projects/mylib
-lol update
+lol apply --update
 
 # Review changes
 diff -r .claude .claude.backup  # See what changed
@@ -258,13 +258,13 @@ Error: Directory '/path/to/project' is not a valid SDK structure.
 Missing '.claude/' directory.
 ```
 
-**Solution:** This directory was not created with the `lol` CLI. Use `lol init` instead.
+**Solution:** This directory was not created with the `lol` CLI. Use `lol apply --init` instead.
 
 ### Error: Project path does not exist
 
 ```
 Error: Project path '/path/to/project' does not exist.
-Use AGENTIZE_MODE=init to create it.
+Use lol apply --init to create it.
 ```
 
-**Solution:** Use `init` mode to create a new SDK, not `update` mode.
+**Solution:** Use `--init` mode to create a new SDK, not `--update` mode.
