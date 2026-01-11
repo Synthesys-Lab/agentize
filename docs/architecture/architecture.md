@@ -103,7 +103,7 @@ This pattern provides:
 - Functions available in interactive shells via `setup.sh`
 - Direct script execution for testing and non-interactive use
 
-**Optional Python wrapper:** `python -m agentize.cli` provides an argparse-based entrypoint for non-sourced usage. It delegates to shell functions via `bash -lc` with `AGENTIZE_HOME` set, preserving the shell implementation as canonical while enabling Python scripting integration.
+**Optional Python wrapper:** `python -m agentize.cli` provides an argparse-based entrypoint for non-sourced usage. It delegates to shell functions via `bash -c` with `AGENTIZE_HOME` set, preserving the shell implementation as canonical while enabling Python scripting integration.
 
 ## GitHub Usage
 

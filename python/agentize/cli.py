@@ -2,7 +2,7 @@
 """
 Python CLI entrypoint for lol commands.
 
-Delegates to shell functions via bash -lc with AGENTIZE_HOME set.
+Delegates to shell functions via bash -c with AGENTIZE_HOME set.
 Provides argparse-style parsing while preserving shell as the canonical implementation.
 
 Usage:

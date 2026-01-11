@@ -15,7 +15,7 @@ lol <command> [options]
 python -m agentize.cli <command> [options]
 ```
 
-The Python entrypoint delegates to shell functions via `bash -lc` with `AGENTIZE_HOME` set. Use it for non-sourced environments or scripting contexts where argparse-style parsing is preferred.
+The Python entrypoint delegates to shell functions via `bash -c` with `AGENTIZE_HOME` set. Use it for non-sourced environments or scripting contexts where argparse-style parsing is preferred.
 
 ## Commands
 
