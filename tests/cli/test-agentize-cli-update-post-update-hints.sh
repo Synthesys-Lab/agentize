@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# Test: lol update prints conditional post-update setup hints
+# Test: lol apply --update prints conditional post-update setup hints
 
 source "$(dirname "$0")/../common.sh"
 
 LOL_CLI="$PROJECT_ROOT/src/cli/lol.sh"
 
-test_info "lol update prints conditional post-update setup hints"
+test_info "lol apply --update prints conditional post-update setup hints"
 
 TEST_PROJECT=$(make_temp_dir "agentize-cli-update-post-update-hints")
 export AGENTIZE_HOME="$PROJECT_ROOT"
 source "$LOL_CLI"
 
 # Test: No hints when Makefile/docs don't exist
-UPDATE_OUTPUT=$(lol update --path "$TEST_PROJECT" 2>&1)
+UPDATE_OUTPUT=$(lol apply --update --path "$TEST_PROJECT" 2>&1)
 if echo "$UPDATE_OUTPUT" | grep -q "Next steps"; then
   cleanup_dir "$TEST_PROJECT"
   test_fail "'Next steps' should not appear when no Makefile/docs exist (Output: $UPDATE_OUTPUT)"
@@ -30,7 +30,7 @@ EOF
 mkdir -p "$TEST_PROJECT/docs/architecture"
 echo "# Architecture" > "$TEST_PROJECT/docs/architecture/architecture.md"
 
-UPDATE_OUTPUT=$(lol update --path "$TEST_PROJECT" 2>&1)
+UPDATE_OUTPUT=$(lol apply --update --path "$TEST_PROJECT" 2>&1)
 
 # Verify hints appear
 if ! echo "$UPDATE_OUTPUT" | grep -q "Next steps"; then
@@ -55,4 +55,4 @@ if ! echo "$UPDATE_OUTPUT" | grep -q "docs/architecture/architecture.md"; then
 fi
 
 cleanup_dir "$TEST_PROJECT"
-test_pass "lol update prints conditional post-update setup hints"
+test_pass "lol apply --update prints conditional post-update setup hints"

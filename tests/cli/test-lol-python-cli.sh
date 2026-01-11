@@ -10,13 +10,19 @@ export AGENTIZE_HOME="$PROJECT_ROOT"
 export PYTHONPATH="$PROJECT_ROOT/python"
 
 # Test 1: --complete commands returns expected list
+# Note: init and update are NOT standalone commands, they are --init and --update flags for apply
 output=$(python3 -m agentize.cli --complete commands 2>&1)
 echo "$output" | grep -q "^apply$" || test_fail "--complete commands missing: apply"
-echo "$output" | grep -q "^init$" || test_fail "--complete commands missing: init"
-echo "$output" | grep -q "^update$" || test_fail "--complete commands missing: update"
 echo "$output" | grep -q "^upgrade$" || test_fail "--complete commands missing: upgrade"
 echo "$output" | grep -q "^project$" || test_fail "--complete commands missing: project"
 echo "$output" | grep -q "^claude-clean$" || test_fail "--complete commands missing: claude-clean"
+# Verify init and update are NOT in commands list
+if echo "$output" | grep -q "^init$"; then
+  test_fail "init should not be a standalone command (use 'apply --init' instead)"
+fi
+if echo "$output" | grep -q "^update$"; then
+  test_fail "update should not be a standalone command (use 'apply --update' instead)"
+fi
 
 # Test 2: --version exits 0 and prints expected labels
 output=$(python3 -m agentize.cli --version 2>&1)
@@ -27,12 +33,12 @@ fi
 echo "$output" | grep -q "Installation:" || test_fail "--version missing 'Installation:' label"
 echo "$output" | grep -q "Last update:" || test_fail "--version missing 'Last update:' label"
 
-# Test 3: init --metadata-only creates .agentize.yaml in temp dir
+# Test 3: apply --init --metadata-only creates .agentize.yaml in temp dir
 TEST_DIR=$(make_temp_dir "python-cli-init-test")
-python3 -m agentize.cli init --name test-project --lang python --path "$TEST_DIR" --metadata-only
+python3 -m agentize.cli apply --init --name test-project --lang python --path "$TEST_DIR" --metadata-only
 if [ ! -f "$TEST_DIR/.agentize.yaml" ]; then
   cleanup_dir "$TEST_DIR"
-  test_fail "init --metadata-only did not create .agentize.yaml"
+  test_fail "apply --init --metadata-only did not create .agentize.yaml"
 fi
 # Verify metadata content
 grep -q "name: test-project" "$TEST_DIR/.agentize.yaml" || {

@@ -83,7 +83,7 @@ lol_cmd_project() (
         if [ ! -f "$METADATA_FILE" ]; then
             echo "Error: .agentize.yaml not found"
             echo ""
-            echo "Please run 'lol init' or 'lol update' to create project metadata first."
+            echo "Please run 'lol apply --init' or 'lol apply --update' to create project metadata first."
             exit 1
         fi
 

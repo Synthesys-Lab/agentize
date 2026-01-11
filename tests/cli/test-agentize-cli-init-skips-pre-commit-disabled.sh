@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Test: lol init skips hook when pre_commit.enabled is false
+# Test: lol apply --init skips hook when pre_commit.enabled is false
 
 source "$(dirname "$0")/../common.sh"
 
 LOL_CLI="$PROJECT_ROOT/src/cli/lol.sh"
 
-test_info "lol init skips hook when pre_commit.enabled is false"
+test_info "lol apply --init skips hook when pre_commit.enabled is false"
 
 # Unset git environment variables to avoid interference from parent git process
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
@@ -21,7 +21,7 @@ git init
 git config user.email "test@example.com"
 git config user.name "Test User"
 
-# Create .agentize.yaml with pre_commit.enabled: false BEFORE lol init
+# Create .agentize.yaml with pre_commit.enabled: false BEFORE lol apply --init
 cat > "$TEST_PROJECT/.agentize.yaml" <<EOF
 project:
   name: test-project
@@ -31,7 +31,7 @@ pre_commit:
 EOF
 
 # Initialize project (should NOT install hook due to metadata)
-lol init --name test-project --lang python --path "$TEST_PROJECT" 2>/dev/null
+lol apply --init --name test-project --lang python --path "$TEST_PROJECT" 2>/dev/null
 
 # Verify hook was NOT installed
 if [ -f "$TEST_PROJECT/.git/hooks/pre-commit" ] || [ -L "$TEST_PROJECT/.git/hooks/pre-commit" ]; then
@@ -40,4 +40,4 @@ if [ -f "$TEST_PROJECT/.git/hooks/pre-commit" ] || [ -L "$TEST_PROJECT/.git/hook
 fi
 
 cleanup_dir "$TEST_PROJECT"
-test_pass "lol init respects pre_commit.enabled: false"
+test_pass "lol apply --init respects pre_commit.enabled: false"

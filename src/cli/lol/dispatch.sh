@@ -52,12 +52,6 @@ lol() {
         apply)
             _lol_parse_apply "$@"
             ;;
-        init)
-            _lol_parse_init "$@"
-            ;;
-        update)
-            _lol_parse_update "$@"
-            ;;
         upgrade)
             _lol_parse_upgrade "$@"
             ;;
@@ -82,8 +76,6 @@ lol() {
             echo "Usage:"
             echo "  lol apply --init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]"
             echo "  lol apply --update [--path <path>]"
-            echo "  lol init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]"
-            echo "  lol update [--path <path>]"
             echo "  lol upgrade"
             echo "  lol --version"
             echo "  lol project --create [--org <org>] [--title <title>]"
@@ -97,11 +89,11 @@ lol() {
             echo "  --version           Display version information"
             echo "  --init              Use init mode (apply only, requires --name and --lang)"
             echo "  --update            Use update mode (apply only)"
-            echo "  --name <name>       Project name (required for init)"
-            echo "  --lang <lang>       Programming language: c, cxx, python (required for init)"
+            echo "  --name <name>       Project name (required for --init)"
+            echo "  --lang <lang>       Programming language: c, cxx, python (required for --init)"
             echo "  --path <path>       Project path (optional, defaults to current directory)"
             echo "  --source <path>     Source code path relative to project root (optional)"
-            echo "  --metadata-only     Create only .agentize.yaml without SDK templates (optional, init only)"
+            echo "  --metadata-only     Create only .agentize.yaml without SDK templates (optional, --init only)"
             echo "  --create            Create new GitHub Projects v2 board (project)"
             echo "  --associate <org>/<id>  Associate existing project board (project)"
             echo "  --automation        Generate automation workflow template (project)"
@@ -116,17 +108,15 @@ lol() {
             echo "Examples:"
             echo "  lol apply --init --name my-project --lang python --path /path/to/project"
             echo "  lol apply --update --path /path/to/project"
-            echo "  lol init --name my-project --lang python --path /path/to/project"
-            echo "  lol update                    # From project root or subdirectory"
-            echo "  lol update --path /path/to/project"
-            echo "  lol upgrade                   # Upgrade agentize installation"
-            echo "  lol --version                 # Display version information"
+            echo "  lol apply --update              # From project root or subdirectory"
+            echo "  lol upgrade                     # Upgrade agentize installation"
+            echo "  lol --version                   # Display version information"
             echo "  lol project --create --org Synthesys-Lab --title \"My Project\""
             echo "  lol project --associate Synthesys-Lab/3"
             echo "  lol project --automation --write .github/workflows/add-to-project.yml"
             echo "  lol serve --tg-token=xxx --tg-chat-id=xxx --period=30s"
-            echo "  lol claude-clean --dry-run    # Preview stale entries"
-            echo "  lol claude-clean              # Remove stale entries"
+            echo "  lol claude-clean --dry-run      # Preview stale entries"
+            echo "  lol claude-clean                # Remove stale entries"
             return 1
             ;;
     esac

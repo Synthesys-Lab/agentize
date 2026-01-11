@@ -133,28 +133,20 @@ def main() -> int:
 
     subparsers = parser.add_subparsers(dest="command", help="Commands")
 
-    # apply command
-    apply_parser = subparsers.add_parser("apply", help="Unified init/update entrypoint")
+    # apply command (the only way to init or update)
+    apply_parser = subparsers.add_parser(
+        "apply", help="Initialize or update SDK project (use --init or --update)"
+    )
     apply_group = apply_parser.add_mutually_exclusive_group(required=True)
     apply_group.add_argument("--init", action="store_true", help="Use init mode")
     apply_group.add_argument("--update", action="store_true", help="Use update mode")
-    apply_parser.add_argument("--name", help="Project name (required for init)")
+    apply_parser.add_argument("--name", help="Project name (required for --init)")
     apply_parser.add_argument("--lang", help="Programming language: c, cxx, python")
     apply_parser.add_argument("--path", help="Project path")
     apply_parser.add_argument("--source", help="Source code path relative to project root")
-    apply_parser.add_argument("--metadata-only", action="store_true", help="Create only metadata")
-
-    # init command
-    init_parser = subparsers.add_parser("init", help="Initialize new SDK project")
-    init_parser.add_argument("--name", required=True, help="Project name")
-    init_parser.add_argument("--lang", required=True, help="Programming language: c, cxx, python")
-    init_parser.add_argument("--path", help="Project path")
-    init_parser.add_argument("--source", help="Source code path relative to project root")
-    init_parser.add_argument("--metadata-only", action="store_true", help="Create only metadata")
-
-    # update command
-    update_parser = subparsers.add_parser("update", help="Update existing project")
-    update_parser.add_argument("--path", help="Project path")
+    apply_parser.add_argument(
+        "--metadata-only", action="store_true", help="Create only metadata (--init only)"
+    )
 
     # upgrade command
     subparsers.add_parser("upgrade", help="Upgrade agentize installation")
@@ -210,10 +202,6 @@ def main() -> int:
     # Handle commands
     if args.command == "apply":
         return handle_apply(args, agentize_home)
-    elif args.command == "init":
-        return handle_init(args, agentize_home)
-    elif args.command == "update":
-        return handle_update(args, agentize_home)
     elif args.command == "upgrade":
         return handle_upgrade(agentize_home)
     elif args.command == "project":

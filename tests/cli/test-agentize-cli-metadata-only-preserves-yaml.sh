@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Test: lol init --metadata-only preserves existing .agentize.yaml
+# Test: lol apply --init --metadata-only preserves existing .agentize.yaml
 
 source "$(dirname "$0")/../common.sh"
 
 LOL_CLI="$PROJECT_ROOT/src/cli/lol.sh"
 
-test_info "lol init --metadata-only preserves existing .agentize.yaml"
+test_info "lol apply --init --metadata-only preserves existing .agentize.yaml"
 
 TEST_PROJECT=$(make_temp_dir "agentize-cli-metadata-only-preserves-yaml")
 export AGENTIZE_HOME="$PROJECT_ROOT"
@@ -22,7 +22,7 @@ git:
 EOF
 
 # Run init with --metadata-only
-lol init --name new-project --lang python --path "$TEST_PROJECT" --metadata-only 2>/dev/null
+lol apply --init --name new-project --lang python --path "$TEST_PROJECT" --metadata-only 2>/dev/null
 
 # Verify existing values are preserved
 if ! grep -q "name: existing-project" "$TEST_PROJECT/.agentize.yaml"; then

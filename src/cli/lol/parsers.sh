@@ -91,7 +91,7 @@ _lol_parse_init() {
                 ;;
             *)
                 echo "Error: Unknown option '$1'"
-                echo "Usage: lol init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]"
+                echo "Usage: lol apply --init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]"
                 return 1
                 ;;
         esac
@@ -154,7 +154,7 @@ _lol_parse_update() {
                 ;;
             *)
                 echo "Error: Unknown option '$1'"
-                echo "Usage: lol update [--path <path>]"
+                echo "Usage: lol apply --update [--path <path>]"
                 return 1
                 ;;
         esac

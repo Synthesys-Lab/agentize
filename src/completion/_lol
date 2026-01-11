@@ -17,9 +17,7 @@ _lol() {
     # Fallback to static command list if dynamic fetch failed
     if (( ${#commands} == 0 )); then
         commands=(
-            'apply:Unified init/update entrypoint'
-            'init:Initialize AI-powered SDK'
-            'update:Update SDK configuration'
+            'apply:Initialize or update AI-powered SDK (use --init or --update)'
             'upgrade:Upgrade agentize installation'
             'project:Manage GitHub Projects v2 integration'
             'version:Display version information'
@@ -29,9 +27,7 @@ _lol() {
         local -a commands_with_desc
         for cmd in $commands; do
             case $cmd in
-                apply) commands_with_desc+=('apply:Unified init/update entrypoint') ;;
-                init) commands_with_desc+=('init:Initialize AI-powered SDK') ;;
-                update) commands_with_desc+=('update:Update SDK configuration') ;;
+                apply) commands_with_desc+=('apply:Initialize or update AI-powered SDK (use --init or --update)') ;;
                 upgrade) commands_with_desc+=('upgrade:Upgrade agentize installation') ;;
                 project) commands_with_desc+=('project:Manage GitHub Projects v2 integration') ;;
                 version) commands_with_desc+=('version:Display version information') ;;
@@ -52,12 +48,6 @@ _lol() {
             case $line[1] in
                 apply)
                     _lol_apply
-                    ;;
-                init)
-                    _lol_init
-                    ;;
-                update)
-                    _lol_update
                     ;;
                 upgrade)
                     _lol_upgrade
@@ -103,50 +93,6 @@ _lol_apply() {
         '--path[Project path]:path:_files -/' \
         '--source[Source code path]:source path:_files -/' \
         '--metadata-only[Create only .agentize.yaml]'
-}
-
-# Completion for 'lol init' subcommand
-_lol_init() {
-    local -a init_flags lang_values
-
-    # Try dynamic fetch first
-    if (( $+commands[lol] )); then
-        init_flags=( ${(f)"$(lol --complete init-flags 2>/dev/null)"} )
-        lang_values=( ${(f)"$(lol --complete lang-values 2>/dev/null)"} )
-    fi
-
-    # Fallback to static flags
-    if (( ${#init_flags} == 0 )); then
-        init_flags=( '--name' '--lang' '--path' '--source' '--metadata-only' )
-    fi
-    if (( ${#lang_values} == 0 )); then
-        lang_values=( 'c' 'cxx' 'python' )
-    fi
-
-    _arguments \
-        '--name[Project name]:name:' \
-        '--lang[Programming language]:language:('$lang_values')' \
-        '--path[Project path]:path:_files -/' \
-        '--source[Source code path]:source path:_files -/' \
-        '--metadata-only[Create only .agentize.yaml]'
-}
-
-# Completion for 'lol update' subcommand
-_lol_update() {
-    local -a update_flags
-
-    # Try dynamic fetch first
-    if (( $+commands[lol] )); then
-        update_flags=( ${(f)"$(lol --complete update-flags 2>/dev/null)"} )
-    fi
-
-    # Fallback to static flags
-    if (( ${#update_flags} == 0 )); then
-        update_flags=( '--path' )
-    fi
-
-    _arguments \
-        '--path[Project path]:path:_files -/'
 }
 
 # Completion for 'lol upgrade' subcommand

@@ -10,8 +10,6 @@ lol_complete() {
     case "$topic" in
         commands)
             echo "apply"
-            echo "init"
-            echo "update"
             echo "upgrade"
             echo "version"
             echo "project"
