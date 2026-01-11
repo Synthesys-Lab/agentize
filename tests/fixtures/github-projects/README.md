@@ -21,22 +21,40 @@ mutation {
 }
 ```
 
-### lookup-project-response.json
-Mock response for looking up an existing project. Used when testing `lol project --associate`.
+### lookup-owner-response.json
+Mock response for looking up an organization owner. Used to determine owner type before project lookup.
 
 **Query:**
 ```graphql
-query {
-  organization(login: "test-org") {
-    projectV2(number: 3) {
-      id
-      number
-      title
-      url
-    }
+query($owner: String!) {
+  repositoryOwner(login: $owner) {
+    id
+    __typename
   }
 }
 ```
+
+### lookup-owner-user-response.json
+Mock response for looking up a user owner. Used when `AGENTIZE_GH_OWNER_TYPE=user`.
+
+### lookup-project-response.json
+Mock response for looking up an existing organization project. Used when testing `lol project --associate`.
+
+**Query:**
+```graphql
+query($owner: String!, $number: Int!) {
+  repositoryOwner(login: $owner) {
+    ... on Organization { projectV2(number: $number) { id number title url } }
+    ... on User { projectV2(number: $number) { id number title url } }
+  }
+}
+```
+
+### lookup-project-user-response.json
+Mock response for looking up a user project. Used when `AGENTIZE_GH_OWNER_TYPE=user`.
+
+### create-project-user-response.json
+Mock response for creating a user project. Used when `AGENTIZE_GH_OWNER_TYPE=user`.
 
 ### add-item-response.json
 Mock response for adding an issue or PR to a project. Used when testing optional `--add` functionality.
@@ -96,3 +114,13 @@ export AGENTIZE_GH_API=fixture
 ```
 
 The `scripts/gh-graphql.sh` wrapper checks this variable and returns fixture data when set. Additionally, fixture mode bypasses the `gh auth status` preflight check in `scripts/agentize-project.sh`, allowing tests to run in CI environments without GitHub authentication.
+
+## Owner Type Selection
+
+By default, fixtures return organization-style responses. To test user-owned projects, set `AGENTIZE_GH_OWNER_TYPE`:
+
+```bash
+export AGENTIZE_GH_OWNER_TYPE=user
+```
+
+This selects user-specific fixtures (`lookup-owner-user-response.json`, `lookup-project-user-response.json`, `create-project-user-response.json`) which return URLs with `/users/` path instead of `/orgs/`.

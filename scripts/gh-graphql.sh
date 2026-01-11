@@ -17,16 +17,33 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 FIXTURES_DIR="$PROJECT_ROOT/tests/fixtures/github-projects"
 
 # Return fixture data for testing
+# AGENTIZE_GH_OWNER_TYPE can be "user" or "org" (default) to select fixtures
 return_fixture() {
     local operation="$1"
     local fixture_file=""
+    local owner_type="${AGENTIZE_GH_OWNER_TYPE:-org}"
 
     case "$operation" in
         create-project)
-            fixture_file="$FIXTURES_DIR/create-project-response.json"
+            if [ "$owner_type" = "user" ]; then
+                fixture_file="$FIXTURES_DIR/create-project-user-response.json"
+            else
+                fixture_file="$FIXTURES_DIR/create-project-response.json"
+            fi
+            ;;
+        lookup-owner)
+            if [ "$owner_type" = "user" ]; then
+                fixture_file="$FIXTURES_DIR/lookup-owner-user-response.json"
+            else
+                fixture_file="$FIXTURES_DIR/lookup-owner-response.json"
+            fi
             ;;
         lookup-project)
-            fixture_file="$FIXTURES_DIR/lookup-project-response.json"
+            if [ "$owner_type" = "user" ]; then
+                fixture_file="$FIXTURES_DIR/lookup-project-user-response.json"
+            else
+                fixture_file="$FIXTURES_DIR/lookup-project-response.json"
+            fi
             ;;
         add-item)
             fixture_file="$FIXTURES_DIR/add-item-response.json"
@@ -77,9 +94,29 @@ graphql_create_project() {
         }' -f ownerId="$owner_id" -f title="$title"
 }
 
+# Execute GraphQL query for lookup-owner
+# Returns the owner ID and type (__typename: Organization or User)
+graphql_lookup_owner() {
+    local owner="$1"
+
+    if [ "$FIXTURE_MODE" = "1" ]; then
+        return_fixture "lookup-owner"
+        return 0
+    fi
+
+    gh api graphql -f query='
+        query($owner: String!) {
+            repositoryOwner(login: $owner) {
+                id
+                __typename
+            }
+        }' -f owner="$owner"
+}
+
 # Execute GraphQL query for lookup-project
+# Uses repositoryOwner which works for both organizations and users
 graphql_lookup_project() {
-    local org="$1"
+    local owner="$1"
     local project_number="$2"
 
     if [ "$FIXTURE_MODE" = "1" ]; then
@@ -88,16 +125,26 @@ graphql_lookup_project() {
     fi
 
     gh api graphql -f query='
-        query($org: String!, $number: Int!) {
-            organization(login: $org) {
-                projectV2(number: $number) {
-                    id
-                    number
-                    title
-                    url
+        query($owner: String!, $number: Int!) {
+            repositoryOwner(login: $owner) {
+                ... on Organization {
+                    projectV2(number: $number) {
+                        id
+                        number
+                        title
+                        url
+                    }
+                }
+                ... on User {
+                    projectV2(number: $number) {
+                        id
+                        number
+                        title
+                        url
+                    }
                 }
             }
-        }' -f org="$org" -F number="$project_number"
+        }' -f owner="$owner" -F number="$project_number"
 }
 
 # Execute GraphQL query for add-item
@@ -215,6 +262,9 @@ main() {
         create-project)
             graphql_create_project "$@"
             ;;
+        lookup-owner)
+            graphql_lookup_owner "$@"
+            ;;
         lookup-project)
             graphql_lookup_project "$@"
             ;;
@@ -235,7 +285,8 @@ main() {
             echo "" >&2
             echo "Usage:" >&2
             echo "  $0 create-project <owner-id> <title>" >&2
-            echo "  $0 lookup-project <org> <project-number>" >&2
+            echo "  $0 lookup-owner <owner>" >&2
+            echo "  $0 lookup-project <owner> <project-number>" >&2
             echo "  $0 add-item <project-id> <content-id>" >&2
             echo "  $0 list-fields <project-id>" >&2
             echo "  $0 get-issue-project-item <owner> <repo> <issue-number>" >&2

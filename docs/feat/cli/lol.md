@@ -17,8 +17,8 @@ lol apply --init --name <name> --lang <lang> [--path <path>] [--source <path>] [
 lol apply --update [--path <path>]
 lol upgrade
 lol --version
-lol project --create [--org <org>] [--title <title>]
-lol project --associate <org>/<id>
+lol project --create [--org <owner>] [--title <title>]
+lol project --associate <owner>/<id>
 lol project --automation [--write <path>]
 lol usage [--today | --week] [--cache] [--cost]
 lol claude-clean [--dry-run]
@@ -227,22 +227,22 @@ Integrates your repository with GitHub Projects v2. This command creates or asso
 
 **Create a new project:**
 ```bash
-lol project --create [--org <org>] [--title <title>]
+lol project --create [--org <owner>] [--title <title>]
 ```
 
 Creates a new GitHub Projects v2 board and associates it with the repository.
 
-- `--org` - GitHub organization (optional, defaults to repository owner)
+- `--org` - GitHub owner: organization or personal user login (optional, defaults to repository owner)
 - `--title` - Project title (optional, defaults to repository name)
 
 **Associate an existing project:**
 ```bash
-lol project --associate <org>/<id>
+lol project --associate <owner>/<id>
 ```
 
 Associates an existing GitHub Projects v2 board with the repository.
 
-- `<org>/<id>` - Organization and project number (e.g., `Synthesys-Lab/3`)
+- `<owner>/<id>` - Owner (organization or user) and project number (e.g., `Synthesys-Lab/3` or `my-username/1`)
 
 **Generate automation template:**
 ```bash
@@ -270,7 +270,7 @@ Configuration required: PAT with project permissions.
 **Behavior:**
 
 - All commands update `.agentize.yaml` with project metadata:
-  - `project.org` - GitHub organization
+  - `project.org` - GitHub owner (organization or personal user login)
   - `project.id` - Project number (not node_id)
 - Requires `gh` CLI to be installed and authenticated
 - `--create` and `--associate` validate project access via GraphQL

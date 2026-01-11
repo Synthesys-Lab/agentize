@@ -225,7 +225,7 @@ _lol_parse_project() {
             --create)
                 if [ -n "$mode" ]; then
                     echo "Error: Cannot use --create with --associate or --automation"
-                    echo "Usage: lol project --create [--org <org>] [--title <title>]"
+                    echo "Usage: lol project --create [--org <owner>] [--title <title>]"
                     return 1
                 fi
                 mode="create"
@@ -234,7 +234,7 @@ _lol_parse_project() {
             --associate)
                 if [ -n "$mode" ]; then
                     echo "Error: Cannot use --associate with --create or --automation"
-                    echo "Usage: lol project --associate <org>/<id>"
+                    echo "Usage: lol project --associate <owner>/<id>"
                     return 1
                 fi
                 mode="associate"
@@ -266,8 +266,8 @@ _lol_parse_project() {
             *)
                 echo "Error: Unknown option '$1'"
                 echo "Usage:"
-                echo "  lol project --create [--org <org>] [--title <title>]"
-                echo "  lol project --associate <org>/<id>"
+                echo "  lol project --create [--org <owner>] [--title <title>]"
+                echo "  lol project --associate <owner>/<id>"
                 echo "  lol project --automation [--write <path>]"
                 return 1
                 ;;
@@ -278,8 +278,8 @@ _lol_parse_project() {
     if [ -z "$mode" ]; then
         echo "Error: Must specify --create, --associate, or --automation"
         echo "Usage:"
-        echo "  lol project --create [--org <org>] [--title <title>]"
-        echo "  lol project --associate <org>/<id>"
+        echo "  lol project --create [--org <owner>] [--title <title>]"
+        echo "  lol project --associate <owner>/<id>"
         echo "  lol project --automation [--write <path>]"
         return 1
     fi

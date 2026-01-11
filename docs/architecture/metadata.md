@@ -85,20 +85,20 @@ Directory where worktrees are created.
 **Usage:** Allows customizing worktree organization.
 
 ### project.org (optional)
-GitHub organization name for Projects v2 integration.
+GitHub owner (organization or personal user login) for Projects v2 integration.
 
-**Example:** `Synthesys-Lab`, `my-org`
+**Example:** `Synthesys-Lab`, `my-org`, `my-username`
 
-**Usage:** Set by `lol project --create` or `lol project --associate` to store the organization associated with the GitHub Projects v2 board.
+**Usage:** Set by `lol project --create` or `lol project --associate` to store the owner associated with the GitHub Projects v2 board. This can be an organization login or a personal user login, enabling Projects v2 integration for both organization-owned and user-owned repositories.
 
 ### project.id (optional)
 GitHub Projects v2 board number (the numeric ID visible in the project URL).
 
 **Example:** `3`, `42`
 
-**Usage:** Set by `lol project --create` or `lol project --associate` to store the project number. This is the project number shown in URLs like `https://github.com/orgs/my-org/projects/3`, NOT the GraphQL node_id.
+**Usage:** Set by `lol project --create` or `lol project --associate` to store the project number. This is the project number shown in URLs like `https://github.com/orgs/my-org/projects/3` (for organizations) or `https://github.com/users/my-username/projects/1` (for personal accounts), NOT the GraphQL node_id.
 
-**Note:** The `project.org` and `project.id` fields work together to uniquely identify a GitHub Projects v2 board.
+**Note:** The `project.org` and `project.id` fields work together to uniquely identify a GitHub Projects v2 board. The URL path (`orgs/` vs `users/`) is determined dynamically based on the owner type.
 
 ### agentize.commit (optional)
 Records the agentize installation commit hash used during the last `lol apply --update` operation.

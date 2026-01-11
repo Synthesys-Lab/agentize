@@ -5,7 +5,7 @@ the GitHub Projects v2 association information:
 
 ```yaml
 project:
-   org: Synthesys-Lab
+   org: Synthesys-Lab  # Owner (organization or personal user login)
    id: 3
 ```
 
@@ -15,15 +15,17 @@ This section discusses how to integrate GitHub Projects v2 with an `agentize`d p
 
 Create a new GitHub Projects v2 board and associate it with the current repository:
 ```bash
-lol project --create [--org <org>] [--title <title>]
+lol project --create [--org <owner>] [--title <title>]
 ```
 
 Associate an existing GitHub Projects v2 board with the current repository:
 ```bash
-lol project --associate <org>/<id>
+lol project --associate <owner>/<id>
 ```
 
-Both commands update `.agentize.yaml` with `project.org` and `project.id` fields.
+The `--org` flag accepts either a GitHub organization or personal user login. When omitted, it defaults to the repository owner.
+
+Both commands update `.agentize.yaml` with `project.org` (owner login) and `project.id` fields.
 
 ## Automation
 
@@ -40,18 +42,16 @@ Before configuring your Kanban board, you need to create custom fields in GitHub
 
 ### Converting Project Number to GraphQL ID
 
-Convert the project number (e.g., `3` from `.agentize.yaml`) to its GraphQL ID:
+Convert the project number (e.g., `3` from `.agentize.yaml`) to its GraphQL ID. Use the `repositoryOwner` query which works for both organizations and personal user accounts:
 
 ```bash
 gh api graphql -f query='
-query {
-  organization(login: "Synthesys-Lab") {
-    projectV2(number: 3) {
-      id
-      title
-    }
+query($owner: String!, $number: Int!) {
+  repositoryOwner(login: $owner) {
+    ... on Organization { projectV2(number: $number) { id title } }
+    ... on User { projectV2(number: $number) { id title } }
   }
-}'
+}' -f owner="Synthesys-Lab" -F number=3
 ```
 
 ### Configuring the Default Status Field

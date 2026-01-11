@@ -110,8 +110,10 @@ This pattern provides:
 It is preferred to associate each repository with a GitHub Projects v2 board for better issue tracking and project management.
 
 **Create or associate a project:**
-- `lol project --create [--org <org>] [--title <title>]` - Create a new GitHub Projects v2 board and associate it
-- `lol project --associate <org>/<id>` - Associate the current repo to an existing GitHub Projects v2 board
+- `lol project --create [--org <owner>] [--title <title>]` - Create a new GitHub Projects v2 board and associate it
+- `lol project --associate <owner>/<id>` - Associate the current repo to an existing GitHub Projects v2 board
+
+The `--org` flag accepts either a GitHub organization or personal user login. When omitted, it defaults to the repository owner.
 
 **Generate automation template:**
 - `lol project --automation [--write <path>]` - Generate a GitHub Actions workflow for project automation with lifecycle management (auto-add issues/PRs, set Status "Proposed" for issues, close linked issues on PR merge)

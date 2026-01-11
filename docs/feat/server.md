@@ -234,7 +234,7 @@ The server reads project association from `.agentize.yaml` in your repository ro
 
 ```yaml
 project:
-  org: <organization>
+  org: <owner>            # Organization or personal user login
   id: <project-number>
 ```
 

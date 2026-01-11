@@ -48,10 +48,12 @@ lol upgrade
 Manage GitHub Projects v2 integration.
 
 ```bash
-lol project --create [--org <org>] [--title <title>]
-lol project --associate <org>/<id>
+lol project --create [--org <owner>] [--title <title>]
+lol project --associate <owner>/<id>
 lol project --automation [--write <path>]
 ```
+
+The `--org` flag accepts either an organization or personal user login. When omitted, it defaults to the repository owner (which may be an organization or personal account).
 
 See [Project Management](../architecture/project.md) for details.
 

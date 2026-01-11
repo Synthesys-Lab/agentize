@@ -103,16 +103,16 @@ lol_cmd_project() (
 
     # Helper: Create a new GitHub Projects v2 board
     _create_project() {
-        local org="$arg1"
+        local owner="$arg1"
         local title="$arg2"
 
-        # Default org to repository owner
-        if [ -z "$org" ]; then
-            org="$(gh repo view --json owner --jq '.owner.login' 2>/dev/null)" || {
+        # Default owner to repository owner
+        if [ -z "$owner" ]; then
+            owner="$(gh repo view --json owner --jq '.owner.login' 2>/dev/null)" || {
                 echo "Error: Unable to detect repository owner"
                 echo ""
                 echo "Please specify --org explicitly:"
-                echo "  lol project --create --org <organization>"
+                echo "  lol project --create --org <owner>"
                 exit 1
             }
         fi
@@ -123,26 +123,29 @@ lol_cmd_project() (
         fi
 
         echo "Creating GitHub Projects v2 board:"
-        echo "  Organization: $org"
+        echo "  Owner: $owner"
         echo "  Title: $title"
         echo ""
 
-        # Get organization ID for GraphQL mutation
-        local owner_id
-        owner_id="$(gh api graphql -f query='
-            query($org: String!) {
-                organization(login: $org) {
-                    id
-                }
-            }' -f org="$org" --jq '.data.organization.id')" || {
-            echo "Error: Unable to access organization '$org'"
+        # Get owner ID for GraphQL mutation using lookup-owner
+        local owner_result owner_id owner_type
+        owner_result="$("$AGENTIZE_HOME/scripts/gh-graphql.sh" lookup-owner "$owner")" || {
+            echo "Error: Unable to access owner '$owner'"
             echo ""
             echo "Please ensure:"
-            echo "  1. Organization exists"
-            echo "  2. You have access to the organization"
+            echo "  1. Owner (organization or user) exists"
+            echo "  2. You have access to the owner"
             echo "  3. gh CLI has required permissions"
             exit 1
         }
+
+        owner_id="$(echo "$owner_result" | jq -r '.data.repositoryOwner.id')"
+        owner_type="$(echo "$owner_result" | jq -r '.data.repositoryOwner.__typename')"
+
+        if [ -z "$owner_id" ] || [ "$owner_id" = "null" ]; then
+            echo "Error: Owner '$owner' not found"
+            exit 1
+        fi
 
         # Create project via GraphQL
         local result
@@ -151,19 +154,20 @@ lol_cmd_project() (
             exit 1
         }
 
-        local project_number
+        local project_number project_url
         project_number="$(echo "$result" | jq -r '.data.createProjectV2.projectV2.number')"
+        project_url="$(echo "$result" | jq -r '.data.createProjectV2.projectV2.url')"
 
         if [ -z "$project_number" ] || [ "$project_number" = "null" ]; then
             echo "Error: Failed to extract project number from GraphQL response"
             exit 1
         fi
 
-        echo "Project created successfully: $org/$project_number"
+        echo "Project created successfully: $owner/$project_number"
         echo ""
 
         # Update metadata
-        _update_metadata "org" "$org"
+        _update_metadata "org" "$owner"
         _update_metadata "id" "$project_number"
 
         echo "Updated .agentize.yaml"
@@ -172,7 +176,17 @@ lol_cmd_project() (
         echo ""
         echo "Next steps:"
         echo "  1. Set up automation: lol project --automation"
-        echo "  2. View your project: https://github.com/orgs/$org/projects/$project_number"
+        # Use the URL from the response which has the correct path (orgs/ or users/)
+        if [ -n "$project_url" ] && [ "$project_url" != "null" ]; then
+            echo "  2. View your project: $project_url"
+        else
+            # Fallback: determine path based on owner type
+            local owner_path="orgs"
+            if [ "$owner_type" = "User" ]; then
+                owner_path="users"
+            fi
+            echo "  2. View your project: https://github.com/$owner_path/$owner/projects/$project_number"
+        fi
     }
 
     # Helper: Associate with an existing GitHub Projects v2 board
@@ -180,39 +194,41 @@ lol_cmd_project() (
         local associate_arg="$arg1"
 
         if [ -z "$associate_arg" ]; then
-            echo "Error: --associate requires <org>/<id> argument"
-            echo "Usage: lol project --associate <org>/<id>"
+            echo "Error: --associate requires <owner>/<id> argument"
+            echo "Usage: lol project --associate <owner>/<id>"
             exit 1
         fi
 
-        # Parse org/id
-        local org="${associate_arg%%/*}"
+        # Parse owner/id
+        local owner="${associate_arg%%/*}"
         local project_id="${associate_arg##*/}"
 
-        if [ -z "$org" ] || [ -z "$project_id" ]; then
+        if [ -z "$owner" ] || [ -z "$project_id" ]; then
             echo "Error: Invalid format for --associate argument"
-            echo "Expected: <org>/<id> (e.g., Synthesys-Lab/3)"
+            echo "Expected: <owner>/<id> (e.g., Synthesys-Lab/3 or my-username/1)"
             echo "Got: $associate_arg"
             exit 1
         fi
 
         echo "Associating with GitHub Projects v2 board:"
-        echo "  Organization: $org"
+        echo "  Owner: $owner"
         echo "  Project ID: $project_id"
         echo ""
 
-        # Verify project exists via GraphQL
+        # Verify project exists via GraphQL (uses repositoryOwner which works for both orgs and users)
         local result
-        result="$("$AGENTIZE_HOME/scripts/gh-graphql.sh" lookup-project "$org" "$project_id")" || {
+        result="$("$AGENTIZE_HOME/scripts/gh-graphql.sh" lookup-project "$owner" "$project_id")" || {
             echo "Error: Failed to look up project"
             exit 1
         }
 
-        local project_title
-        project_title="$(echo "$result" | jq -r '.data.organization.projectV2.title')"
+        # Extract from repositoryOwner path (works for both Organization and User)
+        local project_title project_url
+        project_title="$(echo "$result" | jq -r '.data.repositoryOwner.projectV2.title')"
+        project_url="$(echo "$result" | jq -r '.data.repositoryOwner.projectV2.url')"
 
         if [ -z "$project_title" ] || [ "$project_title" = "null" ]; then
-            echo "Error: Project $org/$project_id not found or inaccessible"
+            echo "Error: Project $owner/$project_id not found or inaccessible"
             echo ""
             echo "Please ensure:"
             echo "  1. Project exists"
@@ -225,7 +241,7 @@ lol_cmd_project() (
         echo ""
 
         # Update metadata
-        _update_metadata "org" "$org"
+        _update_metadata "org" "$owner"
         _update_metadata "id" "$project_id"
 
         echo "Updated .agentize.yaml"
@@ -234,7 +250,20 @@ lol_cmd_project() (
         echo ""
         echo "Next steps:"
         echo "  1. Set up automation: lol project --automation"
-        echo "  2. View your project: https://github.com/orgs/$org/projects/$project_id"
+        # Use the URL from the response which has the correct path (orgs/ or users/)
+        if [ -n "$project_url" ] && [ "$project_url" != "null" ]; then
+            echo "  2. View your project: $project_url"
+        else
+            # Determine owner type for correct URL path
+            local owner_result owner_type owner_path
+            owner_result="$("$AGENTIZE_HOME/scripts/gh-graphql.sh" lookup-owner "$owner" 2>/dev/null)" || true
+            owner_type="$(echo "$owner_result" | jq -r '.data.repositoryOwner.__typename' 2>/dev/null)"
+            owner_path="orgs"
+            if [ "$owner_type" = "User" ]; then
+                owner_path="users"
+            fi
+            echo "  2. View your project: https://github.com/$owner_path/$owner/projects/$project_id"
+        fi
     }
 
     # Helper: Generate automation workflow template
@@ -242,34 +271,49 @@ lol_cmd_project() (
         local write_path="$arg1"
 
         # Read project metadata
-        local org
+        local owner
         local project_id
-        org="$(_read_metadata "org")"
+        owner="$(_read_metadata "org")"
         project_id="$(_read_metadata "id")"
 
         # Use defaults if not set
-        if [ -z "$org" ]; then
-            org="YOUR_ORG_HERE"
+        if [ -z "$owner" ]; then
+            owner="YOUR_OWNER_HERE"
         fi
         if [ -z "$project_id" ]; then
             project_id="YOUR_PROJECT_ID_HERE"
         fi
 
+        # Detect owner type for correct URL path (orgs/ vs users/)
+        local owner_path="orgs"
+        local owner_type=""
+
         # Check Status field configuration
-        if [ "$org" != "YOUR_ORG_HERE" ] && [ "$project_id" != "YOUR_PROJECT_ID_HERE" ]; then
+        if [ "$owner" != "YOUR_OWNER_HERE" ] && [ "$project_id" != "YOUR_PROJECT_ID_HERE" ]; then
             echo "Configuring Status field for project automation..."
             echo ""
 
+            # Get owner type first
+            local owner_result
+            owner_result="$("$AGENTIZE_HOME/scripts/gh-graphql.sh" lookup-owner "$owner" 2>/dev/null)" || true
+            if [ -n "$owner_result" ]; then
+                owner_type="$(echo "$owner_result" | jq -r '.data.repositoryOwner.__typename')"
+                if [ "$owner_type" = "User" ]; then
+                    owner_path="users"
+                fi
+            fi
+
             # Get project GraphQL ID
             local result
-            result="$("$AGENTIZE_HOME/scripts/gh-graphql.sh" lookup-project "$org" "$project_id")" || {
+            result="$("$AGENTIZE_HOME/scripts/gh-graphql.sh" lookup-project "$owner" "$project_id")" || {
                 echo "Warning: Failed to look up project"
                 echo ""
             }
 
             if [ -n "$result" ]; then
                 local project_graphql_id
-                project_graphql_id="$(echo "$result" | jq -r '.data.organization.projectV2.id')"
+                # Use repositoryOwner response path
+                project_graphql_id="$(echo "$result" | jq -r '.data.repositoryOwner.projectV2.id')"
 
                 if [ -n "$project_graphql_id" ] && [ "$project_graphql_id" != "null" ]; then
                     # List existing fields to verify Status field exists
@@ -301,11 +345,12 @@ lol_cmd_project() (
             echo ""
         fi
 
-        # Generate workflow content
+        # Generate workflow content with owner-aware URL path
         local workflow_content
         workflow_content="$(cat "$AGENTIZE_HOME/templates/github/project-auto-add.yml" | \
-            sed "s/YOUR_ORG_HERE/$org/g" | \
-            sed "s/YOUR_PROJECT_ID_HERE/$project_id/g")"
+            sed "s/YOUR_ORG_HERE/$owner/g" | \
+            sed "s/YOUR_PROJECT_ID_HERE/$project_id/g" | \
+            sed "s|orgs/\${{ env.PROJECT_ORG }}|$owner_path/\${{ env.PROJECT_ORG }}|g")"
 
         if [ -n "$write_path" ]; then
             # Write to file

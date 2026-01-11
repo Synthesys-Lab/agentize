@@ -252,15 +252,13 @@ To set a Status value for newly opened PRs:
 
 1. **10 linked issues maximum**: The `closingIssuesReferences` query uses `first: 10`. If a PR closes more than 10 issues, only the first 10 will be updated.
 
-2. **Organization projects only**: The template uses `organization(login:)` query. For user projects, modify the GraphQL queries to use `user(login:)` instead.
+2. **Single-select fields only**: The mutation uses `singleSelectOptionId`. For other field types (text, number, date), different mutation syntax is required.
 
-3. **Single-select fields only**: The mutation uses `singleSelectOptionId`. For other field types (text, number, date), different mutation syntax is required.
+3. **No cross-repository support**: Issues must be in the same repository as the PR. Cross-repo closing is not supported by `closingIssuesReferences`.
 
-4. **No cross-repository support**: Issues must be in the same repository as the PR. Cross-repo closing is not supported by `closingIssuesReferences`.
+4. **PR archival only**: The `archive-pr-on-merge` job only archives merged PR items. Manual issue closing, abandoned PRs, and other lifecycle events are not archived. Use GitHub's built-in auto-archive for broader coverage.
 
-5. **PR archival only**: The `archive-pr-on-merge` job only archives merged PR items. Manual issue closing, abandoned PRs, and other lifecycle events are not archived. Use GitHub's built-in auto-archive for broader coverage.
-
-6. **Large projects pagination**: PR item lookup iterates up to 5 pages (500 items). For very large projects with more than 500 active items, the PR may not be found and archival will be skipped (logged but no error).
+5. **Large projects pagination**: PR item lookup iterates up to 5 pages (500 items). For very large projects with more than 500 active items, the PR may not be found and archival will be skipped (logged but no error).
 
 ## Reference Links
 
