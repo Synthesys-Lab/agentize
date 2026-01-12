@@ -386,7 +386,7 @@ lol_cmd_project() (
             echo "   git push"
             echo ""
             echo "For detailed setup instructions and troubleshooting, see:"
-            echo "  docs/workflows/github-projects-automation.md"
+            echo "  templates/github/project-auto-add.md"
         else
             # Print to stdout
             echo "$workflow_content"

@@ -42,7 +42,7 @@ EOF
     fi
 
     # Test case 3: Output includes reference to documentation
-    if ! echo "$output" | grep -q "docs/workflows/github-projects-automation.md"; then
+    if ! echo "$output" | grep -q "templates/github/project-auto-add.md"; then
         cleanup_dir "$TMP_DIR"
         test_fail "Missing documentation reference"
     fi
