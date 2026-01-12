@@ -82,7 +82,7 @@ lol() {
             echo "  lol project --associate <owner>/<id>"
             echo "  lol project --automation [--write <path>]"
             echo "  lol serve --tg-token=<token> --tg-chat-id=<id> [--period=5m]"
-            echo "  lol usage [--today | --week]"
+            echo "  lol usage [--today | --week] [--cache] [--cost]"
             echo "  lol claude-clean [--dry-run]"
             echo ""
             echo "Flags:"
