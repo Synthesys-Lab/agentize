@@ -64,8 +64,8 @@ This creates an initial SDK structure in the specified project path. Use `lol --
 
 See our detailed workflow diagrams:
 
-- [Ultra Planner Workflow](./docs/workflows/ultra-planner.md) - Multi-agent debate-based planning
-- [Issue to Implementation Workflow](./docs/workflows/issue-to-impl.md) - Complete development cycle
+- [Ultra Planner Workflow](./docs/feat/core/ultra-planner.md) - Multi-agent debate-based planning
+- [Issue to Implementation Workflow](./docs/feat/core/issue-to-impl.md) - Complete development cycle
 
 **Legend**: Red boxes represent user interventions (providing requirements, approving/rejecting results, starting sessions). Blue boxes represent automated AI steps.
 

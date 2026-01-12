@@ -9,4 +9,4 @@ Templates for GitHub-specific automation and workflows.
 
 ## Usage
 
-Generate via `lol project --automation` command. See `docs/workflows/github-projects-automation.md` for full setup guide.
+Generate via `lol project --automation` command. See `templates/github/project-auto-add.md` for full setup guide.

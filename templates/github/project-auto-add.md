@@ -269,6 +269,6 @@ To set a Status value for newly opened PRs:
 
 ## See Also
 
-- [`docs/workflows/github-projects-automation.md`](../../docs/workflows/github-projects-automation.md) - Full automation setup guide
+- This document is the full automation setup guide for Projects v2 automation.
 - [`docs/architecture/project.md`](../../docs/architecture/project.md) - Project field management and GraphQL queries
 - [`docs/cli/lol.md`](../../docs/cli/lol.md) - CLI reference for `lol project` commands

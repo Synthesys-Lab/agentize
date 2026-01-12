@@ -31,11 +31,11 @@ System design and internal architecture:
 
 Detailed workflow diagrams and process documentation:
 
-See [`workflows/README.md`](workflows/README.md) for all workflow diagrams:
-- `workflows/milestone.md` - Milestone-based implementation workflow
-- `workflows/ultra-planner.md` - Multi-agent debate-based planning
-- `workflows/issue-to-impl.md` - Complete development cycle
-- `workflows/handsoff.md` - Handsoff mode auto-continuation
+See [`feat/README.md`](feat/README.md) for all workflow diagrams:
+- `feat/core/milestone.md` - Milestone-based implementation workflow
+- `feat/core/ultra-planner.md` - Multi-agent debate-based planning
+- `feat/core/issue-to-impl.md` - Complete development cycle
+- `feat/core/handsoff.md` - Handsoff mode auto-continuation
 
 ### Testing Documentation
 

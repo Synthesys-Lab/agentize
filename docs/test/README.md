@@ -71,5 +71,5 @@ All tests are executed via `tests/test-all.sh`, which automatically discovers te
 
 Testing documentation is referenced from:
 - Main [README.md](../README.md) under "Testing Documentation"
-- Workflows in [docs/workflows/](../workflows/)
+- Workflows in [docs/feat/core/](../feat/core/)
 - Individual skill and command implementations
