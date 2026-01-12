@@ -58,6 +58,8 @@ usage_output=$(lol --complete usage-flags 2>/dev/null)
 
 echo "$usage_output" | grep -q "^--today$" || test_fail "usage-flags missing: --today"
 echo "$usage_output" | grep -q "^--week$" || test_fail "usage-flags missing: --week"
+echo "$usage_output" | grep -q "^--cache$" || test_fail "usage-flags missing: --cache"
+echo "$usage_output" | grep -q "^--cost$" || test_fail "usage-flags missing: --cost"
 
 # Test lang-values
 lang_output=$(lol --complete lang-values 2>/dev/null)

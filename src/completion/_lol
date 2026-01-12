@@ -30,6 +30,7 @@ _lol() {
                 apply) commands_with_desc+=('apply:Initialize or update AI-powered SDK (use --init or --update)') ;;
                 upgrade) commands_with_desc+=('upgrade:Upgrade agentize installation') ;;
                 project) commands_with_desc+=('project:Manage GitHub Projects v2 integration') ;;
+                usage) commands_with_desc+=('usage:Report Claude Code token usage statistics') ;;
                 version) commands_with_desc+=('version:Display version information') ;;
             esac
         done
@@ -54,6 +55,9 @@ _lol() {
                     ;;
                 project)
                     _lol_project
+                    ;;
+                usage)
+                    _lol_usage
                     ;;
                 version)
                     _lol_version
@@ -136,6 +140,27 @@ _lol_project() {
         '--org[GitHub organization]:organization:' \
         '--title[Project title]:title:' \
         '--write[Write automation template to file]:path:_files'
+}
+
+# Completion for 'lol usage' subcommand
+_lol_usage() {
+    local -a usage_flags
+
+    # Try dynamic fetch first
+    if (( $+commands[lol] )); then
+        usage_flags=( ${(f)"$(lol --complete usage-flags 2>/dev/null)"} )
+    fi
+
+    # Fallback to static flags
+    if (( ${#usage_flags} == 0 )); then
+        usage_flags=( '--today' '--week' '--cache' '--cost' )
+    fi
+
+    _arguments \
+        '--today[Show usage by hour for the last 24 hours]' \
+        '--week[Show usage by day for the last 7 days]' \
+        '--cache[Include cache token statistics]' \
+        '--cost[Show cost estimate]'
 }
 
 _lol "$@"
