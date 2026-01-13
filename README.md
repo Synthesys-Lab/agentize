@@ -35,6 +35,22 @@ Then add to your shell RC file (`~/.bashrc`, `~/.zshrc`, etc.):
 source $HOME/.agentize/setup.sh
 ```
 
+### Plugin Install (Claude Code)
+
+For Claude Code users, install Agentize as a plugin:
+
+```bash
+# Development/testing: point to local directory
+claude --plugin-dir /path/to/agentize
+
+# From marketplace (once published)
+/plugin install agentize@synthesys-lab
+```
+
+Plugin mode namespaces all commands with `agentize:` prefix (e.g., `/agentize:ultra-planner`).
+
+See [docs/plugin-installation.md](./docs/plugin-installation.md) for details.
+
 ### Initialize a New Project
 
 Once installed, create AI-powered SDK projects:
@@ -142,19 +158,21 @@ Use `lol --help` for complete documentation.
 
 ```plaintext
 agentize/
-├── docs/                   # Document
-│   ├── draft/              # Draft documents for local development
-│   └── git-msg-tags.md     # Used by \commit-msg skill and command to write meaningful commit messages
+├── .claude-plugin/         # Plugin manifest (plugin.json)
+├── commands/               # Claude Code commands
+├── skills/                 # Claude Code skills
+├── agents/                 # Claude Code agents
+├── hooks/                  # Claude Code hooks
+├── python/                 # Python modules (agentize.*)
+├── docs/                   # Documentation
+│   ├── plugin-installation.md  # Plugin installation guide
+│   └── git-msg-tags.md     # Commit message conventions
 ├── src/cli/                # Source-first CLI libraries
-│   ├── wt.sh               # Worktree CLI library (canonical source)
-│   └── lol.sh              # SDK CLI library (canonical source)
+│   ├── wt.sh               # Worktree CLI library
+│   └── lol.sh              # SDK CLI library
 ├── scripts/                # Shell scripts and wrapper entrypoints
-│   ├── wt-cli.sh           # Worktree CLI wrapper (sources src/cli/wt.sh)
-│   └── agentize-*.sh       # SDK command wrappers
 ├── templates/              # Templates for SDK generation
-├── .claude/                # Core agent rules for Claude Code
 ├── tests/                  # Test cases
-├── .gitignore              # Git ignore file
 ├── Makefile                # Build targets for testing and setup
 └── README.md               # This readme file
 ```

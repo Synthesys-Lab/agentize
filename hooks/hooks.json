@@ -1,15 +1,11 @@
 {
-  "env": {
-    "BASH_DEFAULT_TIMEOUT_MS": "1800000",
-    "BASH_MAX_TIMEOUT_MS": "7200000"
-  },
   "hooks": {
     "UserPromptSubmit": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/hooks/user-prompt-submit.py"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/user-prompt-submit.py"
           }
         ]
       }
@@ -19,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/hooks/session-init.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/session-init.sh"
           }
         ]
       }
@@ -29,7 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/hooks/stop.py"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/stop.py"
           }
         ]
       }
@@ -40,7 +36,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/hooks/pre-tool-use.py",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/pre-tool-use.py",
             "timeout": 7200
           }
         ]
@@ -52,17 +48,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/hooks/post-edit.sh"
-          }
-        ]
-      }
-    ],
-    "PermissionRequest": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/hooks/permission-request.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/post-edit.sh"
           }
         ]
       }

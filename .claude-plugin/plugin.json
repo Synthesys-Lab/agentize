@@ -1,0 +1,16 @@
+{
+  "name": "agentize",
+  "version": "1.0.0",
+  "description": "AI-powered development workflow with planning, implementation, and review commands",
+  "author": {
+    "name": "SyntheSys-Lab"
+  },
+  "homepage": "https://github.com/Synthesys-Lab/agentize",
+  "repository": "https://github.com/Synthesys-Lab/agentize",
+  "license": "MIT",
+  "keywords": ["planning", "implementation", "code-review", "tdd", "workflow"],
+  "commands": "./commands",
+  "skills": "./skills",
+  "agents": "./agents",
+  "hooks": "./hooks/hooks.json"
+}
