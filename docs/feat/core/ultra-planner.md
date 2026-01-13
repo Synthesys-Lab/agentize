@@ -45,7 +45,42 @@ graph TD
 
 ## Key Features
 
-### 1. Automatic Issue Creation
+### 1. Automatic Complexity-Based Routing
+
+Ultra-planner automatically routes between lightweight and full debate workflows based on estimated modification complexity. After the understander gathers codebase context, it estimates the modification's LOC and recommends a path:
+
+- **Lite path** (<200 LOC): Single-agent planner for fast, simple modifications
+- **Full path** (≥200 LOC): Multi-agent debate for complex features
+
+**Workflow with routing:**
+
+```mermaid
+graph TD
+    A[User provides requirements] --> B[Create placeholder issue]
+    B --> B2[doc-architect: Generate diff previews]
+    B2 --> U[Understander: Gather context + estimate complexity]
+    U --> R{Recommended path?}
+    R -->|lite < 200 LOC| L[Planner-lite: Single-agent plan]
+    R -->|full ≥ 200 LOC| C[Bold-proposer: Research SOTA]
+    C --> D[Critique + Reducer in parallel]
+    D --> F[Combined 3-perspective report]
+    L --> G
+    F --> G[External consensus: Synthesize plan]
+    G --> H[Update issue with consensus plan]
+```
+
+**Benefits:**
+- 55-70% cost reduction for simple tasks
+- 4-8 minute time savings (1-2 min lite vs 6-12 min full)
+- No user intervention required
+
+**Override flag:**
+```
+/ultra-planner --force-full <feature-description>
+```
+Forces full multi-agent debate regardless of complexity estimation.
+
+### 2. Automatic Issue Creation
 
 Ultra-planner creates a GitHub issue **before** running the multi-agent debate workflow:
 
@@ -70,7 +105,7 @@ To refine: /ultra-planner --refine 42
 To implement: /issue-to-impl 42
 ```
 
-### 2. Issue-Based Refinement
+### 2a. Issue-Based Refinement
 
 Refinement mode (`/ultra-planner --refine`) enables iterative plan improvement:
 
@@ -106,7 +141,7 @@ Issue #42 updated with refined plan.
 Summary: Reduced LOC 280→150, removed OAuth2, simplified middleware
 ```
 
-### 2a. Label-Triggered Auto Refinement
+### 2b. Label-Triggered Auto Refinement
 
 The server can automatically trigger refinement when the `agentize:refine` label is added to a plan issue. This enables refinement requests without manual `/ultra-planner --refine` invocation.
 
@@ -199,10 +234,26 @@ After reviewing a plan issue:
 
 ### Ultra-Planner Initial Run
 
+**With automatic routing**, timing depends on the estimated complexity:
+
+#### Lite Path (< 200 LOC)
+
+**Duration:** 1-2 minutes end-to-end
+
+**Breakdown:**
+- Understander agent: 1-2 minutes (codebase exploration + complexity estimation)
+- Planner-lite agent: 30-60 seconds (single-agent planning)
+- External consensus review: 30-60 seconds
+- Draft issue creation: <10 seconds
+
+**Cost:** ~$0.50-1.50 per planning session (2 Sonnet agents + 1 external review)
+
+#### Full Path (≥ 200 LOC)
+
 **Duration:** 6-12 minutes end-to-end
 
 **Breakdown:**
-- Understander agent: 1-2 minutes (codebase exploration)
+- Understander agent: 1-2 minutes (codebase exploration + complexity estimation)
 - Bold-proposer agent: 2-3 minutes (research + proposal, with context)
 - Critique + Reducer agents (parallel): 2-3 minutes
 - External consensus review: 1-2 minutes
@@ -237,12 +288,29 @@ After reviewing a plan issue:
 
 ### `/ultra-planner <feature-description>`
 
-Creates initial plan via multi-agent debate and auto-creates plan issue.
+Creates initial plan via automatic routing (lite or full path) and auto-creates plan issue.
 
 **Usage:**
 ```
 /ultra-planner Add user authentication with JWT and RBAC
 ```
+
+**Routing:** Understander estimates complexity and routes to:
+- Lite path (<200 LOC): Single-agent planning (1-2 min)
+- Full path (≥200 LOC): Multi-agent debate (6-12 min)
+
+**Output:** Plan issue URL and refinement/implementation instructions
+
+### `/ultra-planner --force-full <feature-description>`
+
+Forces full multi-agent debate regardless of complexity estimation.
+
+**Usage:**
+```
+/ultra-planner --force-full Add simple helper function
+```
+
+**Use case:** When you want thorough multi-perspective analysis even for simple changes.
 
 **Output:** Plan issue URL and refinement/implementation instructions
 

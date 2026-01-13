@@ -179,6 +179,32 @@ This document tracks the testing status of AI rules, skills, and commands in thi
 
 ---
 
+### ultra-planner automatic routing
+**Status**: 🔄 In Progress
+
+**Implementation Status**:
+- Issue #405: Adding automatic complexity-based routing
+  - Understander outputs complexity estimation with `recommended_path: lite | full`
+  - Ultra-planner routes based on understander recommendation
+  - Planner-lite agent for simple modifications (<200 LOC)
+
+**Planned Dogfeeding Tests**:
+1. **Lite path test**: Run `/ultra-planner <simple-feature>` and verify:
+   - Understander outputs `recommended_path: lite`
+   - Planner-lite agent is invoked (no Bold/Critique/Reducer)
+   - Total time ~1-2 minutes
+2. **Full path test**: Run `/ultra-planner <complex-feature>` and verify:
+   - Understander outputs `recommended_path: full`
+   - Full debate runs (Bold + Critique + Reducer)
+   - Total time ~6-12 minutes
+3. **Force-full test**: Run `/ultra-planner --force-full <simple-feature>` and verify:
+   - Full debate runs despite simple estimation
+   - Override works correctly
+
+**Notes**: Conservative threshold (200 LOC) to avoid false negatives (complex misclassified as simple)
+
+---
+
 ### code-review (command)
 **Status**: ✅ Validated
 

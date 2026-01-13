@@ -6,26 +6,39 @@ Learn how to use multi-agent debate-based planning for complex features with `/u
 
 ## What is `/ultra-planner`?
 
-`/ultra-planner` uses **three AI agents** in a serial debate workflow to create balanced implementation plans:
+`/ultra-planner` automatically routes to the optimal planning workflow based on estimated complexity:
 
-1. **Bold Proposer**: Runs first, researches SOTA solutions and proposes innovative approaches
-2. **Proposal Critique**: Analyzes Bold's proposal, validates assumptions and identifies technical risks
-3. **Proposal Reducer**: Analyzes Bold's proposal, simplifies following "less is more" philosophy
+### Automatic Routing
+
+After the **Understander** agent gathers codebase context, it estimates modification complexity and recommends a path:
+
+- **Lite path** (<200 LOC): Single-agent planner for fast, simple modifications (1-2 min)
+- **Full path** (≥200 LOC): Multi-agent debate for complex features (6-12 min)
+
+### Full Debate (for complex features)
+
+The full path uses **three AI agents** in a serial debate workflow:
+
+1. **Bold Proposer**: Researches SOTA solutions and proposes innovative approaches
+2. **Proposal Critique**: Validates assumptions and identifies technical risks
+3. **Proposal Reducer**: Simplifies following "less is more" philosophy
 
 Bold-proposer runs first to generate a concrete proposal, then Critique and Reducer both analyze that proposal (running in parallel with each other). An external reviewer (Codex/Claude Opus) synthesizes all three perspectives into a consensus plan.
 
 ## When to Use It?
 
-**Use `/ultra-planner`** for:
-- Large features (≥400 LOC)
-- Complex architectural decisions
-- High-risk features needing validation
-- Innovative solutions requiring research
+**Use `/ultra-planner`** for all feature planning. It automatically routes:
 
-**Use `/plan-an-issue`** for:
-- Small to medium features (<400 LOC)
-- Clear, straightforward implementations
-- Time-sensitive planning (1-2 min vs 5-10 min)
+- **Simple features** (<200 LOC) → Lite path (1-2 min, ~$0.50-1.50)
+- **Complex features** (≥200 LOC) → Full debate (6-12 min, ~$2.50-6)
+
+**Use `/ultra-planner --force-full`** when:
+- You want thorough multi-perspective analysis even for simple changes
+- The understander's estimate seems too low
+
+**Use `/plan-an-issue`** as a standalone alternative:
+- When you want direct single-agent planning without understander
+- For time-sensitive planning with known scope
 
 ## Workflow Example
 
@@ -106,9 +119,14 @@ This enables stakeholders to request plan improvements without CLI access.
 
 ## Cost & Time
 
-- **Time**: 5-10 minutes (vs 1-2 min for single-agent)
-- **Cost**: ~$2-5 (vs ~$0.50-1 for single-agent)
-- **Value**: Multiple perspectives, thorough validation, balanced plans
+**With automatic routing:**
+
+| Path | Complexity | Time | Cost |
+|------|------------|------|------|
+| Lite | <200 LOC | 1-2 min | ~$0.50-1.50 |
+| Full | ≥200 LOC | 6-12 min | ~$2.50-6 |
+
+**Value of full path**: Multiple perspectives, thorough validation, balanced plans
 
 ## Next Steps
 
