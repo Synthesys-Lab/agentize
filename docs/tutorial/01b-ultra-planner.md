@@ -123,8 +123,10 @@ This enables stakeholders to request plan improvements without CLI access.
 
 | Path | Complexity | Time | Cost |
 |------|------------|------|------|
-| Lite | <200 LOC | 1-2 min | ~$0.50-1.50 |
+| Lite | <200 LOC | 1-2 min | ~$0.30-0.80 |
 | Full | ≥200 LOC | 6-12 min | ~$2.50-6 |
+
+**Why lite is cheaper**: No external consensus step (single agent, nothing to synthesize)
 
 **Value of full path**: Multiple perspectives, thorough validation, balanced plans
 

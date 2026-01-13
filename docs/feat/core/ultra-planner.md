@@ -64,9 +64,9 @@ graph TD
     R -->|full ≥ 200 LOC| C[Bold-proposer: Research SOTA]
     C --> D[Critique + Reducer in parallel]
     D --> F[Combined 3-perspective report]
-    L --> G
+    L --> H[Update issue with plan]
     F --> G[External consensus: Synthesize plan]
-    G --> H[Update issue with consensus plan]
+    G --> H
 ```
 
 **Benefits:**
@@ -243,10 +243,10 @@ After reviewing a plan issue:
 **Breakdown:**
 - Understander agent: 1-2 minutes (codebase exploration + complexity estimation)
 - Planner-lite agent: 30-60 seconds (single-agent planning)
-- External consensus review: 30-60 seconds
+- No consensus step (single agent, nothing to synthesize)
 - Draft issue creation: <10 seconds
 
-**Cost:** ~$0.50-1.50 per planning session (2 Sonnet agents + 1 external review)
+**Cost:** ~$0.30-0.80 per planning session (2 Sonnet agents, no external review)
 
 #### Full Path (≥ 200 LOC)
 
