@@ -207,6 +207,11 @@ Task tool parameters:
 
 ### Step 4a: Route Based on Complexity (Lite vs Full Path)
 
+**Lite path conditions** (ALL must be true):
+1. All knowledge within repo (no internet research needed)
+2. Less than 5 files affected
+3. Less than 150 LOC total
+
 **Check routing conditions:**
 
 1. If `--force-full` flag was set in Step 1: **Use FULL path** (skip to Step 5)
@@ -217,7 +222,7 @@ Task tool parameters:
 **Output routing decision:**
 ```
 Routing decision: {lite|full} path
-Reason: {understander recommended lite|force-full flag|refine mode|understander recommended full}
+Reason: {lite conditions met|force-full flag|refine mode|needs research or exceeds limits}
 ```
 
 ### Step 4b: Invoke Planner-Lite Agent (Lite Path Only)

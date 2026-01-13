@@ -184,24 +184,25 @@ This document tracks the testing status of AI rules, skills, and commands in thi
 
 **Implementation Status**:
 - Issue #405: Adding automatic complexity-based routing
-  - Understander outputs complexity estimation with `recommended_path: lite | full`
+  - Understander checks lite conditions and outputs `recommended_path: lite | full`
+  - Lite conditions: repo-only knowledge, <5 files, <150 LOC
   - Ultra-planner routes based on understander recommendation
-  - Planner-lite agent for simple modifications (<200 LOC)
+  - Planner-lite agent for simple modifications (no consensus step)
 
 **Planned Dogfeeding Tests**:
 1. **Lite path test**: Run `/ultra-planner <simple-feature>` and verify:
-   - Understander outputs `recommended_path: lite`
-   - Planner-lite agent is invoked (no Bold/Critique/Reducer)
+   - Understander outputs `recommended_path: lite` (all conditions met)
+   - Planner-lite agent is invoked (no Bold/Critique/Reducer/Consensus)
    - Total time ~1-2 minutes
 2. **Full path test**: Run `/ultra-planner <complex-feature>` and verify:
-   - Understander outputs `recommended_path: full`
-   - Full debate runs (Bold + Critique + Reducer)
+   - Understander outputs `recommended_path: full` (needs research or exceeds limits)
+   - Full debate runs (Bold + Critique + Reducer + Consensus)
    - Total time ~6-12 minutes
 3. **Force-full test**: Run `/ultra-planner --force-full <simple-feature>` and verify:
-   - Full debate runs despite simple estimation
+   - Full debate runs despite lite conditions being met
    - Override works correctly
 
-**Notes**: Conservative threshold (200 LOC) to avoid false negatives (complex misclassified as simple)
+**Notes**: Conservative thresholds (<5 files, <150 LOC) to avoid false negatives
 
 ---
 

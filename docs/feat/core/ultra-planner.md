@@ -49,8 +49,11 @@ graph TD
 
 Ultra-planner automatically routes between lightweight and full debate workflows based on estimated modification complexity. After the understander gathers codebase context, it estimates the modification's LOC and recommends a path:
 
-- **Lite path** (<200 LOC): Single-agent planner for fast, simple modifications
-- **Full path** (≥200 LOC): Multi-agent debate for complex features
+- **Lite path**: Single-agent planner when ALL conditions met:
+  - All knowledge within repo (no internet research needed)
+  - < 5 files affected
+  - < 150 LOC total
+- **Full path**: Multi-agent debate with web research (otherwise)
 
 **Workflow with routing:**
 
@@ -59,9 +62,9 @@ graph TD
     A[User provides requirements] --> B[Create placeholder issue]
     B --> B2[doc-architect: Generate diff previews]
     B2 --> U[Understander: Gather context + estimate complexity]
-    U --> R{Recommended path?}
-    R -->|lite < 200 LOC| L[Planner-lite: Single-agent plan]
-    R -->|full ≥ 200 LOC| C[Bold-proposer: Research SOTA]
+    U --> R{Lite conditions met?}
+    R -->|yes: repo-only, <5 files, <150 LOC| L[Planner-lite: Single-agent plan]
+    R -->|no: needs research or complex| C[Bold-proposer: Research SOTA]
     C --> D[Critique + Reducer in parallel]
     D --> F[Combined 3-perspective report]
     L --> H[Update issue with plan]
@@ -236,7 +239,7 @@ After reviewing a plan issue:
 
 **With automatic routing**, timing depends on the estimated complexity:
 
-#### Lite Path (< 200 LOC)
+#### Lite Path (repo-only, <5 files, <150 LOC)
 
 **Duration:** 1-2 minutes end-to-end
 
@@ -295,9 +298,9 @@ Creates initial plan via automatic routing (lite or full path) and auto-creates 
 /ultra-planner Add user authentication with JWT and RBAC
 ```
 
-**Routing:** Understander estimates complexity and routes to:
-- Lite path (<200 LOC): Single-agent planning (1-2 min)
-- Full path (≥200 LOC): Multi-agent debate (6-12 min)
+**Routing:** Understander checks lite conditions:
+- Lite path (repo-only, <5 files, <150 LOC): Single-agent planning (1-2 min)
+- Full path (otherwise): Multi-agent debate with web research (6-12 min)
 
 **Output:** Plan issue URL and refinement/implementation instructions
 
