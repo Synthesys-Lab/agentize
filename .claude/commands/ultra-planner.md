@@ -245,7 +245,7 @@ Use this context to create a focused, practical implementation plan."
 - Generate filename: `LITE_PLAN_FILE=".tmp/issue-${ISSUE_NUMBER}-lite-plan.md"`
 - Save the agent's full response to `$LITE_PLAN_FILE`
 
-**After lite path completes:** Skip Steps 5 and 6, proceed directly to Step 7 (External Consensus) with the lite plan as the input instead of the combined debate report.
+**After lite path completes:** Skip Steps 5, 6, AND 7 (no consensus needed with single agent). Proceed directly to Step 8 (Update Issue) using `$LITE_PLAN_FILE` as the consensus plan.
 
 ### Step 5: Invoke Bold-Proposer Agent
 
@@ -325,11 +325,11 @@ Identify unnecessary complexity and propose simpler alternatives."
 - Critique: Risk analysis and feasibility assessment of Bold's proposal
 - Reducer: Simplified version of Bold's proposal with complexity analysis
 
-### Step 7: Invoke External Consensus Skill
+### Step 7: Invoke External Consensus Skill (Full Path Only)
 
-**REQUIRED SKILL CALL (both paths):**
+**REQUIRED SKILL CALL (full path only):**
 
-The external-consensus skill processes the plan for final validation.
+The external-consensus skill synthesizes multiple debate perspectives into a balanced plan.
 
 **For FULL path (after Steps 5-6):**
 ```
@@ -338,29 +338,17 @@ Skill tool parameters:
   args: "{BOLD_FILE} {CRITIQUE_FILE} {REDUCER_FILE}"
 ```
 
-**For LITE path (after Step 4b):**
-```
-Skill tool parameters:
-  skill: "external-consensus"
-  args: "--lite {LITE_PLAN_FILE}"
-```
-
-The `--lite` flag tells external-consensus to:
-- Skip debate report combination (no debate occurred)
-- Validate and format the lite plan directly
-- Apply lighter-weight consensus review
+**For LITE path:** Skip this step entirely. With only one agent (planner-lite), there are no multiple perspectives to synthesize. Set `CONSENSUS_PLAN_FILE=$LITE_PLAN_FILE` and proceed directly to Step 8.
 
 **Note:** The external-consensus skill will:
-1. (Full path) Combine the 3 agent reports into a single debate report (saved as `.tmp/issue-{N}-debate.md`)
-2. (Lite path) Use the lite plan directly without combination
-3. Process through external AI review (Codex or Claude Opus)
+1. Combine the 3 agent reports into a single debate report (saved as `.tmp/issue-{N}-debate.md`)
+2. Process through external AI review (Codex or Claude Opus)
 
 NOTE: This consensus synthesis can take long time depending on the complexity of the debate report.
 Give it 30 minutes timeout to complete, which is mandatory for **ALL DEBATES**!
-For lite path, expect 30-60 seconds as the input is simpler.
 
 **What this skill does:**
-1. (Full path) Combines the 3 agent reports into a single debate report (saved as `.tmp/issue-{N}-debate.md`)
+1. Combines the 3 agent reports into a single debate report (saved as `.tmp/issue-{N}-debate.md`)
 2. Prepares external review prompt using `.claude/skills/external-consensus/external-review-prompt.md`
 3. Invokes Codex CLI (preferred) or Claude API (fallback) for consensus synthesis
 4. Parses and validates the consensus plan structure
@@ -374,15 +362,13 @@ External consensus review complete!
 Consensus Plan Summary:
 - Feature: {feature_name}
 - Total LOC: ~{N} ({complexity})
-- Path: {lite|full}
 - Components: {count}
 - Critical risks: {risk_count}
 
 Key Decisions:
-- (Full path) From Bold Proposal: {accepted_innovations}
-- (Full path) From Critique: {risks_addressed}
-- (Full path) From Reducer: {simplifications_applied}
-- (Lite path) From Planner-Lite: {plan_summary}
+- From Bold Proposal: {accepted_innovations}
+- From Critique: {risks_addressed}
+- From Reducer: {simplifications_applied}
 
 Consensus plan saved to: {CONSENSUS_PLAN_FILE}
 ```
@@ -470,10 +456,7 @@ Reason: understander recommended lite
 
 [Planner-lite creates plan - 30-60 seconds]
 
-External consensus review...
-
-Consensus: Date formatting helper (~50 LOC, Small)
-Path: lite (single-agent)
+Plan complete (no consensus needed - single agent)
 
 Draft GitHub issue created: #42
 Title: [plan][feat] Add date formatting helper
