@@ -3,7 +3,7 @@
 
 source "$(dirname "$0")/../common.sh"
 
-HOOK_SCRIPT="$PROJECT_ROOT/.claude/hooks/pre-tool-use.py"
+HOOK_SCRIPT="$PROJECT_ROOT/hooks/pre-tool-use.py"
 FIXTURE_FILE="$PROJECT_ROOT/tests/fixtures/test-pre-tool-use-input.json"
 
 test_info "PreToolUse hook permission matching"

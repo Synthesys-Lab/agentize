@@ -5,7 +5,7 @@ set -e
 
 echo "Testing external-consensus prompt for Documentation Planning section..."
 
-PROMPT_FILE=".claude/skills/external-consensus/external-review-prompt.md"
+PROMPT_FILE="skills/external-consensus/external-review-prompt.md"
 
 # Test case 1: prompt includes "Documentation Planning" heading
 if ! grep -q "Documentation Planning" "$PROMPT_FILE"; then

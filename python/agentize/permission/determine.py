@@ -18,10 +18,10 @@ from .strips import normalize_bash_command
 from .parser import parse_hook_input, extract_target
 from agentize.telegram_utils import escape_html as _shared_escape_html, telegram_request
 
-# Import logger from hooks directory (stays in place per plan)
+# Import logger from hooks directory
 import sys
-_hooks_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-_hooks_path = os.path.join(_hooks_dir, '.claude', 'hooks')
+_project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+_hooks_path = os.path.join(_project_root, 'hooks')
 if _hooks_path not in sys.path:
     sys.path.insert(0, _hooks_path)
 from logger import log_tool_decision

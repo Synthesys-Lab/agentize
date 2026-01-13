@@ -3,7 +3,7 @@
 
 source "$(dirname "$0")/../common.sh"
 
-HOOK_SCRIPT="$PROJECT_ROOT/.claude/hooks/user-prompt-submit.py"
+HOOK_SCRIPT="$PROJECT_ROOT/hooks/user-prompt-submit.py"
 
 test_info "Handsoff session path and issue_no extraction tests"
 

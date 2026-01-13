@@ -38,13 +38,13 @@ EOF
 # Test Case 1: Verify script requires exactly 3 arguments
 test_info "Test 1: Script requires exactly 3 arguments"
 
-if "$PROJECT_ROOT/.claude/skills/external-consensus/scripts/external-consensus.sh" "$REPORT1_FILE" "$REPORT2_FILE" 2>&1 | grep -q "Error: Exactly 3 report paths are required"; then
+if "$PROJECT_ROOT/skills/external-consensus/scripts/external-consensus.sh" "$REPORT1_FILE" "$REPORT2_FILE" 2>&1 | grep -q "Error: Exactly 3 report paths are required"; then
     test_info "✓ Script correctly rejects 2 arguments"
 else
     test_fail "Script should reject 2 arguments"
 fi
 
-if "$PROJECT_ROOT/.claude/skills/external-consensus/scripts/external-consensus.sh" "$REPORT1_FILE" 2>&1 | grep -q "Error: Exactly 3 report paths are required"; then
+if "$PROJECT_ROOT/skills/external-consensus/scripts/external-consensus.sh" "$REPORT1_FILE" 2>&1 | grep -q "Error: Exactly 3 report paths are required"; then
     test_info "✓ Script correctly rejects 1 argument"
 else
     test_fail "Script should reject 1 argument"
@@ -55,7 +55,7 @@ test_info "Test 2: Script accepts 3 valid report paths"
 
 # The script should accept 3 valid paths and proceed to combining them
 # We verify this by checking that it doesn't fail with "required" error
-if timeout 2 "$PROJECT_ROOT/.claude/skills/external-consensus/scripts/external-consensus.sh" "$REPORT1_FILE" "$REPORT2_FILE" "$REPORT3_FILE" 2>&1 | grep -q "Error: Exactly 3 report paths are required"; then
+if timeout 2 "$PROJECT_ROOT/skills/external-consensus/scripts/external-consensus.sh" "$REPORT1_FILE" "$REPORT2_FILE" "$REPORT3_FILE" 2>&1 | grep -q "Error: Exactly 3 report paths are required"; then
     test_fail "Script rejected valid 3-argument invocation"
 fi
 
@@ -67,7 +67,7 @@ test_info "Test 3: Script validates all report files exist"
 MISSING_REPORT="$PROJECT_ROOT/.tmp/missing-report.md"
 rm -f "$MISSING_REPORT"
 
-if "$PROJECT_ROOT/.claude/skills/external-consensus/scripts/external-consensus.sh" "$REPORT1_FILE" "$MISSING_REPORT" "$REPORT3_FILE" 2>&1 | grep -q "Error: Report file not found: $MISSING_REPORT"; then
+if "$PROJECT_ROOT/skills/external-consensus/scripts/external-consensus.sh" "$REPORT1_FILE" "$MISSING_REPORT" "$REPORT3_FILE" 2>&1 | grep -q "Error: Report file not found: $MISSING_REPORT"; then
     test_info "✓ Script correctly detects missing second report"
 else
     test_fail "Expected error for missing report file"
@@ -83,7 +83,7 @@ rm -f "$DEBATE_REPORT"
 # Run the script in background and kill it after debate report creation
 # The script will continue to external review, but we only care about the debate report
 (
-    "$PROJECT_ROOT/.claude/skills/external-consensus/scripts/external-consensus.sh" \
+    "$PROJECT_ROOT/skills/external-consensus/scripts/external-consensus.sh" \
         "$REPORT1_FILE" "$REPORT2_FILE" "$REPORT3_FILE" 2>&1 || true
 ) &
 SCRIPT_PID=$!
@@ -119,7 +119,7 @@ fi
 # Test Case 5: Usage message documents 3-path requirement
 test_info "Test 5: Usage message documents 3-path requirement"
 
-if "$PROJECT_ROOT/.claude/skills/external-consensus/scripts/external-consensus.sh" 2>&1 | grep -q "<path-to-report1> <path-to-report2> <path-to-report3>"; then
+if "$PROJECT_ROOT/skills/external-consensus/scripts/external-consensus.sh" 2>&1 | grep -q "<path-to-report1> <path-to-report2> <path-to-report3>"; then
     test_info "✓ Usage message documents 3-path requirement"
 else
     test_fail "Usage message missing 3-path documentation"
@@ -139,7 +139,7 @@ EOF
 rm -f "$DEBATE_REPORT"
 
 (
-    "$PROJECT_ROOT/.claude/skills/external-consensus/scripts/external-consensus.sh" \
+    "$PROJECT_ROOT/skills/external-consensus/scripts/external-consensus.sh" \
         "$REPORT1_FILE" "$REPORT2_FILE" "$REPORT3_FILE" 2>&1 || true
 ) &
 SCRIPT_PID=$!
@@ -178,7 +178,7 @@ EOF
 rm -f "$DEBATE_REPORT"
 
 (
-    "$PROJECT_ROOT/.claude/skills/external-consensus/scripts/external-consensus.sh" \
+    "$PROJECT_ROOT/skills/external-consensus/scripts/external-consensus.sh" \
         "$REPORT1_FILE" "$REPORT2_FILE" "$REPORT3_FILE" 2>&1 || true
 ) &
 SCRIPT_PID=$!
@@ -217,7 +217,7 @@ EOF
 rm -f "$DEBATE_REPORT"
 
 (
-    "$PROJECT_ROOT/.claude/skills/external-consensus/scripts/external-consensus.sh" \
+    "$PROJECT_ROOT/skills/external-consensus/scripts/external-consensus.sh" \
         "$REPORT1_FILE" "$REPORT2_FILE" "$REPORT3_FILE" 2>&1 || true
 ) &
 SCRIPT_PID=$!

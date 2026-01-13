@@ -86,6 +86,14 @@ lol_cmd_init() (
         mkdir -p "$project_path/.claude"
         cp -r "$PROJECT_ROOT/.claude/"* "$project_path/.claude/"
 
+        # Copy portable skills (commit-msg, open-issue) for SDK projects
+        mkdir -p "$project_path/.claude/skills"
+        for skill_name in commit-msg open-issue; do
+            if [ -d "$PROJECT_ROOT/skills/$skill_name" ]; then
+                cp -r "$PROJECT_ROOT/skills/$skill_name" "$project_path/.claude/skills/"
+            fi
+        done
+
         # Apply template substitutions to CLAUDE.md
         if [ -f "$PROJECT_ROOT/templates/claude/CLAUDE.md.template" ]; then
             sed -e "s/{{PROJECT_NAME}}/$project_name/g" \
