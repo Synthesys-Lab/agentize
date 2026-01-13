@@ -78,17 +78,17 @@ Based on your exploration, estimate the modification complexity:
 
 **Complexity thresholds:**
 - **Trivial** (<50 LOC): Single-file, minor change
-- **Small** (50-200 LOC): Few files, straightforward
-- **Medium** (200-400 LOC): Multiple files, moderate complexity
+- **Small** (50-150 LOC): Few files, straightforward
+- **Medium** (150-400 LOC): Multiple files, moderate complexity
 - **Large** (400-800 LOC): Many files or architectural changes
 - **Very Large** (>800 LOC): Major feature, multiple milestones
 
 **Path recommendation:**
-- Recommend `lite` if estimated LOC < 200 AND:
-  - No interface changes required
-  - Cross-module impact is low
-  - No new external dependencies
-- Recommend `full` otherwise
+- Recommend `lite` if ALL of the following are true:
+  1. All knowledge needed is within this repo (no internet/SOTA research required)
+  2. Less than 5 files affected (source + docs + tests combined)
+  3. Less than 150 LOC total estimated
+- Recommend `full` otherwise (triggers multi-agent debate with web research)
 
 ## Output Format
 
@@ -140,15 +140,14 @@ Your output must follow this exact structure:
 
 **Estimated LOC**: ~[N] ([Trivial|Small|Medium|Large|Very Large])
 
-**Complexity signals**:
-- Files affected: [count]
-- New files needed: [count]
-- Interface changes: [yes|no]
-- Cross-module impact: [low|medium|high]
+**Lite path checklist**:
+- [ ] All knowledge within repo (no internet research needed): [yes|no]
+- [ ] Files affected < 5: [count] files
+- [ ] LOC < 150: ~[N] LOC
 
 **Recommended path**: `lite` | `full`
 
-**Rationale**: [brief explanation of why lite or full is recommended]
+**Rationale**: [brief explanation - if any checklist item fails, recommend full]
 ```
 
 ## Key Behaviors

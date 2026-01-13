@@ -10,10 +10,13 @@ Learn how to use multi-agent debate-based planning for complex features with `/u
 
 ### Automatic Routing
 
-After the **Understander** agent gathers codebase context, it estimates modification complexity and recommends a path:
+After the **Understander** agent gathers codebase context, it checks lite conditions:
 
-- **Lite path** (<200 LOC): Single-agent planner for fast, simple modifications (1-2 min)
-- **Full path** (≥200 LOC): Multi-agent debate for complex features (6-12 min)
+- **Lite path** (when ALL met): Single-agent planner (1-2 min)
+  - All knowledge within repo (no internet research needed)
+  - < 5 files affected
+  - < 150 LOC total
+- **Full path** (otherwise): Multi-agent debate with web research (6-12 min)
 
 ### Full Debate (for complex features)
 
@@ -29,12 +32,12 @@ Bold-proposer runs first to generate a concrete proposal, then Critique and Redu
 
 **Use `/ultra-planner`** for all feature planning. It automatically routes:
 
-- **Simple features** (<200 LOC) → Lite path (1-2 min, ~$0.50-1.50)
-- **Complex features** (≥200 LOC) → Full debate (6-12 min, ~$2.50-6)
+- **Simple changes** (repo-only, <5 files, <150 LOC) → Lite path (1-2 min, ~$0.30-0.80)
+- **Complex features** (needs research or larger scope) → Full debate (6-12 min, ~$2.50-6)
 
 **Use `/ultra-planner --force-full`** when:
 - You want thorough multi-perspective analysis even for simple changes
-- The understander's estimate seems too low
+- The feature needs SOTA research even if LOC is low
 
 **Use `/plan-an-issue`** as a standalone alternative:
 - When you want direct single-agent planning without understander
@@ -121,10 +124,10 @@ This enables stakeholders to request plan improvements without CLI access.
 
 **With automatic routing:**
 
-| Path | Complexity | Time | Cost |
+| Path | Conditions | Time | Cost |
 |------|------------|------|------|
-| Lite | <200 LOC | 1-2 min | ~$0.30-0.80 |
-| Full | ≥200 LOC | 6-12 min | ~$2.50-6 |
+| Lite | repo-only, <5 files, <150 LOC | 1-2 min | ~$0.30-0.80 |
+| Full | needs research or complex | 6-12 min | ~$2.50-6 |
 
 **Why lite is cheaper**: No external consensus step (single agent, nothing to synthesize)
 
