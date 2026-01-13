@@ -23,9 +23,14 @@ Agents provide isolated execution environments for complex, multi-step tasks. Ea
 
 Multi-perspective planning agents for collaborative proposal development:
 
-- `understander.md`: Gather codebase context before debate begins (feeds Bold-proposer)
+- `understander.md`: Gather codebase context and estimate complexity (feeds routing decision)
+- `planner-lite.md`: Lightweight single-agent planner for simple modifications (<200 LOC)
 - `bold-proposer.md`: Research SOTA solutions and propose innovative, bold approaches
 - `proposal-critique.md`: Validate assumptions and analyze technical feasibility
 - `proposal-reducer.md`: Simplify proposals following "less is more" philosophy
 
-These agents work together in the `/ultra-planner` workflow to generate well-balanced implementation plans through structured debate. The understander runs first to gather context, which is passed to Bold-proposer. Critique and Reducer work independently from Bold's proposal to avoid "false completeness".
+These agents work together in the `/ultra-planner` workflow:
+1. Understander runs first to gather context and estimate complexity
+2. If <200 LOC: Planner-lite creates a simple plan (lite path)
+3. If ≥200 LOC: Bold-proposer + Critique + Reducer debate (full path)
+4. External consensus synthesizes the final plan

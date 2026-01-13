@@ -67,6 +67,29 @@ Look for project-specific constraints in:
 - `README.md` files (purpose and organization)
 - `docs/` files (conventions and standards)
 
+### Step 6: Estimate Complexity
+
+Based on your exploration, estimate the modification complexity:
+
+**LOC estimation guidelines:**
+- Count files that need modification × average lines per file
+- Add LOC for new files that need to be created
+- Include documentation and test updates
+
+**Complexity thresholds:**
+- **Trivial** (<50 LOC): Single-file, minor change
+- **Small** (50-200 LOC): Few files, straightforward
+- **Medium** (200-400 LOC): Multiple files, moderate complexity
+- **Large** (400-800 LOC): Many files or architectural changes
+- **Very Large** (>800 LOC): Major feature, multiple milestones
+
+**Path recommendation:**
+- Recommend `lite` if estimated LOC < 200 AND:
+  - No interface changes required
+  - Cross-module impact is low
+  - No new external dependencies
+- Recommend `full` otherwise
+
 ## Output Format
 
 Your output must follow this exact structure:
@@ -112,6 +135,20 @@ Your output must follow this exact structure:
 ## Recommended Focus Areas for Bold-Proposer
 - [Area 1]: [why Bold should focus here for innovation]
 - [Area 2]: [existing gap or opportunity]
+
+## Complexity Estimation
+
+**Estimated LOC**: ~[N] ([Trivial|Small|Medium|Large|Very Large])
+
+**Complexity signals**:
+- Files affected: [count]
+- New files needed: [count]
+- Interface changes: [yes|no]
+- Cross-module impact: [low|medium|high]
+
+**Recommended path**: `lite` | `full`
+
+**Rationale**: [brief explanation of why lite or full is recommended]
 ```
 
 ## Key Behaviors

@@ -1,7 +1,7 @@
 ---
 name: ultra-planner
 description: Multi-agent debate-based planning with /ultra-planner command
-argument-hint: [feature-description] or --refine [issue-no] [refine-comments] or --from-issue [issue-no]
+argument-hint: [feature-description] or --force-full [feature-description] or --refine [issue-no] [refine-comments] or --from-issue [issue-no]
 ---
 
 ultrathink
@@ -105,6 +105,8 @@ This command orchestrates a multi-agent debate system to generate high-quality i
 
 Accept the $ARGUMENTS.
 
+**Force-full mode:** If we have `--force-full` at the beginning, skip complexity-based routing and always use the full multi-agent debate path. Remove `--force-full` from the arguments and proceed with the remaining feature description.
+
 **Refinement mode:** If we have `--refine` at the beginning, the next number is the issue number to be refined,
 and the rest are issue refine comments. You should fetch the issue to incorporate the users comments.
 ```bash
@@ -179,7 +181,7 @@ ISSUE_NUMBER=$(echo "$ISSUE_URL" | grep -o '[0-9]*$')
 
 ### Step 4: Invoke Understander Agent
 
-**REQUIRED TOOL CALL (before Bold-Proposer):**
+**REQUIRED TOOL CALL (before routing decision):**
 
 Use the Task tool to launch the understander agent to gather codebase context:
 
@@ -191,12 +193,59 @@ Task tool parameters:
   model: "sonnet"
 ```
 
-**Wait for agent completion** (blocking operation, do not proceed to Step 5 until done).
+**Wait for agent completion** (blocking operation, do not proceed until done).
 
 **Extract output:**
 - Generate filename: `CONTEXT_FILE=".tmp/issue-${ISSUE_NUMBER}-context.md"`
 - Save the agent's full response to `$CONTEXT_FILE`
-- Also store in variable `UNDERSTANDER_OUTPUT` for passing to Bold-proposer in Step 5
+- Also store in variable `UNDERSTANDER_OUTPUT` for passing to subsequent agents
+
+**Parse complexity estimation:**
+- Look for `**Recommended path**: \`lite\`` or `**Recommended path**: \`full\`` in the understander output
+- Store as `RECOMMENDED_PATH` variable (either "lite" or "full")
+- If pattern not found, default to "full"
+
+### Step 4a: Route Based on Complexity (Lite vs Full Path)
+
+**Check routing conditions:**
+
+1. If `--force-full` flag was set in Step 1: **Use FULL path** (skip to Step 5)
+2. If `--refine` mode: **Use FULL path** (refinements always use full debate)
+3. If `RECOMMENDED_PATH == "lite"`: **Use LITE path** (go to Step 4b)
+4. Otherwise: **Use FULL path** (go to Step 5)
+
+**Output routing decision:**
+```
+Routing decision: {lite|full} path
+Reason: {understander recommended lite|force-full flag|refine mode|understander recommended full}
+```
+
+### Step 4b: Invoke Planner-Lite Agent (Lite Path Only)
+
+**REQUIRED TOOL CALL (lite path only):**
+
+Use the Task tool to launch the planner-lite agent:
+
+```
+Task tool parameters:
+  subagent_type: "planner-lite"
+  prompt: "Create an implementation plan for: {FEATURE_DESC}
+
+CODEBASE CONTEXT (from understander):
+{UNDERSTANDER_OUTPUT}
+
+Use this context to create a focused, practical implementation plan."
+  description: "Create lite plan"
+  model: "sonnet"
+```
+
+**Wait for agent completion** (blocking operation).
+
+**Extract output:**
+- Generate filename: `LITE_PLAN_FILE=".tmp/issue-${ISSUE_NUMBER}-lite-plan.md"`
+- Save the agent's full response to `$LITE_PLAN_FILE`
+
+**After lite path completes:** Skip Steps 5 and 6, proceed directly to Step 7 (External Consensus) with the lite plan as the input instead of the combined debate report.
 
 ### Step 5: Invoke Bold-Proposer Agent
 
@@ -278,25 +327,40 @@ Identify unnecessary complexity and propose simpler alternatives."
 
 ### Step 7: Invoke External Consensus Skill
 
-**REQUIRED SKILL CALL:**
+**REQUIRED SKILL CALL (both paths):**
 
-Use the Skill tool to invoke the external-consensus skill with the 3 report file paths:
+The external-consensus skill processes the plan for final validation.
 
+**For FULL path (after Steps 5-6):**
 ```
 Skill tool parameters:
   skill: "external-consensus"
   args: "{BOLD_FILE} {CRITIQUE_FILE} {REDUCER_FILE}"
 ```
 
+**For LITE path (after Step 4b):**
+```
+Skill tool parameters:
+  skill: "external-consensus"
+  args: "--lite {LITE_PLAN_FILE}"
+```
+
+The `--lite` flag tells external-consensus to:
+- Skip debate report combination (no debate occurred)
+- Validate and format the lite plan directly
+- Apply lighter-weight consensus review
+
 **Note:** The external-consensus skill will:
-1. Combine the 3 agent reports into a single debate report (saved as `.tmp/issue-{N}-debate.md`)
-2. Process the combined report through external AI review (Codex or Claude Opus)
+1. (Full path) Combine the 3 agent reports into a single debate report (saved as `.tmp/issue-{N}-debate.md`)
+2. (Lite path) Use the lite plan directly without combination
+3. Process through external AI review (Codex or Claude Opus)
 
 NOTE: This consensus synthesis can take long time depending on the complexity of the debate report.
 Give it 30 minutes timeout to complete, which is mandatory for **ALL DEBATES**!
+For lite path, expect 30-60 seconds as the input is simpler.
 
 **What this skill does:**
-1. Combines the 3 agent reports into a single debate report (saved as `.tmp/issue-{N}-debate.md`)
+1. (Full path) Combines the 3 agent reports into a single debate report (saved as `.tmp/issue-{N}-debate.md`)
 2. Prepares external review prompt using `.claude/skills/external-consensus/external-review-prompt.md`
 3. Invokes Codex CLI (preferred) or Claude API (fallback) for consensus synthesis
 4. Parses and validates the consensus plan structure
@@ -310,13 +374,15 @@ External consensus review complete!
 Consensus Plan Summary:
 - Feature: {feature_name}
 - Total LOC: ~{N} ({complexity})
+- Path: {lite|full}
 - Components: {count}
 - Critical risks: {risk_count}
 
 Key Decisions:
-- From Bold Proposal: {accepted_innovations}
-- From Critique: {risks_addressed}
-- From Reducer: {simplifications_applied}
+- (Full path) From Bold Proposal: {accepted_innovations}
+- (Full path) From Critique: {risks_addressed}
+- (Full path) From Reducer: {simplifications_applied}
+- (Lite path) From Planner-Lite: {plan_summary}
 
 Consensus plan saved to: {CONSENSUS_PLAN_FILE}
 ```
@@ -385,7 +451,39 @@ Display the final output to the user. Command completes successfully.
 
 ## Usage Examples
 
-### Example 1: Basic Feature Planning
+### Example 1: Simple Feature (Lite Path)
+
+**Input:**
+```
+/ultra-planner Add a helper function to format dates
+```
+
+**Output:**
+```
+Starting ultra-planner...
+
+[Understander gathers context - 1-2 minutes]
+
+Complexity estimation: ~50 LOC (Small)
+Routing decision: lite path
+Reason: understander recommended lite
+
+[Planner-lite creates plan - 30-60 seconds]
+
+External consensus review...
+
+Consensus: Date formatting helper (~50 LOC, Small)
+Path: lite (single-agent)
+
+Draft GitHub issue created: #42
+Title: [plan][feat] Add date formatting helper
+URL: https://github.com/user/repo/issues/42
+
+To refine: /ultra-planner --refine 42
+To implement: /issue-to-impl 42
+```
+
+### Example 2: Complex Feature (Full Path)
 
 **Input:**
 ```
@@ -394,7 +492,13 @@ Display the final output to the user. Command completes successfully.
 
 **Output:**
 ```
-Starting multi-agent debate...
+Starting ultra-planner...
+
+[Understander gathers context - 1-2 minutes]
+
+Complexity estimation: ~350 LOC (Medium)
+Routing decision: full path
+Reason: understander recommended full
 
 [Bold-proposer runs, then critique/reducer - 3-5 minutes]
 
@@ -406,16 +510,38 @@ Debate complete! Three perspectives:
 External consensus review...
 
 Consensus: JWT + basic roles (~280 LOC, Medium)
+Path: full (multi-agent debate)
 
-Draft GitHub issue created: #42
+Draft GitHub issue created: #43
 Title: [plan][feat] Add user authentication
-URL: https://github.com/user/repo/issues/42
+URL: https://github.com/user/repo/issues/43
 
-To refine: /ultra-planner --refine 42
-To implement: /issue-to-impl 42
+To refine: /ultra-planner --refine 43
+To implement: /issue-to-impl 43
 ```
 
-### Example 2: Plan Refinement
+### Example 3: Force Full Debate
+
+**Input:**
+```
+/ultra-planner --force-full Add a simple logging wrapper
+```
+
+**Output:**
+```
+Starting ultra-planner...
+
+[Understander gathers context - 1-2 minutes]
+
+Complexity estimation: ~80 LOC (Small)
+Routing decision: full path
+Reason: force-full flag
+
+[Full debate runs despite low LOC estimate]
+...
+```
+
+### Example 4: Plan Refinement
 
 **Input:**
 ```
