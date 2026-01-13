@@ -42,7 +42,7 @@ Orchestrate the complete implementation workflow from a GitHub issue with an imp
 - Documentation files (from plan Step 1)
 - Test files (from plan Step 2)
 - Implementation files (from plan Steps 3+)
-- `.milestones/issue-{N}-milestone-{M}.md` (one or more milestone documents)
+- `.tmp/milestones/issue-{N}-milestone-{M}.md` (one or more milestone documents)
 
 **Git commits:**
 - Milestone 1 commit (docs + tests, 0/N tests passed)
@@ -252,16 +252,16 @@ git diff --cached --name-only
 **Pre-commit checklist:**
 - [ ] Documentation files staged (e.g., README.md, docs/*.md)
 - [ ] Test files staged (e.g., tests/*.sh)
-- [ ] NO `.milestones/` files staged (these are local-only checkpoints)
+- [ ] NO `.tmp/milestones/` files staged (these are local-only checkpoints)
 
-**If `.milestones/` files appear in staged files:**
+**If `.tmp/milestones/` files appear in staged files:**
 ```bash
 # Unstage milestone files immediately
-git restore --staged .milestones/
+git restore --staged .tmp/milestones/
 ```
 
 **Create milestone document:**
-- File: `.milestones/issue-{N}-milestone-1.md`
+- File: `.tmp/milestones/issue-{N}-milestone-1.md`
 - Content:
   - Header: Branch, created datetime, LOC = 0, test status = 0/{total}
   - Work Remaining: All implementation steps (non-doc/test steps from plan)
@@ -336,7 +336,7 @@ When milestone skill signals completion (all tests pass), invoke `commit-msg` sk
 **Stage and commit:**
 ```bash
 git add .
-git diff --cached --name-only  # Verify no .milestones/ files
+git diff --cached --name-only  # Verify no .tmp/milestones/ files
 ```
 
 Then invoke `commit-msg` skill with `purpose=delivery` and appropriate tags based on the changes.

@@ -68,7 +68,7 @@ This document tracks the testing status of AI rules, skills, and commands in thi
 **Dogfeeding Examples**:
 - Issue #30, PR #33:
   - Tracked LOC count accurately during implementation
-  - Created milestone documents in `.milestones/` directory
+  - Created milestone documents in `.tmp/milestones/` directory
   - Test status tracking worked correctly
   - Stopped at 800 LOC threshold as expected
 

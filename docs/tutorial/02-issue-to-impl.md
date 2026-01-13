@@ -116,12 +116,12 @@ If implementation creates a milestone (doesn't complete), resume with natural la
 ```
 User: Resume from the latest milestone
 User: Continue implementation
-User: Continue from .milestones/issue-42-milestone-2.md
+User: Continue from .tmp/milestones/issue-42-milestone-2.md
 ```
 
 **How it works**: The system automatically:
 1. Detects your current branch (issue-42-*)
-2. Finds the latest milestone file in `.milestones/`
+2. Finds the latest milestone file in `.tmp/milestones/`
 3. Loads context from the milestone (work remaining, test status)
 4. Continues implementation from that checkpoint
 
@@ -223,10 +223,10 @@ User: Create a pull request
 
 ## Understanding Milestones
 
-Milestones are checkpoint documents in `.milestones/`:
+Milestones are checkpoint documents in `.tmp/milestones/`:
 
 ```
-.milestones/
+.tmp/milestones/
 ├── issue-42-milestone-1.md
 ├── issue-42-milestone-2.md
 └── issue-42-milestone-3.md
@@ -243,7 +243,7 @@ See `docs/milestone-workflow.md` for complete documentation.
 ## Tips
 
 1. **Let it run**: `/issue-to-impl` works automatically - let it complete or reach a milestone
-2. **Review milestones**: Check `.milestones/` files to understand progress
+2. **Review milestones**: Check `.tmp/milestones/` files to understand progress
 3. **Always sync**: Run `/sync-master` before creating PRs to avoid conflicts
 4. **Fix review issues**: Address `/code-review` findings before merging
 5. **Clean working directory**: Commit changes before `/sync-master` or `/issue-to-impl` (require clean working tree for rebasing)

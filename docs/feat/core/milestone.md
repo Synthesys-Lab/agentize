@@ -69,7 +69,7 @@ graph TD
 
 ## Milestone Document Format
 
-Milestone documents are stored in `.milestones/issue-{N}-milestone-{M}.md` where:
+Milestone documents are stored in `.tmp/milestones/issue-{N}-milestone-{M}.md` where:
 - `{N}` is the issue number
 - `{M}` is the milestone number (1, 2, 3, ...)
 
@@ -163,13 +163,13 @@ When a milestone is created, use natural language to resume implementation.
 ```
 User: Resume from the latest milestone
 User: Continue implementation
-User: Continue from .milestones/issue-42-milestone-2.md
+User: Continue from .tmp/milestones/issue-42-milestone-2.md
 ```
 
 
 **What happens:**
 1. Validates you're on a development branch (issue-{N}-*)
-2. Finds the latest milestone file: `.milestones/issue-{N}-milestone-*.md`
+2. Finds the latest milestone file: `.tmp/milestones/issue-{N}-milestone-*.md`
 3. Loads context: work remaining, next file changes, test status
 4. Displays milestone summary
 5. Invokes the milestone skill to continue implementation
@@ -356,7 +356,7 @@ You're on `main` or another non-development branch.
 
 The milestone document is not properly formatted.
 
-**Solution**: Check the file in `.milestones/` and fix the format, or delete it and restart with `/issue-to-impl`.
+**Solution**: Check the file in `.tmp/milestones/` and fix the format, or delete it and restart with `/issue-to-impl`.
 
 ### Tests are Not Running
 

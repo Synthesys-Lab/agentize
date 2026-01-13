@@ -58,10 +58,10 @@ should_exclude_dir() {
 
     # Exclude common build/generated directories and template directories
     case "$dir" in
-        node_modules|build|dist|__pycache__|.git|.venv|venv|templates|.milestones|trees)
+        node_modules|build|dist|__pycache__|.git|.venv|venv|templates|.tmp/milestones|trees)
             return 0  # true, should exclude
             ;;
-        templates/*|.milestones/*|trees/*)
+        templates/*|.tmp/milestones/*|trees/*)
             return 0  # true, should exclude subdirectories too
             ;;
     esac
@@ -78,8 +78,8 @@ should_exclude_file() {
         return 0  # true, should exclude
     fi
 
-    # Exclude files in templates, .milestones, and test fixtures directories
-    if [[ "$file" == templates/* ]] || [[ "$file" == .milestones/* ]] || [[ "$file" == tests/fixtures/* ]]; then
+    # Exclude files in templates, .tmp/milestones, and test fixtures directories
+    if [[ "$file" == templates/* ]] || [[ "$file" == .tmp/milestones/* ]] || [[ "$file" == tests/fixtures/* ]]; then
         return 0  # true, should exclude
     fi
 

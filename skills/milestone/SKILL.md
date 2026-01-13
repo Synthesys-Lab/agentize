@@ -49,7 +49,7 @@ The milestone skill takes the following inputs (extracted from context):
 
 2. **Plan reference**
    - **First invocation**: Read plan from GitHub issue using `gh issue view {N}`
-   - **Resume invocation**: Read from latest milestone document in `.milestones/issue-{N}-milestone-*.md`
+   - **Resume invocation**: Read from latest milestone document in `.tmp/milestones/issue-{N}-milestone-*.md`
    - Plan contains: implementation steps, file changes, LOC estimates, test strategy
 
 3. **Starting LOC count** (optional, for resume scenarios)
@@ -142,7 +142,7 @@ gh issue view {issue-number} --json body --jq '.body'
 **Resume invocation** (from milestone):
 ```bash
 # Find latest milestone
-ls -1 .milestones/issue-{N}-milestone-*.md | sort -V | tail -n 1
+ls -1 .tmp/milestones/issue-{N}-milestone-*.md | sort -V | tail -n 1
 ```
 - Read the latest milestone file
 - Extract "Work Remaining" section
@@ -295,7 +295,7 @@ When the stop threshold is reached (Condition B), create a milestone document.
 
 ```bash
 # Count existing milestones for this issue
-ls -1 .milestones/issue-{N}-milestone-*.md 2>/dev/null | wc -l
+ls -1 .tmp/milestones/issue-{N}-milestone-*.md 2>/dev/null | wc -l
 ```
 
 Milestone number = count + 1
@@ -367,7 +367,7 @@ List all tests with their current status:
 
 ### Step 5: Write Milestone Document
 
-Create the file `.milestones/issue-{N}-milestone-{M}.md`:
+Create the file `.tmp/milestones/issue-{N}-milestone-{M}.md`:
 
 ```markdown
 # Milestone {M} for Issue #{N}
@@ -386,14 +386,14 @@ Create the file `.milestones/issue-{N}-milestone-{M}.md`:
 
 **CRITICAL: Local-Only Checkpoint Files**
 
-Milestone documents in `.milestones/` are LOCAL CHECKPOINT FILES ONLY:
+Milestone documents in `.tmp/milestones/` are LOCAL CHECKPOINT FILES ONLY:
 
-- **DO NOT** stage these files: `git add .milestones/` is FORBIDDEN
-- **DO NOT** force-add these files: `git add -f .milestones/*` is FORBIDDEN
+- **DO NOT** stage these files: `git add .tmp/milestones/` is FORBIDDEN
+- **DO NOT** force-add these files: `git add -f .tmp/milestones/*` is FORBIDDEN
 - **DO NOT** commit these files under any circumstances
 - These files are automatically excluded by `.gitignore` when using `git add .`
 
-**Why `.milestones/` files must remain local:**
+**Why `.tmp/milestones/` files must remain local:**
 1. They are working notes for resuming implementation between sessions
 2. They contain partial progress states not suitable for repository history
 3. `.gitignore` already excludes them to prevent accidental staging
@@ -403,9 +403,9 @@ Milestone documents in `.milestones/` are LOCAL CHECKPOINT FILES ONLY:
 ```bash
 git diff --cached --name-only
 ```
-If you see any `.milestones/` files listed, **STOP** and unstage them:
+If you see any `.tmp/milestones/` files listed, **STOP** and unstage them:
 ```bash
-git restore --staged .milestones/
+git restore --staged .tmp/milestones/
 ```
 
 ### Step 6: Create Milestone Commit
@@ -425,16 +425,16 @@ git diff --cached --name-only
 
 **Requirements:**
 - **MUST stage**: Implementation code, tests, documentation
-- **MUST NOT stage**: `.milestones/issue-{N}-milestone-{M}.md` (local checkpoint only)
-- If `.milestones/` files appear in `git diff --cached`, unstage them immediately:
+- **MUST NOT stage**: `.tmp/milestones/issue-{N}-milestone-{M}.md` (local checkpoint only)
+- If `.tmp/milestones/` files appear in `git diff --cached`, unstage them immediately:
   ```bash
-  git restore --staged .milestones/
+  git restore --staged .tmp/milestones/
   ```
 
 **Invoke commit-msg skill with:**
 - Purpose: milestone
 - Staged files: all implementation changes (code, tests, documentation)
-  - EXCLUDE: `.milestones/issue-{N}-milestone-{M}.md` (keep this local only)
+  - EXCLUDE: `.tmp/milestones/issue-{N}-milestone-{M}.md` (keep this local only)
 - Issue number: {N}
 - Test status: "{passed}/{total} tests passed"
 
@@ -454,7 +454,7 @@ docs/milestone-workflow.md: Add workflow documentation
 Milestone progress: 820 LOC implemented, 5/8 tests passed.
 Tests failing: edge case handling, integration tests.
 
-NOTE: Milestone document (.milestones/issue-42-milestone-2.md) is NOT committed - it remains local for resumption.
+NOTE: Milestone document (.tmp/milestones/issue-42-milestone-2.md) is NOT committed - it remains local for resumption.
 ```
 
 ### Step 7: Inform User
@@ -473,7 +473,7 @@ To resume implementation from this checkpoint, use natural language:
 ```
 User: Resume from the latest milestone
 User: Continue implementation
-User: Continue from .milestones/issue-{N}-milestone-{M}.md
+User: Continue from .tmp/milestones/issue-{N}-milestone-{M}.md
 ```
 
 The system will auto-detect the latest milestone on the current branch.
@@ -564,7 +564,7 @@ Error: No implementation plan found.
 
 Checked:
 - GitHub issue #{N}: No "Proposed Solution" section
-- Milestone files: No .milestones/issue-{N}-milestone-*.md found
+- Milestone files: No .tmp/milestones/issue-{N}-milestone-*.md found
 
 Please ensure:
 1. The issue has a plan
@@ -619,13 +619,13 @@ Please fix these errors and resume with: "Continue from the latest milestone"
 If unable to create milestone file:
 
 ```
-Error: Failed to create milestone file at .milestones/issue-{N}-milestone-{M}.md
+Error: Failed to create milestone file at .tmp/milestones/issue-{N}-milestone-{M}.md
 
 Possible causes:
-- .milestones/ directory does not exist
+- .tmp/milestones/ directory does not exist
 - Permission issues
 
-Please ensure .milestones/ directory exists and is writable.
+Please ensure .tmp/milestones/ directory exists and is writable.
 ```
 
 Try to create the directory:
@@ -696,7 +696,7 @@ Resume with: "Continue from the latest milestone"
 
 ```
 Agent: Finding latest milestone for current branch...
-Agent: Found: .milestones/issue-42-milestone-2.md
+Agent: Found: .tmp/milestones/issue-42-milestone-2.md
 Agent: Loading context...
 
 Resuming from Milestone 2 for Issue #42:

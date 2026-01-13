@@ -1,6 +1,6 @@
 .DS_Store
+# Temporary files (includes .tmp/milestones/ for milestone checkpoints)
 .tmp/*
-.milestones/*
 trees/
 setup.sh
 .claude/settings.local.json
