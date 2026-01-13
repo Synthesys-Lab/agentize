@@ -7,11 +7,16 @@
 #
 # Usage:
 #   ./external-consensus.sh <path-to-report1> <path-to-report2> <path-to-report3>
+#   ./external-consensus.sh --lite <path-to-lite-plan>
 #
 # Arguments:
 #   path-to-report1   Path to first agent report (e.g., bold-proposer output) (required)
 #   path-to-report2   Path to second agent report (e.g., critique output) (required)
 #   path-to-report3   Path to third agent report (e.g., reducer output) (required)
+#
+# Lite mode:
+#   --lite            Use lite mode for single-agent plans (simpler validation)
+#   path-to-lite-plan Path to the planner-lite output file
 #
 # Output:
 #   Prints the path to the generated consensus plan file on stdout
@@ -26,33 +31,58 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="$(dirname "$SCRIPT_DIR")"
 
-# Validate input arguments
-if [ $# -ne 3 ]; then
-    echo "Error: Exactly 3 report paths are required" >&2
-    echo "Usage: $0 <path-to-report1> <path-to-report2> <path-to-report3>" >&2
-    exit 1
+# Check for lite mode
+LITE_MODE=false
+if [ "${1:-}" = "--lite" ]; then
+    LITE_MODE=true
+    shift
 fi
 
-# Accept 3 report paths
-REPORT1_PATH="$1"
-REPORT2_PATH="$2"
-REPORT3_PATH="$3"
-
-# Validate all report files exist
-for REPORT_PATH in "$REPORT1_PATH" "$REPORT2_PATH" "$REPORT3_PATH"; do
-    if [ ! -f "$REPORT_PATH" ]; then
-        echo "Error: Report file not found: $REPORT_PATH" >&2
+# Validate input arguments based on mode
+if [ "$LITE_MODE" = true ]; then
+    if [ $# -ne 1 ]; then
+        echo "Error: Lite mode requires exactly 1 plan path" >&2
+        echo "Usage: $0 --lite <path-to-lite-plan>" >&2
         exit 1
     fi
-done
+    LITE_PLAN_PATH="$1"
+    if [ ! -f "$LITE_PLAN_PATH" ]; then
+        echo "Error: Lite plan file not found: $LITE_PLAN_PATH" >&2
+        exit 1
+    fi
+else
+    if [ $# -ne 3 ]; then
+        echo "Error: Exactly 3 report paths are required" >&2
+        echo "Usage: $0 <path-to-report1> <path-to-report2> <path-to-report3>" >&2
+        echo "       $0 --lite <path-to-lite-plan>" >&2
+        exit 1
+    fi
+
+    # Accept 3 report paths
+    REPORT1_PATH="$1"
+    REPORT2_PATH="$2"
+    REPORT3_PATH="$3"
+
+    # Validate all report files exist
+    for REPORT_PATH in "$REPORT1_PATH" "$REPORT2_PATH" "$REPORT3_PATH"; do
+        if [ ! -f "$REPORT_PATH" ]; then
+            echo "Error: Report file not found: $REPORT_PATH" >&2
+            exit 1
+        fi
+    done
+fi
 
 # Generate timestamp for temp files
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
-# Extract issue number from first report filename
-REPORT1_BASENAME=$(basename "$REPORT1_PATH")
+# Extract issue number from filename (works for both modes)
+if [ "$LITE_MODE" = true ]; then
+    SOURCE_BASENAME=$(basename "$LITE_PLAN_PATH")
+else
+    SOURCE_BASENAME=$(basename "$REPORT1_PATH")
+fi
 ISSUE_NUMBER=""
-if [[ "$REPORT1_BASENAME" =~ ^issue-([0-9]+)- ]]; then
+if [[ "$SOURCE_BASENAME" =~ ^issue-([0-9]+)- ]]; then
     ISSUE_NUMBER="${BASH_REMATCH[1]}"
 fi
 
@@ -72,13 +102,17 @@ extract_feature_name() {
         || true
 }
 
-# Try to extract feature name from reports in priority order
-FEATURE_NAME="$(extract_feature_name "$REPORT1_PATH")"
-if [ -z "$FEATURE_NAME" ]; then
-    FEATURE_NAME="$(extract_feature_name "$REPORT2_PATH")"
-fi
-if [ -z "$FEATURE_NAME" ]; then
-    FEATURE_NAME="$(extract_feature_name "$REPORT3_PATH")"
+# Try to extract feature name from reports/plan
+if [ "$LITE_MODE" = true ]; then
+    FEATURE_NAME="$(extract_feature_name "$LITE_PLAN_PATH")"
+else
+    FEATURE_NAME="$(extract_feature_name "$REPORT1_PATH")"
+    if [ -z "$FEATURE_NAME" ]; then
+        FEATURE_NAME="$(extract_feature_name "$REPORT2_PATH")"
+    fi
+    if [ -z "$FEATURE_NAME" ]; then
+        FEATURE_NAME="$(extract_feature_name "$REPORT3_PATH")"
+    fi
 fi
 if [ -z "$FEATURE_NAME" ]; then
     FEATURE_NAME="Unknown Feature"
@@ -109,15 +143,33 @@ if [ ! -f "$PROMPT_TEMPLATE_PATH" ]; then
     exit 1
 fi
 
-# Prepare debate report file path
-if [ -n "$ISSUE_NUMBER" ]; then
-    DEBATE_REPORT_FILE=".tmp/issue-${ISSUE_NUMBER}-debate.md"
-else
-    DEBATE_REPORT_FILE=".tmp/debate-report-${TIMESTAMP}.md"
-fi
+# Prepare debate report / lite plan content based on mode
+if [ "$LITE_MODE" = true ]; then
+    # Lite mode: use the lite plan directly (no debate report combination)
+    if [ -n "$ISSUE_NUMBER" ]; then
+        DEBATE_REPORT_FILE=".tmp/issue-${ISSUE_NUMBER}-lite-plan.md"
+    else
+        DEBATE_REPORT_FILE=".tmp/lite-plan-${TIMESTAMP}.md"
+    fi
 
-# Combine all 3 reports into a single debate report file
-cat > "$DEBATE_REPORT_FILE" <<EOF
+    # Copy lite plan to standard location (may already be there)
+    cp "$LITE_PLAN_PATH" "$DEBATE_REPORT_FILE"
+
+    # Load the lite plan content
+    DEBATE_REPORT_CONTENT=$(cat "$DEBATE_REPORT_FILE")
+
+    echo "Lite mode: Using single-agent plan from: $LITE_PLAN_PATH" >&2
+    echo "" >&2
+else
+    # Full mode: combine 3 reports into debate report
+    if [ -n "$ISSUE_NUMBER" ]; then
+        DEBATE_REPORT_FILE=".tmp/issue-${ISSUE_NUMBER}-debate.md"
+    else
+        DEBATE_REPORT_FILE=".tmp/debate-report-${TIMESTAMP}.md"
+    fi
+
+    # Combine all 3 reports into a single debate report file
+    cat > "$DEBATE_REPORT_FILE" <<EOF
 # Multi-Agent Debate Report: $FEATURE_NAME
 
 **Generated**: $(date +"%Y-%m-%d %H:%M")
@@ -152,11 +204,12 @@ $(cat "$REPORT3_PATH")
 This combined report will be reviewed by an external consensus agent (Codex or Claude Opus) to synthesize a final, balanced implementation plan.
 EOF
 
-# Load the combined debate report content for use in external review
-DEBATE_REPORT_CONTENT=$(cat "$DEBATE_REPORT_FILE")
+    # Load the combined debate report content for use in external review
+    DEBATE_REPORT_CONTENT=$(cat "$DEBATE_REPORT_FILE")
 
-echo "Combined debate report saved to: $DEBATE_REPORT_FILE" >&2
-echo "" >&2
+    echo "Combined debate report saved to: $DEBATE_REPORT_FILE" >&2
+    echo "" >&2
+fi
 
 # Create temporary file for substitution
 TEMP_FILE=$(mktemp)
@@ -265,6 +318,11 @@ echo "" >&2
 # Extract summary information
 echo "Consensus Plan Summary:" >&2
 echo "- Feature: $FEATURE_NAME" >&2
+if [ "$LITE_MODE" = true ]; then
+    echo "- Path: lite (single-agent)" >&2
+else
+    echo "- Path: full (multi-agent debate)" >&2
+fi
 
 # Extract total LOC estimate (look for "Total:" or similar patterns)
 TOTAL_LOC=$(grep -i "total.*LOC" "$CONSENSUS_FILE" | head -1 | grep -o '\~[0-9][0-9]*[–-][0-9][0-9]*\|\~[0-9][0-9]*' | head -1)
