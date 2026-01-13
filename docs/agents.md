@@ -33,3 +33,5 @@ These agents work together in the `/ultra-planner` workflow:
 2. If lite (repo-only, <5 files, <150 LOC): Planner-lite creates plan directly
 3. If full (needs research or complex): Bold-proposer + Critique + Reducer debate
 4. External consensus synthesizes final plan (full path only)
+
+**Plugin mode invocation:** When Agentize is installed as a Claude Code plugin, agents are namespaced with the `agentize:` prefix (e.g., `agentize:understander`, `agentize:bold-proposer`). Commands and skills within this plugin should use the prefixed names for Task tool invocations.
