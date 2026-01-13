@@ -187,7 +187,7 @@ Use the Task tool to launch the understander agent to gather codebase context:
 
 ```
 Task tool parameters:
-  subagent_type: "understander"
+  subagent_type: "agentize:understander"
   prompt: "Gather codebase context for the following feature request: {FEATURE_DESC}"
   description: "Gather codebase context"
   model: "sonnet"
@@ -233,7 +233,7 @@ Use the Task tool to launch the planner-lite agent:
 
 ```
 Task tool parameters:
-  subagent_type: "planner-lite"
+  subagent_type: "agentize:planner-lite"
   prompt: "Create an implementation plan for: {FEATURE_DESC}
 
 CODEBASE CONTEXT (from understander):
@@ -260,7 +260,7 @@ Use the Task tool to launch the bold-proposer agent with understander context:
 
 ```
 Task tool parameters:
-  subagent_type: "bold-proposer"
+  subagent_type: "agentize:bold-proposer"
   prompt: "Research and propose an innovative solution for: {FEATURE_DESC}
 
 CODEBASE CONTEXT (from understander):
@@ -288,7 +288,7 @@ Focus your exploration on SOTA research and innovation."
 **Task tool call #1 - Critique Agent:**
 ```
 Task tool parameters:
-  subagent_type: "proposal-critique"
+  subagent_type: "agentize:proposal-critique"
   prompt: "Analyze the following proposal for feasibility and risks:
 
 Feature: {FEATURE_DESC}
@@ -304,7 +304,7 @@ Provide critical analysis of assumptions, risks, and feasibility."
 **Task tool call #2 - Reducer Agent:**
 ```
 Task tool parameters:
-  subagent_type: "proposal-reducer"
+  subagent_type: "agentize:proposal-reducer"
   prompt: "Simplify the following proposal using 'less is more' philosophy:
 
 Feature: {FEATURE_DESC}
