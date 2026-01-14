@@ -1,7 +1,7 @@
 ---
 name: setup-viewboard
 description: Set up a GitHub Projects v2 board with agentize-compatible Status fields, labels, and automation workflows
-argument_hint: "[--org <org-name>]"
+argument-hint: "[--org <org-name>]"
 ---
 
 # Setup Viewboard Command
@@ -33,11 +33,7 @@ If `--org <org-name>` is present, extract `<org-name>` as the target organizatio
 
 ### Step 2: Check .agentize.yaml
 
-Read `.agentize.yaml` from the project root:
-
-```bash
-cat .agentize.yaml 2>/dev/null
-```
+Read `.agentize.yaml` from the project root using the Read tool.
 
 Parse the file to check for existing `project.org` and `project.id` fields.
 
@@ -70,16 +66,11 @@ Creating new GitHub Projects v2 board...
 
 **If project association exists**:
 
-Inform the user:
+Inform the user and proceed to next step:
 ```
 Found existing project association: <org>/<id>
 
-Validating project access...
-```
-
-Run validation:
-```bash
-lol project --associate <org>/<id>
+Proceeding with automation workflow and labels setup...
 ```
 
 ### Step 4: Generate Automation Workflow
