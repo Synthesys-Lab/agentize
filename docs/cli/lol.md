@@ -41,6 +41,8 @@ The `--org` flag accepts either an organization or personal user login. When omi
 
 See [Project Management](../architecture/project.md) for details.
 
+**See also:** `/setup-viewboard` for guided project setup with labels and automation.
+
 ### lol claude-clean
 
 Remove stale project entries from Claude's global configuration file (`~/.claude.json`).

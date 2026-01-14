@@ -13,6 +13,15 @@ This section discusses how to integrate GitHub Projects v2 with an `agentize`d p
 
 ## Creating or Associating a Project
 
+**Guided setup (recommended):**
+Use the `/setup-viewboard` command for guided project setup with labels and automation:
+```
+/setup-viewboard [--org <org-name>]
+```
+
+See [/setup-viewboard documentation](../commands/setup-viewboard.md) for details.
+
+**CLI commands:**
 Create a new GitHub Projects v2 board and associate it with the current repository:
 ```bash
 lol project --create [--org <owner>] [--title <title>]
