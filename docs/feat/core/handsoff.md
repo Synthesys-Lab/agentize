@@ -281,16 +281,29 @@ Handsoff mode is implemented via three Claude Code hooks (see [.claude/hooks/REA
 
 See [.claude/hooks/pre-tool-use.md](../../.claude/hooks/pre-tool-use.md) for interface details.
 
-### `user-prompt-submit.py`
+### `user-prompt-submit.py` (Claude Code)
 - **Event:** `UserPromptSubmit` (before prompt is sent to Claude Code)
 - **Purpose:** Initialize session state for supported workflows
-- **Location:** `.claude/hooks/user-prompt-submit.py`
+- **Location:** `.claude-plugin/hooks/user-prompt-submit.py`
 
 **Key logic:**
 - Detects workflow commands: `/ultra-planner`, `/issue-to-impl`
 - Creates `$AGENTIZE_HOME/.tmp/hooked-sessions/{session_id}.json` with initial state (falls back to worktree-local `.tmp/` if `AGENTIZE_HOME` is unset)
 - Sets `continuation_count = 0`
 - When issue number is present, creates issue index file at `$AGENTIZE_HOME/.tmp/hooked-sessions/by-issue/{issue_no}.json`
+
+### `before-prompt-submit.py` (Cursor IDE)
+- **Event:** `beforeSubmitPrompt` (before prompt is sent to Cursor)
+- **Purpose:** Initialize session state for supported workflows
+- **Location:** `.cursor/hooks/before-prompt-submit.py`
+
+**Key logic:**
+- Detects workflow commands: `/ultra-planner`, `/issue-to-impl`
+- Creates `$AGENTIZE_HOME/.tmp/hooked-sessions/{session_id}.json` with initial state (falls back to worktree-local `.tmp/` if `AGENTIZE_HOME` is unset)
+- Sets `continuation_count = 0`
+- When issue number is present, creates issue index file at `$AGENTIZE_HOME/.tmp/hooked-sessions/by-issue/{issue_no}.json`
+
+**Note:** The Cursor hook replicates the functionality of the Claude hook, enabling handsoff mode workflows in Cursor IDE. Both hooks use the same session state file format and support the same workflow commands.
 
 ### `stop.py`
 - **Event:** `Stop` (before Claude Code stops execution)
@@ -304,7 +317,7 @@ See [.claude/hooks/pre-tool-use.md](../../.claude/hooks/pre-tool-use.md) for int
 - Injects workflow-specific continuation prompt
 - Blocks stop and triggers auto-resume
 
-**Source of truth:** For exact implementation details and prompt text, refer to `.claude/hooks/pre-tool-use.py`, `.claude/hooks/user-prompt-submit.py` and `.claude/hooks/stop.py`.
+**Source of truth:** For exact implementation details and prompt text, refer to `.claude-plugin/hooks/pre-tool-use.py`, `.claude-plugin/hooks/user-prompt-submit.py`, `.cursor/hooks/before-prompt-submit.py` and `.claude-plugin/hooks/stop.py`.
 
 ## Limitations
 
