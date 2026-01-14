@@ -25,6 +25,22 @@ This command will:
 
 When this command is invoked, follow these steps:
 
+### Step 0: Check gh CLI Availability
+
+Verify `gh` CLI is installed:
+
+```bash
+command -v gh
+```
+
+If `gh` is not found, inform the user:
+```
+Error: GitHub CLI (gh) is not installed.
+
+Install it from: https://github.com/cli/cli
+```
+Stop execution.
+
 ### Step 1: Parse Arguments
 
 Parse `$ARGUMENTS` to extract the `--org` flag value if provided.
