@@ -21,6 +21,7 @@ _lol() {
             'claude-clean:Remove stale Claude config entries'
             'upgrade:Upgrade agentize installation'
             'project:Manage GitHub Projects v2 integration'
+            'usage:Report Claude Code token usage statistics'
             'version:Display version information'
         )
     else

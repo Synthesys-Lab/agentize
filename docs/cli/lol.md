@@ -92,6 +92,8 @@ Parses JSONL files from `~/.claude/projects/**/*.jsonl` to extract and aggregate
 |--------|----------|---------|-------------|
 | `--today` | No | Yes | Show usage by hour for the last 24 hours |
 | `--week` | No | - | Show usage by day for the last 7 days |
+| `--cache` | No | - | Include cache token statistics (cache_read, cache_write columns) |
+| `--cost` | No | - | Show cost estimate based on model pricing |
 
 #### Example
 
