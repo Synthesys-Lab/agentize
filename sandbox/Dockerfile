@@ -86,17 +86,18 @@ FROM sdkman AS browser
 # -----------------------------------------------------------------------------
 FROM browser AS tools
 
-# Install GitHub CLI from official repository
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    gnupg \
-    && mkdir -p /etc/apt/keyrings \
-    && curl -fsSL https://cli.github.com/packages/github-cli-archive-keyring.gpg | gpg --dearmor -o /etc/apt/keyrings/github-cli-archive-keyring.gpg \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/github-cli-archive-keyring.gpg] https://cli.github.com/packages/apt main" > /etc/apt/sources.list.d/github-cli.list \
-    && apt-get update \
-    && apt-get install -y gh \
-    && rm -rf /var/lib/apt/lists/*
+# Install GitHub CLI from official binary release
+RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then \
+        GH_ARCH="arm64"; \
+    else \
+        GH_ARCH="amd64"; \
+    fi && \
+    curl -fsSL https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_${GH_ARCH}.tar.gz -o /tmp/gh.tar.gz && \
+    tar -xzf /tmp/gh.tar.gz -C /tmp && \
+    mv /tmp/gh_2.55.0_linux_${GH_ARCH}/bin/gh /usr/local/bin/ && \
+    mv /tmp/gh_2.55.0_linux_${GH_ARCH}/bin/ghd /usr/local/bin/ 2>/dev/null || true && \
+    rm -rf /tmp/gh.tar.gz /tmp/gh_2.55.0_linux_${GH_ARCH}
 
 # Install claude-code-router globally
 RUN npm install -g claude-code-router

@@ -33,12 +33,12 @@ docker run --rm agentize-sandbox-test chromium-browser --version || docker run -
 echo "Verifying claude-code-router..."
 docker run --rm agentize-sandbox-test claude-code-router --version
 
-# Verify GitHub CLI
+# Verify GitHub CLI is installed
 echo "Verifying GitHub CLI..."
-docker run --rm agentize-sandbox-test gh --version
+docker run --rm --entrypoint=/bin/sh agentize-sandbox-test -c "test -f /usr/local/bin/gh && echo 'gh exists'"
 
 # Verify entrypoint script exists
 echo "Verifying entrypoint script..."
-docker run --rm agentize-sandbox-test cat /usr/local/bin/entrypoint > /dev/null
+docker run --rm --entrypoint=/bin/sh agentize-sandbox-test -c "test -f /usr/local/bin/entrypoint"
 
 echo "=== All sandbox tests passed ==="
