@@ -1,7 +1,8 @@
 #compdef lol
 
 # Zsh completion for lol (AI-powered SDK CLI)
-# This completion file provides interactive command-line hints for lol subcommands and flags
+# Provides interactive command-line hints for lol subcommands and flags
+# Supports: upgrade, project, usage, version, claude-clean
 
 _lol() {
     local curcontext="$curcontext" state line
@@ -17,6 +18,7 @@ _lol() {
     # Fallback to static command list if dynamic fetch failed
     if (( ${#commands} == 0 )); then
         commands=(
+            'claude-clean:Remove stale Claude config entries'
             'upgrade:Upgrade agentize installation'
             'project:Manage GitHub Projects v2 integration'
             'version:Display version information'
@@ -26,6 +28,7 @@ _lol() {
         local -a commands_with_desc
         for cmd in $commands; do
             case $cmd in
+                claude-clean) commands_with_desc+=('claude-clean:Remove stale Claude config entries') ;;
                 upgrade) commands_with_desc+=('upgrade:Upgrade agentize installation') ;;
                 project) commands_with_desc+=('project:Manage GitHub Projects v2 integration') ;;
                 usage) commands_with_desc+=('usage:Report Claude Code token usage statistics') ;;
@@ -45,6 +48,9 @@ _lol() {
             ;;
         args)
             case $line[1] in
+                claude-clean)
+                    _lol_claude_clean
+                    ;;
                 upgrade)
                     _lol_upgrade
                     ;;
@@ -124,6 +130,24 @@ _lol_usage() {
         '--week[Show usage by day for the last 7 days]' \
         '--cache[Include cache token statistics]' \
         '--cost[Show cost estimate]'
+}
+
+# Completion for 'lol claude-clean' subcommand
+_lol_claude_clean() {
+    local -a claude_clean_flags
+
+    # Try dynamic fetch first
+    if (( $+commands[lol] )); then
+        claude_clean_flags=( ${(f)"$(lol --complete claude-clean-flags 2>/dev/null)"} )
+    fi
+
+    # Fallback to static flags
+    if (( ${#claude_clean_flags} == 0 )); then
+        claude_clean_flags=( '--dry-run' )
+    fi
+
+    _arguments \
+        '--dry-run[Preview changes without modifying ~/.claude.json]'
 }
 
 _lol "$@"
