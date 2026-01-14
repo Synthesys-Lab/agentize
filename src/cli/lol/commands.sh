@@ -14,8 +14,6 @@ _lol_commands_dir() {
 
 _LOL_COMMANDS_DIR="$(_lol_commands_dir)"
 
-source "$_LOL_COMMANDS_DIR/commands/init.sh"
-source "$_LOL_COMMANDS_DIR/commands/update.sh"
 source "$_LOL_COMMANDS_DIR/commands/upgrade.sh"
 source "$_LOL_COMMANDS_DIR/commands/version.sh"
 source "$_LOL_COMMANDS_DIR/commands/project.sh"

@@ -49,9 +49,6 @@ lol() {
     [ $# -gt 0 ] && shift
 
     case "$subcommand" in
-        apply)
-            _lol_parse_apply "$@"
-            ;;
         upgrade)
             _lol_parse_upgrade "$@"
             ;;
@@ -74,8 +71,6 @@ lol() {
             echo "lol: AI-powered SDK CLI"
             echo ""
             echo "Usage:"
-            echo "  lol apply --init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]"
-            echo "  lol apply --update [--path <path>]"
             echo "  lol upgrade"
             echo "  lol --version"
             echo "  lol project --create [--org <owner>] [--title <title>]"
@@ -87,13 +82,6 @@ lol() {
             echo ""
             echo "Flags:"
             echo "  --version           Display version information"
-            echo "  --init              Use init mode (apply only, requires --name and --lang)"
-            echo "  --update            Use update mode (apply only)"
-            echo "  --name <name>       Project name (required for --init)"
-            echo "  --lang <lang>       Programming language: c, cxx, python (required for --init)"
-            echo "  --path <path>       Project path (optional, defaults to current directory)"
-            echo "  --source <path>     Source code path relative to project root (optional)"
-            echo "  --metadata-only     Create only .agentize.yaml without SDK templates (optional, --init only)"
             echo "  --create            Create new GitHub Projects v2 board (project)"
             echo "  --associate <owner>/<id>  Associate existing project board (project)"
             echo "  --automation        Generate automation workflow template (project)"
@@ -106,9 +94,6 @@ lol() {
             echo "  --dry-run           Preview changes without modifying (claude-clean)"
             echo ""
             echo "Examples:"
-            echo "  lol apply --init --name my-project --lang python --path /path/to/project"
-            echo "  lol apply --update --path /path/to/project"
-            echo "  lol apply --update              # From project root or subdirectory"
             echo "  lol upgrade                     # Upgrade agentize installation"
             echo "  lol --version                   # Display version information"
             echo "  lol project --create --org my-org --title \"My Project\""

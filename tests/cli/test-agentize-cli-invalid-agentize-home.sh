@@ -9,7 +9,7 @@ test_info "Invalid AGENTIZE_HOME produces error"
 
 (
   export AGENTIZE_HOME="/nonexistent/path"
-  if source "$LOL_CLI" 2>/dev/null && lol apply --init --name test --lang python 2>/dev/null; then
+  if source "$LOL_CLI" 2>/dev/null && lol upgrade 2>/dev/null; then
     test_fail "Should error when AGENTIZE_HOME is invalid"
   fi
   test_pass "Errors correctly on invalid AGENTIZE_HOME"

@@ -51,16 +51,6 @@ Plugin mode namespaces all commands with `agentize:` prefix (e.g., `/agentize:ul
 
 See [docs/plugin-installation.md](./docs/plugin-installation.md) for details.
 
-### Initialize a New Project
-
-Once installed, create AI-powered SDK projects:
-
-```bash
-lol apply --init --name your_project_name --lang c --path /path/to/your/project
-```
-
-This creates an initial SDK structure in the specified project path. Use `lol --help` to see all available options.
-
 ## Core Philosophy
 
 1. Plan first, code later: Use AI to generate a detailed plan before writing any code.
@@ -99,7 +89,7 @@ Learn Agentize in 15 minutes with our step-by-step tutorials (3-5 min each):
 
 Agentize provides shell functions that work from any directory:
 - `wt` - Manage worktrees in bare git repositories (spawn, list, remove, prune, purge)
-- `lol` - Initialize and update SDK projects (apply --init, apply --update)
+- `lol` - SDK management utilities (upgrade, project, usage, serve, claude-clean)
 
 For persistence, add `source /path/to/agentize/setup.sh` to your shell RC file (`~/.bashrc`, `~/.zshrc`, etc.).
 
@@ -120,37 +110,17 @@ wt help                  # Display help information
 
 **Bare repository requirement:** `wt` works with bare git repositories. Worktrees are created under `<bare-repo>/trees/`. See `docs/cli/wt.md` for migration guide.
 
-### SDK Project Management (`lol`)
+### SDK Utilities (`lol`)
 
-Ergonomic commands for initializing and updating SDK projects:
-
-**Initialize a new project:**
+Ergonomic commands for SDK management:
 
 ```bash
-lol apply --init --name my-project --lang python --path /path/to/project
+lol upgrade              # Upgrade agentize installation
+lol project --create     # Create GitHub Projects v2 board
+lol project --associate  # Associate existing project board
+lol usage                # Report Claude Code token usage
+lol claude-clean         # Remove stale project entries
 ```
-
-**Update an existing project:**
-
-From project root or any subdirectory:
-```bash
-lol apply --update
-```
-
-Or specify explicit path:
-```bash
-lol apply --update --path /path/to/project
-```
-
-The `apply --update` command finds the nearest `.claude/` directory by traversing parent directories, making it convenient to use from anywhere within your project.
-
-**Available options:**
-- `--init` - Initialize a new SDK project (requires `--name` and `--lang`)
-- `--update` - Update an existing SDK project
-- `--name <name>` - Project name (required for `--init`)
-- `--lang <lang>` - Programming language: c, cxx, python (required for `--init`)
-- `--path <path>` - Project path (optional, defaults to current directory)
-- `--source <path>` - Source code path relative to project root (optional)
 
 Use `lol --help` for complete documentation.
 

@@ -33,39 +33,6 @@ def handle_version(agentize_home: str) -> int:
     return run_shell_command("lol_cmd_version", agentize_home)
 
 
-def handle_init(args: argparse.Namespace, agentize_home: str) -> int:
-    """Handle init command."""
-    path = args.path or os.getcwd()
-    source = args.source or "src"
-    metadata_only = "1" if args.metadata_only else "0"
-
-    cmd = f'lol_cmd_init "{path}" "{args.name}" "{args.lang}" "{source}" "{metadata_only}"'
-    return run_shell_command(cmd, agentize_home)
-
-
-def resolve_update_path(start_path: str) -> str:
-    """Find nearest parent directory with .claude/ subdirectory.
-
-    Mirrors the shell CLI behavior in _lol_parse_update().
-    """
-    search_path = os.path.abspath(start_path)
-    while True:
-        if os.path.isdir(os.path.join(search_path, ".claude")):
-            return search_path
-        parent = os.path.dirname(search_path)
-        if parent == search_path:
-            # Reached filesystem root, return original path
-            return os.path.abspath(start_path)
-        search_path = parent
-
-
-def handle_update(args: argparse.Namespace, agentize_home: str) -> int:
-    """Handle update command."""
-    path = args.path or resolve_update_path(os.getcwd())
-    cmd = f'lol_cmd_update "{path}"'
-    return run_shell_command(cmd, agentize_home)
-
-
 def handle_upgrade(agentize_home: str) -> int:
     """Handle upgrade command."""
     return run_shell_command("lol_cmd_upgrade", agentize_home)
@@ -100,17 +67,6 @@ def handle_claude_clean(args: argparse.Namespace, agentize_home: str) -> int:
     dry_run = "1" if args.dry_run else "0"
     cmd = f'lol_cmd_claude_clean "{dry_run}"'
     return run_shell_command(cmd, agentize_home)
-
-
-def handle_apply(args: argparse.Namespace, agentize_home: str) -> int:
-    """Handle apply command."""
-    if args.init:
-        return handle_init(args, agentize_home)
-    elif args.update:
-        return handle_update(args, agentize_home)
-    else:
-        print("Error: Must specify --init or --update")
-        return 1
 
 
 def handle_usage(args: argparse.Namespace) -> int:
@@ -150,21 +106,6 @@ def main() -> int:
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Commands")
-
-    # apply command (the only way to init or update)
-    apply_parser = subparsers.add_parser(
-        "apply", help="Initialize or update SDK project (use --init or --update)"
-    )
-    apply_group = apply_parser.add_mutually_exclusive_group(required=True)
-    apply_group.add_argument("--init", action="store_true", help="Use init mode")
-    apply_group.add_argument("--update", action="store_true", help="Use update mode")
-    apply_parser.add_argument("--name", help="Project name (required for --init)")
-    apply_parser.add_argument("--lang", help="Programming language: c, cxx, python")
-    apply_parser.add_argument("--path", help="Project path")
-    apply_parser.add_argument("--source", help="Source code path relative to project root")
-    apply_parser.add_argument(
-        "--metadata-only", action="store_true", help="Create only metadata (--init only)"
-    )
 
     # upgrade command
     subparsers.add_parser("upgrade", help="Upgrade agentize installation")
@@ -224,9 +165,7 @@ def main() -> int:
         return handle_version(agentize_home)
 
     # Handle commands
-    if args.command == "apply":
-        return handle_apply(args, agentize_home)
-    elif args.command == "upgrade":
+    if args.command == "upgrade":
         return handle_upgrade(agentize_home)
     elif args.command == "project":
         return handle_project(args, agentize_home)

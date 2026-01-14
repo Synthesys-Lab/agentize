@@ -28,10 +28,8 @@ Tests for the `lol` (agentize) command:
 - `test-lol-version.sh` - Tests version command output
 - `test-lol-claude-clean.sh` - Tests `lol claude-clean` command for cleaning stale entries
 - `test-lol-command-functions-loaded.sh` - Smoke test for `lol_cmd_*` function availability
-- `test-agentize-cli-init-*.sh` - Tests for `lol apply --init` command
-- `test-agentize-cli-update-*.sh` - Tests for `lol apply --update` command
-- `test-agentize-cli-metadata-*.sh` - Tests for metadata-only mode
-- `test-agentize-modes-*.sh` - Tests for agentize mode parameter validation
+- `test-lol-project-*.sh` - Tests for `lol project` command
+- `test-agentize-cli-*-agentize-home.sh` - Tests for AGENTIZE_HOME validation
 
 ### Other CLI Tests
 

@@ -23,15 +23,15 @@ Source-first libraries for Agentize CLI commands. These files are the canonical 
 
 - `lol.sh` - SDK CLI library (canonical source, thin loader)
   - Sources modular files from `lol/` directory
-  - Exports `lol` command for SDK initialization and management
-  - Handles subcommands: `apply`, `init`, `update`, `upgrade`, `project`, `serve`, `version`
+  - Exports `lol` command for SDK management
+  - Handles subcommands: `upgrade`, `project`, `serve`, `usage`, `claude-clean`, `version`
   - Interface documentation: `lol.md`
 
 - `lol/` - SDK CLI modular implementation
   - `helpers.sh` - Language detection and utility functions
   - `completion.sh` - Shell-agnostic completion helper
   - `commands.sh` - Thin loader that sources `commands/*.sh`
-  - `commands/` - Per-command implementations (init.sh, update.sh, etc.)
+  - `commands/` - Per-command implementations (upgrade.sh, project.sh, etc.)
   - `dispatch.sh` - Main dispatcher, help text, and entry point
   - `parsers.sh` - Argument parsing for each command
   - See `lol/README.md` for module map and load order
@@ -60,12 +60,6 @@ wt remove 42
 ### SDK CLI (`lol`)
 
 ```bash
-# Initialize new project
-lol apply --init --name my-project --lang python --path /path/to/project
-
-# Update existing project
-lol apply --update
-
 # Upgrade agentize installation
 lol upgrade
 
@@ -74,6 +68,12 @@ lol --version
 
 # GitHub Projects integration
 lol project --create --org MyOrg --title "My Project"
+
+# Report token usage
+lol usage --today
+
+# Clean stale project entries
+lol claude-clean
 ```
 
 ### Direct Script Invocation

@@ -15,20 +15,15 @@ output=$(lol --complete commands 2>/dev/null)
 
 # Verify documented commands are present
 # Check each command individually (shell-neutral approach)
-# Note: init and update are NOT standalone commands, they are --init and --update flags for apply
-echo "$output" | grep -q "^apply$" || test_fail "Missing command: apply"
 echo "$output" | grep -q "^upgrade$" || test_fail "Missing command: upgrade"
 echo "$output" | grep -q "^version$" || test_fail "Missing command: version"
 echo "$output" | grep -q "^project$" || test_fail "Missing command: project"
 echo "$output" | grep -q "^usage$" || test_fail "Missing command: usage"
 echo "$output" | grep -q "^claude-clean$" || test_fail "Missing command: claude-clean"
 
-# Verify init and update are NOT in the commands list (they are flags for apply)
-if echo "$output" | grep -q "^init$"; then
-  test_fail "init should not be a standalone command (use 'apply --init' instead)"
-fi
-if echo "$output" | grep -q "^update$"; then
-  test_fail "update should not be a standalone command (use 'apply --update' instead)"
+# Verify apply command is NOT in the commands list (it has been removed)
+if echo "$output" | grep -q "^apply$"; then
+  test_fail "apply command should have been removed"
 fi
 
 # Verify output is newline-delimited (no spaces, commas, etc.)

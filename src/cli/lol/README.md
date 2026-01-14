@@ -13,19 +13,18 @@ Modular implementation of the `lol` SDK CLI. These files are sourced by `lol.sh`
 | `commands.sh` | Thin loader that sources `commands/*.sh` | All `lol_cmd_*` functions |
 | `commands/` | Per-command implementation files | See below |
 | `dispatch.sh` | Main dispatcher and help text | `lol` |
-| `parsers.sh` | Argument parsing for each command | `lol_parse_init`, `lol_parse_update`, `lol_parse_apply`, `lol_parse_project`, `lol_parse_serve` |
+| `parsers.sh` | Argument parsing for each command | `lol_parse_project`, `lol_parse_serve`, `lol_parse_usage`, `lol_parse_claude_clean` |
 
 ### commands/ Directory
 
 | File | Exports |
 |------|---------|
-| `init.sh` | `lol_cmd_init` |
-| `update.sh` | `lol_cmd_update` |
 | `upgrade.sh` | `lol_cmd_upgrade` |
 | `version.sh` | `lol_cmd_version` |
 | `project.sh` | `lol_cmd_project` |
 | `serve.sh` | `lol_cmd_serve` |
 | `claude-clean.sh` | `lol_cmd_claude_clean` |
+| `usage.sh` | `lol_cmd_usage` |
 
 ## Load Order
 
@@ -49,4 +48,3 @@ The parent `lol.sh` sources modules in this order:
 
 - `../lol.md` - Interface documentation
 - `../../docs/cli/lol.md` - User documentation
-- `../../docs/feat/cli/lol.md` - Detailed flag reference

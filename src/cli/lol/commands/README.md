@@ -8,8 +8,6 @@ Per-command implementation files for the `lol` CLI. Each file exports exactly on
 
 | File | Function | Description |
 |------|----------|-------------|
-| `init.sh` | `lol_cmd_init` | Initialize new SDK project with templates |
-| `update.sh` | `lol_cmd_update` | Update existing project configuration |
 | `upgrade.sh` | `lol_cmd_upgrade` | Upgrade agentize installation via git |
 | `version.sh` | `lol_cmd_version` | Display version information |
 | `project.sh` | `lol_cmd_project` | GitHub Projects v2 integration |

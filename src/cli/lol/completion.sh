@@ -9,27 +9,12 @@ lol_complete() {
 
     case "$topic" in
         commands)
-            echo "apply"
             echo "upgrade"
             echo "version"
             echo "project"
             echo "usage"
             echo "serve"
             echo "claude-clean"
-            ;;
-        apply-flags)
-            echo "--init"
-            echo "--update"
-            ;;
-        init-flags)
-            echo "--name"
-            echo "--lang"
-            echo "--path"
-            echo "--source"
-            echo "--metadata-only"
-            ;;
-        update-flags)
-            echo "--path"
             ;;
         project-modes)
             echo "--create"
@@ -57,11 +42,6 @@ lol_complete() {
             echo "--week"
             echo "--cache"
             echo "--cost"
-            ;;
-        lang-values)
-            echo "c"
-            echo "cxx"
-            echo "python"
             ;;
         *)
             # Unknown topic, return empty

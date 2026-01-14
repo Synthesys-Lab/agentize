@@ -12,8 +12,6 @@ source "$LOL_CLI"
 
 # List of expected command functions
 EXPECTED_FUNCTIONS=(
-    "lol_cmd_init"
-    "lol_cmd_update"
     "lol_cmd_upgrade"
     "lol_cmd_version"
     "lol_cmd_project"

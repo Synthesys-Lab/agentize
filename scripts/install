@@ -150,7 +150,7 @@ Then restart your shell or run:
 
 After that, you can use:
   - wt init, wt spawn, wt list, etc.
-  - lol apply --init, lol apply --update, etc.
+  - lol upgrade, lol project, lol usage, etc.
 
 For more information:
   - Quick Start: $INSTALL_DIR/README.md

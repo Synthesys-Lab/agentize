@@ -5,7 +5,7 @@ source "$(dirname "$0")/../common.sh"
 
 test_info "Plugin manifest validation"
 
-PLUGIN_JSON="$PROJECT_ROOT/.claude-plugin/plugin.json"
+PLUGIN_JSON="$PROJECT_ROOT/.claude-plugin/marketplace.json"
 
 # Check plugin.json exists
 if [ ! -f "$PLUGIN_JSON" ]; then

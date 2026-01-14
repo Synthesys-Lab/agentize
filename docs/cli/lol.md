@@ -1,6 +1,6 @@
 # lol CLI
 
-The `lol` command provides SDK initialization, project management, and automation server capabilities.
+The `lol` command provides SDK management utilities: upgrade, project management, usage reporting, and automation server capabilities.
 
 ## Entrypoints
 
@@ -18,22 +18,6 @@ python -m agentize.cli <command> [options]
 The Python entrypoint delegates to shell functions via `bash -c` with `AGENTIZE_HOME` set. Use it for non-sourced environments or scripting contexts where argparse-style parsing is preferred.
 
 ## Commands
-
-### lol apply --init
-
-Initialize a new SDK project.
-
-```bash
-lol apply --init --name <name> --lang <lang> [--path <path>] [--source <path>] [--metadata-only]
-```
-
-### lol apply --update
-
-Update an existing project with the latest agentize configurations.
-
-```bash
-lol apply --update [--path <path>]
-```
 
 ### lol upgrade
 

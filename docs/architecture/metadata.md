@@ -50,7 +50,7 @@ Primary programming language of the project.
 - `c` - C language projects
 - `cxx` - C++ projects
 
-**Usage:** Determines which SDK templates are used during `lol apply --init`.
+**Usage:** Determines language-specific defaults and tooling behavior.
 
 ### project.source (optional)
 Path to source code directory relative to project root.
@@ -101,11 +101,11 @@ GitHub Projects v2 board number (the numeric ID visible in the project URL).
 **Note:** The `project.org` and `project.id` fields work together to uniquely identify a GitHub Projects v2 board. The URL path (`orgs/` vs `users/`) is determined dynamically based on the owner type.
 
 ### agentize.commit (optional)
-Records the agentize installation commit hash used during the last `lol apply --update` operation.
+Records the agentize installation commit hash.
 
 **Example:** `e3eab9a1234567890abcdef1234567890abcdef`
 
-**Usage:** Set by `lol apply --update` to record which agentize version was used. This enables version tracking via `lol version` for troubleshooting and compatibility checks.
+**Usage:** Records which agentize version is being used. This enables version tracking via `lol version` for troubleshooting and compatibility checks.
 
 **Note:** Only recorded when `AGENTIZE_HOME` is a valid git repository. If git is not available or `AGENTIZE_HOME` is not a git repo, this field is omitted without causing errors.
 
@@ -116,36 +116,11 @@ Controls automatic installation of the pre-commit hook during SDK and worktree i
 
 **Example:** `true`, `false`
 
-**Usage:** Set to `false` to prevent automatic hook installation. When `true` or unset, `lol apply --init`, `lol apply --update`, `wt init`, and `wt spawn` will install `scripts/pre-commit` into `.git/hooks/pre-commit` if the hook script exists and no custom hook is already present.
+**Usage:** Set to `false` to prevent automatic hook installation. When `true` or unset, `wt init` and `wt spawn` will install `scripts/pre-commit` into `.git/hooks/pre-commit` if the hook script exists and no custom hook is already present.
 
 **Note:** Hook installation is also skipped when Git hooks are globally disabled via `core.hooksPath` (e.g., `core.hooksPath=/dev/null`). This ensures the commands respect user intent to disable hooks system-wide.
 
 ## Creation
-
-### Automatic Creation
-
-The `.agentize.yaml` file is automatically created by:
-
-**`lol apply --init`:**
-```bash
-lol apply --init --name my-project --lang python
-```
-Creates `.agentize.yaml` with provided name, language, and detected git branch.
-
-**`lol apply --init --metadata-only`:**
-```bash
-lol apply --init --name my-project --lang python --metadata-only
-```
-Creates only `.agentize.yaml` without SDK templates or `.claude/` configuration. This is useful for adding metadata to existing projects.
-
-**`lol apply --update`:**
-```bash
-lol apply --update
-```
-Creates `.agentize.yaml` if missing, using:
-- Project name from directory basename
-- Language from `detect-lang.sh` detection
-- Git branch from repository detection
 
 ### Manual Creation
 
@@ -162,19 +137,7 @@ git:
 EOF
 ```
 
-### Metadata-Only Mode
-
-For existing projects that need only `.agentize.yaml` without full SDK initialization:
-
-```bash
-# Add metadata to existing project
-lol apply --init --name my-project --lang python --metadata-only
-
-# Allows non-empty directories
-lol apply --init --name existing-app --lang cxx --path /path/to/existing-app --metadata-only
-```
-
-This creates only the metadata file, enabling worktree operations (`wt` command) without SDK template overhead.
+This enables worktree operations (`wt` command) and project management features.
 
 ## Usage
 
@@ -193,17 +156,7 @@ wt list
 **Fallback behavior:** When `.agentize.yaml` is missing, `wt` falls back to:
 - Auto-detect `main` or `master` branch
 - Use `trees` directory
-- Display hint: "Run 'lol apply --init' or 'lol apply --update' to create project metadata"
-
-### Project Initialization
-
-The `lol apply --init` command uses metadata to set up new projects:
-
-```bash
-lol apply --init --name agentize --lang bash --source scripts
-```
-
-Creates `.agentize.yaml` with these values, enabling consistent project setup.
+- Display hint to create `.agentize.yaml` manually
 
 ## Example: Agentize Project
 
@@ -239,20 +192,7 @@ This enables `wt spawn` to correctly fork from `trunk`.
 
 ## Preservation
 
-**`lol apply --update` preserves existing `.agentize.yaml`:**
-- Does not overwrite user customizations
-- Only creates file if missing
-- User modifications are safe
-
-**Editing:** Safe to edit manually. The file uses standard YAML format.
-
-## Migration
-
-For existing projects without `.agentize.yaml`:
-
-1. Run `lol apply --update` to auto-generate
-2. Review and customize generated file
-3. Commit to repository: `git add .agentize.yaml && git commit`
+**Editing:** Safe to edit manually. The file uses standard YAML format. User modifications are safe.
 
 ## Notes
 

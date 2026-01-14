@@ -4,45 +4,32 @@
 
 This tutorial shows you how to set up the Agentize framework in your project.
 
-## Two Ways to Get Started
+## Getting Started
 
-### 1. Create a New Project with Agentize
+After installing Agentize (see README.md), you can start using its features in your project.
 
-For a fresh project starting with the Agentize framework:
+### Setting Up Your Project
 
+To use Agentize with your project:
+
+1. **Create or navigate to your project directory**
+2. **Initialize git** (if not already a git repository):
+   ```bash
+   git init
+   ```
+3. **Copy the `.claude/` directory** from the Agentize installation to your project:
+   ```bash
+   cp -r $AGENTIZE_HOME/.claude /path/to/your/project/
+   ```
+
+Alternatively, if you're using Agentize as a Claude Code plugin:
 ```bash
-lol apply --init --name my_project --lang c --path /path/to/new/project
+claude --plugin-dir /path/to/agentize
 ```
-
-This creates the initial SDK structure with:
-- `.claude/` directory containing agent rules, skills, and commands
-- Basic project structure and configuration
-
-**Available languages**: `c`, `cxx`, `python` (see `docs/options.md` for more)
-
-### 2. Import to/Update for an Existing Project
-
-To add Agentize to your existing codebase or update the framework rules:
-
-```bash
-lol apply --update
-lol apply --update --path /path/to/existing/project
-```
-
-This mode:
-- Creates `.claude/` directory with core rules (if not present)
-- Leaves your existing code untouched
-- Updates core framework files (skills, commands, agents)
-- Preserves your custom extensions and modifications
-- Merges new features from the framework
-
-Use this for both:
-- **Initial import**: Adding Agentize to an existing project for the first time
-- **Framework updates**: Syncing latest Agentize rules while keeping your customizations
 
 ## What Gets Created
 
-After initialization, your project will have:
+After setup, your project will have:
 
 ```
 your-project/
@@ -87,9 +74,9 @@ Once initialized:
 
 ## Configuration Options
 
-For detailed configuration options (language settings, modes, paths):
-- See `docs/options.md` for all available make variables
+For detailed configuration options:
 - See `README.md` for architecture overview
+- See `docs/architecture/` for design documentation
 
 ## Common Paths
 

@@ -1,10 +1,10 @@
-# SDK Structure and Creation
+# SDK Structure
 
-This document describes the file structure of SDKs created by the `lol` CLI and the behavior of initialization and update modes.
+This document describes the file structure of SDK projects using the Agentize framework.
 
-## Created SDK File Structure
+## SDK File Structure
 
-When you run `lol apply --init`, the following structure is created in your target project:
+A typical SDK project using Agentize has the following structure:
 
 ```
 your-project/
@@ -17,13 +17,13 @@ your-project/
 │   │   └── open-issue/
 │   └── hooks/                 # Git and event hooks
 ├── .git/hooks/
-│   └── pre-commit             # Symlink to scripts/pre-commit (auto-installed)
+│   └── pre-commit             # Symlink to scripts/pre-commit (optional)
 ├── CLAUDE.md                  # Project-specific instructions for Claude
 ├── docs/
 │   └── git-msg-tags.md        # Git commit message tag definitions
 ├── scripts/
 │   └── pre-commit             # Pre-commit hook script
-├── src/                       # Source code (or custom path via AGENTIZE_SOURCE_PATH)
+├── src/                       # Source code
 ├── tests/                     # Test files
 └── [language-specific files]  # Makefile, CMakeLists.txt, setup.sh, etc.
 ```
@@ -34,164 +34,70 @@ your-project/
 - `.claude/` is the **canonical directory** containing all agent rules, skills, and commands
 - This serves as the single source of truth for development
 
-**In created SDK projects:**
+**In SDK projects:**
 - `.claude/` is an **independent directory** (copied from the agentize `.claude/`)
 - This makes the SDK project standalone and independent
 - The SDK can be modified without affecting the agentize repository
 
 This is a crucial architectural difference that allows:
 1. **Agentize development**: Changes to `.claude/` define the framework
-2. **SDK independence**: Each created SDK has its own configuration that can be customized
+2. **SDK independence**: Each SDK project has its own configuration that can be customized
 
-## Apply Command
+## Setup
 
-The `lol apply` command provides the entrypoint for both initialization and update operations:
+To set up an SDK project:
 
+1. **Copy the `.claude/` directory** from the Agentize installation:
+   ```bash
+   cp -r $AGENTIZE_HOME/.claude /path/to/your/project/
+   ```
+
+2. **Copy documentation templates** (optional):
+   ```bash
+   cp $AGENTIZE_HOME/docs/git-msg-tags.md /path/to/your/project/docs/
+   ```
+
+3. **Copy pre-commit hook** (optional):
+   ```bash
+   cp $AGENTIZE_HOME/scripts/pre-commit /path/to/your/project/scripts/
+   ln -s ../../scripts/pre-commit /path/to/your/project/.git/hooks/pre-commit
+   ```
+
+Alternatively, use Agentize as a Claude Code plugin:
 ```bash
-# Initialize a new SDK project
-lol apply --init --name my_project --lang python
-
-# Update an existing SDK project
-lol apply --update --path /path/to/project
+claude --plugin-dir /path/to/agentize
 ```
 
-Exactly one of `--init` or `--update` must be specified.
+## What Gets Created
 
-## Initialization Mode (`--init`)
-
-### Behavior
-
-The `init` mode creates a new SDK project from scratch. It validates directory state before proceeding:
-
-| Directory State | Behavior |
-|----------------|----------|
-| Does not exist | Creates directory and initializes SDK ✓ |
-| Exists and is empty | Initializes SDK in existing directory ✓ |
-| Exists and is NOT empty | **Aborts with error** ✗ |
-
-### Example
-
-```bash
-# Create new SDK in non-existent directory
-lol apply --init --name my_project --lang python --path /path/to/my_project
-
-# Error: Will fail if directory exists and contains files
-lol apply --init --name my_project --lang python --path /existing/non-empty/dir
-# Output: Error: Directory '/existing/non-empty/dir' exists and is not empty.
-```
-
-### What Gets Created
-
-1. **Language template files** (from `templates/{language}/`)
-   - Build system files (Makefile, CMakeLists.txt, etc.)
-   - Source code structure
-   - Test structure
-
-2. **Claude Code configuration** (copied from `.claude/`)
+1. **Claude Code configuration** (`.claude/`)
    - Skills for git operations
    - Commands for development workflow
    - Settings and hooks
 
-3. **Documentation**
-   - `CLAUDE.md` from template (parameterized with project name)
-   - `docs/git-msg-tags.md` from template (parameterized for language)
+2. **Documentation** (optional)
+   - `CLAUDE.md` - Project-specific instructions
+   - `docs/git-msg-tags.md` - Commit message tag definitions
 
-4. **Pre-commit hook** (if `.git` directory exists and `scripts/pre-commit` available)
-   - Creates symlink from `.git/hooks/pre-commit` to `scripts/pre-commit`
-   - Skipped if `pre_commit.enabled: false` in `.agentize.yaml`
-   - Preserves existing custom hooks (no overwrite)
-
-5. **Bootstrap script execution** (if present)
-   - Renames directories (e.g., `project_name/` → `{your_project_name}/`)
-   - Updates imports and references
-   - Removes itself after completion
-
-## Update Mode (`--update`)
-
-### Behavior
-
-The `update` mode refreshes the Claude Code configuration (`.claude/`) while preserving your customizations.
-
-| Directory State | Behavior |
-|----------------|----------|
-| Does not exist | Creates `.claude/` directory and proceeds with update ✓ |
-| Exists but no `.claude/` directory | Creates `.claude/` directory and proceeds with update ✓ |
-| Valid SDK structure | Updates `.claude/` and creates backup ✓ |
-
-### Example
-
-```bash
-# Update existing SDK from project root or any subdirectory
-lol apply --update
-
-# Or specify explicit path
-lol apply --update --path /path/to/my_project
-
-# Will create .claude/ if missing
-lol apply --update --path /some/random/dir
-```
-
-### What Gets Updated
-
-**Updated files:**
-- `.claude/settings.json` - Latest Claude Code settings
-- `.claude/commands/` - Updated slash commands
-- `.claude/skills/` - Latest agent skills
-- `.claude/hooks/` - Updated event hooks
-
-**Preserved files:**
-- `CLAUDE.md` - Your project-specific instructions
-- `docs/git-msg-tags.md` - Your custom tag definitions
-- All source code and project files
-
-**Backup:**
-- Previous `.claude/` is backed up to `.claude.backup/`
-- Allows you to recover custom modifications if needed
-
-## Directory Validation Rules
-
-### Init Mode Validation
-
-```bash
-if directory exists:
-    if directory is not empty:
-        abort with error  # Prevents accidental overwrites
-    else:
-        proceed with initialization
-else:
-    create directory and proceed
-```
-
-### Update Mode Validation
-
-```bash
-if .claude/ directory does not exist:
-    create .claude/ directory
-else:
-    create backup .claude.backup/
-
-update .claude/ with latest files
-
-if .agentize.yaml does not exist:
-    create .agentize.yaml with detected values
-
-if AGENTIZE_HOME is a git repository:
-    record agentize.commit in .agentize.yaml
-```
+3. **Pre-commit hook** (optional)
+   - `scripts/pre-commit` - Hook script
+   - `.git/hooks/pre-commit` - Symlink to hook script
 
 ## Common Workflows
 
-### Creating a New SDK
+### Setting Up a New SDK
 
 ```bash
-# 1. Initialize SDK for C project
-lol apply --init --name mylib --lang c --path $HOME/projects/mylib
+# 1. Create project directory
+mkdir ~/projects/mylib
+cd ~/projects/mylib
+git init
 
-# 2. Navigate to project
-cd $HOME/projects/mylib
+# 2. Copy SDK configuration
+cp -r $AGENTIZE_HOME/.claude .
 
 # 3. Start using Claude Code
-claude code
+claude
 ```
 
 ### Updating SDK Configuration
@@ -201,70 +107,24 @@ claude code
 cd /path/to/agentize
 git pull origin main
 
-# Update your SDK project from project root or any subdirectory
-cd $HOME/projects/mylib
-lol apply --update
+# Update your SDK project
+cp -r $AGENTIZE_HOME/.claude /path/to/your/project/
 
 # Review changes
-diff -r .claude .claude.backup  # See what changed
-
-# If you had customizations, selectively restore them
-cp .claude.backup/skills/my-custom-skill .claude/skills/
-```
-
-### Recovering from Failed Update
-
-```bash
-# If update didn't work as expected
-cd /path/to/your/project
-rm -rf .claude
-mv .claude.backup .claude
+git diff .claude/
 ```
 
 ## Best Practices
 
-1. **Always use empty directories for init mode**
-   - Prevents accidental file overwrites
-   - Ensures clean SDK structure
-
-2. **Review .claude.backup/ after updates**
-   - Check for custom modifications you want to preserve
-   - Understand what changed in the new version
-
-3. **Keep CLAUDE.md and docs/ customized**
-   - These files are preserved during updates
+1. **Keep CLAUDE.md customized**
    - Document project-specific context here
+   - This file guides Claude's behavior for your project
 
-4. **Use version control**
+2. **Use version control**
    - Commit your SDK project to git
    - Track changes to `.claude/` configuration
    - Easy to revert if needed
 
-## Troubleshooting
-
-### Error: Directory exists and is not empty
-
-```
-Error: Directory '/path/to/project' exists and is not empty.
-Please use an empty directory or a non-existent path for init mode.
-```
-
-**Solution:** Either use a different path, or manually verify and delete contents if safe.
-
-### Error: Not a valid SDK structure
-
-```
-Error: Directory '/path/to/project' is not a valid SDK structure.
-Missing '.claude/' directory.
-```
-
-**Solution:** This directory was not created with the `lol` CLI. Use `lol apply --init` instead.
-
-### Error: Project path does not exist
-
-```
-Error: Project path '/path/to/project' does not exist.
-Use lol apply --init to create it.
-```
-
-**Solution:** Use `--init` mode to create a new SDK, not `--update` mode.
+3. **Customize git commit tags**
+   - Edit `docs/git-msg-tags.md` for your project
+   - Define project-specific tag categories

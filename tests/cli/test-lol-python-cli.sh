@@ -9,19 +9,14 @@ test_info "python -m agentize.cli entrypoint tests"
 export AGENTIZE_HOME="$PROJECT_ROOT"
 export PYTHONPATH="$PROJECT_ROOT/python"
 
-# Test 1: --complete commands returns expected list
-# Note: init and update are NOT standalone commands, they are --init and --update flags for apply
+# Test 1: --complete commands returns expected list (apply command removed)
 output=$(python3 -m agentize.cli --complete commands 2>&1)
-echo "$output" | grep -q "^apply$" || test_fail "--complete commands missing: apply"
 echo "$output" | grep -q "^upgrade$" || test_fail "--complete commands missing: upgrade"
 echo "$output" | grep -q "^project$" || test_fail "--complete commands missing: project"
 echo "$output" | grep -q "^claude-clean$" || test_fail "--complete commands missing: claude-clean"
-# Verify init and update are NOT in commands list
-if echo "$output" | grep -q "^init$"; then
-  test_fail "init should not be a standalone command (use 'apply --init' instead)"
-fi
-if echo "$output" | grep -q "^update$"; then
-  test_fail "update should not be a standalone command (use 'apply --update' instead)"
+# Verify apply command is NOT in commands list (it has been removed)
+if echo "$output" | grep -q "^apply$"; then
+  test_fail "apply command should have been removed"
 fi
 
 # Test 2: --version exits 0 and prints expected labels
@@ -32,63 +27,5 @@ if [ $exit_code -ne 0 ]; then
 fi
 echo "$output" | grep -q "Installation:" || test_fail "--version missing 'Installation:' label"
 echo "$output" | grep -q "Last update:" || test_fail "--version missing 'Last update:' label"
-
-# Test 3: apply --init --metadata-only creates .agentize.yaml in temp dir
-TEST_DIR=$(make_temp_dir "python-cli-init-test")
-python3 -m agentize.cli apply --init --name test-project --lang python --path "$TEST_DIR" --metadata-only
-if [ ! -f "$TEST_DIR/.agentize.yaml" ]; then
-  cleanup_dir "$TEST_DIR"
-  test_fail "apply --init --metadata-only did not create .agentize.yaml"
-fi
-# Verify metadata content
-grep -q "name: test-project" "$TEST_DIR/.agentize.yaml" || {
-  cleanup_dir "$TEST_DIR"
-  test_fail ".agentize.yaml missing project name"
-}
-grep -q "lang: python" "$TEST_DIR/.agentize.yaml" || {
-  cleanup_dir "$TEST_DIR"
-  test_fail ".agentize.yaml missing project lang"
-}
-cleanup_dir "$TEST_DIR"
-
-# Test 4: apply --update creates .claude/ directory
-TEST_DIR=$(make_temp_dir "python-cli-apply-test")
-mkdir -p "$TEST_DIR"
-python3 -m agentize.cli apply --update --path "$TEST_DIR"
-if [ ! -d "$TEST_DIR/.claude" ]; then
-  cleanup_dir "$TEST_DIR"
-  test_fail "apply --update did not create .claude/"
-fi
-cleanup_dir "$TEST_DIR"
-
-# Test 5: apply --update without --path finds nearest parent with .claude/
-# This tests the fix for issue #390: Python CLI should match shell behavior
-TEST_DIR=$(make_temp_dir "python-cli-update-path-test")
-mkdir -p "$TEST_DIR/.claude"  # Create .claude in parent
-mkdir -p "$TEST_DIR/child/deep/nested"  # Create nested child directories
-# Run update from deeply nested child without --path
-(
-  cd "$TEST_DIR/child/deep/nested" || exit 1
-  python3 -m agentize.cli apply --update 2>&1
-)
-# Verify .claude/ was NOT created in child directories (should target parent)
-if [ -d "$TEST_DIR/child/.claude" ]; then
-  cleanup_dir "$TEST_DIR"
-  test_fail "apply --update created .claude/ in child instead of targeting parent"
-fi
-if [ -d "$TEST_DIR/child/deep/.claude" ]; then
-  cleanup_dir "$TEST_DIR"
-  test_fail "apply --update created .claude/ in deep child instead of targeting parent"
-fi
-if [ -d "$TEST_DIR/child/deep/nested/.claude" ]; then
-  cleanup_dir "$TEST_DIR"
-  test_fail "apply --update created .claude/ in nested child instead of targeting parent"
-fi
-# Verify parent .claude/ still exists (was the target)
-if [ ! -d "$TEST_DIR/.claude" ]; then
-  cleanup_dir "$TEST_DIR"
-  test_fail "apply --update did not target parent with existing .claude/"
-fi
-cleanup_dir "$TEST_DIR"
 
 test_pass "python -m agentize.cli entrypoint works correctly"

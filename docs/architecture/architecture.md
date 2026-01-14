@@ -5,7 +5,7 @@ best fit in agentize's ecosystem. Although not strictly required, and
 are some common software engineering practices, it is highly recommended
 to follow, in local code structure, git, and GitHub usage.
 
-All the `sdk` created by `lol apply --init` command shall follow this following architecture.
+Projects using the Agentize framework should follow this architecture.
 
 
 ## Local Code Base
@@ -24,7 +24,7 @@ README.md            # In almost every folder, a README.md should explain its pu
 .gitignore           # Git ignore file
 ```
 
-Refer to `./sdk.md` for more information about the SDK structure created by `lol apply --init`.
+Refer to `./sdk.md` for more information about the SDK structure.
 
 ### Makefile Interfaces
 

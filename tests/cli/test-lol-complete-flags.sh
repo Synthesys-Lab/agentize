@@ -10,26 +10,6 @@ test_info "lol --complete flag topics output documented flags"
 export AGENTIZE_HOME="$PROJECT_ROOT"
 source "$LOL_CLI"
 
-# Test apply-flags
-apply_output=$(lol --complete apply-flags 2>/dev/null)
-
-echo "$apply_output" | grep -q "^--init$" || test_fail "apply-flags missing: --init"
-echo "$apply_output" | grep -q "^--update$" || test_fail "apply-flags missing: --update"
-
-# Test init-flags
-init_output=$(lol --complete init-flags 2>/dev/null)
-
-echo "$init_output" | grep -q "^--name$" || test_fail "init-flags missing: --name"
-echo "$init_output" | grep -q "^--lang$" || test_fail "init-flags missing: --lang"
-echo "$init_output" | grep -q "^--path$" || test_fail "init-flags missing: --path"
-echo "$init_output" | grep -q "^--source$" || test_fail "init-flags missing: --source"
-echo "$init_output" | grep -q "^--metadata-only$" || test_fail "init-flags missing: --metadata-only"
-
-# Test update-flags
-update_output=$(lol --complete update-flags 2>/dev/null)
-
-echo "$update_output" | grep -q "^--path$" || test_fail "update-flags missing: --path"
-
 # Test project-modes
 project_modes_output=$(lol --complete project-modes 2>/dev/null)
 
@@ -61,26 +41,31 @@ echo "$usage_output" | grep -q "^--week$" || test_fail "usage-flags missing: --w
 echo "$usage_output" | grep -q "^--cache$" || test_fail "usage-flags missing: --cache"
 echo "$usage_output" | grep -q "^--cost$" || test_fail "usage-flags missing: --cost"
 
-# Test lang-values
-lang_output=$(lol --complete lang-values 2>/dev/null)
-
-echo "$lang_output" | grep -q "^c$" || test_fail "lang-values missing: c"
-echo "$lang_output" | grep -q "^cxx$" || test_fail "lang-values missing: cxx"
-echo "$lang_output" | grep -q "^python$" || test_fail "lang-values missing: python"
-
-# Verify output is newline-delimited
-if echo "$init_output" | grep -q " "; then
-  test_fail "init-flags output should be newline-delimited"
-fi
-
-if echo "$lang_output" | grep -q " "; then
-  test_fail "lang-values output should be newline-delimited"
-fi
-
 # Test unknown topic returns empty
 unknown_output=$(lol --complete unknown-topic 2>/dev/null)
 if [ -n "$unknown_output" ]; then
   test_fail "Unknown topic should return empty output"
+fi
+
+# Verify removed topics return empty (apply-flags, init-flags, update-flags, lang-values)
+apply_output=$(lol --complete apply-flags 2>/dev/null)
+if [ -n "$apply_output" ]; then
+  test_fail "apply-flags topic should have been removed (should return empty)"
+fi
+
+init_output=$(lol --complete init-flags 2>/dev/null)
+if [ -n "$init_output" ]; then
+  test_fail "init-flags topic should have been removed (should return empty)"
+fi
+
+update_output=$(lol --complete update-flags 2>/dev/null)
+if [ -n "$update_output" ]; then
+  test_fail "update-flags topic should have been removed (should return empty)"
+fi
+
+lang_output=$(lol --complete lang-values 2>/dev/null)
+if [ -n "$lang_output" ]; then
+  test_fail "lang-values topic should have been removed (should return empty)"
 fi
 
 test_pass "lol --complete flag topics output correct flags"
