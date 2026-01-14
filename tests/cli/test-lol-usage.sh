@@ -203,4 +203,41 @@ echo "$output" | grep -q '\$' || {
 
 cleanup_dir "$TEST_HOME"
 
+# Test 8: lol usage --cost with Claude 4.5 model does NOT show unknown model warning
+TEST_HOME=$(make_temp_dir "usage-claude-4-5")
+PROJECTS_DIR="$TEST_HOME/.claude/projects"
+FIXTURE_DIR="$PROJECTS_DIR/test-project"
+mkdir -p "$FIXTURE_DIR"
+
+# Create fixture with Claude 4.5 model (should be recognized)
+cat > "$FIXTURE_DIR/session.jsonl" << 'EOF'
+{"type":"assistant","message":{"model":"claude-opus-4-5-20251101","usage":{"input_tokens":1000,"output_tokens":500}}}
+EOF
+
+touch "$FIXTURE_DIR/session.jsonl"
+
+output=$(HOME="$TEST_HOME" lol usage --cost 2>&1)
+exit_code=$?
+if [ $exit_code -ne 0 ]; then
+  echo "Output: $output"
+  cleanup_dir "$TEST_HOME"
+  test_fail "lol usage --cost with Claude 4.5 model exited with code $exit_code"
+fi
+
+# Verify NO unknown model warning (4.5 models should be recognized)
+if echo "$output" | grep -q "Unknown models"; then
+  echo "Output: $output"
+  cleanup_dir "$TEST_HOME"
+  test_fail "lol usage --cost incorrectly reports Claude 4.5 as unknown model"
+fi
+
+# Verify cost column appears with dollar sign (meaning pricing was computed)
+echo "$output" | grep -q '\$' || {
+  echo "Output: $output"
+  cleanup_dir "$TEST_HOME"
+  test_fail "lol usage --cost with Claude 4.5 missing cost value"
+}
+
+cleanup_dir "$TEST_HOME"
+
 test_pass "lol usage command works correctly"
