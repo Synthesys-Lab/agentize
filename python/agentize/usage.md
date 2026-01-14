@@ -82,14 +82,15 @@ Returns static per-model pricing rates (USD per million tokens).
 Dict mapping model ID patterns to pricing:
 ```python
 {
-    "claude-3-opus": {"input": 15.0, "output": 75.0, "cache_read": 1.875, "cache_write": 18.75},
-    "claude-3-5-sonnet": {"input": 3.0, "output": 15.0, "cache_read": 0.30, "cache_write": 3.75},
-    "claude-3-5-haiku": {"input": 0.80, "output": 4.0, "cache_read": 0.08, "cache_write": 1.0},
+    "claude-opus-4-5": {"input": 5.0, "output": 25.0, "cache_read": 0.50, "cache_write": 6.25},
+    "claude-sonnet-4-5": {"input": 3.0, "output": 15.0, "cache_read": 0.30, "cache_write": 3.75},
+    "claude-haiku-4-5": {"input": 1.0, "output": 5.0, "cache_read": 0.10, "cache_write": 1.25},
+    "claude-opus-4": {"input": 15.0, "output": 75.0, "cache_read": 1.875, "cache_write": 18.75},
     # ... additional models
 }
 ```
 
-**Pricing last updated:** 2026-01
+**Pricing last updated:** 2026-01-14
 
 ## Internal Helpers
 
@@ -125,10 +126,15 @@ Format USD cost with dollar sign and appropriate precision.
 def match_model_pricing(model_id: str) -> dict | None
 ```
 
-Match a model ID to its pricing rates.
+Match a model ID to its pricing rates using longest-prefix matching.
 
 **Parameters:**
 - `model_id` - Full model identifier (e.g., "claude-3-5-sonnet-20241022")
 
 **Returns:**
 Pricing dict if matched, None if unknown model.
+
+**Behavior:**
+- Sorts model prefixes by length (longest first)
+- Returns the first (longest) matching prefix's pricing
+- Order-independent: dictionary insertion order does not affect results

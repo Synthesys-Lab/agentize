@@ -11,8 +11,12 @@ from pathlib import Path
 
 
 # Static per-model pricing rates (USD per million tokens)
-# Pricing last updated: 2026-01
+# Pricing last updated: 2026-01-14
+# Source: https://docs.anthropic.com/en/docs/about-claude/pricing
 MODEL_PRICING = {
+    "claude-opus-4-5": {"input": 5.0, "output": 25.0, "cache_read": 0.50, "cache_write": 6.25},
+    "claude-sonnet-4-5": {"input": 3.0, "output": 15.0, "cache_read": 0.30, "cache_write": 3.75},
+    "claude-haiku-4-5": {"input": 1.0, "output": 5.0, "cache_read": 0.10, "cache_write": 1.25},
     "claude-opus-4": {"input": 15.0, "output": 75.0, "cache_read": 1.875, "cache_write": 18.75},
     "claude-sonnet-4": {"input": 3.0, "output": 15.0, "cache_read": 0.30, "cache_write": 3.75},
     "claude-3-7-sonnet": {"input": 3.0, "output": 15.0, "cache_read": 0.30, "cache_write": 3.75},
@@ -30,13 +34,13 @@ def get_model_pricing() -> dict:
 
 
 def match_model_pricing(model_id: str) -> dict | None:
-    """Match a model ID to its pricing rates."""
+    """Match a model ID to its pricing rates using longest-prefix matching."""
     if not model_id:
         return None
-    # Try prefix matching (e.g., "claude-3-5-sonnet-20241022" -> "claude-3-5-sonnet")
-    for prefix, rates in MODEL_PRICING.items():
+    # Sort by prefix length (longest first) for stable, order-independent matching
+    for prefix in sorted(MODEL_PRICING.keys(), key=len, reverse=True):
         if model_id.startswith(prefix):
-            return rates
+            return MODEL_PRICING[prefix]
     return None
 
 
