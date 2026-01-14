@@ -47,6 +47,8 @@ Focus on:
 
 ### Step 3: Propose Bold Solution
 
+**IMPORTANT**: Before generating your proposal, capture the original feature request exactly as provided in your prompt. This will be included verbatim in your report output under "Original User Request".
+
 Generate a comprehensive proposal with:
 
 #### A. Core Innovation
@@ -98,6 +100,12 @@ Your proposal should be structured as:
 ## Innovation Summary
 
 [1-2 sentence summary of the bold approach]
+
+## Original User Request
+
+[Verbatim copy of the original feature description provided to this agent]
+
+This section preserves the user's exact requirements so that critique and reducer agents can verify alignment with the original intent.
 
 ## Research Findings
 

@@ -10,6 +10,7 @@ Three specialized agents have analyzed the following requirement:
 
 Each agent provided a different perspective:
 1. **Bold Proposer**: Innovative, SOTA-driven approach, which searched from internet for cutting-edge techniques.
+   - The bold proposal includes the "Original User Request" section with the verbatim feature description.
 2. **Critique Agent**: Feasibility analysis and risk assessment for the aggressive solution from the **Bold Proposer**.
 3. **Reducer Agent**: Simplified, "less is more" approach focusing on the core functionality from a minimalistic standpoint, by simplifying the **Bold Proposer**'s design.
 
