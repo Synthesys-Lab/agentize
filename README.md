@@ -16,6 +16,8 @@ source $HOME/.agentize/setup.sh
 
 See [docs/cli/install.md](./docs/cli/install.md) for installation options and troubleshooting.
 
+**Upgrade:** Run `lol upgrade` to pull the latest changes.
+
 ### Manual Install
 
 If you prefer manual setup:

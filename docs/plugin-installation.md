@@ -1,6 +1,11 @@
 # Installing Agentize as a Claude Code Plugin
 
-Agentize can be installed as a Claude Code plugin, which provides all commands, skills, agents, and hooks without requiring a git clone into each project.
+Agentize has two distribution modes:
+
+1. **CLI (`wt`, `lol`)**: Installed via `scripts/install` to `~/.agentize`, sourced in shell, updated via `lol upgrade` (like oh-my-zsh)
+2. **Plugin** (commands/agents/skills/hooks): Installed via Claude Code marketplace or `--plugin-dir`
+
+This page covers plugin installation. For CLI installation, see the [Quick Start](../README.md#quick-start) guide.
 
 ## Installation Methods
 

@@ -85,11 +85,23 @@ echo "Dependencies OK"
 
 # Check if install directory already exists
 if [ -e "$INSTALL_DIR" ]; then
-    echo "Error: Install directory already exists: $INSTALL_DIR" >&2
-    echo "" >&2
-    echo "Please remove the directory or choose a different location with --dir" >&2
-    echo "  rm -rf $INSTALL_DIR" >&2
-    exit 1
+    # Check if it's a valid agentize installation (has setup.sh)
+    if [ -f "$INSTALL_DIR/setup.sh" ]; then
+        echo "Agentize is already installed at: $INSTALL_DIR"
+        echo ""
+        echo "To upgrade your installation, run:"
+        echo "  source $INSTALL_DIR/setup.sh && lol upgrade"
+        echo ""
+        echo "To reinstall, remove the directory first:"
+        echo "  rm -rf $INSTALL_DIR"
+        exit 0
+    else
+        echo "Error: Install directory already exists but is not a valid agentize installation: $INSTALL_DIR" >&2
+        echo "" >&2
+        echo "Please remove the directory or choose a different location with --dir" >&2
+        echo "  rm -rf $INSTALL_DIR" >&2
+        exit 1
+    fi
 fi
 
 # Clone repository
