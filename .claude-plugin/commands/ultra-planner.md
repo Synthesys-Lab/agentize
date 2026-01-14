@@ -1,10 +1,8 @@
 ---
 name: ultra-planner
-description: Multi-agent debate-based planning with /ultra-planner command
+description: Multi-agent debate-based planning using /ultra-planner command
 argument-hint: [feature-description] or --force-full [feature-description] or --refine [issue-no] [refine-comments] or --from-issue [issue-no]
 ---
-
-ultrathink
 
 # Ultra Planner Command
 
@@ -15,7 +13,7 @@ ultrathink
   - NOT TO ask user for design decisions. Choose the one you think the most reasonable.
     If it is bad plan, user will feed it later.
 
-1. This is a **planning tool only**. It takes a feature description as input and produces
+1. This is a **planning workflow**. It takes a feature description as input and produces
 a consensus implementation plan as output. It does NOT make any code changes or implement features.
 Even if user is telling you "build...", "add...", "create...", "implement...", or "fix...",
 you must interpret these as making a plan for how to have these achieved, not actually doing them!
@@ -23,7 +21,7 @@ you must interpret these as making a plan for how to have these achieved, not ac
 
 2. This command uses a **multi-agent debate system** to generate high-quality plans.
 **No matter** how simple you think the request is, always strictly follow the multi-agent
-debase workflow below to do a thorough analysis of the request throughout the whole code base.
+debate workflow below to do a thorough analysis of the request throughout the whole code base.
 Sometimes what seems simple at first may have hidden complexities or breaking changes that
 need to be uncovered via a debate and thorough codebase analysis.
   - **DO** follow the following multi-agent debate workflow exactly as specified.
@@ -46,10 +44,6 @@ This command orchestrates a multi-agent debate system to generate high-quality i
 ## Inputs
 
 **This command only accepts feature descriptions for planning purposes. It does not execute implementation.**
-
-**From arguments ($ARGUMENTS):**
-
-- To avoid expanding ARGUMENTS multiple times, later we will use `{FEATURE_DESC}` to refer to it.
 
 **Default mode:**
 ```
@@ -74,7 +68,7 @@ This command orchestrates a multi-agent debate system to generate high-quality i
 - Used by the server for automatic feature request planning
 
 **From conversation context:**
-- If `$ARGUMENTS` is empty, extract feature description from recent messages
+- If arguments is empty, extract feature description from recent messages
 - Look for: "implement...", "add...", "create...", "build..." statements
 
 ## Outputs
@@ -440,114 +434,8 @@ Label "agentize:plan" added to issue #${ISSUE_NUMBER}
 
 Display the final output to the user. Command completes successfully.
 
-## Usage Examples
+-------------
 
-### Example 1: Simple Feature (Lite Path)
+Follow the workflow and $ARGUMENT parsing above to make the plan, and open/edit the issue.
 
-**Input:**
-```
-/ultra-planner Add a helper function to format dates
-```
-
-**Output:**
-```
-Starting ultra-planner...
-
-[Understander gathers context - 1-2 minutes]
-
-Complexity estimation: ~50 LOC (Small)
-Routing decision: lite path
-Reason: understander recommended lite
-
-[Planner-lite creates plan - 30-60 seconds]
-
-Plan complete (no consensus needed - single agent)
-
-Draft GitHub issue created: #42
-Title: [plan][feat] Add date formatting helper
-URL: https://github.com/user/repo/issues/42
-
-To refine: /ultra-planner --refine 42
-To implement: /issue-to-impl 42
-```
-
-### Example 2: Complex Feature (Full Path)
-
-**Input:**
-```
-/ultra-planner Add user authentication with JWT tokens and role-based access control
-```
-
-**Output:**
-```
-Starting ultra-planner...
-
-[Understander gathers context - 1-2 minutes]
-
-Complexity estimation: ~350 LOC (Medium)
-Routing decision: full path
-Reason: understander recommended full
-
-[Bold-proposer runs, then critique/reducer - 3-5 minutes]
-
-Debate complete! Three perspectives:
-- Bold: OAuth2 + JWT + RBAC (~450 LOC)
-- Critique: High feasibility, 2 critical risks
-- Reducer: Simple JWT only (~180 LOC)
-
-External consensus review...
-
-Consensus: JWT + basic roles (~280 LOC, Medium)
-Path: full (multi-agent debate)
-
-Draft GitHub issue created: #43
-Title: [plan][feat] Add user authentication
-URL: https://github.com/user/repo/issues/43
-
-To refine: /ultra-planner --refine 43
-To implement: /issue-to-impl 43
-```
-
-### Example 3: Force Full Debate
-
-**Input:**
-```
-/ultra-planner --force-full Add a simple logging wrapper
-```
-
-**Output:**
-```
-Starting ultra-planner...
-
-[Understander gathers context - 1-2 minutes]
-
-Complexity estimation: ~80 LOC (Small)
-Routing decision: full path
-Reason: force-full flag
-
-[Full debate runs despite low LOC estimate]
-...
-```
-
-### Example 4: Plan Refinement
-
-**Input:**
-```
-/ultra-planner --refine 42
-```
-
-**Output:**
-```
-Fetching issue #42...
-Running debate on current plan to identify improvements...
-
-[Debate completes]
-
-Refined consensus plan:
-- Reduced LOC: 280 → 210 (25% reduction)
-- Removed: OAuth2 integration
-- Added: Better error handling
-
-Issue #42 updated with refined plan.
-URL: https://github.com/user/repo/issues/42
-```
+$ARGUMENTS
