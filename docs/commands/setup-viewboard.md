@@ -22,6 +22,8 @@ The `/setup-viewboard` command provides a guided wrapper for setting up GitHub P
 
 The command performs the following steps:
 
+0. **Check `gh` CLI availability**: Verify `gh` is installed. If not, direct user to https://github.com/cli/cli for installation.
+
 1. **Check `.agentize.yaml`**: Read existing `project.org` and `project.id` fields to detect an existing project association.
 
 2. **Create or Associate Project Board**:
