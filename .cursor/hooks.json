@@ -5,6 +5,11 @@
       {
         "command": "python3 .cursor/hooks/before-prompt-submit.py"
       }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": "python3 .cursor/hooks/before-shell-execution.py"
+      }
     ]
   }
 }

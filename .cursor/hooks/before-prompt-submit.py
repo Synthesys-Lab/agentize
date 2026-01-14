@@ -64,9 +64,6 @@ def main():
         print(json.dumps({"continue": True}))
         sys.exit(0)
 
-    print(json.dumps({"continue": False}))
-    sys.exit(0)
-
     prompt = hook_input.get("prompt", "")
     if not prompt:
         # If no prompt, allow it to continue (shouldn't happen, but be safe)

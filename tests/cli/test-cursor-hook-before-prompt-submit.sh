@@ -21,7 +21,7 @@ run_hook() {
     local handsoff_mode="${4:-1}"  # Default to enabled
 
     local input=$(cat <<EOF
-{"prompt": "$prompt", "session_id": "$session_id"}
+{"prompt": "$prompt", "conversation_id": "$session_id"}
 EOF
 )
 
