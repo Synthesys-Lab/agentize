@@ -148,24 +148,14 @@ Review results show one of:
 
 Fix any issues before proceeding.
 
-## Sync and Merge with `/sync-master`
+## Sync with Main Branch
 
 Before creating a PR, sync with the latest changes:
 
-```
-/sync-master
-```
-
-This command:
-1. Checks for uncommitted changes (must commit first)
-2. Switches to `main` (or `master`)
-3. Pulls latest changes with `--rebase` from `upstream` (or `origin`)
-4. Reports success or conflicts
-
-After syncing, switch back to your branch and merge:
-
 ```bash
-git checkout issue-42-add-typescript-support
+git checkout main
+git pull --rebase origin main
+git checkout issue-42
 git rebase main
 ```
 
@@ -185,7 +175,7 @@ Claude will invoke the `open-pr` skill to create a pull request with:
 - Test plan
 - Link to original issue
 
-**Note on Commands vs Skills**: Slash commands (like `/code-review`, `/sync-master`) are pre-defined prompts you invoke directly, while skills (like `open-pr`) are routines implicitly invoked by Claude when you use natural language requests.
+**Note on Commands vs Skills**: Slash commands (like `/code-review`) are pre-defined prompts you invoke directly, while skills (like `open-pr`) are routines implicitly invoked by Claude when you use natural language requests.
 
 ## Complete Workflow Example
 
@@ -204,20 +194,18 @@ User: Continue from the latest milestone
 /code-review
 [... ✅ APPROVED ...]
 
-# 4. Sync with main
-/sync-master
-[... Successfully synchronized ...]
-
-# 5. Rebase your branch
+# 4. Sync with main and rebase your branch
+git checkout main
+git pull --rebase origin main
 git checkout issue-42
 git rebase main
 
-# 6. Create PR
+# 5. Create PR
 User: Create a pull request
 [... Claude invokes open-pr skill ...]
 [... PR created: https://github.com/your-repo/pull/123 ...]
 
-# 7. Merge (after approval)
+# 6. Merge (after approval)
 [Merge via GitHub UI or gh pr merge]
 ```
 
@@ -244,9 +232,9 @@ See `docs/milestone-workflow.md` for complete documentation.
 
 1. **Let it run**: `/issue-to-impl` works automatically - let it complete or reach a milestone
 2. **Review milestones**: Check `.tmp/milestones/` files to understand progress
-3. **Always sync**: Run `/sync-master` before creating PRs to avoid conflicts
+3. **Always sync**: Sync with main and rebase your branch before creating PRs to avoid conflicts
 4. **Fix review issues**: Address `/code-review` findings before merging
-5. **Clean working directory**: Commit changes before `/sync-master` or `/issue-to-impl` (require clean working tree for rebasing)
+5. **Clean working directory**: Commit changes before syncing or `/issue-to-impl` (requires clean working tree for rebasing)
 
 ## Next Steps
 

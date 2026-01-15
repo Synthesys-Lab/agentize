@@ -1,4 +1,6 @@
-# Tutorial 01b: Ultra Planner (Multi-Agent Debate Planning)
+# Tutorial 01: Ultra Planner (Primary Planning)
+
+**Primary planning tutorial**: Use this as the default entry point for planning features.
 
 **Read time: 5 minutes**
 
@@ -118,7 +120,7 @@ This enables stakeholders to request plan improvements without CLI access.
 2. **Right-size features**: Don't use for trivial changes, do use for complex ones
 3. **Review all perspectives**: Bold shows innovation, Critique shows risks, Reducer shows simplicity
 4. **Refine when needed**: First consensus not perfect? Use `--refine`
-5. **Start simple**: Try `/plan-an-issue` first, escalate to `/ultra-planner` if needed
+5. **Trust auto-routing**: `/ultra-planner` automatically uses the lite path for simple changes
 
 ## Cost & Time
 
@@ -141,4 +143,4 @@ After `/ultra-planner` creates your GitHub issue:
 2. Use `/issue-to-impl <issue-number>` to start implementation (Tutorial 02)
 3. Validate and adjust the plan as you implement
 
-**When in doubt**: Start with `/plan-an-issue`, escalate to `/ultra-planner` if you need deeper analysis.
+**When in doubt**: Use `/ultra-planner` - it auto-routes to the appropriate path based on complexity.
