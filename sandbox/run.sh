@@ -29,9 +29,17 @@ DOCKER_ARGS=(
 DOCKER_FLAGS=()
 CONTAINER_ARGS=()
 SEEN_DASH_DASH=0
+SEEN_CMD=0
+CUSTOM_CMD=()
 while [[ $# -gt 0 ]]; do
     if [[ "$1" == "--" ]]; then
         SEEN_DASH_DASH=1
+        shift
+        continue
+    fi
+
+    if [[ "$1" == "--cmd" ]]; then
+        SEEN_CMD=1
         shift
         continue
     fi
@@ -62,7 +70,12 @@ while [[ $# -gt 0 ]]; do
         esac
     else
         # After --: arguments to container
-        CONTAINER_ARGS+=("$1")
+        if [[ $SEEN_CMD -eq 1 ]]; then
+            # Collect custom command arguments after --cmd
+            CUSTOM_CMD+=("$1")
+        else
+            CONTAINER_ARGS+=("$1")
+        fi
         shift
     fi
 done
@@ -100,14 +113,24 @@ fi
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 DOCKER_ARGS+=("-v" "$PROJECT_DIR:/workspace/agentize")
 
-# Add working directory and image
-DOCKER_ARGS+=("-w" "/workspace/agentize")
-DOCKER_ARGS+=("$IMAGE_NAME")
+# When --cmd is provided, override entrypoint to run custom command
+if [ ${#CUSTOM_CMD[@]} -gt 0 ]; then
+    DOCKER_ARGS+=("--entrypoint=/bin/bash")
+    DOCKER_ARGS+=("-c")
+    # Join the command arguments into a single string
+    CMD_STRING=$(printf " %s" "${CUSTOM_CMD[@]}")
+    CMD_STRING=${CMD_STRING:1}  # Remove leading space
+    DOCKER_ARGS+=("$CMD_STRING")
+else
+    # Add working directory and image
+    DOCKER_ARGS+=("-w" "/workspace/agentize")
+    DOCKER_ARGS+=("$IMAGE_NAME")
 
-# Append container arguments
-for arg in "${CONTAINER_ARGS[@]}"; do
-    DOCKER_ARGS+=("$arg")
-done
+    # Append container arguments
+    for arg in "${CONTAINER_ARGS[@]}"; do
+        DOCKER_ARGS+=("$arg")
+    done
+fi
 
 # Execute docker run
 docker "${DOCKER_ARGS[@]}"
