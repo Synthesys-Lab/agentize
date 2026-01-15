@@ -3,7 +3,7 @@
 #
 # This script mounts external resources into the container:
 # - ~/.claude-code-router/config.json -> /home/agentizer/.claude-code-router/config.json
-# - ~/.config/gh -> /home/agentizer/.config/gh (GitHub CLI credentials)
+# - ~/.config/gh -> /home/agentizer/.config/gh (GitHub CLI credentials, read-write for token refresh)
 # - ~/.git-credentials -> /home/agentizer/.git-credentials
 # - ~/.gitconfig -> /home/agentizer/.gitconfig
 # - Current agentize project directory -> /workspace/agentize
@@ -96,7 +96,7 @@ fi
 # 2. Passthrough GitHub CLI credentials
 GH_CONFIG="$HOME/.config/gh"
 if [ -d "$GH_CONFIG" ]; then
-    DOCKER_ARGS+=("-v" "$GH_CONFIG:/home/agentizer/.config/gh:ro")
+    DOCKER_ARGS+=("-v" "$GH_CONFIG:/home/agentizer/.config/gh:rw")
 fi
 
 # 3. Passthrough git credentials (if exists)

@@ -62,10 +62,10 @@ Use `run.sh` to mount external resources into the container:
 ```
 
 The script automatically mounts:
-- `~/.claude-code-router/config.json` -> `/home/agentizer/.claude-code-router/config.json`
-- `~/.config/gh` -> `/home/agentizer/.config/gh` (GitHub CLI credentials)
-- `~/.git-credentials` -> `/home/agentizer/.git-credentials`
-- `~/.gitconfig` -> `/home/agentizer/.gitconfig`
+- `~/.claude-code-router/config.json` -> `/home/agentizer/.claude-code-router/config.json` (read-only)
+- `~/.config/gh` -> `/home/agentizer/.config/gh` (read-write, allows GH to refresh tokens)
+- `~/.git-credentials` -> `/home/agentizer/.git-credentials` (read-only)
+- `~/.gitconfig` -> `/home/agentizer/.gitconfig` (read-only)
 - Current agentize project directory -> `/workspace/agentize`
 
 Or use the Makefile:
