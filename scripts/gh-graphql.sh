@@ -18,6 +18,7 @@ FIXTURES_DIR="$PROJECT_ROOT/tests/fixtures/github-projects"
 
 # Return fixture data for testing
 # AGENTIZE_GH_OWNER_TYPE can be "user" or "org" (default) to select fixtures
+# AGENTIZE_GH_FIXTURE_LIST_FIELDS can be "missing" to simulate missing Status options
 return_fixture() {
     local operation="$1"
     local fixture_file=""
@@ -49,13 +50,21 @@ return_fixture() {
             fixture_file="$FIXTURES_DIR/add-item-response.json"
             ;;
         list-fields)
-            fixture_file="$FIXTURES_DIR/list-fields-response.json"
+            # Support fixture override for testing missing Status options
+            if [ "$AGENTIZE_GH_FIXTURE_LIST_FIELDS" = "missing" ]; then
+                fixture_file="$FIXTURES_DIR/list-fields-missing-response.json"
+            else
+                fixture_file="$FIXTURES_DIR/list-fields-response.json"
+            fi
             ;;
         get-issue-project-item)
             fixture_file="$FIXTURES_DIR/get-issue-project-item-response.json"
             ;;
         update-field)
             fixture_file="$FIXTURES_DIR/update-field-response.json"
+            ;;
+        create-field-option)
+            fixture_file="$FIXTURES_DIR/create-field-option-response.json"
             ;;
         *)
             echo "Error: Unknown fixture operation '$operation'" >&2
@@ -253,6 +262,34 @@ graphql_update_field() {
         }' -f projectId="$project_id" -f itemId="$item_id" -f fieldId="$field_id" -f optionId="$option_id"
 }
 
+# Execute GraphQL mutation for create-field-option
+# Creates a new option for a single select field (like Status)
+graphql_create_field_option() {
+    local field_id="$1"
+    local option_name="$2"
+    local option_color="${3:-GRAY}"
+
+    if [ "$FIXTURE_MODE" = "1" ]; then
+        return_fixture "create-field-option"
+        return 0
+    fi
+
+    gh api graphql -f query='
+        mutation($fieldId: ID!, $name: String!, $color: ProjectV2SingleSelectFieldOptionColor!) {
+            createProjectV2FieldOption(input: {
+                fieldId: $fieldId,
+                name: $name,
+                color: $color
+            }) {
+                projectV2SingleSelectFieldOption {
+                    id
+                    name
+                    color
+                }
+            }
+        }' -f fieldId="$field_id" -f name="$option_name" -f color="$option_color"
+}
+
 # Main execution
 main() {
     local operation="$1"
@@ -280,6 +317,9 @@ main() {
         update-field)
             graphql_update_field "$@"
             ;;
+        create-field-option)
+            graphql_create_field_option "$@"
+            ;;
         *)
             echo "Error: Unknown operation '$operation'" >&2
             echo "" >&2
@@ -291,6 +331,7 @@ main() {
             echo "  $0 list-fields <project-id>" >&2
             echo "  $0 get-issue-project-item <owner> <repo> <issue-number>" >&2
             echo "  $0 update-field <project-id> <item-id> <field-id> <option-id>" >&2
+            echo "  $0 create-field-option <field-id> <option-name> [color]" >&2
             exit 1
             ;;
     esac

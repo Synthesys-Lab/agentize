@@ -12,14 +12,32 @@ Invoke the command: `/setup-viewboard [--org <org-name>]`
 
 This command will:
 1. Check `.agentize.yaml` for existing project association
-2. Create or associate a GitHub Projects v2 board
-3. Generate automation workflow file
-4. Create agentize issue labels
-5. Remind user to verify Status field options
+2. Create or associate a GitHub Projects v2 board (via shared library)
+3. Generate automation workflow file (via shared library)
+4. Verify Status field options with guidance URL for missing options
+5. Create agentize issue labels
 
 ## Inputs
 
 - `$ARGUMENTS` (optional): `--org <org-name>` to specify the organization or user for the project board. Defaults to repository owner.
+
+## Shared Library Functions
+
+This command uses the shared project library at `src/cli/lol/project-lib.sh`. Source it and initialize context before calling:
+
+```bash
+source "$AGENTIZE_HOME/src/cli/lol/project-lib.sh"
+project_init_context
+```
+
+Available functions:
+- `project_preflight_check` - Verify gh CLI availability and authentication
+- `project_read_metadata <key>` - Read value from .agentize.yaml project section
+- `project_update_metadata <key> <value>` - Update .agentize.yaml project section
+- `project_create [owner] [title]` - Create new project via GraphQL
+- `project_associate <owner/id>` - Associate existing project via GraphQL
+- `project_generate_automation [write_path]` - Generate workflow template
+- `project_verify_status_options <owner> <project_id>` - Verify Status field options
 
 ## Workflow Steps
 
@@ -27,17 +45,19 @@ When this command is invoked, follow these steps:
 
 ### Step 0: Check gh CLI Availability
 
-Verify `gh` CLI is installed:
+Run preflight check via shared library:
 
 ```bash
-command -v gh
+source "$AGENTIZE_HOME/src/cli/lol/project-lib.sh"
+project_preflight_check
 ```
 
-If `gh` is not found, inform the user:
+If check fails, inform the user:
 ```
-Error: GitHub CLI (gh) is not installed.
+Error: GitHub CLI (gh) is not installed or not authenticated.
 
-Install it from: https://github.com/cli/cli
+Install from: https://github.com/cli/cli
+Authenticate: gh auth login
 ```
 Stop execution.
 
@@ -49,9 +69,13 @@ If `--org <org-name>` is present, extract `<org-name>` as the target organizatio
 
 ### Step 2: Check .agentize.yaml
 
-Read `.agentize.yaml` from the project root using the Read tool.
+Initialize project context and read metadata:
 
-Parse the file to check for existing `project.org` and `project.id` fields.
+```bash
+project_init_context
+owner=$(project_read_metadata "org") || owner=""
+project_id=$(project_read_metadata "id") || project_id=""
+```
 
 If `.agentize.yaml` does not exist:
 ```
@@ -68,12 +92,12 @@ Stop execution.
 
 **If no existing project association** (`project.org` and `project.id` not present):
 
-Run project creation:
+Create project via shared library:
 ```bash
-lol project --create [--org <org-name>]
+project_create "$org_arg"
 ```
 
-Include `--org <org-name>` only if provided in arguments.
+Where `$org_arg` is the `--org` value if provided, otherwise empty.
 
 Inform the user:
 ```
@@ -91,10 +115,10 @@ Proceeding with automation workflow and labels setup...
 
 ### Step 4: Generate Automation Workflow
 
-Create the automation workflow file:
+Generate the automation workflow file via shared library:
 
 ```bash
-lol project --automation --write .github/workflows/add-to-project.yml
+project_generate_automation ".github/workflows/add-to-project.yml"
 ```
 
 Inform the user:
@@ -106,7 +130,23 @@ To enable automation, add a GitHub Actions secret:
   Value: A personal access token with project scope
 ```
 
-### Step 5: Create Issue Labels
+### Step 5: Verify and Create Status Field Options
+
+Verify project Status field configuration and auto-create missing options:
+
+```bash
+project_verify_status_options "$owner" "$project_id"
+```
+
+The function:
+- Reports configured Status options found
+- Detects missing required options
+- Automatically creates missing options via GraphQL
+- Falls back to guidance URL if creation fails (permissions)
+
+Required options: Proposed, Refining, Plan Accepted, In Progress, Done
+
+### Step 6: Create Issue Labels
 
 Create agentize-specific labels using the GitHub CLI:
 
@@ -126,22 +166,18 @@ Created labels:
   - agentize:bug-report (red)
 ```
 
-### Step 6: Remind Status Field Configuration
+### Step 7: Summary
 
-Inform the user about required Status field options:
+Display completion summary:
 
 ```
 Setup complete!
 
-Please verify your project's Status field has these options:
-  - Proposed (for new plans awaiting approval)
-  - Refining (for plans being refined by /ultra-planner --refine)
-  - Plan Accepted (for approved plans ready for implementation)
-  - In Progress (for active work)
-  - Done (for completed items)
+Project: <org>/<id>
+Workflow: .github/workflows/add-to-project.yml
+Labels: agentize:plan, agentize:refine, agentize:dev-req, agentize:bug-report
 
-These options integrate with the Board view columns.
-See: docs/architecture/project.md for details.
+See: docs/architecture/project.md for Status field configuration details.
 ```
 
 ## Error Handling
@@ -150,7 +186,7 @@ Following the project's philosophy, assume CLI tools are available. Cast errors 
 
 Common error scenarios:
 - `.agentize.yaml` not found → User must create it
-- `lol` CLI not available → User must source `setup.sh`
 - `gh` CLI not authenticated → User must run `gh auth login`
-- Project creation fails → `lol project` will error with details
+- Project creation fails → Shared library reports GraphQL error
+- Status options missing → Guidance URL provided for manual configuration
 - Label creation fails → `gh` will error with details

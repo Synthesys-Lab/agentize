@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Test: Status field verification reports missing options with guidance URL
+# Test: Status field verification auto-creates missing options
 
 source "$(dirname "$0")/../common.sh"
 
-test_info "Status field verification reports missing options with guidance URL"
+test_info "Status field verification auto-creates missing options"
 
 TMP_DIR=$(make_temp_dir "lol-project-status-missing")
 
@@ -34,22 +34,30 @@ EOF
     export AGENTIZE_GH_FIXTURE_LIST_FIELDS="missing"
 
     # Call project_verify_status_options
-    output=$(project_verify_status_options "test-org" 3 2>&1) || true
+    output=$(project_verify_status_options "test-org" 3 2>&1)
+    exit_code=$?
 
-    # Check that missing options are reported
+    # Check that missing options are detected and auto-creation is attempted
     if echo "$output" | grep -q "Missing required Status options" && \
        echo "$output" | grep -q "Refining" && \
        echo "$output" | grep -q "Plan Accepted"; then
-        # Check that guidance URL is provided
-        if echo "$output" | grep -q "https://github.com"; then
-            cleanup_dir "$TMP_DIR"
-            test_pass "Status verification reports missing options with guidance URL"
+        # Check that auto-creation is attempted
+        if echo "$output" | grep -q "Creating missing options"; then
+            # Check that creation succeeds (in fixture mode)
+            if echo "$output" | grep -q "done" && \
+               echo "$output" | grep -q "All missing Status options created successfully"; then
+                cleanup_dir "$TMP_DIR"
+                test_pass "Status verification auto-creates missing options"
+            else
+                cleanup_dir "$TMP_DIR"
+                test_fail "Status verification should succeed in creating options (fixture mode)"
+            fi
         else
             cleanup_dir "$TMP_DIR"
-            test_fail "Status verification should include guidance URL"
+            test_fail "Status verification should attempt to create missing options"
         fi
     else
         cleanup_dir "$TMP_DIR"
-        test_fail "Status verification should report missing options (Refining, Plan Accepted)"
+        test_fail "Status verification should detect missing options (Refining, Plan Accepted)"
     fi
 )

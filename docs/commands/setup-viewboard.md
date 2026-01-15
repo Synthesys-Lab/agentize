@@ -32,8 +32,9 @@ The command performs the following steps:
 
 3. **Generate Automation Workflow**: Generate workflow via `project_generate_automation` and write to `.github/workflows/add-to-project.yml`
 
-4. **Verify Status Field Options**: Query project Status field via GraphQL and verify required options exist:
-   - If options are missing: Display guidance URL for manual configuration
+4. **Verify and Create Status Field Options**: Query project Status field via GraphQL and auto-create missing options:
+   - If options are missing: Automatically create them via `createProjectV2FieldOption` mutation
+   - If auto-creation fails (permissions): Display guidance URL for manual configuration
    - Required options: Proposed, Refining, Plan Accepted, In Progress, Done
 
 5. **Create Labels**: Create agentize issue labels using `gh label create --force`:
