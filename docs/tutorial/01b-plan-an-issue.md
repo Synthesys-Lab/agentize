@@ -1,4 +1,7 @@
-# Tutorial 01: Plan an Issue
+# Tutorial 01b (Deprecated): Plan an Issue
+
+> **Deprecated**: This tutorial documents the legacy single-agent `/plan-an-issue` flow.
+> Use [Tutorial 01: Ultra Planner](./01-ultra-planner.md) as the primary planning guide.
 
 **Read time: 3-5 minutes**
 
@@ -105,7 +108,7 @@ For simple one-line fixes or trivial updates, you may skip planning and implemen
 
 **When in doubt**: Start with `/plan-an-issue`. If the single-agent plan feels incomplete or you want deeper analysis, escalate to `/ultra-planner` for multi-agent debate-based planning.
 
-See [Tutorial 01b: Ultra Planner](./01b-ultra-planner.md) for details on multi-agent debate-based planning.
+See [Tutorial 01: Ultra Planner](./01-ultra-planner.md) for details on multi-agent debate-based planning.
 
 ## Example Walkthrough
 
@@ -161,7 +164,7 @@ The AI will read the plan from that file and create the issue.
 ## Next Steps
 
 After creating a [plan] issue:
-- **Tutorial 02**: Learn how to implement the issue with `/issue-to-impl`, `/code-review`, and `/sync-master`
+- **Tutorial 02**: Learn how to implement the issue with `/issue-to-impl` and `/code-review`
 
 ## Tips
 

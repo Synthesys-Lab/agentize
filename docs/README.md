@@ -10,8 +10,8 @@ Learn Agentize step-by-step in 15 minutes total (3-5 min per tutorial):
 
 See [`tutorial/README.md`](tutorial/README.md) for the complete tutorial series:
 - `tutorial/00-initialize.md` - Project initialization and setup
-- `tutorial/01-plan-an-issue.md` - Creating implementation plans
-- `tutorial/01b-ultra-planner.md` - Multi-agent debate-based planning
+- `tutorial/01-ultra-planner.md` - Primary planning tutorial (recommended)
+- `tutorial/01b-plan-an-issue.md` - Legacy single-agent planning (deprecated)
 - `tutorial/02-issue-to-impl.md` - Complete development cycle
 - `tutorial/03-advanced-usage.md` - Parallel development workflows
 
