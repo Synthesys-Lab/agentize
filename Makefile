@@ -28,13 +28,13 @@ pre-commit:
 	ln -sf ../../scripts/pre-commit "$$HOOKS_DIR/pre-commit"; \
 	echo "✓ Pre-commit hook installed"; \
 
-# Build sandbox image
+# Build sandbox image (uses local config or auto-detection)
 sandbox-build:
-	docker build -t agentize-sandbox ./sandbox
+	python3 ./sandbox/run.py --build
 
-# Run sandbox with passthrough
-sandbox-run: sandbox-build
-	./sandbox/run.sh $(filter-out $@,$(MAKECMDGOALS))
+# Run sandbox with passthrough (auto-builds if needed)
+sandbox-run:
+	python3 ./sandbox/run.py $(filter-out $@,$(MAKECMDGOALS))
 
 setup:
 	@echo "Generating local setup script..."
@@ -79,8 +79,12 @@ help:
 	@echo "  make test-e2e            - Run end-to-end integration tests"
 	@echo "  make test-fast           - Run fast tests (sdk + cli + lint)"
 	@echo "  make setup               - Generate local setup.sh for development"
-	@echo "  make sandbox-build       - Build the agentize-sandbox Docker image"
-	@echo "  make sandbox-run         - Run sandbox with volume passthrough"
+	@echo "  make sandbox-build       - Build/rebuild the agentize-sandbox image"
+	@echo "  make sandbox-run         - Run sandbox with volume passthrough (auto-builds if needed)"
+	@echo ""
+	@echo "Runtime selection (via config file or environment):"
+	@echo "  1. Create sandbox/agentize.toml with: [container] runtime = 'podman'"
+	@echo "  2. Or set CONTAINER_RUNTIME=podman"
 	@echo ""
 	@echo "SDK usage:"
 	@echo "  lol upgrade               # Upgrade agentize installation"

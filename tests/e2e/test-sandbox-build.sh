@@ -4,41 +4,41 @@ set -e
 
 echo "=== Testing sandbox Dockerfile ==="
 
-# Build the Docker image
+# Build the Docker image using the Python script's build command
 echo "Building Docker image..."
-docker build -t agentize-sandbox-test ./sandbox
+python3 ./sandbox/run.py --build
 
-# Verify Node.js
+# Verify Node.js (use /bin/sh -c to bypass entrypoint)
 echo "Verifying Node.js..."
-docker run --rm agentize-sandbox-test node --version
+podman run --rm --entrypoint=/bin/sh agentize-sandbox -c "node --version"
 
 # Verify npm
 echo "Verifying npm..."
-docker run --rm agentize-sandbox-test npm --version
+podman run --rm --entrypoint=/bin/sh agentize-sandbox -c "npm --version"
 
 # Verify Python + uv
 echo "Verifying Python and uv..."
-docker run --rm agentize-sandbox-test python3 --version
-docker run --rm agentize-sandbox-test uv --version
+podman run --rm --entrypoint=/bin/sh agentize-sandbox -c "python3 --version"
+podman run --rm --entrypoint=/bin/sh agentize-sandbox -c "uv --version"
 
 # Verify Git
 echo "Verifying Git..."
-docker run --rm agentize-sandbox-test git --version
+podman run --rm --entrypoint=/bin/sh agentize-sandbox -c "git --version"
 
 # Verify Chrome/Chromium
 echo "Verifying Chrome/Chromium..."
-docker run --rm agentize-sandbox-test chromium-browser --version || docker run --rm agentize-sandbox-test google-chrome --version
+podman run --rm --entrypoint=/bin/sh agentize-sandbox -c "chromium-browser --version" || podman run --rm --entrypoint=/bin/sh agentize-sandbox -c "google-chrome --version"
 
 # Verify claude-code-router
 echo "Verifying claude-code-router..."
-docker run --rm agentize-sandbox-test claude-code-router --version
+podman run --rm --entrypoint=/bin/sh agentize-sandbox -c "claude-code-router --version"
 
 # Verify GitHub CLI is installed
 echo "Verifying GitHub CLI..."
-docker run --rm --entrypoint=/bin/sh agentize-sandbox-test -c "test -f /usr/local/bin/gh && echo 'gh exists'"
+podman run --rm --entrypoint=/bin/sh agentize-sandbox -c "test -f /usr/local/bin/gh && echo 'gh exists'"
 
 # Verify entrypoint script exists
 echo "Verifying entrypoint script..."
-docker run --rm --entrypoint=/bin/sh agentize-sandbox-test -c "test -f /usr/local/bin/entrypoint"
+podman run --rm --entrypoint=/bin/sh agentize-sandbox -c "test -f /usr/local/bin/entrypoint"
 
 echo "=== All sandbox tests passed ==="

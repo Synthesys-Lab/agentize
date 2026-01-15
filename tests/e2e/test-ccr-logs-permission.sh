@@ -10,10 +10,6 @@ set -e
 
 echo "=== Testing CCR logs directory permission fix ==="
 
-# Build the Docker image first (required by run.sh)
-echo "Building Docker image..."
-docker build -t agentize-sandbox ./sandbox
-
 # Test 1: Verify entrypoint.sh exists and creates logs directory
 echo "Test 1: Verifying entrypoint.sh creates logs directory..."
 if grep -q 'mkdir.*claude-code-router.*logs' ./sandbox/entrypoint.sh; then
@@ -34,7 +30,7 @@ fi
 
 # Test 3: Verify CCR can run with --ccr flag without permission error
 echo "Test 3: Testing CCR --help runs without permission error..."
-OUTPUT=$(./sandbox/run.sh -- --ccr --help 2>&1)
+OUTPUT=$(python3 ./sandbox/run.py -- --ccr --help 2>&1)
 if echo "$OUTPUT" | grep -q "Usage:"; then
     echo "PASS: CCR runs without permission error"
 else
@@ -60,7 +56,7 @@ fi
 
 # Test 5: Verify CCR version works
 echo "Test 5: Testing CCR version..."
-OUTPUT=$(./sandbox/run.sh -- --ccr --version 2>&1)
+OUTPUT=$(python3 ./sandbox/run.py -- --ccr --version 2>&1)
 if echo "$OUTPUT" | grep -qE "[0-9]+\.[0-9]+\.[0-9]+"; then
     echo "PASS: CCR version displayed"
 else

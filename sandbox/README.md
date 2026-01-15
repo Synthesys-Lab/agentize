@@ -14,7 +14,8 @@ This directory contains the Docker sandbox environment used for:
 - `Dockerfile` - Docker image definition with all required tools
 - `install.sh` - Claude Code installation script (copied into container)
 - `entrypoint.sh` - Container entrypoint with ccr/claude routing
-- `run.sh` - Docker run script with volume passthrough
+- `run.py` - Python-based container runner with volume passthrough and auto-build
+- `pyproject.toml` - Python project configuration
 
 ## User
 
@@ -31,34 +32,72 @@ The container runs as the `agentizer` user with sudo privileges.
 - Claude Code
 - GitHub CLI
 
+## Container Runtime
+
+This sandbox supports both Docker and Podman. The runtime is detected in priority order:
+
+1. **Local config file**: `sandbox/agentize.toml` or `./agentize.toml`
+2. **Global config file**: `~/.config/agentize/agentize.toml`
+3. **CONTAINER_RUNTIME** environment variable
+4. **Auto-detection**: Podman preferred if available, falls back to Docker
+
+### Local Config File Format
+
+Create `sandbox/agentize.toml`:
+
+```toml
+[container]
+runtime = "podman"  # or "docker"
+```
+
+## Automatic Build
+
+The `run.py` script automatically handles container image building:
+
+- **First run**: Builds the image automatically if it doesn't exist
+- **File changes**: Rebuilds when `Dockerfile`, `install.sh`, or `entrypoint.sh` change
+- **Force rebuild**: Use `--build` flag to force a rebuild
+
 ## Build
 
 ```bash
-docker build -t agentize-sandbox ./sandbox
+# Build/rebuild the image (uses local config or auto-detection)
+make sandbox-build
+python3 ./sandbox/run.py --build
+
+# Build with custom architecture
+podman build --build-arg HOST_ARCH=arm64 -t agentize-sandbox ./sandbox
+```
+
+## Usage with Volume Passthrough
+
+Use `run.py` to mount external resources into the container:
+
+```bash
+# Basic usage (auto-builds if needed)
+python3 ./sandbox/run.py
+
+# Run with custom container name
+python3 ./sandbox/run.py my-container
+
+# Pass arguments to the container
+python3 ./sandbox/run.py -- --help
+
+# Run with --ccr flag for CCR mode
+python3 ./sandbox/run.py -- --ccr --help
+
+# Execute custom command
+python3 ./sandbox/run.py --cmd -- ls /workspace
+
+# Force rebuild the image
+python3 ./sandbox/run.py --build
 ```
 
 Or use the Makefile:
 
 ```bash
-make sandbox-build
-```
-
-## Usage with Volume Passthrough
-
-Use `run.sh` to mount external resources into the container:
-
-```bash
-# Basic usage
-./sandbox/run.sh
-
-# Run with custom container name
-./sandbox/run.sh my-container
-
-# Pass arguments to the container
-./sandbox/run.sh -- --help
-
-# Run with --ccr flag for CCR mode
-./sandbox/run.sh -- --ccr --help
+make sandbox-run
+make sandbox-run -- --help
 ```
 
 The script automatically mounts:
@@ -69,13 +108,6 @@ The script automatically mounts:
 - Current agentize project directory -> `/workspace/agentize`
 - `GITHUB_TOKEN` environment variable (if set on host, passed to container for GH CLI auth)
 
-Or use the Makefile:
-
-```bash
-make sandbox-run
-make sandbox-run -- --help
-```
-
 ## Entrypoint Modes
 
 The container supports two modes via the entrypoint:
@@ -85,7 +117,7 @@ The container supports two modes via the entrypoint:
 Without `--ccr` flag, runs Claude Code:
 
 ```bash
-docker run agentize-sandbox claude --help
+python3 ./sandbox/run.py -- claude --help
 ```
 
 ### CCR Mode
@@ -93,13 +125,7 @@ docker run agentize-sandbox claude --help
 With `--ccr` flag, runs claude-code-router:
 
 ```bash
-docker run agentize-sandbox ccr code --help
-```
-
-The `--ccr` flag can be used directly when running the container:
-
-```bash
-./sandbox/run.sh -- --ccr --help
+python3 ./sandbox/run.py -- --ccr --help
 ```
 
 ## Testing

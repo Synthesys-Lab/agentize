@@ -2,22 +2,18 @@
 
 set -e
 
-echo "=== Testing sandbox run.sh script ==="
+echo "=== Testing sandbox run.py script ==="
 
-# Build the Docker image first (required by run.sh)
-echo "Building Docker image..."
-docker build -t agentize-sandbox ./sandbox
-
-# Test 1: run.sh script exists and is executable
-echo "Verifying run.sh exists and is executable..."
-if [ ! -x "./sandbox/run.sh" ]; then
-    echo "FAIL: sandbox/run.sh is not executable"
+# Test 1: run.py script exists and is executable
+echo "Verifying run.py exists..."
+if [ ! -f "./sandbox/run.py" ]; then
+    echo "FAIL: sandbox/run.py does not exist"
     exit 1
 fi
 
-# Test 2: run.sh runs without error (--help)
-echo "Verifying run.sh can execute container..."
-./sandbox/run.sh -- --help > /dev/null 2>&1 || true
+# Test 2: run.py can execute container (--help) - this will auto-build if needed
+echo "Verifying run.py can execute container..."
+python3 ./sandbox/run.py -- --help > /dev/null 2>&1 || true
 
 # Test 3: Verify volume mounts are constructed correctly by examining docker run command
 echo "Verifying volume mount construction..."
@@ -29,7 +25,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 IMAGE_NAME="agentize-sandbox"
 
-# Build volume mounts (same logic as run.sh)
+# Build volume mounts (same logic as run.py)
 VOLUMES=()
 
 # Mock HOME for test
@@ -120,4 +116,4 @@ fi
 bash -n ./sandbox/entrypoint.sh
 echo "entrypoint.sh syntax is valid"
 
-echo "=== All sandbox run.sh tests passed ==="
+echo "=== All sandbox run.py tests passed ==="

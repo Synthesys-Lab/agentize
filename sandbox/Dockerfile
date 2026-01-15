@@ -7,6 +7,11 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
+# Arguments
+# -----------------------------------------------------------------------------
+ARG HOST_ARCH=amd64
+
+# -----------------------------------------------------------------------------
 # Stage 1: Base
 # -----------------------------------------------------------------------------
 FROM ubuntu:24.04 AS base
@@ -88,8 +93,8 @@ FROM sdkman AS browser
 FROM browser AS tools
 
 # Install GitHub CLI from official binary release
-RUN ARCH=$(dpkg --print-architecture) && \
-    if [ "$ARCH" = "arm64" ] || [ "$ARCH" = "aarch64" ]; then \
+# Use HOST_ARCH build arg for architecture-specific binary selection
+RUN if [ "$HOST_ARCH" = "arm64" ]; then \
         GH_ARCH="arm64"; \
     else \
         GH_ARCH="amd64"; \

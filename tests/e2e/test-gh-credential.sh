@@ -12,13 +12,9 @@ set -e
 
 echo "=== Testing GH CLI credential passthrough ==="
 
-# Build the Docker image first (required by run.sh)
-echo "Building Docker image..."
-docker build -t agentize-sandbox ./sandbox
-
 # Test 1: Verify GH CLI is installed
 echo "Test 1: Verifying GH CLI is installed..."
-OUTPUT=$(./sandbox/run.sh -- --cmd which gh 2>&1)
+OUTPUT=$(python3 ./sandbox/run.py -- --cmd which gh 2>&1)
 if echo "$OUTPUT" | grep -q "gh"; then
     echo "PASS: GH CLI is installed"
 else
@@ -29,8 +25,8 @@ fi
 
 # Test 2: Verify GH config directory is mounted read-write
 echo "Test 2: Verifying GH config mount is read-write..."
-# The run.sh should mount GH config as :rw (read-write)
-if grep -q '/home/agentizer/.config/gh:rw' ./sandbox/run.sh; then
+# The run.py should mount GH config as :rw (read-write)
+if grep -q '/home/agentizer/.config/gh:rw' ./sandbox/run.py; then
     echo "PASS: GH config is mounted read-write"
 else
     echo "FAIL: GH config is not mounted read-write"
@@ -40,7 +36,7 @@ fi
 
 # Test 3: Verify GITHUB_TOKEN passthrough is configured
 echo "Test 3: Verifying GITHUB_TOKEN passthrough..."
-if grep -q 'GITHUB_TOKEN' ./sandbox/run.sh; then
+if grep -q 'GITHUB_TOKEN' ./sandbox/run.py; then
     echo "PASS: GITHUB_TOKEN passthrough configured"
 else
     echo "FAIL: GITHUB_TOKEN passthrough not configured"
@@ -49,7 +45,7 @@ fi
 
 # Test 4: Verify GH can run (auth status or error message)
 echo "Test 4: Verifying GH CLI can execute..."
-OUTPUT=$(./sandbox/run.sh -- --cmd gh --version 2>&1)
+OUTPUT=$(python3 ./sandbox/run.py -- --cmd gh --version 2>&1)
 if echo "$OUTPUT" | grep -q "gh version"; then
     echo "PASS: GH CLI can execute"
 else
@@ -64,8 +60,8 @@ if [ -n "$GITHUB_TOKEN" ]; then
     echo "GITHUB_TOKEN detected on host, testing container authentication..."
 
     set +e
-    # Note: run.sh --cmd passes arguments directly without shell interpretation
-    AUTH_OUTPUT=$(./sandbox/run.sh -- --cmd bash -c gh\ auth\ status 2>&1)
+    # Note: run.py --cmd passes arguments directly without shell interpretation
+    AUTH_OUTPUT=$(python3 ./sandbox/run.py -- --cmd bash -c gh\ auth\ status 2>&1)
     AUTH_EXIT=$?
     set -e
 
@@ -77,7 +73,7 @@ if [ -n "$GITHUB_TOKEN" ]; then
         set +e
         # Get username first
         USERNAME=$(gh api user -q.login)
-        REPO_OUTPUT=$(./sandbox/run.sh -- --cmd bash -c "gh repo list $USERNAME --limit 1" 2>&1)
+        REPO_OUTPUT=$(python3 ./sandbox/run.py -- --cmd bash -c "gh repo list $USERNAME --limit 1" 2>&1)
         REPO_EXIT=$?
         set -e
 
