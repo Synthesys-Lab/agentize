@@ -10,6 +10,7 @@ Modular implementation of the `lol` SDK CLI. These files are sourced by `lol.sh`
 |------|-------------|---------|
 | `helpers.sh` | Language detection and utility functions | `lol_detect_lang` |
 | `completion.sh` | Shell-agnostic completion helper | `lol_complete` |
+| `project-lib.sh` | Shared project setup library | `project_init_context`, `project_preflight_check`, `project_read_metadata`, `project_update_metadata`, `project_create`, `project_associate`, `project_generate_automation`, `project_verify_status_options` |
 | `commands.sh` | Thin loader that sources `commands/*.sh` | All `lol_cmd_*` functions |
 | `commands/` | Per-command implementation files | See below |
 | `dispatch.sh` | Main dispatcher and help text | `lol` |
@@ -32,9 +33,10 @@ The parent `lol.sh` sources modules in this order:
 
 1. `helpers.sh` - No dependencies
 2. `completion.sh` - No dependencies
-3. `commands.sh` - Sources all files from `commands/`, depends on helpers
-4. `parsers.sh` - Depends on commands
-5. `dispatch.sh` - Depends on all above
+3. `project-lib.sh` - Depends on `scripts/gh-graphql.sh`
+4. `commands.sh` - Sources all files from `commands/`, depends on helpers and project-lib
+5. `parsers.sh` - Depends on commands
+6. `dispatch.sh` - Depends on all above
 
 ## Design Principles
 

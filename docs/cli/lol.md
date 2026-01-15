@@ -39,9 +39,11 @@ lol project --automation [--write <path>]
 
 The `--org` flag accepts either an organization or personal user login. When omitted, it defaults to the repository owner (which may be an organization or personal account).
 
+This command shares implementation with `/setup-viewboard` via the shared project library (`src/cli/lol/project-lib.sh`).
+
 See [Project Management](../architecture/project.md) for details.
 
-**See also:** `/setup-viewboard` for guided project setup with labels and automation.
+**See also:** `/setup-viewboard` for self-contained project setup with labels, automation, and Status field verification.
 
 ### lol claude-clean
 

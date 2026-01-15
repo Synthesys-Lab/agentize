@@ -14,10 +14,12 @@ This section discusses how to integrate GitHub Projects v2 with an `agentize`d p
 ## Creating or Associating a Project
 
 **Guided setup (recommended):**
-Use the `/setup-viewboard` command for guided project setup with labels and automation:
+Use the `/setup-viewboard` command for self-contained project setup with labels, automation, and Status field verification:
 ```
 /setup-viewboard [--org <org-name>]
 ```
+
+The `/setup-viewboard` command performs all project operations directly via `gh` GraphQL without calling CLI commands. It verifies Status field options and provides a guidance URL when options are missing.
 
 See [/setup-viewboard documentation](../commands/setup-viewboard.md) for details.
 
@@ -34,7 +36,7 @@ lol project --associate <owner>/<id>
 
 The `--org` flag accepts either a GitHub organization or personal user login. When omitted, it defaults to the repository owner.
 
-Both commands update `.agentize.yaml` with `project.org` (owner login) and `project.id` fields.
+Both commands (and `/setup-viewboard`) share implementation via `src/cli/lol/project-lib.sh` and update `.agentize.yaml` with `project.org` (owner login) and `project.id` fields.
 
 ## Automation
 

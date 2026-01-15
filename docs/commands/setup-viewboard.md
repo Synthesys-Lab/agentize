@@ -10,7 +10,7 @@ Set up a GitHub Projects v2 board for agentize workflow integration.
 
 ## Description
 
-The `/setup-viewboard` command provides a guided wrapper for setting up GitHub Projects v2 boards with agentize-compatible Status fields, labels, and automation workflows. It orchestrates the `lol project` CLI commands while guiding the user through the setup process.
+The `/setup-viewboard` command provides a self-contained setup for GitHub Projects v2 boards with agentize-compatible Status fields, labels, and automation workflows. It uses `gh` GraphQL operations directly via the shared project library (`src/cli/lol/project-lib.sh`) without calling `lol project` CLI commands.
 
 ## Options
 
@@ -27,18 +27,20 @@ The command performs the following steps:
 1. **Check `.agentize.yaml`**: Read existing `project.org` and `project.id` fields to detect an existing project association.
 
 2. **Create or Associate Project Board**:
-   - If no association exists: Run `lol project --create [--org <org-name>]`
-   - If association exists: Confirm and optionally validate with `lol project --associate`
+   - If no association exists: Create project via GraphQL (`project_create`)
+   - If association exists: Validate project via GraphQL (`project_associate`)
 
-3. **Generate Automation Workflow**: Run `lol project --automation --write .github/workflows/add-to-project.yml`
+3. **Generate Automation Workflow**: Generate workflow via `project_generate_automation` and write to `.github/workflows/add-to-project.yml`
 
-4. **Create Labels**: Create agentize issue labels using `gh label create --force`:
+4. **Verify Status Field Options**: Query project Status field via GraphQL and verify required options exist:
+   - If options are missing: Display guidance URL for manual configuration
+   - Required options: Proposed, Refining, Plan Accepted, In Progress, Done
+
+5. **Create Labels**: Create agentize issue labels using `gh label create --force`:
    - `agentize:plan` - Issues with implementation plans
    - `agentize:refine` - Issues queued for refinement
    - `agentize:dev-req` - Developer request issues (triage)
    - `agentize:bug-report` - Bug report issues (triage)
-
-5. **Remind Status Options**: Prompt user to verify the project's Status field options match the expected values (see below).
 
 ## Status Field Options
 
@@ -58,7 +60,6 @@ These status options integrate with the Board view columns. See [Project Managem
 
 - `gh` CLI installed and authenticated (`gh auth login`)
 - `.agentize.yaml` present and writable
-- `lol` CLI available (source `setup.sh`)
 - GitHub Actions secret `ADD_TO_PROJECT_PAT` when enabling automation (see workflow file)
 
 ## Examples
@@ -81,6 +82,6 @@ Creates a project board under the specified organization.
 
 ## See Also
 
-- [lol project](../cli/lol.md#lol-project) - CLI for project management
 - [Project Management](../architecture/project.md) - Architecture documentation
 - [Metadata File](../architecture/metadata.md) - `.agentize.yaml` schema
+- [lol project](../cli/lol.md#lol-project) - CLI interface (shares implementation with this command)
