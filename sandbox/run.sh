@@ -7,6 +7,7 @@
 # - ~/.git-credentials -> /home/agentizer/.git-credentials
 # - ~/.gitconfig -> /home/agentizer/.gitconfig
 # - Current agentize project directory -> /workspace/agentize
+# - GITHUB_TOKEN environment variable (if set)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 IMAGE_NAME="agentize-sandbox"
@@ -112,6 +113,11 @@ fi
 # 4. Passthrough agentize project directory
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 DOCKER_ARGS+=("-v" "$PROJECT_DIR:/workspace/agentize")
+
+# 5. Passthrough GitHub token if set (for GH CLI authentication)
+if [ -n "$GITHUB_TOKEN" ]; then
+    DOCKER_ARGS+=("-e" "GITHUB_TOKEN=$GITHUB_TOKEN")
+fi
 
 # When --cmd is provided, override entrypoint to run custom command
 if [ ${#CUSTOM_CMD[@]} -gt 0 ]; then

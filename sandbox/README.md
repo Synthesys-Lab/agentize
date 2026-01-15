@@ -67,6 +67,7 @@ The script automatically mounts:
 - `~/.git-credentials` -> `/home/agentizer/.git-credentials` (read-only)
 - `~/.gitconfig` -> `/home/agentizer/.gitconfig` (read-only)
 - Current agentize project directory -> `/workspace/agentize`
+- `GITHUB_TOKEN` environment variable (if set on host, passed to container for GH CLI auth)
 
 Or use the Makefile:
 
