@@ -338,15 +338,20 @@ def build_run_command(
     # Volume mounts
     home = Path.home()
 
-    # 1. claude-code-router config
+    # 1. claude-code-router config (mounted to both config.json and config-router.json)
     ccr_config = home / ".claude-code-router" / "config.json"
     if ccr_config.exists():
         cmd.extend(["-v", f"{ccr_config}:/home/agentizer/.claude-code-router/config.json:ro"])
+        cmd.extend(["-v", f"{ccr_config}:/home/agentizer/.claude-code-router/config-router.json:ro"])
 
-    # 2. GitHub CLI credentials
-    gh_config = home / ".config" / "gh"
-    if gh_config.exists():
-        cmd.extend(["-v", f"{gh_config}:/home/agentizer/.config/gh:rw"])
+    # 2. GitHub CLI credentials (mount individual files for proper permission handling)
+    gh_config_yml = home / ".config" / "gh" / "config.yml"
+    if gh_config_yml.exists():
+        cmd.extend(["-v", f"{gh_config_yml}:/home/agentizer/.config/gh/config.yml:ro"])
+
+    gh_hosts = home / ".config" / "gh" / "hosts.yml"
+    if gh_hosts.exists():
+        cmd.extend(["-v", f"{gh_hosts}:/home/agentizer/.config/gh/hosts.yml:ro"])
 
     # 3. Git credentials
     git_creds = home / ".git-credentials"
