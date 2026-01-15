@@ -29,7 +29,7 @@ fi
 # Test 2: Verify GH config directory is mounted read-write
 echo "Test 2: Verifying GH config mount is read-write..."
 # The run.sh should mount GH config as :rw (read-write)
-if grep -q '":/home/agentizer/.config/gh:rw"' ./sandbox/run.sh; then
+if grep -q '/home/agentizer/.config/gh:rw' ./sandbox/run.sh; then
     echo "PASS: GH config is mounted read-write"
 else
     echo "FAIL: GH config is not mounted read-write"
