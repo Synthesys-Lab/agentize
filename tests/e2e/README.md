@@ -18,11 +18,12 @@ Full workflow tests for worktree management:
 - `test-worktree-reject-description-arg.sh` - Placeholder for argument validation edge cases
 - `test-worktree-spawn-yolo-no-agent.sh` - Placeholder for agent-free spawn edge cases
 
-### Project Automation E2E Tests (`test-lol-project-*`)
+### Project Automation E2E Tests (`test-lol-project-*`, `test-setup-viewboard-*`)
 
 GitHub Projects integration workflows:
 
 - `test-lol-project-create.sh` - Tests project creation via `lol project create`
+- `test-lol-project-create-user.sh` - Tests project creation for user-owned projects
 - `test-lol-project-associate.sh` - Tests associating issues with projects
 - `test-lol-project-auto-field.sh` - Tests automatic field population
 - `test-lol-project-automation.sh` - Tests project automation workflows
@@ -30,6 +31,8 @@ GitHub Projects integration workflows:
 - `test-lol-project-help.sh` - Tests project command help text
 - `test-lol-project-metadata-preservation.sh` - Tests metadata persistence
 - `test-lol-project-missing-metadata.sh` - Tests behavior without metadata
+- `test-lol-project-status-missing.sh` - Tests Status field verification auto-creates missing options
+- `test-setup-viewboard-self-contained.sh` - Tests /setup-viewboard uses shared library directly
 
 ### Issue Management E2E Tests (`test-open-issue-*`)
 

@@ -1,0 +1,11 @@
+{
+  "data": {
+    "createProjectV2FieldOption": {
+      "projectV2SingleSelectFieldOption": {
+        "id": "ssfo_1234567890",
+        "name": "Refining",
+        "color": "GRAY"
+      }
+    }
+  }
+}
