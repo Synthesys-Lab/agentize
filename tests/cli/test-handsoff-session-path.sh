@@ -105,6 +105,31 @@ test_info "Test 6: continuation_count starts at 0"
 COUNT_1=$(jq -r '.continuation_count' "$STATE_FILE_1")
 [ "$COUNT_1" = "0" ] || test_fail "Expected continuation_count=0, got '$COUNT_1'"
 
+# Test 7: /setup-viewboard → workflow=setup-viewboard, no issue_no
+test_info "Test 7: /setup-viewboard → workflow=setup-viewboard, no issue_no"
+SESSION_ID_7="test-session-setup-viewboard-7"
+run_hook "/setup-viewboard" "$SESSION_ID_7" "$CENTRAL_HOME"
+
+STATE_FILE_7="$CENTRAL_HOME/.tmp/hooked-sessions/$SESSION_ID_7.json"
+[ -f "$STATE_FILE_7" ] || test_fail "Session file not created: $STATE_FILE_7"
+
+WORKFLOW_7=$(jq -r '.workflow' "$STATE_FILE_7")
+[ "$WORKFLOW_7" = "setup-viewboard" ] || test_fail "Expected workflow=setup-viewboard, got '$WORKFLOW_7'"
+
+ISSUE_NO_7=$(jq -r '.issue_no' "$STATE_FILE_7")
+[ "$ISSUE_NO_7" = "null" ] || test_fail "Expected issue_no=null (absent), got '$ISSUE_NO_7'"
+
+# Test 7b: /setup-viewboard --org myorg → workflow=setup-viewboard
+test_info "Test 7b: /setup-viewboard --org myorg → workflow=setup-viewboard"
+SESSION_ID_7b="test-session-setup-viewboard-7b"
+run_hook "/setup-viewboard --org myorg" "$SESSION_ID_7b" "$CENTRAL_HOME"
+
+STATE_FILE_7b="$CENTRAL_HOME/.tmp/hooked-sessions/$SESSION_ID_7b.json"
+[ -f "$STATE_FILE_7b" ] || test_fail "Session file not created: $STATE_FILE_7b"
+
+WORKFLOW_7b=$(jq -r '.workflow' "$STATE_FILE_7b")
+[ "$WORKFLOW_7b" = "setup-viewboard" ] || test_fail "Expected workflow=setup-viewboard, got '$WORKFLOW_7b'"
+
 # Cleanup
 cleanup_dir "$TMP_DIR"
 

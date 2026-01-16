@@ -130,6 +130,31 @@ test_info "Test 10: Issue index file NOT created when issue_no absent"
 ISSUE_INDEX_FILE_5="$CENTRAL_HOME/.tmp/hooked-sessions/by-issue/null.json"
 [ ! -f "$ISSUE_INDEX_FILE_5" ] || test_fail "Issue index file should not be created when issue_no is absent"
 
+# Test 11: /setup-viewboard → workflow=setup-viewboard, no issue_no
+test_info "Test 11: /setup-viewboard → workflow=setup-viewboard, no issue_no"
+SESSION_ID_11="test-session-setup-viewboard-11"
+run_hook "/setup-viewboard" "$SESSION_ID_11" "$CENTRAL_HOME"
+
+STATE_FILE_11="$CENTRAL_HOME/.tmp/hooked-sessions/$SESSION_ID_11.json"
+[ -f "$STATE_FILE_11" ] || test_fail "Session file not created: $STATE_FILE_11"
+
+WORKFLOW_11=$(jq -r '.workflow' "$STATE_FILE_11")
+[ "$WORKFLOW_11" = "setup-viewboard" ] || test_fail "Expected workflow=setup-viewboard, got '$WORKFLOW_11'"
+
+ISSUE_NO_11=$(jq -r '.issue_no' "$STATE_FILE_11")
+[ "$ISSUE_NO_11" = "null" ] || test_fail "Expected issue_no=null (absent), got '$ISSUE_NO_11'"
+
+# Test 12: /setup-viewboard --org myorg → workflow=setup-viewboard
+test_info "Test 12: /setup-viewboard --org myorg → workflow=setup-viewboard"
+SESSION_ID_12="test-session-setup-viewboard-12"
+run_hook "/setup-viewboard --org myorg" "$SESSION_ID_12" "$CENTRAL_HOME"
+
+STATE_FILE_12="$CENTRAL_HOME/.tmp/hooked-sessions/$SESSION_ID_12.json"
+[ -f "$STATE_FILE_12" ] || test_fail "Session file not created: $STATE_FILE_12"
+
+WORKFLOW_12=$(jq -r '.workflow' "$STATE_FILE_12")
+[ "$WORKFLOW_12" = "setup-viewboard" ] || test_fail "Expected workflow=setup-viewboard, got '$WORKFLOW_12'"
+
 # Cleanup
 cleanup_dir "$TMP_DIR"
 

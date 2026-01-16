@@ -252,4 +252,66 @@ echo "$result" | grep -q '<code>Bash</code>' || test_fail "Expected tool name in
 echo "$result" | grep -q '<code>git push</code>' || test_fail "Expected target in result"
 echo "$result" | grep -q 'test-ses' || test_fail "Expected truncated session ID in result"
 
+# Test 25: Workflow-scoped auto-allow for setup-viewboard - gh auth status
+test_info "Test 25: setup-viewboard workflow → gh auth status auto-allow"
+# Create a temporary session state file for setup-viewboard workflow
+TMP_DIR=$(make_temp_dir "workflow-permission-test")
+SESSION_ID="test-session-setup-viewboard"
+mkdir -p "$TMP_DIR/.tmp/hooked-sessions"
+echo '{"workflow": "setup-viewboard", "state": "initial", "continuation_count": 0}' > "$TMP_DIR/.tmp/hooked-sessions/$SESSION_ID.json"
+
+# Run hook with AGENTIZE_HOME pointing to our tmp dir and workflow session
+# Note: Using env to properly set and unset variables in a subshell
+input=$(jq -c '.setup_viewboard_gh_auth_status' "$FIXTURE_FILE")
+decision=$(
+    export AGENTIZE_HOME="$TMP_DIR"
+    unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
+    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+)
+[ "$decision" = "allow" ] || test_fail "Expected 'allow' for gh auth status in setup-viewboard workflow, got '$decision'"
+
+# Test 26: Workflow-scoped auto-allow for setup-viewboard - gh repo view
+test_info "Test 26: setup-viewboard workflow → gh repo view auto-allow"
+input=$(jq -c '.setup_viewboard_gh_repo_view' "$FIXTURE_FILE")
+decision=$(
+    export AGENTIZE_HOME="$TMP_DIR"
+    unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
+    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+)
+[ "$decision" = "allow" ] || test_fail "Expected 'allow' for gh repo view in setup-viewboard workflow, got '$decision'"
+
+# Test 27: Workflow-scoped auto-allow for setup-viewboard - gh api graphql
+test_info "Test 27: setup-viewboard workflow → gh api graphql auto-allow"
+input=$(jq -c '.setup_viewboard_gh_api_graphql' "$FIXTURE_FILE")
+decision=$(
+    export AGENTIZE_HOME="$TMP_DIR"
+    unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
+    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+)
+[ "$decision" = "allow" ] || test_fail "Expected 'allow' for gh api graphql in setup-viewboard workflow, got '$decision'"
+
+# Test 28: Workflow-scoped auto-allow for setup-viewboard - gh label create
+test_info "Test 28: setup-viewboard workflow → gh label create auto-allow"
+input=$(jq -c '.setup_viewboard_gh_label_create' "$FIXTURE_FILE")
+decision=$(
+    export AGENTIZE_HOME="$TMP_DIR"
+    unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
+    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+)
+[ "$decision" = "allow" ] || test_fail "Expected 'allow' for gh label create in setup-viewboard workflow, got '$decision'"
+
+# Test 29: No auto-allow for gh api outside workflow
+test_info "Test 29: gh api outside workflow → ask (no auto-allow)"
+# Clear the session state to simulate no active workflow
+rm -f "$TMP_DIR/.tmp/hooked-sessions/$SESSION_ID.json"
+input=$(jq -c '.setup_viewboard_gh_api_graphql' "$FIXTURE_FILE")
+decision=$(
+    export AGENTIZE_HOME="$TMP_DIR"
+    unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
+    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+)
+[ "$decision" = "ask" ] || test_fail "Expected 'ask' for gh api graphql outside workflow, got '$decision'"
+
+cleanup_dir "$TMP_DIR"
+
 test_pass "PreToolUse hook permission matching works correctly"

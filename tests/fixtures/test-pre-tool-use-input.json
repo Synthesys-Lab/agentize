@@ -105,5 +105,33 @@
       ]
     },
     "session_id": "test-session"
+  },
+  "setup_viewboard_gh_auth_status": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "gh auth status"
+    },
+    "session_id": "test-session-setup-viewboard"
+  },
+  "setup_viewboard_gh_repo_view": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "gh repo view --json owner -q '.owner.login'"
+    },
+    "session_id": "test-session-setup-viewboard"
+  },
+  "setup_viewboard_gh_api_graphql": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "gh api graphql -f query='mutation { createProjectV2(...) }'"
+    },
+    "session_id": "test-session-setup-viewboard"
+  },
+  "setup_viewboard_gh_label_create": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "gh label create --force agentize:plan"
+    },
+    "session_id": "test-session-setup-viewboard"
   }
 }
