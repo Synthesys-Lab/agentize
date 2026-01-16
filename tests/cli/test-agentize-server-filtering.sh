@@ -269,12 +269,12 @@ if [ "$refine_no_plan_output" != "0" ]; then
   test_fail "Expected 0 refinement issues (missing agentize:plan), got count: $refine_no_plan_output"
 fi
 
-# Test 12: filter_ready_feat_requests returns issues with agentize:feat-request but NOT agentize:plan and NOT terminal status
+# Test 12: filter_ready_feat_requests returns issues with agentize:dev-req but NOT agentize:plan and NOT terminal status
 FEAT_REQUEST_ITEMS='[
-  {"content": {"number": 50, "labels": {"nodes": [{"name": "agentize:feat-request"}]}}, "fieldValueByName": {"name": "Backlog"}},
-  {"content": {"number": 51, "labels": {"nodes": [{"name": "agentize:feat-request"}, {"name": "agentize:plan"}]}}, "fieldValueByName": {"name": "Proposed"}},
-  {"content": {"number": 52, "labels": {"nodes": [{"name": "agentize:feat-request"}]}}, "fieldValueByName": {"name": "Done"}},
-  {"content": {"number": 53, "labels": {"nodes": [{"name": "agentize:feat-request"}]}}, "fieldValueByName": {"name": "In Progress"}}
+  {"content": {"number": 50, "labels": {"nodes": [{"name": "agentize:dev-req"}]}}, "fieldValueByName": {"name": "Backlog"}},
+  {"content": {"number": 51, "labels": {"nodes": [{"name": "agentize:dev-req"}, {"name": "agentize:plan"}]}}, "fieldValueByName": {"name": "Proposed"}},
+  {"content": {"number": 52, "labels": {"nodes": [{"name": "agentize:dev-req"}]}}, "fieldValueByName": {"name": "Done"}},
+  {"content": {"number": 53, "labels": {"nodes": [{"name": "agentize:dev-req"}]}}, "fieldValueByName": {"name": "In Progress"}}
 ]'
 
 feat_output=$(PYTHONPATH="$PROJECT_ROOT/python" python3 -c "
@@ -290,7 +290,7 @@ if [ "$feat_output" != "50" ]; then
   test_fail "Expected feat-request issues [50], got [$feat_output]"
 fi
 
-# Test 13: filter_ready_feat_requests debug output contains [feat-request-filter] prefix
+# Test 13: filter_ready_feat_requests debug output contains [dev-req-filter] prefix
 feat_debug_output=$(PYTHONPATH="$PROJECT_ROOT/python" HANDSOFF_DEBUG=1 python3 -c "
 import json
 from agentize.server.__main__ import filter_ready_feat_requests
@@ -299,8 +299,8 @@ items = json.loads('''$FEAT_REQUEST_ITEMS''')
 filter_ready_feat_requests(items)
 " 2>&1)
 
-if ! echo "$feat_debug_output" | grep -q '\[feat-request-filter\]'; then
-  test_fail "Feat-request debug output missing [feat-request-filter] prefix"
+if ! echo "$feat_debug_output" | grep -q '\[dev-req-filter\]'; then
+  test_fail "Dev-req debug output missing [dev-req-filter] prefix"
 fi
 
 if ! echo "$feat_debug_output" | grep -q 'already has agentize:plan'; then
