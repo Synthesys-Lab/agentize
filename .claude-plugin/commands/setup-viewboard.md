@@ -21,6 +21,15 @@ This command will:
 
 - `$ARGUMENTS` (optional): `--org <org-name>` to specify the organization or user for the project board. Defaults to repository owner.
 
+## Implementation Note
+
+This command is self-contained using shared library functions from `src/cli/lol/project-lib.sh`. The core GitHub Projects v2 operations are provided by:
+
+- `project_create` - Creates a new GitHub Projects v2 board
+- `project_associate` - Associates with an existing project board
+- `project_generate_automation` - Generates the automation workflow file
+- `project_verify_status_options` - Verifies and configures Status field options
+
 ## Workflow Steps
 
 When this command is invoked, follow these steps:
