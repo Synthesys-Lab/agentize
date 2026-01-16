@@ -35,6 +35,7 @@ After running `make setup` and sourcing `setup.sh`, the `wt` command is availabl
   - Before creating the worktree, it rebases onto the latest default branch from the bare repo
   - After creating the worktree, attempts to update the issue's GitHub Projects v2 Status to "In Progress" (best-effort)
   - `--no-agent`: skip automatic Claude invocation after worktree creation
+  - `--model <model>`: specify Claude model to use (opus, sonnet, haiku); uses default if not specified
   - `--yolo`: skip permission prompts by passing `--dangerously-skip-permissions` to Claude
     - **WARNING**: When active, Claude will run with all permission checks bypassed
     - A warning message will be displayed on stderr before Claude invocation
@@ -120,7 +121,7 @@ The `wt` command provides tab-completion support for zsh users. After running `m
 
 **Features:**
 - Subcommand completion (`wt <TAB>` shows: clone, common, init, goto, spawn, list, remove, prune, purge, pathto, rebase, help)
-- Flag completion for `spawn` (`--yolo`, `--no-agent`, `--headless`) — flags can appear before or after `<issue-no>`
+- Flag completion for `spawn` (`--yolo`, `--no-agent`, `--headless`, `--model`) — flags can appear before or after `<issue-no>`
 - Flag completion for `remove` (`--delete-branch`, `-D`, `--force`) — flags can appear before or after `<issue-no>`
 - Flag completion for `rebase` (`--headless`) — flags can appear before or after `<pr-no>`
 - Target completion for `goto` (`main` and `issue-<N>-*` worktrees)
@@ -145,7 +146,7 @@ wt --complete <topic>
 
 **Topics:**
 - `commands` - List available subcommands (clone, common, init, goto, spawn, list, remove, prune, purge, pathto, rebase, help)
-- `spawn-flags` - List flags for `wt spawn` (--yolo, --no-agent, --headless)
+- `spawn-flags` - List flags for `wt spawn` (--yolo, --no-agent, --headless, --model)
 - `remove-flags` - List flags for `wt remove` (--delete-branch, -D, --force)
 - `rebase-flags` - List flags for `wt rebase` (--headless, --yolo)
 - `goto-targets` - List available targets for `wt goto` (main plus issue numbers derived from issue-<N>-* worktrees)
@@ -172,6 +173,7 @@ $ wt --complete spawn-flags
 --yolo
 --no-agent
 --headless
+--model
 
 $ wt --complete goto-targets
 main

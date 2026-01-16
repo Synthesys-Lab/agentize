@@ -107,7 +107,7 @@ _wt_spawn() {
 
     # Fallback to static flags
     if (( ${#spawn_flags} == 0 )); then
-        spawn_flags=( '--yolo' '--no-agent' '--headless' )
+        spawn_flags=( '--yolo' '--no-agent' '--headless' '--model' )
     fi
 
     # Build option specs from flags
@@ -121,6 +121,9 @@ _wt_spawn() {
                 ;;
             --headless)
                 option_specs+=('--headless[Run Claude in non-interactive mode (for server daemon)]')
+                ;;
+            --model)
+                option_specs+=('--model[Specify Claude model to use]:model:(opus sonnet haiku)')
                 ;;
             *)
                 # Unknown flag, pass through without description

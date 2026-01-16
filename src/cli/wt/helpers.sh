@@ -278,6 +278,7 @@ wt_claim_issue_status() {
 #   $3 - yolo: Boolean ("true"/"false") for --dangerously-skip-permissions flag
 #   $4 - headless: Boolean ("true"/"false") for --print flag and background execution
 #   $5 - log_prefix: Prefix for log file name (e.g., "issue-42", "rebase-123")
+#   $6 - model: (optional) Claude model to use (opus, sonnet, haiku)
 # Returns:
 #   0 - Success (headless always returns 0 immediately)
 #   Non-zero - Claude invocation failure (interactive mode only)
@@ -287,16 +288,21 @@ wt_invoke_claude() {
     local yolo="$3"
     local headless="$4"
     local log_prefix="$5"
+    local model="$6"
 
     # Build flags
     local yolo_flag=""
     local print_flag=""
+    local model_flag=""
     if [ "$yolo" = true ]; then
         echo "WARNING: --yolo active; Claude will run with --dangerously-skip-permissions" >&2
         yolo_flag="--dangerously-skip-permissions"
     fi
     if [ "$headless" = true ]; then
         print_flag="--print"
+    fi
+    if [ -n "$model" ]; then
+        model_flag="--model $model"
     fi
 
     if [ "$headless" = true ]; then
@@ -313,7 +319,7 @@ wt_invoke_claude() {
         # Redirect stdin from /dev/null and stdout/stderr to log file to prevent
         # fd inheritance that would block the parent when using capture_output.
         (
-            cd "$worktree_path" && exec claude $yolo_flag $print_flag "$command"
+            cd "$worktree_path" && exec claude $model_flag $yolo_flag $print_flag "$command"
         ) </dev/null >"$log_file" 2>&1 &
         local claude_pid=$!
 
@@ -323,7 +329,7 @@ wt_invoke_claude() {
     else
         # Interactive mode (note: changes cwd to worktree_path)
         echo "Invoking Claude Code..."
-        cd "$worktree_path" && claude $yolo_flag "$command" || {
+        cd "$worktree_path" && claude $model_flag $yolo_flag "$command" || {
             echo "Warning: Failed to invoke Claude Code" >&2
             return 1
         }

@@ -26,6 +26,7 @@ wt_complete() {
             echo "--yolo"
             echo "--no-agent"
             echo "--headless"
+            echo "--model"
             ;;
         remove-flags)
             echo "--delete-branch"

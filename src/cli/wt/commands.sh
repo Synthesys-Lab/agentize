@@ -146,6 +146,7 @@ cmd_spawn() {
     local no_agent=false
     local yolo=false
     local headless=false
+    local model=""
 
     # Parse arguments
     while [ $# -gt 0 ]; do
@@ -161,6 +162,14 @@ cmd_spawn() {
             --headless)
                 headless=true
                 shift
+                ;;
+            --model)
+                if [ $# -lt 2 ]; then
+                    echo "Error: --model requires a value" >&2
+                    return 1
+                fi
+                model="$2"
+                shift 2
                 ;;
             -*)
                 echo "Error: Unknown flag: $1" >&2
@@ -263,7 +272,7 @@ cmd_spawn() {
 
     # Invoke Claude if not disabled
     if [ "$no_agent" = false ] && command -v claude >/dev/null 2>&1; then
-        wt_invoke_claude "/issue-to-impl $issue_no" "$worktree_path" "$yolo" "$headless" "issue-${issue_no}"
+        wt_invoke_claude "/issue-to-impl $issue_no" "$worktree_path" "$yolo" "$headless" "issue-${issue_no}" "$model"
     fi
 
     return 0
@@ -544,6 +553,7 @@ COMMANDS:
 
 OPTIONS (spawn):
   --no-agent          Skip automatic Claude invocation
+  --model <model>     Specify Claude model to use (opus, sonnet, haiku)
   --yolo              Skip permission prompts
   --headless          Run Claude in non-interactive mode (for server daemon)
 
