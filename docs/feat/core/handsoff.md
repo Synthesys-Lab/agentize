@@ -10,6 +10,7 @@ When `HANDSOFF_MODE` is enabled, specific workflows automatically resume after e
 - `/ultra-planner` - Multi-agent debate-based planning (see [ultra-planner.md](ultra-planner.md))
 - `/issue-to-impl` - Complete development cycle from issue to PR (see [../tutorial/02-issue-to-impl.md](../tutorial/02-issue-to-impl.md))
 - `/plan-to-issue` - Create GitHub [plan] issues from user-provided plans
+- `/setup-viewboard` - GitHub Projects v2 board setup (see [../commands/setup-viewboard.md](../commands/setup-viewboard.md))
 
 ## How It Works
 
@@ -215,6 +216,28 @@ The ultimate goal of this workflow is to create a GitHub [plan] issue from the u
 
 **Completion criteria:** GitHub [plan] issue successfully created.
 
+### `/setup-viewboard` Workflow
+
+**Goal:** Set up a GitHub Projects v2 board with agentize-compatible configuration.
+
+**Auto-continuation prompt (injected by Stop hook):**
+```
+This is an auto-continuation prompt for handsoff mode, it is currently {N}/{MAX} continuations.
+The ultimate goal of this workflow is to set up a GitHub Projects v2 board. Have you completed all steps?
+1. If not, please continue with the remaining setup steps!
+2. If setup is complete, manually stop further continuations.
+```
+
+**Completion criteria:** Project board created with Status field options and labels configured.
+
+**Automatic permissions:** When this workflow is active, the following `gh` CLI commands are automatically allowed:
+- `gh auth status` - Authentication verification
+- `gh repo view --json owner -q ...` - Repository owner lookup
+- `gh api graphql` - Project creation and configuration
+- `gh label create --force` - Label creation
+
+These permissions apply **only during the setup-viewboard workflow** and do not affect global permission rules.
+
 ## Debugging
 
 ### Check Session State
@@ -311,11 +334,11 @@ See [.claude/hooks/pre-tool-use.md](../../.claude/hooks/pre-tool-use.md) for int
 - **Location:** `.claude-plugin/hooks/user-prompt-submit.py`
 
 **Key logic:**
-- Detects workflow commands: `/ultra-planner`, `/issue-to-impl`, `/plan-to-issue`
+- Detects workflow commands: `/ultra-planner`, `/issue-to-impl`, `/plan-to-issue`, `/setup-viewboard`
 - Creates `$AGENTIZE_HOME/.tmp/hooked-sessions/{session_id}.json` with initial state (falls back to worktree-local `.tmp/` if `AGENTIZE_HOME` is unset)
 - Sets `continuation_count = 0`
 - When issue number is present, creates issue index file at `$AGENTIZE_HOME/.tmp/hooked-sessions/by-issue/{issue_no}.json`
-- Note: `/plan-to-issue` does not accept issue number arguments
+- Note: `/plan-to-issue` and `/setup-viewboard` do not accept issue number arguments
 
 ### `before-prompt-submit.py` (Cursor IDE)
 - **Event:** `beforeSubmitPrompt` (before prompt is sent to Cursor)
@@ -323,7 +346,7 @@ See [.claude/hooks/pre-tool-use.md](../../.claude/hooks/pre-tool-use.md) for int
 - **Location:** `.cursor/hooks/before-prompt-submit.py`
 
 **Key logic:**
-- Detects workflow commands: `/ultra-planner`, `/issue-to-impl`, `/plan-to-issue`
+- Detects workflow commands: `/ultra-planner`, `/issue-to-impl`, `/plan-to-issue`, `/setup-viewboard`
 - Creates `$AGENTIZE_HOME/.tmp/hooked-sessions/{session_id}.json` with initial state (falls back to worktree-local `.tmp/` if `AGENTIZE_HOME` is unset)
 - Sets `continuation_count = 0`
 - When issue number is present, creates issue index file at `$AGENTIZE_HOME/.tmp/hooked-sessions/by-issue/{issue_no}.json`
@@ -346,7 +369,7 @@ See [.claude/hooks/pre-tool-use.md](../../.claude/hooks/pre-tool-use.md) for int
 
 ## Limitations
 
-- **Non-workflow prompts:** Regular Claude Code usage (not `/ultra-planner`, `/issue-to-impl`, or `/plan-to-issue`) is unaffected
+- **Non-workflow prompts:** Regular Claude Code usage (not `/ultra-planner`, `/issue-to-impl`, `/plan-to-issue`, or `/setup-viewboard`) is unaffected
 - **Session isolation:** Each session has independent state; switching sessions resets continuation tracking
 - **Max continuations:** Workflows stop after reaching `HANDSOFF_MAX_CONTINUATIONS` (default: 10)
 - **Error recovery:** If Claude Code encounters critical errors, manual intervention may be required

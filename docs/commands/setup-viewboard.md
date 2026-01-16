@@ -80,8 +80,20 @@ Creates a project board owned by the current user (defaults to repository owner)
 
 Creates a project board under the specified organization.
 
+## Handsoff Mode Support
+
+When `HANDSOFF_MODE=1`, `/setup-viewboard` operates as a tracked workflow with automatic permission passing for its specific `gh` CLI commands:
+
+- `gh auth status` - Authentication verification
+- `gh repo view --json owner -q ...` - Repository owner lookup
+- `gh api graphql` - Project creation and configuration
+- `gh label create --force` - Label creation
+
+These permissions are automatically granted **only during the setup-viewboard workflow**, keeping the global permission model unchanged. See [Handsoff Mode](../feat/core/handsoff.md) for details on workflow tracking.
+
 ## See Also
 
 - [Project Management](../architecture/project.md) - Architecture documentation
 - [Metadata File](../architecture/metadata.md) - `.agentize.yaml` schema
 - [lol project](../cli/lol.md#lol-project) - CLI interface (shares implementation with this command)
+- [Handsoff Mode](../feat/core/handsoff.md) - Workflow tracking and auto-continuation
