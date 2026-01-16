@@ -99,15 +99,28 @@ if [ "$cleanup_output" != "True" ]; then
   test_fail "_cleanup_refinement should call gh issue edit --remove-label agentize:refine, got: $cleanup_output"
 fi
 
-# Test 5: spawn_refinement function exists and is importable
+# Test 5: spawn_refinement function exists and is importable with model parameter
 spawn_import_output=$(PYTHONPATH="$PROJECT_ROOT/python" python3 -c "
+import inspect
 from agentize.server.workers import spawn_refinement
+
 # Verify it's a callable function
-print('True' if callable(spawn_refinement) else 'False')
+if not callable(spawn_refinement):
+    print('not-callable')
+else:
+    # Check signature includes model parameter
+    sig = inspect.signature(spawn_refinement)
+    params = list(sig.parameters.keys())
+    if 'model' not in params:
+        print('missing-model-param')
+    elif sig.parameters['model'].default is not None:
+        print('model-default-not-none')
+    else:
+        print('True')
 " 2>/dev/null)
 
 if [ "$spawn_import_output" != "True" ]; then
-  test_fail "spawn_refinement should be importable and callable, got: $spawn_import_output"
+  test_fail "spawn_refinement should be importable, callable, and have model parameter with None default, got: $spawn_import_output"
 fi
 
 # Test 6: spawn_refinement returns (False, None) when wt spawn fails

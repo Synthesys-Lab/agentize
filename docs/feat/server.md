@@ -255,6 +255,42 @@ project:
 #   remote_url: https://github.com/org/repo
 ```
 
+### Runtime Configuration
+
+For server-specific settings that shouldn't be committed (credentials, worker pool size, model preferences), use `.agentize.local.yaml`:
+
+```yaml
+# .agentize.local.yaml - Runtime configuration (git-ignored)
+server:
+  period: 5m
+  num_workers: 5
+
+telegram:
+  token: "your-bot-token"
+  chat_id: "your-chat-id"
+
+workflows:
+  impl:
+    model: opus
+  refine:
+    model: sonnet
+  dev_req:
+    model: sonnet
+  rebase:
+    model: haiku
+```
+
+**Configuration precedence:** CLI args > environment variables (TG only) > `.agentize.local.yaml` > defaults
+
+**Sections:**
+- `server`: Polling period and worker pool size
+- `telegram`: Bot token and chat ID (environment variables `TG_API_TOKEN` and `TG_CHAT_ID` take precedence)
+- `workflows`: Per-workflow Claude model selection (opus, sonnet, haiku)
+
+**File location:** The server searches for `.agentize.local.yaml` starting from the current directory and walking up to parent directories.
+
+**Note:** This file should NOT be committed. It is automatically git-ignored.
+
 ### Remote URL Configuration
 
 The `git.remote_url` field enables clickable hyperlinks for issue and PR numbers in Telegram notifications. This field is **optional** - when not configured, the server automatically resolves the URL from `git remote get-url origin`.

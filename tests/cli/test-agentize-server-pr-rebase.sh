@@ -238,17 +238,21 @@ def test_rebase_return_type():
     import inspect
     sig = inspect.signature(rebase_worktree)
 
-    # Check parameters (pr_no required, issue_no optional for status claim)
+    # Check parameters (pr_no required, issue_no and model optional)
     params = list(sig.parameters.keys())
-    assert params == ['pr_no', 'issue_no'], f"Expected ['pr_no', 'issue_no'], got {params}"
+    assert params == ['pr_no', 'issue_no', 'model'], f"Expected ['pr_no', 'issue_no', 'model'], got {params}"
 
     # Verify issue_no has a default value (optional parameter)
     issue_no_param = sig.parameters['issue_no']
     assert issue_no_param.default is None, f"Expected issue_no default to be None, got {issue_no_param.default}"
 
+    # Verify model has a default value (optional parameter)
+    model_param = sig.parameters['model']
+    assert model_param.default is None, f"Expected model default to be None, got {model_param.default}"
+
     # Check return annotation (tuple[bool, int | None])
     # The annotation should indicate tuple return
-    print("PASS: rebase_worktree has correct signature (pr_no, issue_no=None) -> tuple[bool, int|None]")
+    print("PASS: rebase_worktree has correct signature (pr_no, issue_no=None, model=None) -> tuple[bool, int|None]")
 
 
 def test_full_workflow_simulation():

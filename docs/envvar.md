@@ -33,8 +33,8 @@ See [Telegram Approval](feat/permissions/telegram.md) for detailed documentation
 | Variable | Required | Type | Default | Description |
 |----------|----------|------|---------|-------------|
 | `AGENTIZE_USE_TG` | No | Boolean | `0` | Enable Telegram approval integration. Values: `1`, `true`, `on`. |
-| `TG_API_TOKEN` | Conditional | String | - | Telegram Bot API token from @BotFather. Required when `AGENTIZE_USE_TG=1`. |
-| `TG_CHAT_ID` | Conditional | String | - | Telegram chat/channel ID for approval messages. Required when `AGENTIZE_USE_TG=1`. |
+| `TG_API_TOKEN` | Conditional | String | - | Telegram Bot API token from @BotFather. Required when `AGENTIZE_USE_TG=1`. Overrides `.agentize.local.yaml` `telegram.token`. |
+| `TG_CHAT_ID` | Conditional | String | - | Telegram chat/channel ID for approval messages. Required when `AGENTIZE_USE_TG=1`. Overrides `.agentize.local.yaml` `telegram.chat_id`. |
 | `TG_APPROVAL_TIMEOUT_SEC` | No | Integer | `60` | Maximum wait time for Telegram response in seconds. Maximum: 7200 (2 hours). |
 | `TG_POLL_INTERVAL_SEC` | No | Integer | `5` | Interval between Telegram API polls in seconds. |
 | `TG_ALLOWED_USER_IDS` | No | String | - | Comma-separated list of Telegram user IDs allowed to approve. |

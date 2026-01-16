@@ -64,6 +64,17 @@ if ! echo "$output" | grep -q "^--yolo$"; then
   test_fail "--yolo should be in wt --complete rebase-flags"
 fi
 
+if ! echo "$output" | grep -q "^--model$"; then
+  test_fail "--model should be in wt --complete rebase-flags"
+fi
+
+# Test 8: --model flag is parsed (doesn't fail due to flag parsing)
+output=$(wt rebase --model opus 123 2>&1) || true
+# Should fail for PR not found, not for flag parsing
+if echo "$output" | grep -qi "unknown flag"; then
+  test_fail "wt rebase --model should be a valid flag"
+fi
+
 # Cleanup
 cleanup_test_repo
 

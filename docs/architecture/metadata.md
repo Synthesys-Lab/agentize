@@ -2,6 +2,21 @@
 
 The `.agentize.yaml` file provides canonical project configuration for agentize-based projects.
 
+## Configuration Files Overview
+
+Agentize uses two configuration files with distinct purposes:
+
+| File | Purpose | Committed? |
+|------|---------|------------|
+| `.agentize.yaml` | Project metadata (org, project ID, language) | Yes |
+| `.agentize.local.yaml` | Runtime settings (credentials, worker config, models) | No |
+
+**Separation rationale:**
+- `.agentize.yaml` contains project-level configuration that should be shared across all developers
+- `.agentize.local.yaml` contains deployment-specific settings (secrets, machine-specific tuning) that vary per environment
+
+For runtime configuration details, see [Server Runtime Configuration](../feat/server.md#runtime-configuration).
+
 ## Location
 
 The metadata file is located at the project root:

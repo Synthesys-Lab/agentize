@@ -88,14 +88,27 @@ if ! echo "$filter_debug_output" | grep -q 'terminal status'; then
   test_fail "Feat-request debug output missing 'terminal status' reason"
 fi
 
-# Test 5: spawn_feat_request function exists and is callable
+# Test 5: spawn_feat_request function exists, is callable, and has model parameter
 spawn_import_output=$(PYTHONPATH="$PROJECT_ROOT/python" python3 -c "
+import inspect
 from agentize.server.workers import spawn_feat_request
-print('True' if callable(spawn_feat_request) else 'False')
+
+if not callable(spawn_feat_request):
+    print('not-callable')
+else:
+    # Check signature includes model parameter
+    sig = inspect.signature(spawn_feat_request)
+    params = list(sig.parameters.keys())
+    if 'model' not in params:
+        print('missing-model-param')
+    elif sig.parameters['model'].default is not None:
+        print('model-default-not-none')
+    else:
+        print('True')
 " 2>/dev/null)
 
 if [ "$spawn_import_output" != "True" ]; then
-  test_fail "spawn_feat_request should be importable and callable, got: $spawn_import_output"
+  test_fail "spawn_feat_request should be importable, callable, and have model parameter with None default, got: $spawn_import_output"
 fi
 
 # Test 6: spawn_feat_request returns (False, None) when wt spawn fails

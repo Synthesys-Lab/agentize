@@ -4,7 +4,7 @@
 
 Functions exported via `__init__.py`:
 
-### `run_server(period: int, tg_token: str | None = None, tg_chat_id: str | None = None, num_workers: int = 5) -> None`
+### `run_server(period: int, tg_token: str | None = None, tg_chat_id: str | None = None, num_workers: int = 5, workflow_models: dict[str, str] | None = None) -> None`
 
 Main polling loop that monitors GitHub Projects for ready issues.
 
@@ -13,12 +13,16 @@ Main polling loop that monitors GitHub Projects for ready issues.
 - `tg_token`: Telegram Bot API token (optional, falls back to `TG_API_TOKEN` env)
 - `tg_chat_id`: Telegram chat ID (optional, falls back to `TG_CHAT_ID` env)
 - `num_workers`: Maximum concurrent workers (default: 5, 0 = unlimited)
+- `workflow_models`: Per-workflow Claude model mapping (optional)
+  - Keys: `impl`, `refine`, `dev_req`, `rebase`
+  - Values: `opus`, `sonnet`, `haiku`
 
 **Behavior:**
-- Loads config from `.agentize.yaml`
+- Loads config from `.agentize.yaml` and `.agentize.local.yaml`
 - Sends startup notification if Telegram configured
 - Polls project items at `period` intervals
 - Spawns worktrees for issues with "Plan Accepted" status and `agentize:plan` label
+- Passes workflow-specific model to spawn functions when configured
 - Sends worker assignment notification if Telegram configured
 - Handles SIGINT/SIGTERM for graceful shutdown
 
@@ -42,6 +46,40 @@ Send server startup notification to Telegram with hostname, project info, and wo
 ### `_log(msg: str, level: str = "INFO") -> None`
 
 Log with timestamp and source location (file:line:function).
+
+### `load_runtime_config(start_dir: Path | None = None) -> tuple[dict, Path | None]`
+
+Load runtime configuration from `.agentize.local.yaml`.
+
+**Parameters:**
+- `start_dir`: Directory to start searching from (default: current directory)
+
+**Returns:** Tuple of (config_dict, config_path). config_path is None if file not found.
+
+**Search behavior:** Walks up from `start_dir` to parent directories until `.agentize.local.yaml` is found or root is reached.
+
+**Schema:**
+```yaml
+server:
+  period: 5m         # Polling period (parsed via parse_period)
+  num_workers: 5     # Worker pool size
+
+telegram:
+  token: "..."       # Bot API token
+  chat_id: "..."     # Chat ID
+
+workflows:
+  impl:
+    model: opus      # Model for implementation
+  refine:
+    model: sonnet    # Model for refinement
+  dev_req:
+    model: sonnet    # Model for dev-req planning
+  rebase:
+    model: haiku     # Model for PR rebase
+```
+
+**Validation:** Raises `ValueError` for unknown top-level keys or invalid structure.
 
 ### `parse_period(period_str: str) -> int`
 
@@ -96,14 +134,18 @@ Query refinement candidates with label-first discovery. Discovers issues with bo
 
 Discover open issues with both `agentize:plan` and `agentize:refine` labels using `gh issue list`. Returns list of issue metadata dicts with number and labels.
 
-### `spawn_refinement(issue_no: int) -> tuple[bool, int | None]`
+### `spawn_refinement(issue_no: int, model: str | None = None) -> tuple[bool, int | None]`
 
 Spawn a refinement session for the given issue.
+
+**Parameters:**
+- `issue_no`: GitHub issue number
+- `model`: Claude model to use (opus, sonnet, haiku); uses default if not specified
 
 **Operations:**
 1. Creates worktree via `wt spawn --no-agent --headless` (if not exists)
 2. Sets issue status to "Refining" via `wt_claim_issue_status()` (best-effort claim)
-3. Runs `claude --print /ultra-planner --refine <issue-no>` headlessly as background process
+3. Runs `claude --model <model> --print /ultra-planner --refine <issue-no>` headlessly as background process
 4. Returns (success, pid) tuple
 
 **Returns:** Tuple of (success, pid). pid is None if spawn failed.
@@ -143,13 +185,17 @@ Filter items to issues eligible for feat-request planning:
 
 When `HANDSOFF_DEBUG=1`, logs per-issue inspection with `[dev-req-filter]` prefix.
 
-### `spawn_feat_request(issue_no: int) -> tuple[bool, int | None]`
+### `spawn_feat_request(issue_no: int, model: str | None = None) -> tuple[bool, int | None]`
 
 Spawn a feat-request planning session for the given issue.
 
+**Parameters:**
+- `issue_no`: GitHub issue number
+- `model`: Claude model to use (opus, sonnet, haiku); uses default if not specified
+
 **Operations:**
 1. Creates worktree via `wt spawn --no-agent --headless` (if not exists)
-2. Runs `claude --print /ultra-planner --from-issue <issue-no>` headlessly as background process
+2. Runs `claude --model <model> --print /ultra-planner --from-issue <issue-no>` headlessly as background process
 3. Returns (success, pid) tuple
 
 **Returns:** Tuple of (success, pid). pid is None if spawn failed.
@@ -166,13 +212,17 @@ Clean up after feat-request planning completion: remove `agentize:dev-req` label
 
 Check if a worktree exists for the given issue number.
 
-### `spawn_worktree(issue_no: int) -> tuple[bool, int | None]`
+### `spawn_worktree(issue_no: int, model: str | None = None) -> tuple[bool, int | None]`
 
 Spawn a new worktree for the given issue via `wt spawn`.
 
+**Parameters:**
+- `issue_no`: GitHub issue number
+- `model`: Claude model to use (opus, sonnet, haiku); uses default if not specified
+
 **Returns:** Tuple of (success, pid). pid is None if spawn failed.
 
-Note: Uses `run_shell_function()` from `agentize.shell` for shell invocation.
+Note: Uses `run_shell_function()` from `agentize.shell` for shell invocation. Passes `--model` to `wt spawn` when specified.
 
 ### `discover_candidate_prs(owner: str, repo: str) -> list[dict]`
 
@@ -211,17 +261,18 @@ Resolve issue number from PR metadata.
 
 **Returns:** Issue number or None if no match found.
 
-### `rebase_worktree(pr_no: int, issue_no: int | None = None) -> tuple[bool, int | None]`
+### `rebase_worktree(pr_no: int, issue_no: int | None = None, model: str | None = None) -> tuple[bool, int | None]`
 
 Rebase a PR's worktree using `wt rebase` command.
 
 **Parameters:**
 - `pr_no`: GitHub pull request number
 - `issue_no`: GitHub issue number (optional, for status claim)
+- `model`: Claude model to use (opus, sonnet, haiku); uses default if not specified
 
 **Operations:**
 1. Sets issue status to "Rebasing" via `wt_claim_issue_status()` if `issue_no` provided (best-effort claim)
-2. Runs `wt rebase <pr_no> --headless`
+2. Runs `wt rebase <pr_no> --headless --model <model>` (model passed if specified)
 3. Returns (success, pid) tuple
 
 **Returns:** Tuple of (success, pid). pid is None if rebase failed.

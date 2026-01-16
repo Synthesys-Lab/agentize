@@ -19,6 +19,7 @@ This module implements a long-running server that:
 | File | Purpose |
 |------|---------|
 | `__main__.py` | CLI entry point, polling coordinator, and re-export hub |
+| `runtime_config.py` | Runtime config parser for `.agentize.local.yaml` |
 | `github.py` | GitHub issue/PR discovery via `gh` CLI and GraphQL queries |
 | `workers.py` | Worktree spawn/rebase via `wt` CLI and worker status file management |
 | `notify.py` | Telegram message formatting (startup, assignment, completion) |
@@ -79,6 +80,34 @@ project:
   org: <organization>
   id: <project-number>
 ```
+
+### Runtime Configuration
+
+For server-specific settings, use `.agentize.local.yaml` (git-ignored):
+
+```yaml
+server:
+  period: 5m
+  num_workers: 5
+
+telegram:
+  token: "your-bot-token"
+  chat_id: "your-chat-id"
+
+workflows:
+  impl:
+    model: opus
+  refine:
+    model: sonnet
+  dev_req:
+    model: sonnet
+  rebase:
+    model: haiku
+```
+
+**Precedence:** CLI args > env vars (TG only) > `.agentize.local.yaml` > defaults
+
+See [Server Runtime Configuration](../../../docs/feat/server.md#runtime-configuration) for details.
 
 ## Debug Logging
 

@@ -5,3 +5,5 @@ trees/
 setup.sh
 .claude/settings.local.json
 __pycache__
+# Runtime configuration (contains secrets and machine-specific settings)
+.agentize.local.yaml
