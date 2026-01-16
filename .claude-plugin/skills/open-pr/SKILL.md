@@ -263,6 +263,24 @@ EOF
 - Add `--draft` if the user wants to create a draft PR
 - Add `--base BRANCH` if targeting a different base branch
 
+### 7.5. Record PR Number in Session State
+
+After successful PR creation, record the PR number in the session state to enable PR link in completion notifications.
+
+**Extract PR number from creation output:**
+The `gh pr create` command outputs the PR URL upon success. Extract the PR number from this URL.
+
+**Record in session state:**
+```python
+from agentize.server.session import set_pr_number_for_issue
+
+# Extract issue_no from the PR title (e.g., "[feat][#42] ..." -> 42)
+# Extract pr_number from the PR URL (e.g., ".../pull/123" -> 123)
+set_pr_number_for_issue(issue_no, pr_number)
+```
+
+**Note:** This is a best-effort operation. If the session state file is not available (e.g., not running in handsoff mode), the function returns False silently without affecting PR creation success.
+
 ### 8. Error Handling
 
 Handle common error scenarios gracefully:

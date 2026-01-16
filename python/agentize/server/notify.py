@@ -132,7 +132,8 @@ def _format_worker_assignment_message(
 def _format_worker_completion_message(
     issue_no: int,
     worker_id: int,
-    issue_url: str | None
+    issue_url: str | None,
+    pr_url: str | None = None
 ) -> str:
     """Build HTML-formatted Telegram message for worker completion.
 
@@ -140,6 +141,7 @@ def _format_worker_completion_message(
         issue_no: GitHub issue number
         worker_id: Worker slot ID
         issue_url: Full GitHub issue URL or None
+        pr_url: Full GitHub PR URL or None
 
     Returns:
         HTML-formatted message for Telegram
@@ -149,8 +151,15 @@ def _format_worker_completion_message(
     else:
         issue_ref = f'#{issue_no}'
 
-    return (
-        f"✅ <b>Worker Completed</b>\n\n"
-        f"Issue: {issue_ref}\n"
-        f"Worker: {worker_id}"
-    )
+    lines = [
+        f"✅ <b>Worker Completed</b>\n",
+        f"Issue: {issue_ref}",
+    ]
+
+    if pr_url:
+        pr_number = pr_url.rstrip('/').split('/')[-1]
+        lines.append(f"PR: <a href=\"{pr_url}\">#{pr_number}</a>")
+
+    lines.append(f"Worker: {worker_id}")
+
+    return '\n'.join(lines)

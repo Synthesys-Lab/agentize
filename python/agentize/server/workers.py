@@ -368,7 +368,14 @@ def cleanup_dead_workers(
                         _cleanup_feat_request(issue_no)
 
                     issue_url = f"https://github.com/{repo_slug}/issues/{issue_no}" if repo_slug else None
-                    msg = _format_worker_completion_message(issue_no, i, issue_url)
+
+                    # Build PR URL if pr_number is available in session state
+                    pr_url = None
+                    pr_number = session_state.get('pr_number')
+                    if pr_number and repo_slug:
+                        pr_url = f"https://github.com/{repo_slug}/pull/{pr_number}"
+
+                    msg = _format_worker_completion_message(issue_no, i, issue_url, pr_url=pr_url)
                     if send_telegram_message(tg_token, tg_chat_id, msg):
                         _log(f"Sent completion notification for issue #{issue_no}")
                         # Remove issue index to prevent duplicate notifications

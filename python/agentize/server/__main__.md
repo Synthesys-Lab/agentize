@@ -221,11 +221,12 @@ Build an HTML-formatted Telegram message for worker assignment notification.
 
 Includes issue link when `issue_url` is provided, otherwise displays issue number only.
 
-### `_format_worker_completion_message(issue_no: int, worker_id: int, issue_url: str | None) -> str`
+### `_format_worker_completion_message(issue_no: int, worker_id: int, issue_url: str | None, pr_url: str | None = None) -> str`
 
 Build an HTML-formatted Telegram message for worker completion notification.
 
 Includes issue link when `issue_url` is provided, otherwise displays issue number only.
+Includes PR link when `pr_url` is provided.
 
 ### `_resolve_session_dir(base_dir: str | None = None) -> Path`
 
@@ -269,3 +270,16 @@ Combined lookup: issue index -> session state.
 ### `_remove_issue_index(issue_no: int, session_dir: Path) -> None`
 
 Remove issue index file after notification to prevent duplicates.
+
+### `set_pr_number_for_issue(issue_no: int, pr_number: int, session_dir: Path | None = None) -> bool`
+
+Best-effort persistence of PR number into session state.
+
+**Parameters:**
+- `issue_no`: GitHub issue number
+- `pr_number`: PR number to store
+- `session_dir`: Path to hooked-sessions directory (uses `AGENTIZE_HOME` if None)
+
+**Returns:** `True` if successfully written, `False` otherwise (missing index or session file).
+
+**Use case:** Called by the `open-pr` skill after successful PR creation to enable PR link in server completion notifications.

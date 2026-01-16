@@ -29,6 +29,7 @@ from agentize.server.session import (
     _load_session_state,
     _get_session_state_for_issue,
     _remove_issue_index,
+    set_pr_number_for_issue,
 )
 from agentize.server.github import (
     load_config,
