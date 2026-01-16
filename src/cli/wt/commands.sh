@@ -263,37 +263,7 @@ cmd_spawn() {
 
     # Invoke Claude if not disabled
     if [ "$no_agent" = false ] && command -v claude >/dev/null 2>&1; then
-        local yolo_flag=""
-        local print_flag=""
-        if [ "$yolo" = true ]; then
-            echo "WARNING: --yolo active; Claude will run with --dangerously-skip-permissions" >&2
-            yolo_flag="--dangerously-skip-permissions"
-        fi
-        if [ "$headless" = true ]; then
-            print_flag="--print"
-        fi
-
-        if [ "$headless" = true ]; then
-            # Setup log file for headless mode
-            local log_dir="${AGENTIZE_HOME:-.}/.tmp/logs"
-            mkdir -p "$log_dir"
-            local log_file="$log_dir/issue-${issue_no}-$(date +%Y%m%d-%H%M%S).log"
-            echo "Invoking Claude Code in headless mode..."
-            # Run claude in a subshell with exec to fully detach from parent process.
-            # Redirect stdin from /dev/null and stdout/stderr to log file to prevent
-            # fd inheritance that would block the parent when using capture_output.
-            (
-                cd "$worktree_path" && exec claude $yolo_flag $print_flag "/issue-to-impl $issue_no"
-            ) </dev/null >"$log_file" 2>&1 &
-            local claude_pid=$!
-            echo "PID: $claude_pid"
-            echo "Log: $log_file"
-        else
-            echo "Invoking Claude Code..."
-            cd "$worktree_path" && claude $yolo_flag "/issue-to-impl $issue_no" || {
-                echo "Warning: Failed to invoke Claude Code" >&2
-            }
-        fi
+        wt_invoke_claude "/issue-to-impl $issue_no" "$worktree_path" "$yolo" "$headless" "issue-${issue_no}"
     fi
 
     return 0
@@ -545,45 +515,9 @@ cmd_rebase() {
         return 1
     fi
 
-    # Build Claude flags
-    local yolo_flag=""
-    local print_flag=""
-    if [ "$yolo" = true ]; then
-        echo "WARNING: --yolo active; Claude will run with --dangerously-skip-permissions" >&2
-        yolo_flag="--dangerously-skip-permissions"
-    fi
-    if [ "$headless" = true ]; then
-        print_flag="--print"
-    fi
-
     # Invoke Claude to perform the rebase
-    if [ "$headless" = true ]; then
-        # Headless mode: run in background with logging
-        local log_dir="${AGENTIZE_HOME:-.}/.tmp/logs"
-        mkdir -p "$log_dir"
-        local log_file="$log_dir/rebase-${pr_no}-$(date +%Y%m%d-%H%M%S).log"
-
-        echo "Invoking Claude Code to rebase PR #$pr_no in headless mode..."
-        # Run claude in a subshell with exec to fully detach from parent process.
-        # Redirect stdin from /dev/null and stdout/stderr to log file to prevent
-        # fd inheritance that would block the parent when using capture_output.
-        (
-            cd "$worktree_path" && exec claude $yolo_flag $print_flag "/sync-master"
-        ) </dev/null >"$log_file" 2>&1 &
-        local claude_pid=$!
-
-        echo "PID: $claude_pid"
-        echo "Log: $log_file"
-        return 0
-    else
-        # Interactive mode
-        echo "Invoking Claude Code to rebase PR #$pr_no..."
-        cd "$worktree_path" && claude $yolo_flag "/sync-master" || {
-            echo "Warning: Claude Code rebase session failed" >&2
-            return 1
-        }
-        return 0
-    fi
+    wt_invoke_claude "/sync-master" "$worktree_path" "$yolo" "$headless" "rebase-${pr_no}"
+    return $?
 }
 
 # wt help: Show help message

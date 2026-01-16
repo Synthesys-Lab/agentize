@@ -270,3 +270,63 @@ wt_claim_issue_status() {
     echo "Updated issue #$issue_no status to $status_name"
     return 0
 }
+
+# Unified interface for invoking Claude CLI with consistent flag handling
+# Arguments:
+#   $1 - command: Claude CLI command string (e.g., "/issue-to-impl 42", "/sync-master")
+#   $2 - worktree_path: Absolute path to worktree where Claude should execute
+#   $3 - yolo: Boolean ("true"/"false") for --dangerously-skip-permissions flag
+#   $4 - headless: Boolean ("true"/"false") for --print flag and background execution
+#   $5 - log_prefix: Prefix for log file name (e.g., "issue-42", "rebase-123")
+# Returns:
+#   0 - Success (headless always returns 0 immediately)
+#   Non-zero - Claude invocation failure (interactive mode only)
+wt_invoke_claude() {
+    local command="$1"
+    local worktree_path="$2"
+    local yolo="$3"
+    local headless="$4"
+    local log_prefix="$5"
+
+    # Build flags
+    local yolo_flag=""
+    local print_flag=""
+    if [ "$yolo" = true ]; then
+        echo "WARNING: --yolo active; Claude will run with --dangerously-skip-permissions" >&2
+        yolo_flag="--dangerously-skip-permissions"
+    fi
+    if [ "$headless" = true ]; then
+        print_flag="--print"
+    fi
+
+    if [ "$headless" = true ]; then
+        # Headless mode: run in background with logging
+        local log_dir="${AGENTIZE_HOME:-.}/.tmp/logs"
+        if ! mkdir -p "$log_dir"; then
+            echo "Error: Failed to create log directory: $log_dir" >&2
+            return 1
+        fi
+        local log_file="$log_dir/${log_prefix}-$(date +%Y%m%d-%H%M%S).log"
+
+        echo "Invoking Claude Code in headless mode..."
+        # Run claude in a subshell with exec to fully detach from parent process.
+        # Redirect stdin from /dev/null and stdout/stderr to log file to prevent
+        # fd inheritance that would block the parent when using capture_output.
+        (
+            cd "$worktree_path" && exec claude $yolo_flag $print_flag "$command"
+        ) </dev/null >"$log_file" 2>&1 &
+        local claude_pid=$!
+
+        echo "PID: $claude_pid"
+        echo "Log: $log_file"
+        return 0
+    else
+        # Interactive mode (note: changes cwd to worktree_path)
+        echo "Invoking Claude Code..."
+        cd "$worktree_path" && claude $yolo_flag "$command" || {
+            echo "Warning: Failed to invoke Claude Code" >&2
+            return 1
+        }
+        return 0
+    fi
+}

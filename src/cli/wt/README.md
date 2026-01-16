@@ -8,7 +8,7 @@ Modular implementation of the `wt` git worktree helper. These files are sourced 
 
 | File | Description | Exports |
 |------|-------------|---------|
-| `helpers.sh` | Repository detection and path resolution | `wt_common`, `wt_is_bare_repo`, `wt_get_default_branch`, `wt_configure_origin_tracking`, `wt_resolve_worktree`, `wt_claim_issue_status` |
+| `helpers.sh` | Repository detection and path resolution | `wt_common`, `wt_is_bare_repo`, `wt_get_default_branch`, `wt_configure_origin_tracking`, `wt_resolve_worktree`, `wt_claim_issue_status`, `wt_invoke_claude` |
 | `completion.sh` | Shell-agnostic completion helper | `wt_complete` |
 | `commands.sh` | Command implementations | `cmd_common`, `cmd_init`, `cmd_clone`, `cmd_goto`, `cmd_list`, `cmd_remove`, `cmd_prune`, `cmd_purge`, `cmd_spawn`, `cmd_rebase`, `cmd_help` |
 | `dispatch.sh` | Main dispatcher and entry point | `wt` |

@@ -184,3 +184,31 @@ $ wt --complete rebase-flags
 ```
 
 This helper is used by the zsh completion system and can be used by other shells in the future.
+
+## Claude CLI Invocation Interface
+
+Commands that invoke Claude CLI (`spawn`, `rebase`) use a unified helper function `wt_invoke_claude()` to ensure consistent flag handling and execution modes.
+
+**Function signature:**
+```bash
+wt_invoke_claude <command> <worktree_path> <yolo> <headless> <log_prefix>
+```
+
+**Parameters:**
+- `command`: Claude CLI command string (e.g., `/issue-to-impl 42`, `/sync-master`)
+- `worktree_path`: Absolute path to worktree where Claude should execute
+- `yolo`: Boolean (`true`/`false`) - passes `--dangerously-skip-permissions` to Claude
+- `headless`: Boolean (`true`/`false`) - uses `--print` flag and background execution
+- `log_prefix`: Prefix for log file name (e.g., `issue-42`, `rebase-123`)
+
+**Behavior:**
+- **Interactive mode** (`headless=false`): Runs Claude in foreground with a `cd` subshell pattern
+- **Headless mode** (`headless=true`): Runs Claude in a detached subshell with `exec`, outputs structured `PID:` and `Log:` format for server integration
+
+**Structured output format** (headless mode only):
+```
+PID: <claude-process-id>
+Log: <log-file-path>
+```
+
+This format enables server daemons to track Claude process liveness and tail output logs.
