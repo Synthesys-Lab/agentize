@@ -435,16 +435,23 @@ def _check_permission(tool: str, target: str, raw_target: str) -> Tuple[str, str
     """Check permission for tool usage.
 
     Returns: (decision, source) where decision is 'allow'/'deny'/'ask'
-    and source is 'rules', 'haiku', 'telegram', 'force-push-verify', or 'error'
+    and source is 'rules', 'haiku', 'telegram', 'workflow', or 'error'
 
-    Priority: deny -> ask -> allow (first match wins)
+    Priority:
+    1. Workflow-scoped auto-allow (for known-safe workflow commands)
+    2. deny -> ask -> allow (first match wins in rules)
     Default: ask Haiku if no match or error, then try Telegram if enabled
     """
     global _hook_input
     session_id = _hook_input.get('session_id', 'unknown')
 
     try:
-        # Try rule matching first
+        # Check workflow-scoped auto-allow first
+        workflow_decision = _check_workflow_auto_allow(session_id, tool, target)
+        if workflow_decision:
+            return (workflow_decision, 'workflow')
+
+        # Try rule matching
         rule_result = match_rule(tool, target)
         if rule_result:
             decision, source = rule_result
@@ -500,12 +507,16 @@ def _log_debug_info(session: str, workflow: str, tool: str, raw_target: str,
     session_dir = _session_dir()
     os.makedirs(session_dir, exist_ok=True)
 
-    # Log tool usage - separate files for rules vs haiku vs telegram decisions
+    # Log tool usage - separate files for rules vs haiku vs telegram vs workflow decisions
     time_str = datetime.datetime.now().isoformat()
     if decision_source == 'rules' and permission_decision == 'allow':
         # Automatically approved tools go to tool-used.txt
         with open(os.path.join(session_dir, 'tool-used.txt'), 'a') as f:
             f.write(f'[{time_str}] [{session}] [{workflow}] {tool} | {raw_target}\n')
+    elif decision_source == 'workflow' and permission_decision == 'allow':
+        # Workflow-scoped auto-approved tools go to tool-used.txt
+        with open(os.path.join(session_dir, 'tool-used.txt'), 'a') as f:
+            f.write(f'[{time_str}] [{session}] [{workflow}] [workflow-auto] {tool} | {raw_target}\n')
     elif decision_source == 'haiku':
         # Haiku-determined tools go to their own file
         with open(os.path.join(session_dir, 'tool-haiku-determined.txt'), 'a') as f:
@@ -530,10 +541,64 @@ def _detect_workflow(session: str) -> str:
                 return 'plan'
             elif workflow_type == 'issue-to-impl':
                 return 'impl'
+            elif workflow_type == 'setup-viewboard':
+                return 'setup-viewboard'
     except (json.JSONDecodeError, Exception):
         pass
 
     return 'unknown'
+
+
+def _get_workflow_type(session: str) -> str:
+    """Get raw workflow type from session state file.
+
+    Returns the workflow value directly without mapping to short names.
+    Used for workflow-scoped permission checks.
+    """
+    state_file = os.path.join(_session_dir(), f'{session}.json')
+    if not os.path.exists(state_file):
+        return ''
+
+    try:
+        with open(state_file, 'r') as f:
+            state = json.load(f)
+            return state.get('workflow', '')
+    except (json.JSONDecodeError, Exception):
+        pass
+
+    return ''
+
+
+# Workflow-scoped auto-allow patterns for setup-viewboard
+# These commands are known safe operations within the setup-viewboard workflow
+_SETUP_VIEWBOARD_ALLOW_PATTERNS = [
+    r'^gh auth status',                     # Authentication verification
+    r'^gh repo view --json owner',          # Repository owner lookup
+    r'^gh api graphql',                     # Project creation and configuration
+    r'^gh label create --force',            # Label creation
+]
+
+
+def _check_workflow_auto_allow(session: str, tool: str, target: str) -> Optional[str]:
+    """Check if a tool should be auto-allowed based on active workflow.
+
+    Args:
+        session: Session ID
+        tool: Tool name
+        target: Normalized target (command for Bash)
+
+    Returns:
+        'allow' if workflow permits, None otherwise
+    """
+    workflow = _get_workflow_type(session)
+
+    if workflow == 'setup-viewboard' and tool == 'Bash':
+        import re
+        for pattern in _SETUP_VIEWBOARD_ALLOW_PATTERNS:
+            if re.match(pattern, target):
+                return 'allow'
+
+    return None
 
 
 def determine(stdin_data: str) -> dict:

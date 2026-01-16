@@ -88,6 +88,10 @@ def main():
         state['workflow'] = 'plan-to-issue'
         state['state'] = 'initial'
 
+    if prompt.startswith('/setup-viewboard'):
+        state['workflow'] = 'setup-viewboard'
+        state['state'] = 'initial'
+
     if state:
         # Extract optional issue number from command arguments
         issue_no = _extract_issue_no(prompt)
