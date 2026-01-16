@@ -63,21 +63,7 @@ Error: Neither 'main' nor 'master' branch found in this repository
 
 Stop execution.
 
-### Step 3: Checkout Default Branch
-
-Switch to the detected default branch:
-
-```bash
-git checkout <detected-branch>
-```
-
-Inform the user:
-
-```
-Checking out <detected-branch> branch...
-```
-
-### Step 4: Detect Remote
+### Step 3: Detect Remote
 
 Check which remote to use (prefer upstream, fallback to origin):
 
@@ -94,18 +80,21 @@ If using fallback, inform the user:
 upstream remote not found, using origin...
 ```
 
-### Step 5: Pull with Rebase
+### Step 4: Pull with Rebase
 
 Pull the latest changes from the detected remote:
 
 ```bash
-git pull --rebase <detected-remote> <detected-branch>
+git fetch $REMOTE/$DEFAULT_BRANCH
 ```
 
-Inform the user:
+### Step 5 Resolve Conflicts
 
-```
-Pulling latest changes from <detected-remote> with rebase...
+Attempt to rebase:
+
+```bash
+git rebase $REMOTE/$DEFAULT_BRANCH
+git rebase --continue # until rebase completes
 ```
 
 ### Step 6: Verify PR Merge Status (if PR number provided)
@@ -128,9 +117,17 @@ If sync successful and no PR number provided:
 Successfully synchronized <detected-branch> branch with <detected-remote>/<detected-branch>
 ```
 
+If succeed, and a PR number is provided, push the rebased branch `-f` to the remote:
+
+```bash
+git push -f $REMOTE $CURRENT_BRANCH
+```
+
+Then report based on PR merge status:
+
 If sync successful and PR is mergeable (`mergeable` = `MERGEABLE` and `mergeStateStatus` = `CLEAN`):
 
-```
+```plaintext
 Successfully synchronized <detected-branch> branch with <detected-remote>/<detected-branch>
 
 PR #<PR_NUMBER> is mergeable.
@@ -138,7 +135,7 @@ PR #<PR_NUMBER> is mergeable.
 
 If sync successful but PR has conflicts (`mergeable` = `CONFLICTING`):
 
-```
+```plaintext
 Successfully synchronized <detected-branch> branch with <detected-remote>/<detected-branch>
 
 PR #<PR_NUMBER> has merge conflicts. Please rebase your PR branch on <detected-branch>.
@@ -155,7 +152,7 @@ Please check the PR for required checks or updates.
 
 If rebase conflicts occur, inform the user:
 
-```
+```plaintext
 Error: Rebase conflict detected
 
 Please resolve conflicts manually:
