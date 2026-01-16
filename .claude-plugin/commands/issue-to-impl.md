@@ -444,3 +444,9 @@ Run: gh auth login
 ```
 Stop execution.
 
+
+Step 9: Create Pull Request
+
+Use the skill `open-pr` to create a pull request for the completed implementation.
+- Remember to have a proper title of the PR in `[#issue-no][tag] Title` format.
+- Remeber to add a `agentize:pr` label to the PR created by agentize workflow.
