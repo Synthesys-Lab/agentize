@@ -11,6 +11,7 @@ _PROJECT_LIB_LOADED=1
 # Required Status field options for agentize workflow (newline-separated for multi-word options)
 AGENTIZE_REQUIRED_STATUS_OPTIONS="Proposed
 Refining
+Rebasing
 Plan Accepted
 In Progress
 Done"

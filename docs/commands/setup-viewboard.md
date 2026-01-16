@@ -35,7 +35,7 @@ The command performs the following steps:
 4. **Verify and Create Status Field Options**: Query project Status field via GraphQL and auto-create missing options:
    - If options are missing: Automatically create them via `createProjectV2FieldOption` mutation
    - If auto-creation fails (permissions): Display guidance URL for manual configuration
-   - Required options: Proposed, Refining, Plan Accepted, In Progress, Done
+   - Required options: Proposed, Refining, Rebasing, Plan Accepted, In Progress, Done
 
 5. **Create Labels**: Create agentize issue labels using `gh label create --force`:
    - `agentize:plan` - Issues with implementation plans
@@ -51,6 +51,8 @@ The command expects the GitHub Projects v2 board to have the following Status fi
 | Status | Description |
 |--------|-------------|
 | Proposed | Plan proposed by agentize, awaiting approval |
+| Refining | Plan is being refined by `/ultra-planner --refine` |
+| Rebasing | PR is being rebased with main branch |
 | Plan Accepted | Plan approved, ready for implementation |
 | In Progress | Actively being worked on |
 | Done | Implementation complete |
