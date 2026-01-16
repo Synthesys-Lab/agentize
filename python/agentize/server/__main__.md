@@ -169,6 +169,41 @@ Spawn a new worktree for the given issue via `wt spawn`.
 
 Note: Uses `run_shell_function()` from `agentize.shell` for shell invocation.
 
+### `discover_candidate_prs(owner: str, repo: str) -> list[dict]`
+
+Discover open PRs with `agentize:pr` label using `gh pr list`.
+
+**Returns:** List of PR metadata dicts with `number`, `headRefName`, `mergeable`, `body`, and `closingIssuesReferences` fields.
+
+### `filter_conflicting_prs(prs: list[dict]) -> list[int]`
+
+Filter PRs to those with merge conflicts (`mergeable == "CONFLICTING"`).
+Skips PRs with `mergeable == "UNKNOWN"` (retry on next poll).
+
+When `HANDSOFF_DEBUG=1`, logs per-PR inspection with `[pr-rebase]` prefix.
+
+**Returns:** List of PR numbers with conflicts.
+
+### `resolve_issue_from_pr(pr: dict) -> int | None`
+
+Resolve issue number from PR metadata.
+
+**Fallback order:**
+1. Branch name pattern: `issue-<N>`
+2. `closingIssuesReferences` (first entry)
+3. PR body `#<N>` pattern
+
+**Returns:** Issue number or None if no match found.
+
+### `rebase_worktree(pr_no: int) -> tuple[bool, int | None]`
+
+Rebase a PR's worktree using `wt rebase` command.
+
+**Parameters:**
+- `pr_no`: GitHub pull request number
+
+**Returns:** Tuple of (success, pid). pid is None if rebase failed.
+
 ### `_extract_repo_slug(remote_url: str) -> str | None`
 
 Extract `org/repo` slug from a GitHub remote URL.

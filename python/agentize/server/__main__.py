@@ -241,6 +241,56 @@ def run_server(
                     if not success:
                         _log(f"Failed to spawn feat-request planning for issue #{issue_no}", level="ERROR")
 
+            # Process conflicting PRs
+            try:
+                owner, repo = get_repo_owner_name()
+                candidate_prs = discover_candidate_prs(owner, repo)
+                conflicting_pr_numbers = filter_conflicting_prs(candidate_prs)
+
+                for pr_no in conflicting_pr_numbers:
+                    # Resolve issue number for worker tracking
+                    pr_metadata = next((p for p in candidate_prs if p.get('number') == pr_no), None)
+                    if not pr_metadata:
+                        continue
+
+                    issue_no = resolve_issue_from_pr(pr_metadata)
+                    if not issue_no:
+                        _log(f"PR #{pr_no}: could not resolve issue number, skipping", level="WARNING")
+                        continue
+
+                    # Check if worktree already exists
+                    if not worktree_exists(issue_no):
+                        _log(f"PR #{pr_no} (issue #{issue_no}): worktree does not exist, skipping rebase", level="WARNING")
+                        continue
+
+                    # Worker assignment and rebase (follows existing pattern)
+                    if num_workers > 0:
+                        worker_id = get_free_worker(num_workers)
+                        if worker_id is None:
+                            print(f"All {num_workers} workers busy, waiting for next poll")
+                            break
+
+                        write_worker_status(worker_id, 'BUSY', issue_no, None)
+                        success, pid = rebase_worktree(pr_no)
+                        if success:
+                            write_worker_status(worker_id, 'BUSY', issue_no, pid)
+                            print(f"PR #{pr_no} (issue #{issue_no}) rebase assigned to worker {worker_id}")
+
+                            if token and chat_id:
+                                pr_url = f"https://github.com/{repo_slug}/pull/{pr_no}" if repo_slug else None
+                                msg = f"🔄 PR rebase started: <a href=\"{pr_url}\">#{pr_no}</a> (issue #{issue_no})" if pr_url else f"🔄 PR rebase started: #{pr_no} (issue #{issue_no})"
+                                send_telegram_message(token, chat_id, msg)
+                        else:
+                            write_worker_status(worker_id, 'FREE', None, None)
+                            _log(f"Failed to rebase PR #{pr_no}", level="ERROR")
+                    else:
+                        # Unlimited workers mode
+                        success, _ = rebase_worktree(pr_no)
+                        if not success:
+                            _log(f"Failed to rebase PR #{pr_no}", level="ERROR")
+            except RuntimeError as e:
+                _log(f"Failed to process conflicting PRs: {e}", level="ERROR")
+
             if running[0]:
                 time.sleep(period)
 
