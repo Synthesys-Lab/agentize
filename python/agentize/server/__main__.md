@@ -205,12 +205,18 @@ Resolve issue number from PR metadata.
 
 **Returns:** Issue number or None if no match found.
 
-### `rebase_worktree(pr_no: int) -> tuple[bool, int | None]`
+### `rebase_worktree(pr_no: int, issue_no: int | None = None) -> tuple[bool, int | None]`
 
 Rebase a PR's worktree using `wt rebase` command.
 
 **Parameters:**
 - `pr_no`: GitHub pull request number
+- `issue_no`: GitHub issue number (optional, for status claim)
+
+**Operations:**
+1. Sets issue status to "Rebasing" via `wt_claim_issue_status()` if `issue_no` provided (best-effort claim)
+2. Runs `wt rebase <pr_no> --headless`
+3. Returns (success, pid) tuple
 
 **Returns:** Tuple of (success, pid). pid is None if rebase failed.
 

@@ -47,13 +47,28 @@ def spawn_worktree(issue_no: int) -> tuple[bool, int | None]:
     return True, _parse_pid_from_output(result.stdout)
 
 
-def rebase_worktree(pr_no: int) -> tuple[bool, int | None]:
+def rebase_worktree(pr_no: int, issue_no: int | None = None) -> tuple[bool, int | None]:
     """Rebase a PR's worktree using wt rebase command.
+
+    Args:
+        pr_no: GitHub PR number
+        issue_no: GitHub issue number (optional, for status claim)
 
     Returns:
         Tuple of (success, pid). pid is None if rebase failed.
     """
     _log(f"Rebasing worktree for PR #{pr_no}...")
+
+    # Set status to "Rebasing" if issue_no is provided (best-effort claim)
+    if issue_no is not None:
+        path_result = run_shell_function(f'wt pathto {issue_no}', capture_output=True)
+        if path_result.returncode == 0:
+            worktree_path = path_result.stdout.strip()
+            run_shell_function(
+                f'wt_claim_issue_status {issue_no} "{worktree_path}" Rebasing',
+                capture_output=True
+            )
+
     result = run_shell_function(f'wt rebase {pr_no} --headless', capture_output=True)
     if result.returncode != 0:
         return False, None

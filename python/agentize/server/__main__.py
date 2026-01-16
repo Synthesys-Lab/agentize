@@ -273,7 +273,7 @@ def run_server(
                             break
 
                         write_worker_status(worker_id, 'BUSY', issue_no, None)
-                        success, pid = rebase_worktree(pr_no)
+                        success, pid = rebase_worktree(pr_no, issue_no)
                         if success:
                             write_worker_status(worker_id, 'BUSY', issue_no, pid)
                             print(f"PR #{pr_no} (issue #{issue_no}) rebase assigned to worker {worker_id}")
@@ -287,7 +287,7 @@ def run_server(
                             _log(f"Failed to rebase PR #{pr_no}", level="ERROR")
                     else:
                         # Unlimited workers mode
-                        success, _ = rebase_worktree(pr_no)
+                        success, _ = rebase_worktree(pr_no, issue_no)
                         if not success:
                             _log(f"Failed to rebase PR #{pr_no}", level="ERROR")
             except RuntimeError as e:
