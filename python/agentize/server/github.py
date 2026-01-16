@@ -396,10 +396,21 @@ def discover_candidate_prs(owner: str, repo: str) -> list[dict]:
         return []
 
     try:
-        return json.loads(result.stdout)
+        prs = json.loads(result.stdout)
     except json.JSONDecodeError as e:
         _log(f"Failed to parse PR list response: {e}", level="ERROR")
         return []
+
+    if not prs:
+        if os.getenv('HANDSOFF_DEBUG'):
+            _log("No candidate PRs found with agentize:pr label")
+        return []
+
+    if os.getenv('HANDSOFF_DEBUG'):
+        pr_numbers = [pr.get('number') for pr in prs]
+        _log(f"Found {len(prs)} candidate PRs: {pr_numbers}")
+
+    return prs
 
 
 def filter_conflicting_prs(prs: list[dict]) -> list[int]:
@@ -410,6 +421,8 @@ def filter_conflicting_prs(prs: list[dict]) -> list[int]:
     """
     debug = os.getenv('HANDSOFF_DEBUG')
     conflicting = []
+    skip_healthy = 0
+    skip_unknown = 0
 
     for pr in prs:
         pr_no = pr.get('number')
@@ -417,14 +430,20 @@ def filter_conflicting_prs(prs: list[dict]) -> list[int]:
 
         if mergeable == 'CONFLICTING':
             if debug:
-                print(f"[pr-rebase] #{pr_no} mergeable=CONFLICTING -> QUEUE", file=sys.stderr)
+                print(f"[pr-rebase-filter] #{pr_no} mergeable=CONFLICTING -> QUEUE", file=sys.stderr)
             conflicting.append(pr_no)
         elif mergeable == 'UNKNOWN':
             if debug:
-                print(f"[pr-rebase] #{pr_no} mergeable=UNKNOWN -> SKIP (retry next poll)", file=sys.stderr)
+                print(f"[pr-rebase-filter] #{pr_no} mergeable=UNKNOWN -> SKIP (retry next poll)", file=sys.stderr)
+            skip_unknown += 1
         else:
             if debug:
-                print(f"[pr-rebase] #{pr_no} mergeable={mergeable} -> SKIP (healthy)", file=sys.stderr)
+                print(f"[pr-rebase-filter] #{pr_no} mergeable={mergeable} -> SKIP (healthy)", file=sys.stderr)
+            skip_healthy += 1
+
+    if debug:
+        total_skip = skip_healthy + skip_unknown
+        print(f"[pr-rebase-filter] Summary: {len(conflicting)} queued, {total_skip} skipped ({skip_healthy} healthy, {skip_unknown} unknown)", file=sys.stderr)
 
     return conflicting
 
