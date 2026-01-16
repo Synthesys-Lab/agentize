@@ -341,17 +341,7 @@ git diff --cached --name-only  # Verify no .tmp/milestones/ files
 
 Then invoke `commit-msg` skill with `purpose=delivery` and appropriate tags based on the changes.
 
-**Add agentize:pr label to mark completion:**
-
-After the delivery commit is created successfully, add the `agentize:pr` label to the issue:
-
-```bash
-gh issue edit {issue-number} --add-label "agentize:pr"
-```
-
-This marks the issue as having completed implementation and being ready for PR creation.
-
-Command completes successfully after delivery commit is created and label is added.
+Command completes successfully after delivery commit is created.
 
 **Output C: Critical error**
 ```

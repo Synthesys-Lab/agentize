@@ -126,20 +126,6 @@ def _cleanup_feat_request(issue_no: int) -> None:
     _log(f"Feat-request cleanup for issue #{issue_no}: removed agentize:feat-request label")
 
 
-def _add_pr_label(issue_no: int) -> None:
-    """Add agentize:pr label when workflow completes.
-
-    Args:
-        issue_no: GitHub issue number
-    """
-    subprocess.run(
-        ['gh', 'issue', 'edit', str(issue_no), '--add-label', 'agentize:pr'],
-        capture_output=True,
-        text=True
-    )
-    _log(f"Added agentize:pr label to issue #{issue_no}")
-
-
 def spawn_refinement(issue_no: int) -> tuple[bool, int | None]:
     """Spawn a refinement session for the given issue.
 
@@ -397,11 +383,6 @@ def cleanup_dead_workers(
                     is_feat_request = _check_issue_has_label(issue_no, 'agentize:feat-request')
                     if is_feat_request:
                         _cleanup_feat_request(issue_no)
-
-                    # Add agentize:pr label only for implementation workflows
-                    # (not refinement or feat-request which don't create PRs)
-                    if not is_refinement and not is_feat_request:
-                        _add_pr_label(issue_no)
 
                     issue_url = f"https://github.com/{repo_slug}/issues/{issue_no}" if repo_slug else None
 
