@@ -32,7 +32,6 @@ GitHub Projects integration workflows:
 - `test-lol-project-metadata-preservation.sh` - Tests metadata persistence
 - `test-lol-project-missing-metadata.sh` - Tests behavior without metadata
 - `test-lol-project-status-missing.sh` - Tests Status field verification auto-creates missing options
-- `test-setup-viewboard-self-contained.sh` - Tests /setup-viewboard uses shared library directly
 
 ### Issue Management E2E Tests (`test-open-issue-*`)
 
