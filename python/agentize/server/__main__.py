@@ -246,8 +246,9 @@ def run_server(
             # Process conflicting PRs
             try:
                 owner, repo = get_repo_owner_name()
+                pr_project_id = lookup_project_graphql_id(org, project_id)
                 candidate_prs = discover_candidate_prs(owner, repo)
-                conflicting_pr_numbers = filter_conflicting_prs(candidate_prs)
+                conflicting_pr_numbers = filter_conflicting_prs(candidate_prs, owner, repo, pr_project_id)
 
                 for pr_no in conflicting_pr_numbers:
                     # Resolve issue number for worker tracking

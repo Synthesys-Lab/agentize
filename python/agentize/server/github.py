@@ -413,37 +413,60 @@ def discover_candidate_prs(owner: str, repo: str) -> list[dict]:
     return prs
 
 
-def filter_conflicting_prs(prs: list[dict]) -> list[int]:
-    """Filter PRs to those with merge conflicts.
+def filter_conflicting_prs(prs: list[dict], owner: str, repo: str, project_id: str) -> list[int]:
+    """Filter PRs to those with merge conflicts and not already being rebased.
 
-    Returns PR numbers where mergeable == "CONFLICTING".
-    Skips PRs with mergeable == "UNKNOWN" (retry on next poll).
+    Returns PR numbers where:
+    - mergeable == "CONFLICTING"
+    - Resolved issue does not have Status == "Rebasing"
+
+    Skips PRs with:
+    - mergeable == "UNKNOWN" (retry on next poll)
+    - Status == "Rebasing" (already being processed)
+    - Cannot resolve issue number (still queued - best effort)
     """
     debug = os.getenv('HANDSOFF_DEBUG')
     conflicting = []
     skip_healthy = 0
     skip_unknown = 0
+    skip_rebasing = 0
 
     for pr in prs:
         pr_no = pr.get('number')
         mergeable = pr.get('mergeable', '')
 
-        if mergeable == 'CONFLICTING':
-            if debug:
-                print(f"[pr-rebase-filter] #{pr_no} mergeable=CONFLICTING -> QUEUE", file=sys.stderr)
-            conflicting.append(pr_no)
-        elif mergeable == 'UNKNOWN':
+        if mergeable == 'UNKNOWN':
             if debug:
                 print(f"[pr-rebase-filter] #{pr_no} mergeable=UNKNOWN -> SKIP (retry next poll)", file=sys.stderr)
             skip_unknown += 1
-        else:
+            continue
+
+        if mergeable != 'CONFLICTING':
             if debug:
                 print(f"[pr-rebase-filter] #{pr_no} mergeable={mergeable} -> SKIP (healthy)", file=sys.stderr)
             skip_healthy += 1
+            continue
+
+        # PR is CONFLICTING - check if already being rebased via status
+        issue_no = resolve_issue_from_pr(pr)
+        if issue_no is not None:
+            status = query_issue_project_status(owner, repo, issue_no, project_id)
+            if status == 'Rebasing':
+                if debug:
+                    print(f"[pr-rebase-filter] #{pr_no} mergeable=CONFLICTING status=Rebasing -> SKIP (already being rebased)", file=sys.stderr)
+                skip_rebasing += 1
+                continue
+            status_str = f" status={status}" if status else ""
+        else:
+            status_str = ""
+
+        if debug:
+            print(f"[pr-rebase-filter] #{pr_no} mergeable=CONFLICTING{status_str} -> QUEUE", file=sys.stderr)
+        conflicting.append(pr_no)
 
     if debug:
-        total_skip = skip_healthy + skip_unknown
-        print(f"[pr-rebase-filter] Summary: {len(conflicting)} queued, {total_skip} skipped ({skip_healthy} healthy, {skip_unknown} unknown)", file=sys.stderr)
+        total_skip = skip_healthy + skip_unknown + skip_rebasing
+        print(f"[pr-rebase-filter] Summary: {len(conflicting)} queued, {total_skip} skipped ({skip_healthy} healthy, {skip_unknown} unknown, {skip_rebasing} rebasing)", file=sys.stderr)
 
     return conflicting
 

@@ -23,19 +23,28 @@ from agentize.server.__main__ import filter_ready_issues, filter_conflicting_prs
 
 def test_filter_conflicting_prs_basic():
     """Test that filter_conflicting_prs returns PR numbers with CONFLICTING status."""
+    from unittest.mock import patch
+
     prs = [
-        {'number': 123, 'mergeable': 'CONFLICTING'},
-        {'number': 124, 'mergeable': 'MERGEABLE'},
-        {'number': 125, 'mergeable': 'UNKNOWN'},
+        {'number': 123, 'mergeable': 'CONFLICTING', 'headRefName': 'issue-123-fix', 'body': '', 'closingIssuesReferences': []},
+        {'number': 124, 'mergeable': 'MERGEABLE', 'headRefName': 'issue-124-fix', 'body': '', 'closingIssuesReferences': []},
+        {'number': 125, 'mergeable': 'UNKNOWN', 'headRefName': 'issue-125-fix', 'body': '', 'closingIssuesReferences': []},
     ]
 
-    conflicting = filter_conflicting_prs(prs)
+    # Mock status check to return non-Rebasing status
+    with patch('agentize.server.github.query_issue_project_status', return_value='Backlog'):
+        conflicting = filter_conflicting_prs(prs, 'test-owner', 'test-repo', 'PROJECT_ID')
+
     assert conflicting == [123], f"Expected [123], got {conflicting}"
     print("PASS: filter_conflicting_prs returns correct PRs")
 
 def test_filter_conflicting_prs_empty():
     """Test that filter_conflicting_prs handles empty input."""
-    conflicting = filter_conflicting_prs([])
+    from unittest.mock import patch
+
+    with patch('agentize.server.github.query_issue_project_status', return_value=''):
+        conflicting = filter_conflicting_prs([], 'test-owner', 'test-repo', 'PROJECT_ID')
+
     assert conflicting == [], f"Expected [], got {conflicting}"
     print("PASS: filter_conflicting_prs handles empty input")
 

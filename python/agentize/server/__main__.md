@@ -185,14 +185,25 @@ Discover open PRs with `agentize:pr` label using `gh pr list`.
 
 **Returns:** List of PR metadata dicts with `number`, `headRefName`, `mergeable`, `body`, and `closingIssuesReferences` fields.
 
-### `filter_conflicting_prs(prs: list[dict]) -> list[int]`
+### `filter_conflicting_prs(prs: list[dict], owner: str, repo: str, project_id: str) -> list[int]`
 
-Filter PRs to those with merge conflicts (`mergeable == "CONFLICTING"`).
-Skips PRs with `mergeable == "UNKNOWN"` (retry on next poll).
+Filter PRs to those with merge conflicts and not already being rebased.
 
-When `HANDSOFF_DEBUG=1`, logs per-PR inspection with `[pr-rebase]` prefix.
+**Parameters:**
+- `prs`: List of PR metadata dicts from `discover_candidate_prs()`
+- `owner`: Repository owner
+- `repo`: Repository name
+- `project_id`: Project GraphQL ID for status lookup
 
-**Returns:** List of PR numbers with conflicts.
+**Filtering logic:**
+- Skips `mergeable == "UNKNOWN"` (retry on next poll)
+- Skips `mergeable != "CONFLICTING"` (healthy)
+- Skips if resolved issue has `Status == "Rebasing"` (already being processed)
+- Queues unresolvable PRs (best-effort - cannot check status without issue number)
+
+When `HANDSOFF_DEBUG=1`, logs per-PR inspection with `[pr-rebase-filter]` prefix.
+
+**Returns:** List of PR numbers that need rebasing.
 
 ### `resolve_issue_from_pr(pr: dict) -> int | None`
 
