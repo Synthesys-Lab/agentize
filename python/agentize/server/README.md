@@ -12,6 +12,7 @@ This module implements a long-running server that:
    - "Proposed" + `agentize:refine` label (for refinement via `/ultra-planner --refine`)
 4. Discovers feature request issues using `gh issue list --label agentize:feat-request --state open`
 5. Spawns worktrees for ready issues via `wt spawn`, triggers refinement, or runs feature request planning via `/ultra-planner --from-issue`
+6. Discovers conflicting PRs with `agentize:pr` label via `gh pr list` and rebases their worktrees automatically
 
 ## Module Layout
 
@@ -81,4 +82,4 @@ project:
 
 ## Debug Logging
 
-Set `HANDSOFF_DEBUG=1` to enable detailed logging of issue filtering decisions. See [docs/feat/server.md](../../../docs/feat/server.md#issue-filtering-debug-logs) for output format and examples.
+Set `HANDSOFF_DEBUG=1` to enable detailed logging of issue filtering decisions. Debug messages use prefixes like `[pr-rebase]` for PR conflict handling. See [docs/feat/server.md](../../../docs/feat/server.md#issue-filtering-debug-logs) for output format and examples.
