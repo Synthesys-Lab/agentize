@@ -122,4 +122,58 @@ if [ "$output" != "OK" ]; then
   test_fail "_format_worker_completion_message link handling: $output"
 fi
 
+# Test 7: _format_worker_completion_message with PR URL
+output=$(PYTHONPATH="$PROJECT_ROOT/python" python3 -c "
+from agentize.server.__main__ import _format_worker_completion_message
+
+# Completion message with both issue and PR URL
+msg = _format_worker_completion_message(
+    42, 1,
+    'https://github.com/org/repo/issues/42',
+    pr_url='https://github.com/org/repo/pull/123'
+)
+assert 'href=\"https://github.com/org/repo/issues/42\"' in msg, f'Should include issue link. Got: {msg}'
+assert 'href=\"https://github.com/org/repo/pull/123\"' in msg, f'Should include PR link. Got: {msg}'
+assert 'PR:' in msg or 'Pull Request' in msg, f'Should have PR label. Got: {msg}'
+
+print('OK')
+")
+
+if [ "$output" != "OK" ]; then
+  test_fail "_format_worker_completion_message with PR URL: $output"
+fi
+
+# Test 8: _format_worker_completion_message with PR URL but no issue URL
+output=$(PYTHONPATH="$PROJECT_ROOT/python" python3 -c "
+from agentize.server.__main__ import _format_worker_completion_message
+
+# Completion message with only PR URL
+msg = _format_worker_completion_message(42, 1, None, pr_url='https://github.com/org/repo/pull/123')
+assert '#42' in msg, f'Should include issue number. Got: {msg}'
+assert 'href=\"https://github.com/org/repo/pull/123\"' in msg, f'Should include PR link. Got: {msg}'
+
+print('OK')
+")
+
+if [ "$output" != "OK" ]; then
+  test_fail "_format_worker_completion_message PR without issue URL: $output"
+fi
+
+# Test 9: _format_worker_completion_message without PR URL
+output=$(PYTHONPATH="$PROJECT_ROOT/python" python3 -c "
+from agentize.server.__main__ import _format_worker_completion_message
+
+# Completion message without PR URL (pr_url=None)
+msg = _format_worker_completion_message(42, 1, 'https://github.com/org/repo/issues/42', pr_url=None)
+assert 'href=\"https://github.com/org/repo/issues/42\"' in msg, f'Should include issue link. Got: {msg}'
+# Should not have a PR line when pr_url is None
+assert '/pull/' not in msg, f'Should not include PR link when pr_url is None. Got: {msg}'
+
+print('OK')
+")
+
+if [ "$output" != "OK" ]; then
+  test_fail "_format_worker_completion_message without PR URL: $output"
+fi
+
 test_pass "server Telegram notification helpers work correctly"
