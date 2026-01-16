@@ -226,21 +226,21 @@ def run_server(
                     success, pid = spawn_feat_request(issue_no)
                     if success:
                         write_worker_status(worker_id, 'BUSY', issue_no, pid)
-                        print(f"issue #{issue_no} feat-request planning assigned to worker {worker_id}")
+                        print(f"issue #{issue_no} dev-req planning assigned to worker {worker_id}")
 
                         # Send Telegram notification if configured
                         if token and chat_id:
                             issue_url = f"https://github.com/{repo_slug}/issues/{issue_no}" if repo_slug else None
-                            msg = f"📝 Feat-request planning started: <a href=\"{issue_url}\">#{issue_no}</a>" if issue_url else f"📝 Feat-request planning started: #{issue_no}"
+                            msg = f"📝 Dev-req planning started: <a href=\"{issue_url}\">#{issue_no}</a>" if issue_url else f"📝 Dev-req planning started: #{issue_no}"
                             send_telegram_message(token, chat_id, msg)
                     else:
                         write_worker_status(worker_id, 'FREE', None, None)
-                        _log(f"Failed to spawn feat-request planning for issue #{issue_no}", level="ERROR")
+                        _log(f"Failed to spawn dev-req planning for issue #{issue_no}", level="ERROR")
                 else:
                     # Unlimited workers mode
                     success, _ = spawn_feat_request(issue_no)
                     if not success:
-                        _log(f"Failed to spawn feat-request planning for issue #{issue_no}", level="ERROR")
+                        _log(f"Failed to spawn dev-req planning for issue #{issue_no}", level="ERROR")
 
             # Process conflicting PRs
             try:
