@@ -18,8 +18,8 @@ Currently, we support:
 - `ultra-planner` for planning tasks, until the detailed implementation plan is posted on Github Issues.
 - `issue-to-impl` for implementation tasks, until the implementation is completed and PR is created.
   - Before creating PR, the agent will run tests, linters, and code reviews to ensure code quality.
-- **TODO** `plan-to-issue` for creating plan issues from user-provided plans from other sources.
+- `plan-to-issue` for creating GitHub [plan] issues from user-provided plans until the issue is successfully created.
 
 To diffrentiate each workflow, upon user prompt submit, we have a hook to create a metadata file
 to store the workflow status metadata, including the current step, issue number, PR number, etc.
-Currently, we only register the hook for `ultra-planner` and `issue-to-impl` workflows.
+Currently, we register the hook for `ultra-planner`, `issue-to-impl`, and `plan-to-issue` workflows.

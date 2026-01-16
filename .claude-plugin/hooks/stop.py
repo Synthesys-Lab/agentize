@@ -103,6 +103,23 @@ The ultimate goal of this workflow is to deliver a PR on GitHub that implements 
 6. To stop further continuations, run:
    jq '.state = "done"' {fname} > {fname}.tmp && mv {fname}.tmp {fname}
 7. When creating issues or PRs, use `--body-file` instead of `--body`, as body content with "--something" will be misinterpreted as flags.'''
+        elif workflow == 'plan-to-issue':
+            prompt = f'''
+This is an auto-continuation prompt for handsoff mode, it is currently {continuation_count}/{max_continuations} continuations.
+The ultimate goal of this workflow is to create a GitHub [plan] issue from the user-provided plan.
+
+1. If you have not yet created the GitHub issue, please continue working on it!
+   - Parse and format the plan content appropriately
+   - Create the issue with proper labels and formatting
+   - Use `--body-file` instead of `--body` to avoid flag parsing issues
+2. If you have successfully created the GitHub issue, manually stop further continuations.
+3. If you are blocked or reached the max continuations limit without creating the issue:
+   - Stop manually and inform the user what happened
+   - Include what you have done so far
+   - Include what is blocking you
+   - Include the session ID: {session_id} so that human can `claude -r {session_id}` for intervention.
+4. To stop further continuations, run:
+   jq '.state = "done"' {fname} > {fname}.tmp && mv {fname}.tmp {fname}'''
 
         if prompt:
             with open(fname, 'w') as f:
