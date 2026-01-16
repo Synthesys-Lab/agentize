@@ -248,7 +248,25 @@ The server reads project association from `.agentize.yaml` in your repository ro
 project:
   org: <owner>            # Organization or personal user login
   id: <project-number>
+
+# Optional: Explicit remote URL for issue/PR hyperlinks in Telegram notifications
+# If omitted, automatically resolved from `git remote get-url origin`
+# git:
+#   remote_url: https://github.com/org/repo
 ```
+
+### Remote URL Configuration
+
+The `git.remote_url` field enables clickable hyperlinks for issue and PR numbers in Telegram notifications. This field is **optional** - when not configured, the server automatically resolves the URL from `git remote get-url origin`.
+
+**Supported URL formats:**
+- HTTPS: `https://github.com/org/repo` or `https://github.com/org/repo.git`
+- SSH: `git@github.com:org/repo.git`
+
+**Fallback behavior:**
+1. Server checks for `git.remote_url` in `.agentize.yaml`
+2. If not found, runs `git remote get-url origin` to resolve automatically
+3. If both fail, notifications display plain text issue numbers (graceful degradation)
 
 ## Troubleshooting
 
@@ -306,19 +324,17 @@ Sent when the server starts, including hostname, project identifier, polling per
 ### Worker Assignment Notification
 
 Sent when an issue is successfully assigned to a worker, including:
-- Issue number and title
+- Issue number and title (clickable hyperlink to GitHub issue)
 - Worker ID
-- GitHub issue link (when `git.remote_url` is configured in `.agentize.yaml`)
 
-The issue link is derived from `git.remote_url` in `.agentize.yaml`. If the URL cannot be parsed or is not configured, the notification omits the link without error.
+The issue link is automatically resolved from `git remote get-url origin`. If explicit configuration is needed, set `git.remote_url` in `.agentize.yaml`. If the URL cannot be resolved, the notification displays the issue number as plain text without error.
 
 ### Worker Completion Notification
 
 Sent when a worker PID is found dead and the associated session's state is `done`, indicating successful completion:
-- Issue number
+- Issue number (clickable hyperlink to GitHub issue)
 - Worker ID
-- GitHub issue link (when available)
-- GitHub PR link (when `pr_number` is recorded in session state)
+- GitHub PR link (clickable hyperlink when `pr_number` is recorded in session state)
 
 **Requirements for completion notification:**
 1. Worker PID must be dead (process exited)

@@ -4,5 +4,10 @@ project:
   name: agentize
   lang: none
 
+# Optional: Explicit remote URL for Telegram notification hyperlinks
+# If omitted, automatically resolved from `git remote get-url origin`
+# git:
+#   remote_url: https://github.com/Synthesys-Lab/agentize
+
 pre_commit:
   enabled: true

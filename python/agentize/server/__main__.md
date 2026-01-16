@@ -51,7 +51,12 @@ Parse period string (e.g., "5m", "300s") to seconds.
 
 Load project org, ID, and optional remote URL from `.agentize.yaml`.
 
-Returns: `(org, project_id, remote_url)` where `remote_url` is the `git.remote_url` value or `None` if not configured.
+Returns: `(org, project_id, remote_url)` tuple.
+
+**Remote URL resolution order:**
+1. `git.remote_url` from `.agentize.yaml` (if explicitly configured)
+2. Automatic fallback to `git remote get-url origin`
+3. `None` if both fail (graceful degradation)
 
 ### `get_repo_owner_name() -> tuple[str, str]`
 
@@ -220,6 +225,16 @@ Rebase a PR's worktree using `wt rebase` command.
 3. Returns (success, pid) tuple
 
 **Returns:** Tuple of (success, pid). pid is None if rebase failed.
+
+## Telegram Notification Hyperlinks
+
+Worker notifications display issue and PR numbers as clickable hyperlinks when a valid remote URL is available. The remote URL is resolved automatically from `git remote get-url origin`, or can be explicitly configured via `git.remote_url` in `.agentize.yaml`.
+
+**Hyperlink format:**
+- Issue links: `<a href="https://github.com/org/repo/issues/42">#42</a>`
+- PR links: `<a href="https://github.com/org/repo/pull/99">#99</a>`
+
+**Graceful degradation:** If the remote URL cannot be resolved or parsed, notifications display plain text (e.g., `#42`) without error.
 
 ### `_extract_repo_slug(remote_url: str) -> str | None`
 
