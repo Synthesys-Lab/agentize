@@ -89,6 +89,10 @@ def main():
         state['workflow'] = 'issue-to-impl'
         state['state'] = 'initial'
 
+    if prompt.startswith('/plan-to-issue'):
+        state['workflow'] = 'plan-to-issue'
+        state['state'] = 'initial'
+
     if prompt.startswith('/setup-viewboard'):
         state['workflow'] = 'setup-viewboard'
         state['state'] = 'initial'

@@ -6,6 +6,7 @@ requests using rules, Haiku LLM, and Telegram approval backends.
 
 import os
 import json
+import re
 import time
 import datetime
 import subprocess
@@ -541,6 +542,8 @@ def _detect_workflow(session: str) -> str:
                 return 'plan'
             elif workflow_type == 'issue-to-impl':
                 return 'impl'
+            elif workflow_type == 'plan-to-issue':
+                return 'plan'
             elif workflow_type == 'setup-viewboard':
                 return 'setup-viewboard'
     except (json.JSONDecodeError, Exception):
@@ -593,7 +596,6 @@ def _check_workflow_auto_allow(session: str, tool: str, target: str) -> Optional
     workflow = _get_workflow_type(session)
 
     if workflow == 'setup-viewboard' and tool == 'Bash':
-        import re
         for pattern in _SETUP_VIEWBOARD_ALLOW_PATTERNS:
             if re.match(pattern, target):
                 return 'allow'
