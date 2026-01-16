@@ -10,7 +10,7 @@ This module implements a long-running server that:
 3. Checks per-issue project status via GraphQL to enforce:
    - "Plan Accepted" approval gate (for implementation via `wt spawn`)
    - "Proposed" + `agentize:refine` label (for refinement via `/ultra-planner --refine`)
-4. Discovers feature request issues using `gh issue list --label agentize:feat-request --state open`
+4. Discovers feature request issues using `gh issue list --label agentize:dev-req --state open`
 5. Spawns worktrees for ready issues via `wt spawn`, triggers refinement, or runs feature request planning via `/ultra-planner --from-issue`
 6. Discovers conflicting PRs with `agentize:pr` label via `gh pr list` and rebases their worktrees automatically
 
