@@ -3,62 +3,26 @@
 import os
 import sys
 import json
-import re
-import shutil
 
 from logger import logger
+
+# Add python directory to path for agentize imports
+_python_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'python')
+if _python_dir not in sys.path:
+    sys.path.insert(0, _python_dir)
+
+from agentize.workflow import (
+    detect_workflow,
+    extract_issue_no,
+    extract_pr_no,
+    SYNC_MASTER,
+)
 
 
 def _session_dir():
     """Get session directory path using AGENTIZE_HOME fallback."""
     base = os.getenv('AGENTIZE_HOME', '.')
     return os.path.join(base, '.tmp', 'hooked-sessions')
-
-
-def _extract_issue_no(prompt):
-    """Extract issue number from workflow command arguments.
-
-    Patterns:
-    - /issue-to-impl <number>
-    - /ultra-planner --refine <number>
-    - /ultra-planner --from-issue <number>
-
-    Note: /plan-to-issue does not accept issue number arguments.
-
-    Returns:
-        int or None if no issue number found
-    """
-    # Pattern for /issue-to-impl <number>
-    match = re.match(r'^/issue-to-impl\s+(\d+)', prompt)
-    if match:
-        return int(match.group(1))
-
-    # Pattern for /ultra-planner --refine <number>
-    match = re.search(r'--refine\s+(\d+)', prompt)
-    if match:
-        return int(match.group(1))
-
-    # Pattern for /ultra-planner --from-issue <number>
-    match = re.search(r'--from-issue\s+(\d+)', prompt)
-    if match:
-        return int(match.group(1))
-
-    return None
-
-
-def _extract_pr_no(prompt):
-    """Extract PR number from /sync-master command arguments.
-
-    Pattern:
-    - /sync-master <number>
-
-    Returns:
-        int or None if no PR number found
-    """
-    match = re.match(r'^/sync-master\s+(\d+)', prompt)
-    if match:
-        return int(match.group(1))
-    return None
 
 
 def main():
@@ -88,35 +52,21 @@ def main():
 
     state = {}
 
-    # Every time, once it comes to these two workflows,
-    # reset the state to initial, and the continuation count to 0.
-
-    if prompt.startswith('/ultra-planner'):
-        state['workflow'] = 'ultra-planner'
+    # Detect workflow using centralized workflow module
+    workflow = detect_workflow(prompt)
+    if workflow:
+        state['workflow'] = workflow
         state['state'] = 'initial'
 
-    if prompt.startswith('/issue-to-impl'):
-        state['workflow'] = 'issue-to-impl'
-        state['state'] = 'initial'
-
-    if prompt.startswith('/plan-to-issue'):
-        state['workflow'] = 'plan-to-issue'
-        state['state'] = 'initial'
-
-    if prompt.startswith('/setup-viewboard'):
-        state['workflow'] = 'setup-viewboard'
-        state['state'] = 'initial'
-
-    if prompt.startswith('/sync-master'):
-        state['workflow'] = 'sync-master'
-        state['state'] = 'initial'
-        pr_no = _extract_pr_no(prompt)
-        if pr_no is not None:
-            state['pr_no'] = pr_no
+        # Extract PR number for sync-master workflow
+        if workflow == SYNC_MASTER:
+            pr_no = extract_pr_no(prompt)
+            if pr_no is not None:
+                state['pr_no'] = pr_no
 
     if state:
         # Extract optional issue number from command arguments
-        issue_no = _extract_issue_no(prompt)
+        issue_no = extract_issue_no(prompt)
         if issue_no is not None:
             state['issue_no'] = issue_no
 

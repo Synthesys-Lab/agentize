@@ -368,7 +368,36 @@ See [.claude/hooks/pre-tool-use.md](../../.claude/hooks/pre-tool-use.md) for int
 - Injects workflow-specific continuation prompt
 - Blocks stop and triggers auto-resume
 
-**Source of truth:** For exact implementation details and prompt text, refer to `.claude-plugin/hooks/pre-tool-use.py`, `.claude-plugin/hooks/user-prompt-submit.py`, `.cursor/hooks/before-prompt-submit.py` and `.claude-plugin/hooks/stop.py`.
+**Source of truth:** Workflow definitions are centralized in `python/agentize/workflow.py`. The hooks import from this module for workflow detection, issue extraction, and continuation prompts.
+
+## Adding New Workflows
+
+To add a new workflow to handsoff mode, edit only `python/agentize/workflow.py`:
+
+1. **Add workflow constant** in the `# Workflow name constants` section:
+   ```python
+   MY_WORKFLOW = 'my-workflow'
+   ```
+
+2. **Add command mapping** in `WORKFLOW_COMMANDS`:
+   ```python
+   WORKFLOW_COMMANDS = {
+       ...
+       '/my-workflow': MY_WORKFLOW,
+   }
+   ```
+
+3. **Add continuation prompt** in `_CONTINUATION_PROMPTS`:
+   ```python
+   _CONTINUATION_PROMPTS = {
+       ...
+       MY_WORKFLOW: '''
+   This is an auto-continuation prompt for handsoff mode...
+   ''',
+   }
+   ```
+
+The hooks will automatically pick up the new workflow—no changes needed to `.claude-plugin/hooks/` or `.cursor/hooks/`.
 
 ## Limitations
 
