@@ -422,6 +422,7 @@ cmd_rebase() {
     local pr_no=""
     local headless=false
     local yolo=false
+    local model=""
 
     # Parse arguments
     while [ $# -gt 0 ]; do
@@ -433,6 +434,14 @@ cmd_rebase() {
             --yolo)
                 yolo=true
                 shift
+                ;;
+            --model)
+                if [ $# -lt 2 ]; then
+                    echo "Error: --model requires a value" >&2
+                    return 1
+                fi
+                model="$2"
+                shift 2
                 ;;
             -*)
                 echo "Error: Unknown flag: $1" >&2
@@ -451,7 +460,7 @@ cmd_rebase() {
     done
 
     if [ -z "$pr_no" ]; then
-        echo "Error: Missing PR number. Usage: wt rebase <pr-no> [--headless] [--yolo]" >&2
+        echo "Error: Missing PR number. Usage: wt rebase <pr-no> [--headless] [--yolo] [--model <model>]" >&2
         return 1
     fi
 
@@ -525,7 +534,7 @@ cmd_rebase() {
     fi
 
     # Invoke Claude to perform the rebase
-    wt_invoke_claude "/sync-master" "$worktree_path" "$yolo" "$headless" "rebase-${pr_no}"
+    wt_invoke_claude "/sync-master" "$worktree_path" "$yolo" "$headless" "rebase-${pr_no}" "$model"
     return $?
 }
 
@@ -564,6 +573,7 @@ OPTIONS (remove):
 OPTIONS (rebase):
   --headless          Run Claude in non-interactive mode (for server daemon)
   --yolo              Skip permission prompts
+  --model <model>     Specify Claude model to use (opus, sonnet, haiku)
 
 REQUIREMENTS:
   - Bare git repository (create with: git clone --bare, or wt clone)

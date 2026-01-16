@@ -33,26 +33,34 @@ def worktree_exists(issue_no: int) -> bool:
     return result.returncode == 0
 
 
-def spawn_worktree(issue_no: int) -> tuple[bool, int | None]:
+def spawn_worktree(issue_no: int, model: str | None = None) -> tuple[bool, int | None]:
     """Spawn a new worktree for the given issue.
+
+    Args:
+        issue_no: GitHub issue number
+        model: Claude model to use (opus, sonnet, haiku); uses default if not specified
 
     Returns:
         Tuple of (success, pid). pid is None if spawn failed.
     """
     print(f"Spawning worktree for issue #{issue_no}...")
-    result = run_shell_function(f'wt spawn {issue_no} --headless', capture_output=True)
+    cmd = f'wt spawn {issue_no} --headless'
+    if model:
+        cmd += f' --model {model}'
+    result = run_shell_function(cmd, capture_output=True)
     if result.returncode != 0:
         return False, None
 
     return True, _parse_pid_from_output(result.stdout)
 
 
-def rebase_worktree(pr_no: int, issue_no: int | None = None) -> tuple[bool, int | None]:
+def rebase_worktree(pr_no: int, issue_no: int | None = None, model: str | None = None) -> tuple[bool, int | None]:
     """Rebase a PR's worktree using wt rebase command.
 
     Args:
         pr_no: GitHub PR number
         issue_no: GitHub issue number (optional, for status claim)
+        model: Claude model to use (opus, sonnet, haiku); uses default if not specified
 
     Returns:
         Tuple of (success, pid). pid is None if rebase failed.
@@ -69,7 +77,10 @@ def rebase_worktree(pr_no: int, issue_no: int | None = None) -> tuple[bool, int 
                 capture_output=True
             )
 
-    result = run_shell_function(f'wt rebase {pr_no} --headless', capture_output=True)
+    cmd = f'wt rebase {pr_no} --headless'
+    if model:
+        cmd += f' --model {model}'
+    result = run_shell_function(cmd, capture_output=True)
     if result.returncode != 0:
         return False, None
 
@@ -126,11 +137,15 @@ def _cleanup_feat_request(issue_no: int) -> None:
     _log(f"Dev-req cleanup for issue #{issue_no}: removed agentize:dev-req label")
 
 
-def spawn_refinement(issue_no: int) -> tuple[bool, int | None]:
+def spawn_refinement(issue_no: int, model: str | None = None) -> tuple[bool, int | None]:
     """Spawn a refinement session for the given issue.
 
     Creates worktree if not exists, sets status to Refining, and spawns
     claude with /ultra-planner --refine headlessly.
+
+    Args:
+        issue_no: GitHub issue number
+        model: Claude model to use (opus, sonnet, haiku); uses default if not specified
 
     Returns:
         Tuple of (success, pid). pid is None if spawn failed.
@@ -160,12 +175,18 @@ def spawn_refinement(issue_no: int) -> tuple[bool, int | None]:
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / f'refine-{issue_no}-{int(time.time())}.log'
 
+    # Build claude command with optional model
+    claude_args = ['claude']
+    if model:
+        claude_args.extend(['--model', model])
+    claude_args.extend(['--print', f'/ultra-planner --refine {issue_no}'])
+
     # Spawn Claude with /ultra-planner --refine
     # Note: Popen duplicates the file descriptor, so the child process inherits it
     # and continues writing even after the 'with' block exits
     with open(log_file, 'w') as f:
         proc = subprocess.Popen(
-            ['claude', '--print', f'/ultra-planner --refine {issue_no}'],
+            claude_args,
             cwd=worktree_path,
             stdin=subprocess.DEVNULL,
             stdout=f,
@@ -176,10 +197,14 @@ def spawn_refinement(issue_no: int) -> tuple[bool, int | None]:
     return True, proc.pid
 
 
-def spawn_feat_request(issue_no: int) -> tuple[bool, int | None]:
+def spawn_feat_request(issue_no: int, model: str | None = None) -> tuple[bool, int | None]:
     """Spawn a feat-request planning session for the given issue.
 
     Creates worktree if not exists, and spawns claude with /ultra-planner --from-issue headlessly.
+
+    Args:
+        issue_no: GitHub issue number
+        model: Claude model to use (opus, sonnet, haiku); uses default if not specified
 
     Returns:
         Tuple of (success, pid). pid is None if spawn failed.
@@ -203,10 +228,16 @@ def spawn_feat_request(issue_no: int) -> tuple[bool, int | None]:
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / f'feat-request-{issue_no}-{int(time.time())}.log'
 
+    # Build claude command with optional model
+    claude_args = ['claude']
+    if model:
+        claude_args.extend(['--model', model])
+    claude_args.extend(['--print', f'/ultra-planner --from-issue {issue_no}'])
+
     # Spawn Claude with /ultra-planner --from-issue
     with open(log_file, 'w') as f:
         proc = subprocess.Popen(
-            ['claude', '--print', f'/ultra-planner --from-issue {issue_no}'],
+            claude_args,
             cwd=worktree_path,
             stdin=subprocess.DEVNULL,
             stdout=f,

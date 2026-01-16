@@ -72,6 +72,9 @@ _wt() {
                 remove)
                     _wt_remove
                     ;;
+                rebase)
+                    _wt_rebase
+                    ;;
             esac
             ;;
     esac
@@ -173,6 +176,45 @@ _wt_remove() {
 
     _arguments \
         '1:issue number:' \
+        $option_specs
+}
+
+# Completion for 'wt rebase' subcommand
+_wt_rebase() {
+    local -a rebase_flags
+    local -a option_specs
+
+    # Try dynamic fetch first
+    if (( $+commands[wt] )); then
+        rebase_flags=( ${(f)"$(wt --complete rebase-flags 2>/dev/null)"} )
+    fi
+
+    # Fallback to static flags
+    if (( ${#rebase_flags} == 0 )); then
+        rebase_flags=( '--headless' '--yolo' '--model' )
+    fi
+
+    # Build option specs from flags
+    for flag in $rebase_flags; do
+        case $flag in
+            --headless)
+                option_specs+=('--headless[Run Claude in non-interactive mode (for server daemon)]')
+                ;;
+            --yolo)
+                option_specs+=('--yolo[Skip permission prompts]')
+                ;;
+            --model)
+                option_specs+=('--model[Specify Claude model to use]:model:(opus sonnet haiku)')
+                ;;
+            *)
+                # Unknown flag, pass through without description
+                option_specs+=("$flag")
+                ;;
+        esac
+    done
+
+    _arguments \
+        '1:PR number:' \
         $option_specs
 }
 
