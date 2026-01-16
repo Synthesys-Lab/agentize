@@ -415,15 +415,15 @@ Add the "agentize:plan" label to mark the issue as a finalized plan:
 gh issue edit ${ISSUE_NUMBER} --add-label "agentize:plan"
 ```
 
-**For `--from-issue` mode only:** Also remove the "agentize:feat-request" label if present:
+**For `--from-issue` mode only:** Also remove the "agentize:dev-req" label if present:
 
 ```bash
-gh issue edit ${ISSUE_NUMBER} --remove-label "agentize:feat-request"
+gh issue edit ${ISSUE_NUMBER} --remove-label "agentize:dev-req"
 ```
 
 **What this does:**
 1. Adds "agentize:plan" label to the issue (creates label if it doesn't exist)
-2. Removes "agentize:feat-request" label (if from-issue mode) to prevent re-processing
+2. Removes "agentize:dev-req" label (if from-issue mode) to prevent re-processing
 3. Triggers hands-off state machine transition to `done` state
 4. Marks the issue as ready for review/implementation
 

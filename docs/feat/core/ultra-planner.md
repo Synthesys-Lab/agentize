@@ -345,7 +345,7 @@ Creates a plan for an existing issue (typically a feature request) without creat
 3. Updates issue #42 with the consensus plan (adds `[plan]` prefix to title)
 4. Adds `agentize:plan` label to mark as planned
 
-**Use case:** Server-driven feature request planning. When the server discovers issues with `agentize:feat-request` label, it invokes `/ultra-planner --from-issue <N>` to automatically generate implementation plans.
+**Use case:** Server-driven feature request planning. When the server discovers issues with `agentize:dev-req` label, it invokes `/ultra-planner --from-issue <N>` to automatically generate implementation plans.
 
 **Output:** Updated issue URL and plan summary
 
