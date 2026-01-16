@@ -14,6 +14,9 @@ SDK structure documentation. Describes the file structure of SDK projects using 
 ### metadata.md
 Project metadata file (`.agentize.yaml`) specification. Describes the configuration schema, field definitions, usage by `wt` and `lol` commands, and how metadata drives project behavior.
 
+### handsoff.md
+Handsoff mode documentation. Describes the automatic continuation mechanism for workflows, environment variables (`HANDSOFF_MODE`, `HANDSOFF_AUTO_PERMISSION`), and supported workflows (`ultra-planner`, `issue-to-impl`, `plan-to-issue`).
+
 ## Integration
 
 Architecture documentation is referenced from:

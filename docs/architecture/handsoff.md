@@ -20,6 +20,6 @@ Currently, we support:
   - Before creating PR, the agent will run tests, linters, and code reviews to ensure code quality.
 - `plan-to-issue` for creating GitHub [plan] issues from user-provided plans until the issue is successfully created.
 
-To diffrentiate each workflow, upon user prompt submit, we have a hook to create a metadata file
+To differentiate each workflow, upon user prompt submit, we have a hook to create a metadata file
 to store the workflow status metadata, including the current step, issue number, PR number, etc.
 Currently, we register the hook for `ultra-planner`, `issue-to-impl`, and `plan-to-issue` workflows.

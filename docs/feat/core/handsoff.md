@@ -1,6 +1,6 @@
 # Handsoff Mode
 
-Handsoff mode enables automatic continuation of `/ultra-planner` and `/issue-to-impl` workflows without manual user intervention between Claude Code stops.
+Handsoff mode enables automatic continuation of `/ultra-planner`, `/issue-to-impl`, and `/plan-to-issue` workflows without manual user intervention between Claude Code stops.
 
 ## Overview
 
@@ -9,6 +9,7 @@ When `HANDSOFF_MODE` is enabled, specific workflows automatically resume after e
 **Supported workflows:**
 - `/ultra-planner` - Multi-agent debate-based planning (see [ultra-planner.md](ultra-planner.md))
 - `/issue-to-impl` - Complete development cycle from issue to PR (see [../tutorial/02-issue-to-impl.md](../tutorial/02-issue-to-impl.md))
+- `/plan-to-issue` - Create GitHub [plan] issues from user-provided plans
 
 ## How It Works
 
@@ -191,6 +192,29 @@ The ultimate goal of this workflow is to deliver a PR on GitHub that implements 
 
 **Completion criteria:** Pull request created on GitHub with all tests passing.
 
+### `/plan-to-issue` Workflow
+
+**Goal:** Create a GitHub [plan] issue from a user-provided plan.
+
+**Auto-continuation prompt (injected by Stop hook):**
+```
+This is an auto-continuation prompt for handsoff mode, it is currently {N}/{MAX} continuations.
+The ultimate goal of this workflow is to create a GitHub [plan] issue from the user-provided plan.
+
+1. If you have not yet created the GitHub issue, please continue working on it!
+   - Parse and format the plan content appropriately
+   - Create the issue with proper labels and formatting
+   - Use `--body-file` instead of `--body` to avoid flag parsing issues
+2. If you have successfully created the GitHub issue, manually stop further continuations.
+3. If you are blocked or reached the max continuations limit without creating the issue:
+   - Stop manually and inform the user what happened
+   - Include what you have done so far
+   - Include what is blocking you
+   - Include the session ID for human intervention.
+```
+
+**Completion criteria:** GitHub [plan] issue successfully created.
+
 ## Debugging
 
 ### Check Session State
@@ -287,10 +311,11 @@ See [.claude/hooks/pre-tool-use.md](../../.claude/hooks/pre-tool-use.md) for int
 - **Location:** `.claude-plugin/hooks/user-prompt-submit.py`
 
 **Key logic:**
-- Detects workflow commands: `/ultra-planner`, `/issue-to-impl`
+- Detects workflow commands: `/ultra-planner`, `/issue-to-impl`, `/plan-to-issue`
 - Creates `$AGENTIZE_HOME/.tmp/hooked-sessions/{session_id}.json` with initial state (falls back to worktree-local `.tmp/` if `AGENTIZE_HOME` is unset)
 - Sets `continuation_count = 0`
 - When issue number is present, creates issue index file at `$AGENTIZE_HOME/.tmp/hooked-sessions/by-issue/{issue_no}.json`
+- Note: `/plan-to-issue` does not accept issue number arguments
 
 ### `before-prompt-submit.py` (Cursor IDE)
 - **Event:** `beforeSubmitPrompt` (before prompt is sent to Cursor)
@@ -298,7 +323,7 @@ See [.claude/hooks/pre-tool-use.md](../../.claude/hooks/pre-tool-use.md) for int
 - **Location:** `.cursor/hooks/before-prompt-submit.py`
 
 **Key logic:**
-- Detects workflow commands: `/ultra-planner`, `/issue-to-impl`
+- Detects workflow commands: `/ultra-planner`, `/issue-to-impl`, `/plan-to-issue`
 - Creates `$AGENTIZE_HOME/.tmp/hooked-sessions/{session_id}.json` with initial state (falls back to worktree-local `.tmp/` if `AGENTIZE_HOME` is unset)
 - Sets `continuation_count = 0`
 - When issue number is present, creates issue index file at `$AGENTIZE_HOME/.tmp/hooked-sessions/by-issue/{issue_no}.json`
@@ -321,7 +346,7 @@ See [.claude/hooks/pre-tool-use.md](../../.claude/hooks/pre-tool-use.md) for int
 
 ## Limitations
 
-- **Non-workflow prompts:** Regular Claude Code usage (not `/ultra-planner` or `/issue-to-impl`) is unaffected
+- **Non-workflow prompts:** Regular Claude Code usage (not `/ultra-planner`, `/issue-to-impl`, or `/plan-to-issue`) is unaffected
 - **Session isolation:** Each session has independent state; switching sessions resets continuation tracking
 - **Max continuations:** Workflows stop after reaching `HANDSOFF_MAX_CONTINUATIONS` (default: 10)
 - **Error recovery:** If Claude Code encounters critical errors, manual intervention may be required

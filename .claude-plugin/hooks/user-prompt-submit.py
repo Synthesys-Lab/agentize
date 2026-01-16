@@ -23,6 +23,8 @@ def _extract_issue_no(prompt):
     - /ultra-planner --refine <number>
     - /ultra-planner --from-issue <number>
 
+    Note: /plan-to-issue does not accept issue number arguments.
+
     Returns:
         int or None if no issue number found
     """

@@ -50,7 +50,7 @@ Hooks enable automated behaviors and integrations at key points in the Claude Co
 **Purpose**: Initialize session state for handsoff mode workflows
 
 **Behavior**:
-- Detects `/ultra-planner` and `/issue-to-impl` commands
+- Detects `/ultra-planner`, `/issue-to-impl`, and `/plan-to-issue` commands
 - Creates session state files in `${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/`
 - Extracts optional `issue_no` from command arguments
 - See [docs/feat/core/handsoff.md](../../docs/feat/core/handsoff.md) for details
