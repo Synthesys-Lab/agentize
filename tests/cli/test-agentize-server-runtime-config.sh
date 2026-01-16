@@ -87,12 +87,6 @@ if [ "$test_parent_search" != "True" ]; then
 fi
 
 # Test 4: load_runtime_config raises ValueError for unknown top-level key
-cat > "$TMP_DIR/invalid/.agentize.local.yaml" <<'EOF'
-server:
-  period: 5m
-unknown_section:
-  foo: bar
-EOF
 mkdir -p "$TMP_DIR/invalid"
 cat > "$TMP_DIR/invalid/.agentize.local.yaml" <<'EOF'
 server:
@@ -195,10 +189,6 @@ if [ "$test_workflow_models" != "opus|sonnet|sonnet|haiku" ]; then
 fi
 
 # Test 10: Empty workflows section returns empty dict
-cat > "$TMP_DIR/no-workflows/.agentize.local.yaml" <<'EOF'
-server:
-  period: 5m
-EOF
 mkdir -p "$TMP_DIR/no-workflows"
 cat > "$TMP_DIR/no-workflows/.agentize.local.yaml" <<'EOF'
 server:

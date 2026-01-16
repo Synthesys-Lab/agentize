@@ -1,0 +1,187 @@
+"""Runtime configuration loader for .agentize.local.yaml files.
+
+This module handles loading server-specific settings that shouldn't be committed:
+- Server settings (period, num_workers)
+- Telegram credentials (token, chat_id)
+- Workflow model assignments (impl, refine, dev_req, rebase)
+
+Configuration precedence: CLI args > env vars (TG only) > .agentize.local.yaml > defaults
+"""
+
+from pathlib import Path
+from typing import Any
+
+# Valid top-level keys in .agentize.local.yaml
+VALID_TOP_LEVEL_KEYS = {"server", "telegram", "workflows"}
+
+# Valid workflow names
+VALID_WORKFLOW_NAMES = {"impl", "refine", "dev_req", "rebase"}
+
+# Valid model values
+VALID_MODELS = {"opus", "sonnet", "haiku"}
+
+
+def load_runtime_config(start_dir: Path | None = None) -> tuple[dict, Path | None]:
+    """Load runtime configuration from .agentize.local.yaml.
+
+    Searches from start_dir up to parent directories until the config file is found.
+
+    Args:
+        start_dir: Directory to start searching from (default: current directory)
+
+    Returns:
+        Tuple of (config_dict, config_path). config_path is None if file not found.
+
+    Raises:
+        ValueError: If the config file contains unknown top-level keys or invalid structure.
+    """
+    if start_dir is None:
+        start_dir = Path.cwd()
+
+    start_dir = Path(start_dir).resolve()
+
+    # Search from start_dir up to parent directories
+    current = start_dir
+    config_path = None
+
+    while True:
+        candidate = current / ".agentize.local.yaml"
+        if candidate.is_file():
+            config_path = candidate
+            break
+
+        parent = current.parent
+        if parent == current:
+            # Reached root
+            break
+        current = parent
+
+    if config_path is None:
+        return {}, None
+
+    # Parse the YAML file (minimal parser, no external dependencies)
+    config = _parse_yaml_file(config_path)
+
+    # Validate top-level keys
+    for key in config:
+        if key not in VALID_TOP_LEVEL_KEYS:
+            raise ValueError(
+                f"Unknown top-level key '{key}' in {config_path}. "
+                f"Valid keys: {', '.join(sorted(VALID_TOP_LEVEL_KEYS))}"
+            )
+
+    return config, config_path
+
+
+def _parse_yaml_file(path: Path) -> dict:
+    """Parse a simple YAML file into a nested dict.
+
+    Supports basic YAML structure with nested dicts. Does not support
+    arrays, anchors, or complex YAML features.
+
+    Args:
+        path: Path to the YAML file
+
+    Returns:
+        Parsed configuration as nested dict
+    """
+    config: dict[str, Any] = {}
+    stack: list[tuple[dict, int]] = [(config, -1)]  # (dict, indent_level)
+
+    with open(path, "r") as f:
+        for line in f:
+            # Skip empty lines and comments
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#"):
+                continue
+
+            # Calculate indentation
+            indent = len(line) - len(line.lstrip())
+
+            # Parse key-value pair
+            if ":" not in stripped:
+                continue
+
+            key, _, value = stripped.partition(":")
+            key = key.strip()
+            value = value.strip()
+
+            # Remove quotes from value if present
+            if value and value[0] in ('"', "'") and value[-1] == value[0]:
+                value = value[1:-1]
+
+            # Pop stack to find the right parent level
+            while stack and stack[-1][1] >= indent:
+                stack.pop()
+
+            current_dict = stack[-1][0] if stack else config
+
+            if value:
+                # Simple key: value
+                # Try to convert to int if possible
+                try:
+                    current_dict[key] = int(value)
+                except ValueError:
+                    current_dict[key] = value
+            else:
+                # Nested dict (key with no value)
+                current_dict[key] = {}
+                stack.append((current_dict[key], indent))
+
+    return config
+
+
+def resolve_precedence(
+    cli_value: Any | None,
+    env_value: Any | None,
+    config_value: Any | None,
+    default: Any | None,
+) -> Any | None:
+    """Return first non-None value in precedence order.
+
+    Precedence: CLI > env > config > default
+
+    Args:
+        cli_value: Value from CLI argument
+        env_value: Value from environment variable
+        config_value: Value from .agentize.local.yaml
+        default: Default value
+
+    Returns:
+        First non-None value, or default if all are None
+    """
+    if cli_value is not None:
+        return cli_value
+    if env_value is not None:
+        return env_value
+    if config_value is not None:
+        return config_value
+    return default
+
+
+def extract_workflow_models(config: dict) -> dict[str, str]:
+    """Extract workflow -> model mapping from config.
+
+    Args:
+        config: Parsed config dict from load_runtime_config()
+
+    Returns:
+        Dict mapping workflow names to model names.
+        Only includes workflows that have a model configured.
+        Example: {"impl": "opus", "refine": "sonnet"}
+    """
+    workflows = config.get("workflows", {})
+    if not isinstance(workflows, dict):
+        return {}
+
+    models = {}
+    for workflow_name, workflow_config in workflows.items():
+        if workflow_name not in VALID_WORKFLOW_NAMES:
+            continue
+        if not isinstance(workflow_config, dict):
+            continue
+        model = workflow_config.get("model")
+        if model and model in VALID_MODELS:
+            models[workflow_name] = model
+
+    return models

@@ -36,6 +36,7 @@ wt_complete() {
         rebase-flags)
             echo "--headless"
             echo "--yolo"
+            echo "--model"
             ;;
         goto-targets)
             # List available worktrees
