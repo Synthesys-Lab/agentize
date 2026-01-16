@@ -139,6 +139,28 @@ The ultimate goal of this workflow is to deliver a PR on GitHub that implements 
 6. To stop further continuations, run:
    jq '.state = "done"' {fname} > {fname}.tmp && mv {fname}.tmp {fname}
 7. When creating issues or PRs, use `--body-file` instead of `--body`, as body content with "--something" will be misinterpreted as flags.'''
+        elif workflow == 'sync-master':
+            pr_no = state.get('pr_no', 'unknown')
+            prompt = f'''This is an auto-continuation prompt for handsoff mode, it is currently {continuation_count + 1}/{max_continuations} continuations.
+The ultimate goal of this workflow is to sync the local main/master branch with upstream and force-push the PR branch.
+
+1. Check if the rebase has completed successfully:
+   - Run `git status` to verify the working tree state
+   - If rebase conflicts are detected, resolve them and run `git rebase --continue`
+   - If rebase was aborted, re-run the sync-master workflow from the beginning
+2. After successful rebase, verify the PR number is available: {pr_no}
+   - If PR number is 'unknown', check the current branch name for the PR association
+3. Force-push the rebased branch to update the PR:
+   - Run `git push -f` to push the rebased changes
+   - Verify the push succeeded without errors
+4. After successful push, manually stop further continuations.
+5. If you encounter unresolvable conflicts or errors:
+   - Stop manually and inform the user what happened
+   - Include what you have done so far
+   - Include what is blocking you
+   - Include the session ID: {session_id} so that human can `claude -r {session_id}` for intervention.
+6. To stop further continuations, run:
+   jq '.state = "done"' {fname} > {fname}.tmp && mv {fname}.tmp {fname}'''
 
         if prompt:
             with open(fname, 'w') as f:

@@ -46,6 +46,21 @@ def _extract_issue_no(prompt):
     return None
 
 
+def _extract_pr_no(prompt):
+    """Extract PR number from /sync-master command arguments.
+
+    Pattern:
+    - /sync-master <number>
+
+    Returns:
+        int or None if no PR number found
+    """
+    match = re.match(r'^/sync-master\s+(\d+)', prompt)
+    if match:
+        return int(match.group(1))
+    return None
+
+
 def main():
 
     handsoff = os.getenv('HANDSOFF_MODE', '0')
@@ -91,6 +106,13 @@ def main():
     if prompt.startswith('/setup-viewboard'):
         state['workflow'] = 'setup-viewboard'
         state['state'] = 'initial'
+
+    if prompt.startswith('/sync-master'):
+        state['workflow'] = 'sync-master'
+        state['state'] = 'initial'
+        pr_no = _extract_pr_no(prompt)
+        if pr_no is not None:
+            state['pr_no'] = pr_no
 
     if state:
         # Extract optional issue number from command arguments
