@@ -18,7 +18,7 @@ Full workflow tests for worktree management:
 - `test-worktree-reject-description-arg.sh` - Placeholder for argument validation edge cases
 - `test-worktree-spawn-yolo-no-agent.sh` - Placeholder for agent-free spawn edge cases
 
-### Project Automation E2E Tests (`test-lol-project-*`, `test-setup-viewboard-*`)
+### Project Automation E2E Tests (`test-lol-project-*`)
 
 GitHub Projects integration workflows:
 
