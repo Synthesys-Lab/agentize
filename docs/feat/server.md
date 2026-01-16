@@ -107,9 +107,13 @@ The `UNKNOWN` state occurs when GitHub is computing merge status. The server ski
 When a PR with `mergeable=CONFLICTING` is detected, the server:
 
 1. Resolves the issue number from PR metadata
-2. Locates the corresponding worktree via `wt pathto <issue-no>`
-3. Executes `wt rebase <pr-no> --headless` using the worker pool
-4. Logs output to `.tmp/logs/rebase-<pr-no>-<timestamp>.log`
+2. Checks if the resolved issue has Status = "Rebasing" (skip if already being processed)
+3. Locates the corresponding worktree via `wt pathto <issue-no>`
+4. Claims the issue by setting Status = "Rebasing" via `wt_claim_issue_status()`
+5. Executes `wt rebase <pr-no> --headless` using the worker pool
+6. Logs output to `.tmp/logs/rebase-<pr-no>-<timestamp>.log`
+
+The status-based filtering prevents duplicate worker assignments: when `filter_conflicting_prs()` discovers a conflicting PR, it checks the resolved issue's project status. If the status is already "Rebasing" (claimed by a previous poll cycle), the PR is skipped.
 
 If rebase fails due to conflicts:
 - The rebase is aborted (`git rebase --abort`)
@@ -121,9 +125,10 @@ If rebase fails due to conflicts:
 When `HANDSOFF_DEBUG=1` is set, the server logs PR discovery and filtering decisions:
 
 ```
-[pr-rebase] #123 mergeable=CONFLICTING -> QUEUE
-[pr-rebase] #124 mergeable=UNKNOWN -> SKIP (retry next poll)
-[pr-rebase] #125 mergeable=MERGEABLE -> SKIP (healthy)
+[pr-rebase-filter] #123 mergeable=CONFLICTING status=Backlog -> QUEUE
+[pr-rebase-filter] #124 mergeable=UNKNOWN -> SKIP (retry next poll)
+[pr-rebase-filter] #125 mergeable=MERGEABLE -> SKIP (healthy)
+[pr-rebase-filter] #126 mergeable=CONFLICTING status=Rebasing -> SKIP (already being rebased)
 ```
 
 ## Feature Request Planning Workflow
