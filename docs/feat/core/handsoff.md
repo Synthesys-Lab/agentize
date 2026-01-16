@@ -30,9 +30,12 @@ When `AGENTIZE_HOME` is set, session files are stored centrally, enabling cross-
   "workflow": "ultra-planner",
   "state": "initial",
   "continuation_count": 0,
-  "issue_no": 42
+  "issue_no": 42,
+  "pr_number": 123
 }
 ```
+
+The `pr_number` field is optional and populated by the `open-pr` skill after a PR is created. When present, the server includes a clickable PR link in completion notifications.
 
 ### Issue Index Files
 

@@ -175,6 +175,8 @@ Claude will invoke the `open-pr` skill to create a pull request with:
 - Test plan
 - Link to original issue
 
+The PR number is automatically recorded in the session state, enabling the server to include a PR link in completion notifications when running in handsoff mode.
+
 **Note on Commands vs Skills**: Slash commands (like `/code-review`) are pre-defined prompts you invoke directly, while skills (like `open-pr`) are routines implicitly invoked by Claude when you use natural language requests.
 
 ## Complete Workflow Example

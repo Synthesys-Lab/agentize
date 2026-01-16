@@ -306,6 +306,7 @@ Sent when a worker PID is found dead and the associated session's state is `done
 - Issue number
 - Worker ID
 - GitHub issue link (when available)
+- GitHub PR link (when `pr_number` is recorded in session state)
 
 **Requirements for completion notification:**
 1. Worker PID must be dead (process exited)
