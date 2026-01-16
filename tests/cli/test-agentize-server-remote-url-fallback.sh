@@ -34,10 +34,20 @@ test_dir="$TEMP_DIR/test1"
 mkdir -p "$test_dir"
 setup_git_repo "$test_dir" "https://github.com/FallbackOrg/FallbackRepo.git"
 
+# Suppress INFO log output and check only test result
 output=$(cd "$test_dir" && PYTHONPATH="$PROJECT_ROOT/python" python3 -c "
-from agentize.server.github import load_config
+import sys
+from io import StringIO
 
+# Suppress stdout from logging during test
+original_stdout = sys.stdout
+sys.stdout = StringIO()
+
+from agentize.server.github import load_config
 org, project_id, remote_url = load_config()
+
+# Restore stdout for test result
+sys.stdout = original_stdout
 
 # Should fall back to git remote get-url origin
 assert remote_url == 'https://github.com/FallbackOrg/FallbackRepo.git', \
@@ -96,10 +106,20 @@ test_dir3="$TEMP_DIR/test3"
 mkdir -p "$test_dir3"
 setup_git_repo "$test_dir3" "git@github.com:SSHOrg/SSHRepo.git"
 
+# Suppress INFO log output and check only test result
 output=$(cd "$test_dir3" && PYTHONPATH="$PROJECT_ROOT/python" python3 -c "
-from agentize.server.github import load_config
+import sys
+from io import StringIO
 
+# Suppress stdout from logging during test
+original_stdout = sys.stdout
+sys.stdout = StringIO()
+
+from agentize.server.github import load_config
 org, project_id, remote_url = load_config()
+
+# Restore stdout for test result
+sys.stdout = original_stdout
 
 # Should fall back to SSH git remote URL
 assert remote_url == 'git@github.com:SSHOrg/SSHRepo.git', \
