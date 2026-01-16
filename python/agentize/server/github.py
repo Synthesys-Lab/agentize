@@ -503,11 +503,11 @@ def resolve_issue_from_pr(pr: dict) -> int | None:
 
 
 def discover_candidate_feat_requests(owner: str, repo: str) -> list[int]:
-    """Discover open issues with agentize:feat-request label using gh issue list."""
+    """Discover open issues with agentize:dev-req label using gh issue list."""
     result = subprocess.run(
         ['gh', 'issue', 'list',
          '-R', f'{owner}/{repo}',
-         '--label', 'agentize:feat-request',
+         '--label', 'agentize:dev-req',
          '--state', 'open',
          '--json', 'number',
          '--jq', '.[].number'],
@@ -515,7 +515,7 @@ def discover_candidate_feat_requests(owner: str, repo: str) -> list[int]:
     )
 
     if result.returncode != 0:
-        _log(f"Failed to list feat-request issues: {result.stderr}", level="ERROR")
+        _log(f"Failed to list dev-req issues: {result.stderr}", level="ERROR")
         return []
 
     issues = []
@@ -533,7 +533,7 @@ def discover_candidate_feat_requests(owner: str, repo: str) -> list[int]:
 def query_feat_request_items(org: str, project_number: int) -> list[dict]:
     """Query GitHub for feat-request items using label-first discovery.
 
-    Uses gh issue list to discover candidates with agentize:feat-request label,
+    Uses gh issue list to discover candidates with agentize:dev-req label,
     then performs per-issue lookups for status and full label list.
     """
     try:
@@ -548,11 +548,11 @@ def query_feat_request_items(org: str, project_number: int) -> list[dict]:
         _log("Failed to lookup project GraphQL ID", level="ERROR")
         return []
 
-    # Discover candidates via feat-request label query
+    # Discover candidates via dev-req label query
     candidate_issues = discover_candidate_feat_requests(owner, repo)
     if not candidate_issues:
         if os.getenv('HANDSOFF_DEBUG'):
-            _log("No candidate issues found with agentize:feat-request label")
+            _log("No candidate issues found with agentize:dev-req label")
         return []
 
     if os.getenv('HANDSOFF_DEBUG'):
@@ -596,7 +596,7 @@ def filter_ready_feat_requests(items: list[dict]) -> list[int]:
     """Filter items to issues eligible for feat-request planning.
 
     Requirements:
-    - Has 'agentize:feat-request' label
+    - Has 'agentize:dev-req' label
     - Does NOT have 'agentize:plan' label (not already planned)
     - Status is NOT 'Done' or 'In Progress' (terminal statuses)
     """
@@ -618,30 +618,30 @@ def filter_ready_feat_requests(items: list[dict]) -> list[int]:
         labels = content.get('labels', {}).get('nodes', [])
         label_names = [l['name'] for l in labels]
 
-        # Must have agentize:feat-request label (already filtered by discovery)
-        if 'agentize:feat-request' not in label_names:
+        # Must have agentize:dev-req label (already filtered by discovery)
+        if 'agentize:dev-req' not in label_names:
             continue
 
         # Check for agentize:plan label (already planned)
         if 'agentize:plan' in label_names:
             if debug:
-                print(f"[feat-request-filter] #{issue_no} labels={label_names} -> SKIP (already has agentize:plan)", file=sys.stderr)
+                print(f"[dev-req-filter] #{issue_no} labels={label_names} -> SKIP (already has agentize:plan)", file=sys.stderr)
             skip_has_plan += 1
             continue
 
         # Check for terminal status
         if status_name in terminal_statuses:
             if debug:
-                print(f"[feat-request-filter] #{issue_no} status={status_name} labels={label_names} -> SKIP (terminal status)", file=sys.stderr)
+                print(f"[dev-req-filter] #{issue_no} status={status_name} labels={label_names} -> SKIP (terminal status)", file=sys.stderr)
             skip_terminal += 1
             continue
 
         if debug:
-            print(f"[feat-request-filter] #{issue_no} labels={label_names} status={status_name} -> READY", file=sys.stderr)
+            print(f"[dev-req-filter] #{issue_no} labels={label_names} status={status_name} -> READY", file=sys.stderr)
         ready.append(issue_no)
 
     if debug:
         total_skip = skip_has_plan + skip_terminal
-        print(f"[feat-request-filter] Summary: {len(ready)} ready, {total_skip} skipped ({skip_has_plan} already planned, {skip_terminal} terminal status)", file=sys.stderr)
+        print(f"[dev-req-filter] Summary: {len(ready)} ready, {total_skip} skipped ({skip_has_plan} already planned, {skip_terminal} terminal status)", file=sys.stderr)
 
     return ready

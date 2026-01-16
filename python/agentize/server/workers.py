@@ -112,18 +112,18 @@ def _cleanup_refinement(issue_no: int) -> None:
 
 
 def _cleanup_feat_request(issue_no: int) -> None:
-    """Clean up after feat-request planning: remove agentize:feat-request label.
+    """Clean up after feat-request planning: remove agentize:dev-req label.
 
     Args:
         issue_no: GitHub issue number
     """
-    # Remove agentize:feat-request label
+    # Remove agentize:dev-req label
     subprocess.run(
-        ['gh', 'issue', 'edit', str(issue_no), '--remove-label', 'agentize:feat-request'],
+        ['gh', 'issue', 'edit', str(issue_no), '--remove-label', 'agentize:dev-req'],
         capture_output=True,
         text=True
     )
-    _log(f"Feat-request cleanup for issue #{issue_no}: removed agentize:feat-request label")
+    _log(f"Dev-req cleanup for issue #{issue_no}: removed agentize:dev-req label")
 
 
 def spawn_refinement(issue_no: int) -> tuple[bool, int | None]:
@@ -379,8 +379,8 @@ def cleanup_dead_workers(
                     if is_refinement:
                         _cleanup_refinement(issue_no)
 
-                    # Check if this was a feat-request (has agentize:feat-request label)
-                    is_feat_request = _check_issue_has_label(issue_no, 'agentize:feat-request')
+                    # Check if this was a dev-req (has agentize:dev-req label)
+                    is_feat_request = _check_issue_has_label(issue_no, 'agentize:dev-req')
                     if is_feat_request:
                         _cleanup_feat_request(issue_no)
 
