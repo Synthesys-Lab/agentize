@@ -1,53 +1,14 @@
 #!/usr/bin/env bash
-# Purpose: Shared helper providing gh CLI stubs and worktree test setup functions
-# Expected: Sourced by worktree tests to create test environments and mocks
+# Purpose: Shared helper providing worktree test setup functions
+# Expected: Sourced by worktree tests to create test environments
 
-# Create gh CLI stub for testing
-# Sets up bin/gh with issue state mocking
-create_gh_stub() {
-    mkdir -p bin
-    cat > bin/gh <<'GHSTUB'
-#!/usr/bin/env bash
-# Stub gh command for testing
-if [ "$1" = "issue" ] && [ "$2" = "view" ]; then
-  issue_no="$3"
-  # Handle --json state flag for purge testing
-  if [ "$4" = "--json" ] && [ "$5" = "state" ]; then
-    # Check if --jq flag is present
-    if [ "$6" = "--jq" ] && [ "$7" = ".state" ]; then
-      # Return just the state value (simulating jq extraction)
-      case "$issue_no" in
-        42|55|100|200|210|300) echo "OPEN"; exit 0 ;;
-        56|211|301|350) echo "CLOSED"; exit 0 ;;
-        *) exit 1 ;;
-      esac
-    else
-      # Return full JSON (for other use cases)
-      case "$issue_no" in
-        42|55|100|200|210|300) echo '{"state":"OPEN"}'; exit 0 ;;
-        56|211|301|350) echo '{"state":"CLOSED"}'; exit 0 ;;
-        *) exit 1 ;;
-      esac
-    fi
-  else
-    # Valid issue numbers return exit code 0, invalid ones return 1
-    case "$issue_no" in
-      42|55|56|100|200|210|211|300|301|350) exit 0 ;;
-      *) exit 1 ;;
-    esac
-  fi
-fi
-GHSTUB
-    chmod +x bin/gh
-    export PATH="$PWD/bin:$PATH"
-}
+# Source gh mock helpers (use TESTS_DIR from common.sh for shell-neutral sourcing)
+source "$TESTS_DIR/helpers-gh-mock.sh"
 
 # Create a bare test repository with basic setup
 # Returns the test directory path in TEST_REPO_DIR
 setup_test_repo() {
-    # Unset all git environment variables to ensure clean test environment
-    unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
-    unset GIT_INDEX_VERSION GIT_COMMON_DIR
+    clean_git_env
 
     # Create temp directory for seed repo
     local SEED_DIR=$(mktemp -d)
@@ -84,8 +45,7 @@ setup_test_repo() {
 setup_test_repo_custom_branch() {
     local branch_name="$1"
 
-    unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
-    unset GIT_INDEX_VERSION GIT_COMMON_DIR
+    clean_git_env
 
     # Create temp directory for seed repo
     local SEED_DIR=$(mktemp -d)

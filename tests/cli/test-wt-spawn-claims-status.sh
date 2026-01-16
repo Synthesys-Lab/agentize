@@ -8,8 +8,7 @@ test_info "wt spawn claims issue status as In Progress"
 
 # Custom setup that includes .agentize.yaml and git remote in seed repo
 setup_test_repo_with_project_config() {
-    unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
-    unset GIT_INDEX_VERSION GIT_COMMON_DIR
+    clean_git_env
 
     # Create temp directory for seed repo
     local SEED_DIR=$(mktemp -d)

@@ -70,6 +70,17 @@ test_info() {
 }
 
 # ============================================================
+# Git environment cleanup
+# ============================================================
+
+# Clean all git environment variables to ensure isolated test environment
+# Usage: clean_git_env
+clean_git_env() {
+    unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+    unset GIT_INDEX_VERSION GIT_COMMON_DIR
+}
+
+# ============================================================
 # Resource management
 # ============================================================
 

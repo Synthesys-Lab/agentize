@@ -6,12 +6,6 @@ Static validation tests ensuring project structure integrity, linter correctness
 
 ## Contents
 
-### Documentation Linter Tests (`test-external-consensus-doc-*`)
-
-Tests for documentation requirements and validation:
-
-- `test-external-consensus-doc-planning.sh` - Validates external-consensus skill documentation completeness
-
 ### Makefile Validation Tests (`test-makefile-*`)
 
 Tests for makefile target correctness and parameter validation:
@@ -67,8 +61,7 @@ Linting tests focus on:
 
 1. **Parameter validation**: Ensure makefile targets reject invalid inputs
 2. **File generation**: Verify generated files have correct structure
-3. **Documentation completeness**: Check all required documentation exists
-4. **Shell compatibility**: Validate completion scripts for bash/zsh
+3. **Shell compatibility**: Validate completion scripts for bash/zsh
 
 ## Related Documentation
 

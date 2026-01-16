@@ -2,15 +2,14 @@
 # Test: wt spawn from linked worktree creates under main repo
 
 source "$(dirname "$0")/../common.sh"
+source "$(dirname "$0")/../helpers-gh-mock.sh"
 
 test_info "wt spawn from linked worktree creates under main repo"
 
 # Source wt functions from project root
 source "$PROJECT_ROOT/src/cli/wt.sh"
 
-# Unset all git environment variables to ensure clean test environment
-unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
-unset GIT_INDEX_VERSION GIT_COMMON_DIR
+clean_git_env
 
 # Create temporary agentize repo
 TEST_AGENTIZE=$(mktemp -d)
@@ -31,22 +30,10 @@ rm -rf "$SEED_DIR"
 cd "$TEST_AGENTIZE"
 
 # Create gh stub for testing
-mkdir -p bin
-cat > bin/gh <<'GHSTUB'
-#!/usr/bin/env bash
-if [ "$1" = "issue" ] && [ "$2" = "view" ]; then
-  issue_no="$3"
-  case "$issue_no" in
-    42|50|51) exit 0 ;;
-    *) exit 1 ;;
-  esac
-fi
-GHSTUB
-chmod +x bin/gh
+create_gh_stub
 
 # Create first worktree and spawn another from it (wt functions already sourced via session-init.sh)
 export AGENTIZE_HOME="$TEST_AGENTIZE"
-export PATH="$TEST_AGENTIZE/bin:$PATH"
 
 wt init
 
