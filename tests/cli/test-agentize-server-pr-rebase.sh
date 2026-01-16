@@ -26,32 +26,43 @@ from agentize.server.__main__ import (
     rebase_worktree,
     worktree_exists,
     get_repo_owner_name,
+    query_issue_project_status,
 )
 
 
 def test_filter_conflicting_prs_multiple():
     """Test filter_conflicting_prs with multiple conflicting PRs."""
+    from unittest.mock import patch
+
     prs = [
-        {'number': 100, 'mergeable': 'CONFLICTING'},
-        {'number': 101, 'mergeable': 'MERGEABLE'},
-        {'number': 102, 'mergeable': 'CONFLICTING'},
-        {'number': 103, 'mergeable': 'UNKNOWN'},
-        {'number': 104, 'mergeable': 'CONFLICTING'},
+        {'number': 100, 'mergeable': 'CONFLICTING', 'headRefName': 'issue-100-fix', 'body': '', 'closingIssuesReferences': []},
+        {'number': 101, 'mergeable': 'MERGEABLE', 'headRefName': 'issue-101-fix', 'body': '', 'closingIssuesReferences': []},
+        {'number': 102, 'mergeable': 'CONFLICTING', 'headRefName': 'issue-102-fix', 'body': '', 'closingIssuesReferences': []},
+        {'number': 103, 'mergeable': 'UNKNOWN', 'headRefName': 'issue-103-fix', 'body': '', 'closingIssuesReferences': []},
+        {'number': 104, 'mergeable': 'CONFLICTING', 'headRefName': 'issue-104-fix', 'body': '', 'closingIssuesReferences': []},
     ]
 
-    conflicting = filter_conflicting_prs(prs)
+    # Mock status to return non-Rebasing for all
+    with patch('agentize.server.github.query_issue_project_status', return_value='Backlog'):
+        conflicting = filter_conflicting_prs(prs, 'test-owner', 'test-repo', 'PROJECT_ID')
+
     assert conflicting == [100, 102, 104], f"Expected [100, 102, 104], got {conflicting}"
     print("PASS: filter_conflicting_prs returns all conflicting PRs")
 
 
 def test_filter_conflicting_prs_skips_unknown():
     """Test that UNKNOWN status PRs are skipped (retry next poll)."""
+    from unittest.mock import patch
+
     prs = [
-        {'number': 200, 'mergeable': 'UNKNOWN'},
-        {'number': 201, 'mergeable': 'UNKNOWN'},
+        {'number': 200, 'mergeable': 'UNKNOWN', 'headRefName': 'issue-200-fix', 'body': '', 'closingIssuesReferences': []},
+        {'number': 201, 'mergeable': 'UNKNOWN', 'headRefName': 'issue-201-fix', 'body': '', 'closingIssuesReferences': []},
     ]
 
-    conflicting = filter_conflicting_prs(prs)
+    # Mock status - should not be called for UNKNOWN mergeable PRs
+    with patch('agentize.server.github.query_issue_project_status', return_value='Backlog'):
+        conflicting = filter_conflicting_prs(prs, 'test-owner', 'test-repo', 'PROJECT_ID')
+
     assert conflicting == [], f"Expected [], got {conflicting}"
     print("PASS: filter_conflicting_prs skips UNKNOWN status PRs")
 
@@ -116,6 +127,95 @@ def test_resolve_issue_no_match_returns_none():
     print("PASS: resolve_issue_from_pr returns None when no match")
 
 
+def test_filter_conflicting_prs_signature_with_status_params():
+    """Test filter_conflicting_prs accepts owner, repo, project_id parameters."""
+    import inspect
+    sig = inspect.signature(filter_conflicting_prs)
+    params = list(sig.parameters.keys())
+
+    # Verify the new signature includes status check parameters
+    expected_params = ['prs', 'owner', 'repo', 'project_id']
+    assert params == expected_params, f"Expected {expected_params}, got {params}"
+    print("PASS: filter_conflicting_prs has correct signature with status params")
+
+
+def test_filter_conflicting_prs_skips_rebasing_status():
+    """Test that conflicting PRs with 'Rebasing' status are skipped.
+
+    This is a structural test verifying the filtering logic. The actual
+    query_issue_project_status is mocked to avoid GitHub API calls.
+    """
+    from unittest.mock import patch
+
+    prs = [
+        {'number': 400, 'mergeable': 'CONFLICTING', 'headRefName': 'issue-400-fix', 'body': '', 'closingIssuesReferences': []},
+        {'number': 401, 'mergeable': 'CONFLICTING', 'headRefName': 'issue-401-feature', 'body': '', 'closingIssuesReferences': []},
+        {'number': 402, 'mergeable': 'CONFLICTING', 'headRefName': 'issue-402-refactor', 'body': '', 'closingIssuesReferences': []},
+    ]
+
+    # Mock query_issue_project_status to return 'Rebasing' for issue 401
+    def mock_status(owner, repo, issue_no, project_id):
+        if issue_no == 401:
+            return 'Rebasing'
+        return 'Backlog'
+
+    with patch('agentize.server.github.query_issue_project_status', mock_status):
+        conflicting = filter_conflicting_prs(prs, 'test-owner', 'test-repo', 'PROJECT_ID')
+
+    # Issue 401 should be skipped because its status is 'Rebasing'
+    assert 401 not in conflicting, f"Expected 401 to be skipped (Rebasing status), got {conflicting}"
+    assert 400 in conflicting, f"Expected 400 to be queued, got {conflicting}"
+    assert 402 in conflicting, f"Expected 402 to be queued, got {conflicting}"
+    print("PASS: filter_conflicting_prs skips PRs with Rebasing status")
+
+
+def test_filter_conflicting_prs_queues_other_statuses():
+    """Test that conflicting PRs with non-Rebasing statuses are queued."""
+    from unittest.mock import patch
+
+    prs = [
+        {'number': 500, 'mergeable': 'CONFLICTING', 'headRefName': 'issue-500-fix', 'body': '', 'closingIssuesReferences': []},
+        {'number': 501, 'mergeable': 'CONFLICTING', 'headRefName': 'issue-501-feature', 'body': '', 'closingIssuesReferences': []},
+    ]
+
+    # Mock status returns various non-Rebasing statuses
+    def mock_status(owner, repo, issue_no, project_id):
+        statuses = {500: 'Plan Accepted', 501: 'In Progress'}
+        return statuses.get(issue_no, '')
+
+    with patch('agentize.server.github.query_issue_project_status', mock_status):
+        conflicting = filter_conflicting_prs(prs, 'test-owner', 'test-repo', 'PROJECT_ID')
+
+    assert 500 in conflicting, f"Expected 500 (Plan Accepted) to be queued, got {conflicting}"
+    assert 501 in conflicting, f"Expected 501 (In Progress) to be queued, got {conflicting}"
+    print("PASS: filter_conflicting_prs queues PRs with non-Rebasing statuses")
+
+
+def test_filter_conflicting_prs_handles_unresolvable_issue():
+    """Test that PRs without resolvable issue numbers are queued (best-effort)."""
+    from unittest.mock import patch
+
+    prs = [
+        # This PR has no issue number in branch name or body
+        {'number': 600, 'mergeable': 'CONFLICTING', 'headRefName': 'random-branch', 'body': 'No issue ref', 'closingIssuesReferences': []},
+    ]
+
+    # Mock status - should not be called for unresolvable issues
+    call_count = [0]
+    def mock_status(owner, repo, issue_no, project_id):
+        call_count[0] += 1
+        return ''
+
+    with patch('agentize.server.github.query_issue_project_status', mock_status):
+        conflicting = filter_conflicting_prs(prs, 'test-owner', 'test-repo', 'PROJECT_ID')
+
+    # PR should be queued since we can't check status without issue number
+    assert 600 in conflicting, f"Expected 600 to be queued (unresolvable), got {conflicting}"
+    # Status should not be queried for unresolvable PRs
+    assert call_count[0] == 0, f"Expected 0 status queries for unresolvable PR, got {call_count[0]}"
+    print("PASS: filter_conflicting_prs queues PRs with unresolvable issue numbers")
+
+
 def test_workflow_integration_structure():
     """Test that all workflow components are accessible and have correct signatures."""
     # Verify all functions are importable and callable
@@ -156,6 +256,8 @@ def test_full_workflow_simulation():
 
     This tests the logical flow: discover → filter → resolve → check worktree
     """
+    from unittest.mock import patch
+
     # Simulate discover result
     mock_prs = [
         {'number': 300, 'mergeable': 'CONFLICTING', 'headRefName': 'issue-300-bugfix', 'body': '', 'closingIssuesReferences': []},
@@ -163,8 +265,10 @@ def test_full_workflow_simulation():
         {'number': 302, 'mergeable': 'CONFLICTING', 'headRefName': 'feature-branch', 'body': 'Fixes #302', 'closingIssuesReferences': []},
     ]
 
-    # Step 1: Filter conflicting
-    conflicting_pr_numbers = filter_conflicting_prs(mock_prs)
+    # Step 1: Filter conflicting (with mocked status check)
+    with patch('agentize.server.github.query_issue_project_status', return_value='Backlog'):
+        conflicting_pr_numbers = filter_conflicting_prs(mock_prs, 'test-owner', 'test-repo', 'PROJECT_ID')
+
     assert conflicting_pr_numbers == [300, 302], f"Expected [300, 302], got {conflicting_pr_numbers}"
 
     # Step 2: Resolve issue numbers for each conflicting PR
@@ -190,6 +294,10 @@ if __name__ == '__main__':
     test_resolve_issue_body_fallback()
     test_resolve_issue_fixes_keyword()
     test_resolve_issue_no_match_returns_none()
+    test_filter_conflicting_prs_signature_with_status_params()
+    test_filter_conflicting_prs_skips_rebasing_status()
+    test_filter_conflicting_prs_queues_other_statuses()
+    test_filter_conflicting_prs_handles_unresolvable_issue()
     test_workflow_integration_structure()
     test_rebase_return_type()
     test_full_workflow_simulation()
