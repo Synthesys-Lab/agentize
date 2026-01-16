@@ -53,6 +53,18 @@ def load_config() -> tuple[str, int, str | None]:
     if not org or not project_id:
         raise ValueError(".agentize.yaml missing project.org or project.id")
 
+    # Fallback to git remote if remote_url not configured
+    if remote_url is None:
+        result = subprocess.run(
+            ['git', 'remote', 'get-url', 'origin'],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            url = result.stdout.strip()
+            if url:
+                remote_url = url
+                _log("remote_url not in .agentize.yaml, using git remote origin")
+
     return org, project_id, remote_url
 
 
