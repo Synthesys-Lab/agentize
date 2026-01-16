@@ -157,6 +157,16 @@ Clean up after feat-request planning completion: remove `agentize:feat-request` 
 1. Remove `agentize:feat-request` label via `gh issue edit`
 2. Log cleanup action
 
+### `_add_pr_label(issue_no: int) -> None`
+
+Add `agentize:pr` label when implementation workflow completes.
+
+**Operations:**
+1. Add `agentize:pr` label via `gh issue edit`
+2. Log label addition
+
+**Note:** Only called for implementation workflows, not for refinement or feat-request workflows.
+
 ### `worktree_exists(issue_no: int) -> bool`
 
 Check if a worktree exists for the given issue number.

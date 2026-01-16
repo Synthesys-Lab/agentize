@@ -204,6 +204,7 @@ gh label create "agentize:plan" --description "Issues with implementation plans"
 gh label create "agentize:refine" --description "Issues queued for refinement" --color "1D76DB" --force
 gh label create "agentize:dev-req" --description "Developer request issues" --color "D93F0B" --force
 gh label create "agentize:bug-report" --description "Bug report issues" --color "B60205" --force
+gh label create "agentize:pr" --description "PR created for implementation" --color "8B6EE8" --force
 ```
 
 Inform the user:
@@ -213,6 +214,7 @@ Created labels:
   - agentize:refine (blue)
   - agentize:dev-req (orange)
   - agentize:bug-report (red)
+  - agentize:pr (purple)
 ```
 
 ### Step 7: Summary
@@ -224,7 +226,7 @@ Setup complete!
 
 Project: <org>/<id>
 Workflow: .github/workflows/add-to-project.yml
-Labels: agentize:plan, agentize:refine, agentize:dev-req, agentize:bug-report
+Labels: agentize:plan, agentize:refine, agentize:dev-req, agentize:bug-report, agentize:pr
 
 See: docs/architecture/project.md for Status field configuration details.
 ```

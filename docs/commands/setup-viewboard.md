@@ -42,6 +42,7 @@ The command performs the following steps:
    - `agentize:refine` - Issues queued for refinement
    - `agentize:dev-req` - Developer request issues (triage)
    - `agentize:bug-report` - Bug report issues (triage)
+   - `agentize:pr` - PR created for implementation
 
 ## Status Field Options
 

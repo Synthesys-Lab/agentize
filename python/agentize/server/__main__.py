@@ -64,6 +64,7 @@ from agentize.server.workers import (
     _check_issue_has_label,
     _cleanup_refinement,
     _cleanup_feat_request,
+    _add_pr_label,
     DEFAULT_WORKERS_DIR,
 )
 
