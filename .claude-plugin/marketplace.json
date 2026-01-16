@@ -9,7 +9,7 @@
       "name": "agentize",
       "source": "./.claude-plugin/",
       "description": "AI-powered development workflow with planning, implementation, and review commands",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "author": {
         "name": "SyntheSys-Lab",
         "email": "jian.weng@kaust.edu.sa"
