@@ -439,50 +439,50 @@ def _check_permission(tool: str, target: str, raw_target: str) -> Tuple[str, str
     and source is 'rules', 'haiku', 'telegram', 'workflow', or 'error'
 
     Priority:
-    1. Workflow-scoped auto-allow (for known-safe workflow commands)
-    2. deny -> ask -> allow (first match wins in rules)
-    Default: ask Haiku if no match or error, then try Telegram if enabled
+    1. Global rules (deny/allow return, ask falls through)
+    2. Workflow auto-allow (allow returns, otherwise continue)
+    3. Haiku LLM (allow/deny return, ask falls through)
+    4. Telegram (single final escalation for ask)
     """
     global _hook_input
     session_id = _hook_input.get('session_id', 'unknown')
 
     try:
-        # Check workflow-scoped auto-allow first
-        workflow_decision = _check_workflow_auto_allow(session_id, tool, target)
-        if workflow_decision:
-            return (workflow_decision, 'workflow')
-
-        # Try rule matching
+        # Stage 1: Global rules first (deny/allow return, ask falls through)
         rule_result = match_rule(tool, target)
         if rule_result:
             decision, source = rule_result
-            # For 'ask' decisions from rules, try Telegram approval if enabled
-            if decision == 'ask':
-                tg_decision = _telegram_approval_decision(tool, target, session_id, raw_target)
-                if tg_decision:
-                    return (tg_decision, 'telegram')
-            return rule_result
+            if decision in ('deny', 'allow'):
+                return rule_result
+            # 'ask' falls through to workflow
 
-        # No match, ask Haiku (use raw_target for context)
+        # Stage 2: Workflow auto-allow (after global rules)
+        workflow_decision = _check_workflow_auto_allow(session_id, tool, target)
+        if workflow_decision in ('deny', 'allow'):
+            return (workflow_decision, 'workflow')
+
+        # Stage 3: Haiku LLM evaluation (use raw_target for context)
         haiku_decision = _ask_haiku_first(tool, raw_target)
+        if haiku_decision in ('deny', 'allow'):
+            return (haiku_decision, 'haiku')
 
-        # If Haiku returns 'ask', try Telegram approval
-        if haiku_decision == 'ask':
+        # Stage 4: Telegram - single final escalation for all 'ask' outcomes
+        tg_decision = _telegram_approval_decision(tool, target, session_id, raw_target)
+        if tg_decision:
+            return (tg_decision, 'telegram')
+
+        return ('ask', 'fallback')
+    except Exception:
+        # Error recovery: try Haiku, then Telegram, then fallback to ask
+        try:
+            haiku_decision = _ask_haiku_first(tool, raw_target)
+            if haiku_decision in ('deny', 'allow'):
+                return (haiku_decision, 'haiku')
+            # Haiku returned ask, try Telegram
             tg_decision = _telegram_approval_decision(tool, target, session_id, raw_target)
             if tg_decision:
                 return (tg_decision, 'telegram')
-
-        return (haiku_decision, 'haiku')
-    except Exception:
-        # Any error, ask Haiku as fallback
-        try:
-            haiku_decision = _ask_haiku_first(tool, raw_target)
-            # If Haiku returns 'ask', try Telegram approval
-            if haiku_decision == 'ask':
-                tg_decision = _telegram_approval_decision(tool, target, session_id, raw_target)
-                if tg_decision:
-                    return (tg_decision, 'telegram')
-            return (haiku_decision, 'haiku')
+            return ('ask', 'fallback')
         except Exception:
             # If even Haiku fails, try Telegram as last resort
             tg_decision = _telegram_approval_decision(tool, target, session_id, raw_target)

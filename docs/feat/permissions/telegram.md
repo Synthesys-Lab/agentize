@@ -4,7 +4,14 @@ Manual approval workflow via Telegram for hands-off automation.
 
 ## Overview
 
-When rule-based permissions return `ask` (or when Haiku LLM evaluation is uncertain), the permission system can escalate to Telegram for manual approval. This enables secure hands-off operation by letting you approve/deny tool calls from your phone.
+Telegram is the **single final escalation point** in the permission evaluation flow. When all other stages (global rules, workflow auto-allow, Haiku LLM) result in `ask`, the system escalates to Telegram for manual approval. This enables secure hands-off operation by letting you approve/deny tool calls from your phone.
+
+**Position in evaluation order:**
+```
+Global Rules → Workflow Auto-Allow → Haiku LLM → Telegram (final)
+```
+
+Telegram escalation occurs **once at the end**, not at multiple points. This prevents duplicate approval requests and provides a clean escalation path. See [rules.md](rules.md) for the complete evaluation order.
 
 ## Configuration
 

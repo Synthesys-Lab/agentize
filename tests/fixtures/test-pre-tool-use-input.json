@@ -133,5 +133,19 @@
       "command": "gh label create --force agentize:plan"
     },
     "session_id": "test-session-setup-viewboard"
+  },
+  "order_test_global_deny_vs_workflow_allow": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "rm -rf /tmp/test"
+    },
+    "session_id": "test-session-ordering"
+  },
+  "order_test_rule_ask_fallthrough": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "python3 test_script.py"
+    },
+    "session_id": "test-session-ordering"
   }
 }

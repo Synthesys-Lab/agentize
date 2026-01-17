@@ -314,4 +314,120 @@ decision=$(
 
 cleanup_dir "$TMP_DIR"
 
+# =============================================================================
+# Evaluation Order Tests (Issue #488)
+# These tests validate the correct permission evaluation order:
+# Global rules → Workflow auto-allow → Haiku LLM → Telegram
+# =============================================================================
+
+# Test 30: Global deny overrides workflow allow
+test_info "Test 30: Global deny overrides workflow allow (evaluation order)"
+# Setup: Create workflow session that would allow rm -rf via workflow rules
+ORDER_TMP_DIR=$(make_temp_dir "ordering-test")
+ORDER_SESSION_ID="test-session-ordering"
+mkdir -p "$ORDER_TMP_DIR/.tmp/hooked-sessions"
+# Create a workflow session that tries to allow dangerous commands
+echo '{"workflow": "setup-viewboard", "state": "initial", "continuation_count": 0}' > "$ORDER_TMP_DIR/.tmp/hooked-sessions/$ORDER_SESSION_ID.json"
+
+# Even with workflow session active, rm -rf should be denied by global rules
+input=$(jq -c '.order_test_global_deny_vs_workflow_allow' "$FIXTURE_FILE")
+decision=$(
+    export AGENTIZE_HOME="$ORDER_TMP_DIR"
+    unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
+    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+)
+[ "$decision" = "deny" ] || test_fail "Expected 'deny' for rm -rf even with workflow session, got '$decision' (global deny must override workflow)"
+
+# Test 31: Rule ask falls through to workflow auto-allow
+test_info "Test 31: Rule 'ask' falls through to workflow auto-allow"
+# This test verifies: rule returns ask → workflow auto-allow is checked
+# Using gh api graphql which:
+#   - Global rules: ask (matches '^gh\s+api' ask rule)
+#   - Workflow auto-allow: allow (for setup-viewboard workflow)
+# After fix: global ask falls through to workflow, returns allow
+# Need to create session file for the session ID used in the fixture
+VIEWBOARD_SESSION_ID="test-session-setup-viewboard"
+echo '{"workflow": "setup-viewboard", "state": "initial", "continuation_count": 0}' > "$ORDER_TMP_DIR/.tmp/hooked-sessions/$VIEWBOARD_SESSION_ID.json"
+input=$(jq -c '.setup_viewboard_gh_api_graphql' "$FIXTURE_FILE")
+decision=$(
+    export AGENTIZE_HOME="$ORDER_TMP_DIR"
+    unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
+    # Use the setup-viewboard session
+    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+)
+[ "$decision" = "allow" ] || test_fail "Expected 'allow' for gh api graphql after ask falls through to workflow, got '$decision'"
+
+# Test 32: Verify evaluation order via decision source (Python unit test)
+test_info "Test 32: Evaluation order validation - global deny first"
+result=$(python3 << 'PYEOF'
+import sys
+import os
+import json
+
+# Set up environment to disable external services
+os.environ.pop('AGENTIZE_USE_TG', None)
+os.environ.pop('HANDSOFF_AUTO_PERMISSION', None)
+
+# Add project path
+sys.path.insert(0, os.path.join(os.environ.get('PROJECT_ROOT', '.'), '.claude-plugin'))
+
+from lib.permission.determine import _check_permission
+
+# Mock _hook_input to provide session_id
+import lib.permission.determine as determine_module
+determine_module._hook_input = {'session_id': 'test-ordering'}
+
+# Test: rm -rf should be denied by global rules, not workflow
+decision, source = _check_permission('Bash', 'rm -rf /tmp', 'rm -rf /tmp')
+if decision != 'deny' or source != 'rules':
+    print(f'FAIL: Expected deny/rules for rm -rf, got {decision}/{source}')
+    sys.exit(1)
+
+print('PASS')
+PYEOF
+)
+[ "$result" = "PASS" ] || test_fail "Evaluation order test failed: $result"
+
+# Test 33: Telegram is final escalation (verify docstring matches implementation)
+test_info "Test 33: Telegram is final escalation point (docstring verification)"
+# This verifies that the docstring correctly describes the evaluation order
+# by checking the _check_permission function's docstring
+result=$(python3 << 'PYEOF'
+import sys
+import os
+
+sys.path.insert(0, os.path.join(os.environ.get('PROJECT_ROOT', '.'), '.claude-plugin'))
+
+from lib.permission.determine import _check_permission
+
+# Verify the docstring reflects the correct evaluation order
+docstring = _check_permission.__doc__
+required_statements = [
+    'Global rules (deny/allow return, ask falls through)',
+    'Workflow auto-allow (allow returns, otherwise continue)',
+    'Haiku LLM (allow/deny return, ask falls through)',
+    'Telegram (single final escalation for ask)'
+]
+
+missing = []
+for stmt in required_statements:
+    if stmt not in docstring:
+        missing.append(stmt)
+
+if missing:
+    print(f'FAIL: Docstring missing: {missing}')
+    sys.exit(1)
+
+# Also verify the priority numbers are in correct order (1-4)
+if '1.' not in docstring or '2.' not in docstring or '3.' not in docstring or '4.' not in docstring:
+    print('FAIL: Priority numbers 1-4 not found in docstring')
+    sys.exit(1)
+
+print('PASS')
+PYEOF
+)
+[ "$result" = "PASS" ] || test_fail "Docstring verification test failed: $result"
+
+cleanup_dir "$ORDER_TMP_DIR"
+
 test_pass "PreToolUse hook permission matching works correctly"
