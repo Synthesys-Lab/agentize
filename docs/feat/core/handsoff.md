@@ -100,7 +100,7 @@ Set in shell environment or `.claude/settings.json`:
 **`HANDSOFF_DEBUG`**
 - **Purpose:** Enable detailed debug logging and tool usage tracking
 - **Values:** `1` (enabled), `0` (disabled, default)
-- **Log file:** `${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/tool-used.txt`
+- **Log file:** `${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/permission.txt` (unified permission log)
 - **Additional output:** Server issue-filter logs (see [server.md](../server.md#issue-filtering-debug-logs))
 - **Example:** `export HANDSOFF_DEBUG=1`
 
