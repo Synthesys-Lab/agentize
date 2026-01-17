@@ -1,15 +1,17 @@
 # Handsoff Mode
 
 Handsoff mode aims at minimizing user intervention during the development process.
-In this mode, the agent will do its best to automatically proceed the task without
-asking user, including the next steps and permissions.
+By default, the agent will automatically proceed the task without asking user,
+including the next steps and permissions.
+
+To disable handsoff mode:
 
 ```bash
-export HANDSOFF_MODE=1
-export HANDSOFF_AUTO_PERMISSION=1
+export HANDSOFF_MODE=0
+export HANDSOFF_AUTO_PERMISSION=0
 ```
 
-where `HANDSOFF_MODE` enables automatic continuation of the workflow.
+`HANDSOFF_MODE` enables automatic continuation of the workflow.
 Upon Claude `stop.py`, it feeds back a prompt to ask the agent
 automatically determine the status of the current workflow.
 If finished, stop the workflow. If not, continue to the next step.

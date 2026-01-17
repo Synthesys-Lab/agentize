@@ -19,9 +19,9 @@ See [Handsoff Mode](feat/core/handsoff.md) for detailed documentation.
 
 | Variable | Required | Type | Default | Description |
 |----------|----------|------|---------|-------------|
-| `HANDSOFF_MODE` | No | Boolean | `0` | Enable handsoff auto-continuation. Values: `1`, `true`, `on`, `enable`. |
+| `HANDSOFF_MODE` | No | Boolean | `1` | Enable handsoff auto-continuation. Values: `1`, `true`, `on`, `enable`. |
 | `HANDSOFF_MAX_CONTINUATIONS` | No | Integer | `10` | Maximum number of auto-continuations per workflow. |
-| `HANDSOFF_AUTO_PERMISSION` | No | Boolean | `0` | Enable Haiku LLM-based auto-permission decisions. Values: `1`, `true`, `on`, `enable`. |
+| `HANDSOFF_AUTO_PERMISSION` | No | Boolean | `1` | Enable Haiku LLM-based auto-permission decisions. Values: `1`, `true`, `on`, `enable`. |
 | `HANDSOFF_DEBUG` | No | Boolean | `0` | Enable detailed debug logging to `.tmp/`. Values: `1`, `true`, `on`, `enable`. |
 
 ## Telegram Approval
@@ -62,8 +62,16 @@ Environment variables for running the test suite.
 
 ### Minimal Handsoff Setup
 
+Handsoff mode is enabled by default. To disable it, set:
+
 ```bash
-export HANDSOFF_MODE=1
+export HANDSOFF_MODE=0
+export HANDSOFF_AUTO_PERMISSION=0
+```
+
+Override max continuations (optional):
+
+```bash
 export HANDSOFF_MAX_CONTINUATIONS=10
 ```
 
