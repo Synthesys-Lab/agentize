@@ -4,8 +4,15 @@ import os
 import re
 import socket
 import sys
+from pathlib import Path
 
-from agentize.telegram_utils import escape_html, telegram_request
+# Add .claude-plugin to path for lib imports
+_repo_root = Path(__file__).resolve().parents[3]
+_plugin_dir = _repo_root / ".claude-plugin"
+if str(_plugin_dir) not in sys.path:
+    sys.path.insert(0, str(_plugin_dir))
+
+from lib.telegram_utils import escape_html, telegram_request
 from agentize.server.log import _log
 
 

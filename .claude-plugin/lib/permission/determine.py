@@ -17,15 +17,15 @@ from typing import Optional, Dict, Any, Tuple, List
 from .rules import match_rule
 from .strips import normalize_bash_command
 from .parser import parse_hook_input, extract_target
-from agentize.telegram_utils import escape_html as _shared_escape_html, telegram_request
 
-# Import logger from hooks directory
+# Import sibling modules from lib/
 import sys
-_project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-_hooks_path = os.path.join(_project_root, '.claude-plugin', 'hooks')
-if _hooks_path not in sys.path:
-    sys.path.insert(0, _hooks_path)
-from logger import log_tool_decision
+from pathlib import Path
+_lib_dir = Path(__file__).resolve().parent.parent
+if str(_lib_dir.parent) not in sys.path:
+    sys.path.insert(0, str(_lib_dir.parent))
+from lib.telegram_utils import escape_html as _shared_escape_html, telegram_request
+from lib.logger import log_tool_decision
 
 # Constants
 TELEGRAM_API_TIMEOUT_SEC = 10

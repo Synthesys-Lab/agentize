@@ -34,11 +34,11 @@ Hooks enable automated behaviors and integrations at key points in the Claude Co
 ### pre-tool-use.py
 **Event**: PreToolUse (before tool execution)
 
-**Purpose**: Thin wrapper delegating to `python/agentize/permission/` module
+**Purpose**: Thin wrapper delegating to `lib/permission/` module
 
 **Behavior**:
-- Delegates to `agentize.permission.determine()` for permission decisions
-- Rules are sourced from `python/agentize/permission/rules.py`
+- Delegates to `lib.permission.determine()` for permission decisions
+- Rules are sourced from `lib/permission/rules.py`
 - Returns `allow/deny/ask` decision based on pattern matching
 - Logs tool usage when `HANDSOFF_DEBUG=1`
 - Falls back to `ask` on import/execution errors
@@ -50,6 +50,7 @@ Hooks enable automated behaviors and integrations at key points in the Claude Co
 **Purpose**: Initialize session state for handsoff mode workflows
 
 **Behavior**:
+- Imports workflow detection from `lib/workflow.py`
 - Detects `/ultra-planner`, `/issue-to-impl`, and `/plan-to-issue` commands
 - Creates session state files in `${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/`
 - Extracts optional `issue_no` from command arguments
@@ -61,10 +62,21 @@ Hooks enable automated behaviors and integrations at key points in the Claude Co
 **Purpose**: Auto-continue workflows in handsoff mode
 
 **Behavior**:
+- Imports continuation prompts from `lib/workflow.py`
 - Reads session state from `${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/`
 - Increments continuation count and checks limits
 - Injects workflow-specific continuation prompts
 - See [docs/feat/core/handsoff.md](../../docs/feat/core/handsoff.md) for details
+
+## Shared Libraries
+
+All reusable code is located in the `lib/` directory (sibling to `hooks/`). Hooks import from:
+- `lib.permission` - Permission evaluation logic
+- `lib.workflow` - Workflow detection and continuation prompts
+- `lib.logger` - Debug logging utilities
+- `lib.telegram_utils` - Telegram API helpers
+
+See [lib/README.md](../lib/README.md) for details.
 
 ## Hook Invocation Mechanism
 

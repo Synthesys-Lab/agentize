@@ -3,15 +3,15 @@
 import os
 import sys
 import json
+from pathlib import Path
 
-from logger import logger
+# Add .claude-plugin to path for lib imports
+_plugin_dir = Path(__file__).resolve().parent.parent
+if str(_plugin_dir) not in sys.path:
+    sys.path.insert(0, str(_plugin_dir))
 
-# Add python directory to path for agentize imports
-_python_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'python')
-if _python_dir not in sys.path:
-    sys.path.insert(0, _python_dir)
-
-from agentize.workflow import (
+from lib.logger import logger
+from lib.workflow import (
     detect_workflow,
     extract_issue_no,
     extract_pr_no,

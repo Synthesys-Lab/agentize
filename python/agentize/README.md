@@ -11,18 +11,11 @@ python/agentize/
 ├── cli.md                # CLI interface documentation
 ├── shell.py              # Shared shell function invocation utilities
 ├── usage.py              # Claude Code token usage statistics
-├── telegram_utils.py     # Shared Telegram API utilities
-├── telegram_utils.md     # Telegram utilities interface documentation
-├── workflow.py           # Unified workflow definitions for handsoff mode
-├── server/               # Polling server module
-│   └── __main__.py       # Server entry point (python -m agentize.server)
-└── permission/           # PreToolUse hook permission module
-    ├── __init__.py       # Exports determine()
-    ├── determine.py      # Main permission logic
-    ├── rules.py          # PERMISSION_RULES and matching
-    ├── strips.py         # Bash command normalization
-    └── parser.py         # Hook input parsing
+└── server/               # Polling server module
+    └── __main__.py       # Server entry point (python -m agentize.server)
 ```
+
+**Note**: Shared utilities (permission, workflow, telegram_utils, logger) have been consolidated into `.claude-plugin/lib/`. See [.claude-plugin/lib/README.md](../../.claude-plugin/lib/README.md) for details.
 
 ## Usage
 
@@ -51,40 +44,13 @@ The `shell.py` module provides a unified interface for invoking shell functions 
 
 ### Permission Module
 
-The primary entry point is `agentize.permission.determine()`:
+The permission module has been moved to `.claude-plugin/lib/permission/`. See the lib README for usage:
 
 ```python
-from agentize.permission import determine
-
-# Called from .claude/hooks/pre-tool-use.py
-result = determine(sys.stdin.read())
-print(json.dumps(result))
+# Import from lib (after adding .claude-plugin to sys.path)
+from lib.permission import determine
 ```
 
-## Permission Module
+## Server Module
 
-The permission module evaluates Claude Code tool use requests and returns allow/deny/ask decisions.
-
-### Decision Flow
-
-1. **Rule Matching** - Check against `PERMISSION_RULES` dict (deny → ask → allow priority)
-2. **Haiku LLM** - If no rule matches, ask Haiku for permission (when `HANDSOFF_AUTO_PERMISSION=1`)
-3. **Telegram Approval** - For 'ask' decisions, optionally request human approval via Telegram (when `AGENTIZE_USE_TG=1`)
-
-### Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `HANDSOFF_MODE` | Enable hands-off mode (1/true/on) |
-| `HANDSOFF_AUTO_PERMISSION` | Enable Haiku-based auto-permission (1/true/on) |
-| `HANDSOFF_DEBUG` | Enable debug logging to .tmp/ (1/true/on) |
-| `AGENTIZE_USE_TG` | Enable Telegram approval (1/true/on) |
-| `TG_API_TOKEN` | Telegram bot API token |
-| `TG_CHAT_ID` | Telegram chat ID for approvals |
-| `TG_APPROVAL_TIMEOUT_SEC` | Telegram approval timeout (default: 60) |
-| `TG_POLL_INTERVAL_SEC` | Telegram polling interval (default: 5) |
-| `TG_ALLOWED_USER_IDS` | Comma-separated list of allowed Telegram user IDs |
-
-### Test Isolation
-
-Tests automatically clear Telegram-related environment variables (`AGENTIZE_USE_TG`, `TG_API_TOKEN`, `TG_CHAT_ID`, `TG_ALLOWED_USER_IDS`, `TG_APPROVAL_TIMEOUT_SEC`, `TG_POLL_INTERVAL_SEC`) via `tests/common.sh` to prevent external API calls during test runs. The Telegram API request functions also include an internal guard that returns `None` immediately when Telegram is disabled.
+The server module (`python -m agentize.server`) imports shared utilities from `.claude-plugin/lib/` for Telegram notifications.

@@ -3,19 +3,15 @@
 import os
 import sys
 import json
+from pathlib import Path
 
-# Add hooks directory to Python path so we can import logger
-hooks_dir = os.path.dirname(os.path.abspath(__file__))
-if hooks_dir not in sys.path:
-    sys.path.insert(0, hooks_dir)
+# Add hooks directory to Python path for lib symlink access
+hooks_dir = Path(__file__).resolve().parent
+if str(hooks_dir) not in sys.path:
+    sys.path.insert(0, str(hooks_dir))
 
-# Add python directory to path for agentize imports
-_python_dir = os.path.join(hooks_dir, '..', '..', 'python')
-if _python_dir not in sys.path:
-    sys.path.insert(0, _python_dir)
-
-from logger import logger
-from agentize.workflow import (
+from lib.logger import logger
+from lib.workflow import (
     detect_workflow,
     extract_issue_no,
     extract_pr_no,

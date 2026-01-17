@@ -203,10 +203,10 @@ test_info "Test 23: _tg_api_request returns None when Telegram disabled"
 guard_result=$(python3 -c "
 import os
 import sys
-sys.path.insert(0, '$PROJECT_ROOT/python')
+sys.path.insert(0, '$PROJECT_ROOT/.claude-plugin')
 # Ensure Telegram is disabled
 os.environ.pop('AGENTIZE_USE_TG', None)
-from agentize.permission.determine import _tg_api_request, _is_telegram_enabled
+from lib.permission.determine import _tg_api_request, _is_telegram_enabled
 # Verify Telegram is disabled
 assert not _is_telegram_enabled(), 'Telegram should be disabled'
 # Call _tg_api_request - should return None without making any HTTP request
@@ -219,10 +219,10 @@ print('None' if result is None else 'ERROR')
 test_info "Test 24: _edit_message_result handles timeout decision"
 result=$(python3 -c "
 import sys
-sys.path.insert(0, '$PROJECT_ROOT/python')
+sys.path.insert(0, '$PROJECT_ROOT/.claude-plugin')
 
 # Test that _edit_message_result builds correct timeout message
-from agentize.permission.determine import _escape_html, SESSION_ID_DISPLAY_LEN
+from lib.permission.determine import _escape_html, SESSION_ID_DISPLAY_LEN
 
 def build_result_text(decision, tool, target, session_id):
     if decision == 'timeout':
