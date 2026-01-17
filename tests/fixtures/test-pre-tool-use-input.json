@@ -168,5 +168,26 @@
       "command": "git push -f origin master"
     },
     "session_id": "test-session"
+  },
+  "ultra_planner_jq_session_update": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "jq '.continuation_count = 1' /tmp/agentize/.tmp/hooked-sessions/test-session-ultra-planner.json > /tmp/agentize/.tmp/hooked-sessions/test-session-ultra-planner.json.tmp && mv /tmp/agentize/.tmp/hooked-sessions/test-session-ultra-planner.json.tmp /tmp/agentize/.tmp/hooked-sessions/test-session-ultra-planner.json"
+    },
+    "session_id": "test-session-ultra-planner"
+  },
+  "plan_to_issue_jq_session_update": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "jq '.continuation_count = 1' /tmp/agentize/.tmp/hooked-sessions/test-session-plan-to-issue.json > /tmp/agentize/.tmp/hooked-sessions/test-session-plan-to-issue.json.tmp && mv /tmp/agentize/.tmp/hooked-sessions/test-session-plan-to-issue.json.tmp /tmp/agentize/.tmp/hooked-sessions/test-session-plan-to-issue.json"
+    },
+    "session_id": "test-session-plan-to-issue"
+  },
+  "setup_viewboard_jq_session_update": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "jq '.continuation_count = 1' /tmp/agentize/.tmp/hooked-sessions/test-session-setup-viewboard.json > /tmp/agentize/.tmp/hooked-sessions/test-session-setup-viewboard.json.tmp && mv /tmp/agentize/.tmp/hooked-sessions/test-session-setup-viewboard.json.tmp /tmp/agentize/.tmp/hooked-sessions/test-session-setup-viewboard.json"
+    },
+    "session_id": "test-session-setup-viewboard"
   }
 }

@@ -158,6 +158,18 @@ When configured, enables remote approval of tool usage via Telegram. When a PreT
 
 ## Workflow-Specific Behavior
 
+### Common Permissions (All Workflows)
+
+All supported workflows automatically allow `jq` writes to the session's own state file at `$AGENTIZE_HOME/.tmp/hooked-sessions/{session_id}.json`. This enables continuation tracking for handsoff mode.
+
+**Security constraints:**
+- Only the session's own state file is writable (path must match current session ID)
+- Command must match exact pattern: `jq '...' {session_file} > {session_file}.tmp && mv {session_file}.tmp {session_file}`
+- No wildcard jq writes are permitted outside the session state file
+- Falls back to `ask` if verification fails
+
+These permissions apply only during active workflows and do not affect global permission rules.
+
 ### `/ultra-planner` Workflow
 
 **Goal:** Create a comprehensive implementation plan and post it to GitHub Issue.
@@ -195,17 +207,6 @@ The ultimate goal of this workflow is to deliver a PR on GitHub that implements 
 ```
 
 **Completion criteria:** Pull request created on GitHub with all tests passing.
-
-**Automatic permissions:** When this workflow is active, the following operations are automatically allowed:
-- `jq` writes to the session's own state file at `$AGENTIZE_HOME/.tmp/hooked-sessions/{session_id}.json`
-
-**Security constraints for jq auto-allow:**
-- Only the session's own state file is writable (path must match current session ID)
-- Command must match exact pattern: `jq '...' {session_file} > {session_file}.tmp && mv {session_file}.tmp {session_file}`
-- No wildcard jq writes are permitted outside the session state file
-- Falls back to `ask` if verification fails
-
-These permissions apply **only during the issue-to-impl workflow** and do not affect global permission rules.
 
 ### `/plan-to-issue` Workflow
 

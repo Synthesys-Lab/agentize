@@ -575,15 +575,26 @@ def _get_workflow_type(session: str) -> str:
 # Workflow-scoped auto-allow patterns
 # Format: workflow -> list of (tool, pattern, optional_verifier)
 # If verifier is provided, it must return True for auto-allow to apply
+
+# Common rule for all workflows: session state updates via jq
+_SESSION_STATE_RULE = ('Bash', r'^jq\s+', '_verify_jq_session_state_write')
+
 _WORKFLOW_ALLOW_RULES: Dict[str, List[Tuple[str, str, Optional[str]]]] = {
     'setup-viewboard': [
         ('Bash', r'^gh auth status', None),           # Authentication verification
         ('Bash', r'^gh repo view --json owner', None),  # Repository owner lookup
         ('Bash', r'^gh api graphql', None),           # Project creation and configuration
         ('Bash', r'^gh label create --force', None),  # Label creation
+        _SESSION_STATE_RULE,                          # Session state updates
     ],
     'issue-to-impl': [
-        ('Bash', r'^jq\s+', '_verify_jq_session_state_write'),  # Session state updates
+        _SESSION_STATE_RULE,                          # Session state updates
+    ],
+    'ultra-planner': [
+        _SESSION_STATE_RULE,                          # Session state updates
+    ],
+    'plan-to-issue': [
+        _SESSION_STATE_RULE,                          # Session state updates
     ],
 }
 

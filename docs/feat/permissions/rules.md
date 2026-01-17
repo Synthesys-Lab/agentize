@@ -88,25 +88,28 @@ See `.claude-plugin/lib/permission/rules.py` for the complete list.
 
 Some workflows require specific tool access that would normally need approval. Workflow-scoped rules auto-allow these operations only when the workflow is active.
 
-### Supported Workflows
+### Common Permissions (All Workflows)
 
-#### `/setup-viewboard`
-
-Auto-allowed commands:
-- `gh auth status` — Authentication verification
-- `gh repo view --json owner` — Repository owner lookup
-- `gh api graphql` — Project creation and configuration
-- `gh label create --force` — Label creation
-
-#### `/issue-to-impl`
-
-Auto-allowed operations:
-- `jq` writes to the session's own state file at `$AGENTIZE_HOME/.tmp/hooked-sessions/{session_id}.json`
+All workflows automatically allow `jq` writes to the session's own state file at `$AGENTIZE_HOME/.tmp/hooked-sessions/{session_id}.json`. This enables continuation tracking for handsoff mode.
 
 **Security constraints:**
 - Only the session's own state file is writable
 - Command must match exact pattern: `jq ... {session_file} > {session_file}.tmp && mv ...`
 - No wildcard jq writes are permitted
+
+### Workflow-Specific Permissions
+
+#### `/setup-viewboard`
+
+Additional auto-allowed commands:
+- `gh auth status` — Authentication verification
+- `gh repo view --json owner` — Repository owner lookup
+- `gh api graphql` — Project creation and configuration
+- `gh label create --force` — Label creation
+
+#### `/issue-to-impl`, `/ultra-planner`, `/plan-to-issue`
+
+These workflows use the common session state permissions only.
 
 ### How Workflow Detection Works
 
