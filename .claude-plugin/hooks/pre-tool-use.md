@@ -1,16 +1,16 @@
 # PreToolUse Hook Interface
 
-Thin wrapper that delegates to `python/agentize/permission/` module for tool permission decisions.
+Thin wrapper that delegates to `lib/permission/` module for tool permission decisions.
 
 ## Purpose
 
-Provides unified logging and permission enforcement for handsoff mode workflows. This hook is a minimal wrapper that imports and invokes `agentize.permission.determine()`, ensuring rules are defined in a single canonical location.
+Provides unified logging and permission enforcement for handsoff mode workflows. This hook is a minimal wrapper that imports and invokes `lib.permission.determine()`, ensuring rules are defined in a single canonical location.
 
 ## Rule Source
 
-Permission rules are defined in `python/agentize/permission/rules.py`. The hook itself contains no rule definitions—it only:
-1. Inserts the `python/` directory into `sys.path`
-2. Imports and calls `agentize.permission.determine()`
+Permission rules are defined in `lib/permission/rules.py`. The hook itself contains no rule definitions—it only:
+1. Inserts the `.claude-plugin/` directory into `sys.path`
+2. Imports and calls `lib.permission.determine()`
 3. Outputs the returned JSON
 4. Falls back to `ask` on any import/execution errors
 
@@ -48,7 +48,7 @@ JSON to stdout:
 
 ## Permission Rule Syntax
 
-Rules are defined in `python/agentize/permission/rules.py` as Python tuples in the `PERMISSION_RULES` dict. See that file for the canonical rule definitions.
+Rules are defined in `lib/permission/rules.py` as Python tuples in the `PERMISSION_RULES` dict. See that file for the canonical rule definitions.
 
 **Rule structure:**
 - First element: Tool name (exact match)

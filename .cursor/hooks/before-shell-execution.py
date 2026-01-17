@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""beforeShellExecution hook - delegates to agentize.permission module.
+"""beforeShellExecution hook - delegates to lib.permission module.
 
 This hook intercepts shell commands and uses the permission system to determine
 if they should be allowed, denied, or require user approval.
@@ -17,28 +17,23 @@ def main():
     try:
         # Read hook input from stdin
         hook_input = json.load(sys.stdin)
-        
+
         # Extract command and cwd from beforeShellExecution input
         command = hook_input.get("command", "")
         cwd = hook_input.get("cwd", "")
         conversation_id = hook_input.get("conversation_id", "")
         generation_id = hook_input.get("generation_id", "")
-        
+
         # Use conversation_id as session_id, fallback to generation_id
         session_id = conversation_id or generation_id or "unknown"
-        
-        # Setup Python path to import agentize.permission
-        # Dual-mode: plugin mode uses CLAUDE_PLUGIN_ROOT, project-local uses relative path
-        plugin_dir = os.environ.get("CLAUDE_PLUGIN_ROOT")
-        if plugin_dir:
-            sys.path.insert(0, os.path.join(plugin_dir, "python"))
-        else:
-            # Project-local mode: hooks/ is at .cursor/hooks/, 2 levels below repo root
-            repo_root = Path(__file__).resolve().parents[2]
-            sys.path.insert(0, str(repo_root / "python"))
-        
+
+        # Add hooks directory to Python path for lib symlink access
+        hooks_dir = Path(__file__).resolve().parent
+        if str(hooks_dir) not in sys.path:
+            sys.path.insert(0, str(hooks_dir))
+
         # Import permission determination function
-        from agentize.permission import determine
+        from lib.permission import determine
         
         # Format input as PreToolUse-style JSON for the permission system
         # The permission system expects: tool_name, session_id, tool_input
