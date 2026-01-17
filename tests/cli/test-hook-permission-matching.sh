@@ -314,4 +314,58 @@ decision=$(
 
 cleanup_dir "$TMP_DIR"
 
+# Test 30: issue-to-impl workflow → jq session state update auto-allow
+test_info "Test 30: issue-to-impl workflow → jq session state update auto-allow"
+TMP_DIR=$(make_temp_dir "issue-to-impl-jq-test")
+SESSION_ID="test-session-issue-to-impl"
+mkdir -p "$TMP_DIR/.tmp/hooked-sessions"
+echo '{"workflow": "issue-to-impl", "state": "initial", "continuation_count": 0}' > "$TMP_DIR/.tmp/hooked-sessions/$SESSION_ID.json"
+
+# Test jq update to own session state file should be auto-allowed
+input=$(jq -c '.issue_to_impl_jq_session_update | .tool_input.command = "jq '\''.continuation_count = 1'\'' '"$TMP_DIR"'/.tmp/hooked-sessions/'"$SESSION_ID"'.json > '"$TMP_DIR"'/.tmp/hooked-sessions/'"$SESSION_ID"'.json.tmp && mv '"$TMP_DIR"'/.tmp/hooked-sessions/'"$SESSION_ID"'.json.tmp '"$TMP_DIR"'/.tmp/hooked-sessions/'"$SESSION_ID"'.json"' "$FIXTURE_FILE")
+decision=$(
+    export AGENTIZE_HOME="$TMP_DIR"
+    unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
+    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+)
+[ "$decision" = "allow" ] || test_fail "Expected 'allow' for jq session state update in issue-to-impl workflow, got '$decision'"
+
+# Test 31: issue-to-impl workflow → jq write to other session → ask
+test_info "Test 31: issue-to-impl workflow → jq write to other session → ask"
+input=$(jq -c '.issue_to_impl_jq_wrong_session | .tool_input.command = "jq '\''.continuation_count = 1'\'' '"$TMP_DIR"'/.tmp/hooked-sessions/other-session.json > '"$TMP_DIR"'/.tmp/hooked-sessions/other-session.json.tmp && mv '"$TMP_DIR"'/.tmp/hooked-sessions/other-session.json.tmp '"$TMP_DIR"'/.tmp/hooked-sessions/other-session.json"' "$FIXTURE_FILE")
+decision=$(
+    export AGENTIZE_HOME="$TMP_DIR"
+    unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
+    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+)
+[ "$decision" = "ask" ] || test_fail "Expected 'ask' for jq write to other session in issue-to-impl workflow, got '$decision'"
+
+# Test 32: jq session update outside workflow → ask
+test_info "Test 32: jq session update outside workflow → ask"
+rm -f "$TMP_DIR/.tmp/hooked-sessions/$SESSION_ID.json"
+input=$(jq -c '.issue_to_impl_jq_session_update | .tool_input.command = "jq '\''.continuation_count = 1'\'' '"$TMP_DIR"'/.tmp/hooked-sessions/'"$SESSION_ID"'.json > '"$TMP_DIR"'/.tmp/hooked-sessions/'"$SESSION_ID"'.json.tmp && mv '"$TMP_DIR"'/.tmp/hooked-sessions/'"$SESSION_ID"'.json.tmp '"$TMP_DIR"'/.tmp/hooked-sessions/'"$SESSION_ID"'.json"' "$FIXTURE_FILE")
+decision=$(
+    export AGENTIZE_HOME="$TMP_DIR"
+    unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
+    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+)
+[ "$decision" = "ask" ] || test_fail "Expected 'ask' for jq session update outside workflow, got '$decision'"
+
+cleanup_dir "$TMP_DIR"
+
+# Test 33: Force push to main → ask (guardrail)
+test_info "Test 33: Force push to main → ask (guardrail)"
+decision=$(run_hook_with_fixture "force_push_to_main")
+[ "$decision" = "ask" ] || test_fail "Expected 'ask' for force push to main, got '$decision'"
+
+# Test 34: Force push with --force-with-lease to main → ask (guardrail)
+test_info "Test 34: Force push --force-with-lease to main → ask (guardrail)"
+decision=$(run_hook_with_fixture "force_push_with_lease_main")
+[ "$decision" = "ask" ] || test_fail "Expected 'ask' for force push --force-with-lease to main, got '$decision'"
+
+# Test 35: Force push with -f flag to master → ask (guardrail)
+test_info "Test 35: Force push -f to master → ask (guardrail)"
+decision=$(run_hook_with_fixture "force_push_f_flag_master")
+[ "$decision" = "ask" ] || test_fail "Expected 'ask' for force push -f to master, got '$decision'"
+
 test_pass "PreToolUse hook permission matching works correctly"

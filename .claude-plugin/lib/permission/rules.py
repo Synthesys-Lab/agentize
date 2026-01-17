@@ -10,6 +10,12 @@ from typing import Optional
 
 # Permission rules: (tool_name, regex_pattern)
 PERMISSION_RULES = {
+    'ask': [
+        # Force push guardrail: require explicit approval for force pushes
+        # Note: force pushes to issue-* branches are handled by verify_force_push_to_own_branch
+        # This rule catches force pushes to non-issue branches (main, master, etc.)
+        ('Bash', r'^git push (--force-with-lease|--force|-f)'),
+    ],
     'allow': [
         # Skills
         ('Skill', r'^open-pr'),

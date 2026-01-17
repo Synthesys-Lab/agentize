@@ -133,5 +133,40 @@
       "command": "gh label create --force agentize:plan"
     },
     "session_id": "test-session-setup-viewboard"
+  },
+  "issue_to_impl_jq_session_update": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "jq '.continuation_count = 1' /tmp/agentize/.tmp/hooked-sessions/test-session-issue-to-impl.json > /tmp/agentize/.tmp/hooked-sessions/test-session-issue-to-impl.json.tmp && mv /tmp/agentize/.tmp/hooked-sessions/test-session-issue-to-impl.json.tmp /tmp/agentize/.tmp/hooked-sessions/test-session-issue-to-impl.json"
+    },
+    "session_id": "test-session-issue-to-impl"
+  },
+  "issue_to_impl_jq_wrong_session": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "jq '.continuation_count = 1' /tmp/agentize/.tmp/hooked-sessions/other-session.json > /tmp/agentize/.tmp/hooked-sessions/other-session.json.tmp && mv /tmp/agentize/.tmp/hooked-sessions/other-session.json.tmp /tmp/agentize/.tmp/hooked-sessions/other-session.json"
+    },
+    "session_id": "test-session-issue-to-impl"
+  },
+  "force_push_to_main": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "git push --force origin main"
+    },
+    "session_id": "test-session"
+  },
+  "force_push_with_lease_main": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "git push --force-with-lease origin main"
+    },
+    "session_id": "test-session"
+  },
+  "force_push_f_flag_master": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "git push -f origin master"
+    },
+    "session_id": "test-session"
   }
 }

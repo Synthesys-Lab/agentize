@@ -12,7 +12,7 @@ import datetime
 import subprocess
 import urllib.request
 import urllib.error
-from typing import Optional, Dict, Any, Tuple, List
+from typing import Optional, Dict, Any, Tuple, List, Callable
 
 from .rules import match_rule
 from .strips import normalize_bash_command
@@ -572,14 +572,76 @@ def _get_workflow_type(session: str) -> str:
     return ''
 
 
-# Workflow-scoped auto-allow patterns for setup-viewboard
-# These commands are known safe operations within the setup-viewboard workflow
-_SETUP_VIEWBOARD_ALLOW_PATTERNS = [
-    r'^gh auth status',                     # Authentication verification
-    r'^gh repo view --json owner',          # Repository owner lookup
-    r'^gh api graphql',                     # Project creation and configuration
-    r'^gh label create --force',            # Label creation
-]
+# Workflow-scoped auto-allow patterns
+# Format: workflow -> list of (tool, pattern, optional_verifier)
+# If verifier is provided, it must return True for auto-allow to apply
+_WORKFLOW_ALLOW_RULES: Dict[str, List[Tuple[str, str, Optional[str]]]] = {
+    'setup-viewboard': [
+        ('Bash', r'^gh auth status', None),           # Authentication verification
+        ('Bash', r'^gh repo view --json owner', None),  # Repository owner lookup
+        ('Bash', r'^gh api graphql', None),           # Project creation and configuration
+        ('Bash', r'^gh label create --force', None),  # Label creation
+    ],
+    'issue-to-impl': [
+        ('Bash', r'^jq\s+', '_verify_jq_session_state_write'),  # Session state updates
+    ],
+}
+
+
+def _verify_jq_session_state_write(session: str, command: str) -> bool:
+    """Verify that a jq command only writes to the current session's state file.
+
+    The command must match the pattern:
+    jq '...' {session_file} > {session_file}.tmp && mv {session_file}.tmp {session_file}
+
+    Args:
+        session: Current session ID
+        command: Full bash command string
+
+    Returns:
+        True if the command only writes to the current session's state file
+    """
+    session_dir = _session_dir()
+
+    # Build allowed session file paths (both absolute and AGENTIZE_HOME-relative)
+    agentize_home = os.getenv('AGENTIZE_HOME', '.')
+    session_file = os.path.join(session_dir, f'{session}.json')
+
+    # Also allow the pattern with explicit AGENTIZE_HOME path
+    abs_session_file = os.path.abspath(session_file)
+
+    # Match jq atomic write pattern: jq 'expr' file > file.tmp && mv file.tmp file
+    # The pattern expects: jq 'something' path > path.tmp && mv path.tmp path
+    jq_pattern = re.compile(
+        r"^jq\s+'[^']*'\s+(\S+)\s*>\s*(\S+)\.tmp\s*&&\s*mv\s+(\S+)\.tmp\s+(\S+)$"
+    )
+
+    match = jq_pattern.match(command)
+    if not match:
+        return False
+
+    input_file, output_base, mv_src_base, final_dest = match.groups()
+
+    # Normalize paths for comparison
+    input_file = os.path.normpath(input_file)
+    output_base_norm = os.path.normpath(output_base)
+    mv_src_base_norm = os.path.normpath(mv_src_base)
+    final_dest_norm = os.path.normpath(final_dest)
+
+    # All paths must refer to the same file (the session state file)
+    if not (output_base_norm == input_file and
+            mv_src_base_norm == input_file and
+            final_dest_norm == input_file):
+        return False
+
+    # The file must be the current session's state file
+    session_file_norm = os.path.normpath(session_file)
+    abs_session_file_norm = os.path.normpath(abs_session_file)
+
+    if input_file == session_file_norm or input_file == abs_session_file_norm:
+        return True
+
+    return False
 
 
 def _check_workflow_auto_allow(session: str, tool: str, target: str) -> Optional[str]:
@@ -595,10 +657,26 @@ def _check_workflow_auto_allow(session: str, tool: str, target: str) -> Optional
     """
     workflow = _get_workflow_type(session)
 
-    if workflow == 'setup-viewboard' and tool == 'Bash':
-        for pattern in _SETUP_VIEWBOARD_ALLOW_PATTERNS:
-            if re.match(pattern, target):
+    if workflow not in _WORKFLOW_ALLOW_RULES:
+        return None
+
+    for rule_tool, pattern, verifier_name in _WORKFLOW_ALLOW_RULES[workflow]:
+        if rule_tool != tool:
+            continue
+
+        if not re.match(pattern, target):
+            continue
+
+        # If no verifier, auto-allow on pattern match
+        if verifier_name is None:
+            return 'allow'
+
+        # Call the verifier function by name
+        verifier = globals().get(verifier_name)
+        if verifier and callable(verifier):
+            if verifier(session, target):
                 return 'allow'
+        # Verifier failed or not found, don't auto-allow
 
     return None
 
