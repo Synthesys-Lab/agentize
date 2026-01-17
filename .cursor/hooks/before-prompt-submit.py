@@ -31,7 +31,7 @@ def main():
     # Read hook input from stdin first
     hook_input = json.load(sys.stdin)
 
-    handsoff = os.getenv('HANDSOFF_MODE', '0')
+    handsoff = os.getenv('HANDSOFF_MODE', '1')
 
     # Do nothing if handsoff mode is disabled
     if handsoff.lower() in ['0', 'false', 'off', 'disable']:

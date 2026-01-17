@@ -27,7 +27,7 @@ def _session_dir():
 
 def main():
 
-    handsoff = os.getenv('HANDSOFF_MODE', '0')
+    handsoff = os.getenv('HANDSOFF_MODE', '1')
 
     # Do nothing if handsoff mode is disabled
     if handsoff.lower() in ['0', 'false', 'off', 'disable']:

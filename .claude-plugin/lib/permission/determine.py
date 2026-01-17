@@ -50,7 +50,7 @@ def _ask_haiku_first(tool: str, target: str) -> str:
     """
     global _hook_input
 
-    if os.getenv('HANDSOFF_AUTO_PERMISSION', '0').lower() not in ['1', 'true', 'on', 'enable']:
+    if os.getenv('HANDSOFF_AUTO_PERMISSION', '1').lower() not in ['1', 'true', 'on', 'enable']:
         log_tool_decision(_hook_input.get('session_id', 'unknown'), '', tool, target, 'SKIP_HAIKU')
         return 'ask'
 
@@ -500,7 +500,7 @@ def _session_dir() -> str:
 def _log_debug_info(session: str, workflow: str, tool: str, raw_target: str,
                     permission_decision: str, decision_source: str) -> None:
     """Log debug information when HANDSOFF_DEBUG is enabled."""
-    if os.getenv('HANDSOFF_MODE', '0').lower() not in ['1', 'true', 'on', 'enable']:
+    if os.getenv('HANDSOFF_MODE', '1').lower() not in ['1', 'true', 'on', 'enable']:
         return
     if os.getenv('HANDSOFF_DEBUG', '0').lower() not in ['1', 'true', 'on', 'enable']:
         return
