@@ -38,12 +38,14 @@ TELEGRAM_LONG_POLL_MAX_SEC = 30
 _hook_input: Dict[str, Any] = {}
 
 
-def _ask_haiku_first(tool: str, target: str) -> str:
+def _ask_haiku_first(tool: str, target: str, workflow: str = 'unknown', session_id: str = 'unknown') -> str:
     """Ask Haiku LLM for permission decision.
 
     Args:
         tool: Tool name
         target: Raw target string for context
+        workflow: Workflow name for logging
+        session_id: Session ID for logging
 
     Returns:
         'allow', 'deny', or 'ask'
@@ -51,7 +53,7 @@ def _ask_haiku_first(tool: str, target: str) -> str:
     global _hook_input
 
     if os.getenv('HANDSOFF_AUTO_PERMISSION', '1').lower() not in ['1', 'true', 'on', 'enable']:
-        log_tool_decision(_hook_input.get('session_id', 'unknown'), '', tool, target, 'SKIP_HAIKU')
+        log_tool_decision(session_id, '', tool, target, 'SKIP', workflow, 'haiku')
         return 'ask'
 
     transcript_path = _hook_input.get("transcript_path", "")
@@ -61,7 +63,7 @@ def _ask_haiku_first(tool: str, target: str) -> str:
         with open(transcript_path, 'r') as f:
             transcript = f.readlines()[-1]
     except Exception as e:
-        log_tool_decision(_hook_input.get('session_id', 'unknown'), '', tool, target, f'ERROR transcript: {str(e)}')
+        log_tool_decision(session_id, '', tool, target, f'ERROR:{str(e)}', workflow, 'error')
         return 'ask'
 
     prompt = f'''Evaluate this Claude Code tool call for automatic permission in hands-off mode.
@@ -91,27 +93,27 @@ Reply with allow, deny, or ask as the first word. Brief reasoning is optional.''
         )
         full_response = result.strip().lower()
 
-        # Log the full Haiku response for debugging
-        log_tool_decision(_hook_input['session_id'], transcript, tool, target, f'HAIKU: {full_response}')
-
         # Check first word using startswith (handles "allow.", "allow because...", etc.)
         if full_response.startswith('allow'):
+            log_tool_decision(session_id, transcript, tool, target, 'allow', workflow, 'haiku')
             return 'allow'
         elif full_response.startswith('deny'):
+            log_tool_decision(session_id, transcript, tool, target, 'deny', workflow, 'haiku')
             return 'deny'
         elif full_response.startswith('ask'):
+            log_tool_decision(session_id, transcript, tool, target, 'ask', workflow, 'haiku')
             return 'ask'
         else:
-            log_tool_decision(_hook_input['session_id'], transcript, tool, target, f'ERROR invalid_output: {full_response[:50]}')
+            log_tool_decision(session_id, transcript, tool, target, f'ERROR:invalid_output:{full_response[:50]}', workflow, 'haiku')
             return 'ask'
     except subprocess.TimeoutExpired as e:
-        log_tool_decision(_hook_input['session_id'], transcript, tool, target, f'ERROR timeout: {str(e)}')
+        log_tool_decision(session_id, transcript, tool, target, f'ERROR:timeout', workflow, 'haiku')
         return 'ask'
     except subprocess.CalledProcessError as e:
-        log_tool_decision(_hook_input['session_id'], transcript, tool, target, f'ERROR process: returncode={e.returncode} stderr={e.stderr}')
+        log_tool_decision(session_id, transcript, tool, target, f'ERROR:process', workflow, 'haiku')
         return 'ask'
     except Exception as e:
-        log_tool_decision(_hook_input['session_id'], transcript, tool, target, f'ERROR subprocess: {str(e)}')
+        log_tool_decision(session_id, transcript, tool, target, f'ERROR:subprocess', workflow, 'haiku')
         return 'ask'
 
 
@@ -152,7 +154,7 @@ def _get_telegram_config() -> Optional[Dict[str, Any]]:
     }
 
 
-def _tg_api_request(token: str, method: str, payload: Optional[Dict[str, Any]] = None, session_id: str = 'unknown') -> Optional[Dict[str, Any]]:
+def _tg_api_request(token: str, method: str, payload: Optional[Dict[str, Any]] = None, session_id: str = 'unknown', workflow: str = 'unknown') -> Optional[Dict[str, Any]]:
     """Make a request to Telegram Bot API.
 
     Args:
@@ -160,6 +162,7 @@ def _tg_api_request(token: str, method: str, payload: Optional[Dict[str, Any]] =
         method: API method (e.g., 'sendMessage', 'getUpdates')
         payload: Request payload dict (optional)
         session_id: Session ID for logging (optional)
+        workflow: Workflow name for logging
 
     Returns:
         dict: API response or None on error/disabled
@@ -171,7 +174,7 @@ def _tg_api_request(token: str, method: str, payload: Optional[Dict[str, Any]] =
     return telegram_request(
         token, method, payload,
         timeout_sec=TELEGRAM_API_TIMEOUT_SEC,
-        on_error=lambda e: log_tool_decision(session_id, '', 'Telegram', method, f'API_ERROR: {str(e)[:100]}')
+        on_error=lambda e: log_tool_decision(session_id, '', 'Telegram', method, f'ERROR:api', workflow, 'telegram')
     )
 
 
@@ -290,7 +293,7 @@ def _edit_message_result(token: str, chat_id: str, message_id: int, tool: str,
     }, session_id)
 
 
-def _telegram_approval_decision(tool: str, target: str, session_id: str, raw_target: str) -> Optional[str]:
+def _telegram_approval_decision(tool: str, target: str, session_id: str, raw_target: str, workflow: str = 'unknown') -> Optional[str]:
     """Request approval via Telegram for an 'ask' decision.
 
     Args:
@@ -298,6 +301,7 @@ def _telegram_approval_decision(tool: str, target: str, session_id: str, raw_tar
         target: Normalized target (for display)
         session_id: Current session ID
         raw_target: Original target (for display)
+        workflow: Workflow name for logging
 
     Returns:
         'allow', 'deny', or None (on timeout/error, caller should return 'ask')
@@ -307,7 +311,7 @@ def _telegram_approval_decision(tool: str, target: str, session_id: str, raw_tar
 
     config = _get_telegram_config()
     if not config:
-        log_tool_decision(session_id, '', tool, raw_target, 'TG_CONFIG_MISSING')
+        log_tool_decision(session_id, '', tool, raw_target, 'ERROR:config_missing', workflow, 'telegram')
         return None
 
     token: str = config['token']
@@ -317,7 +321,7 @@ def _telegram_approval_decision(tool: str, target: str, session_id: str, raw_tar
     allowed_user_ids: List[int] = config['allowed_user_ids']
 
     # Get current update_id offset to ignore old messages
-    updates_resp = _tg_api_request(token, 'getUpdates', {'limit': 1, 'offset': -1}, session_id)
+    updates_resp = _tg_api_request(token, 'getUpdates', {'limit': 1, 'offset': -1}, session_id, workflow)
     if updates_resp and updates_resp.get('ok') and updates_resp.get('result'):
         last_update = updates_resp['result'][-1]
         update_offset = last_update.get('update_id', 0) + 1
@@ -338,14 +342,14 @@ def _telegram_approval_decision(tool: str, target: str, session_id: str, raw_tar
         'text': message_text,
         'parse_mode': 'HTML',
         'reply_markup': _build_inline_keyboard(0)  # Placeholder, will update with actual message_id
-    }, session_id)
+    }, session_id, workflow)
 
     if not send_resp or not send_resp.get('ok'):
-        log_tool_decision(session_id, '', tool, raw_target, 'TG_SEND_FAILED')
+        log_tool_decision(session_id, '', tool, raw_target, 'ERROR:send_failed', workflow, 'telegram')
         return None
 
     message_id = send_resp.get('result', {}).get('message_id', 0)
-    log_tool_decision(session_id, '', tool, raw_target, f'TG_SENT message_id={message_id}')
+    log_tool_decision(session_id, '', tool, raw_target, f'sent:msg_id={message_id}', workflow, 'telegram')
 
     # Update the message with correct callback_data containing the actual message_id
     if message_id:
@@ -353,7 +357,7 @@ def _telegram_approval_decision(tool: str, target: str, session_id: str, raw_tar
             'chat_id': chat_id,
             'message_id': message_id,
             'reply_markup': _build_inline_keyboard(message_id)
-        }, session_id)
+        }, session_id, workflow)
 
     # Poll for response (both callback_query and text commands)
     start_time = time.monotonic()
@@ -361,7 +365,7 @@ def _telegram_approval_decision(tool: str, target: str, session_id: str, raw_tar
         updates_resp = _tg_api_request(token, 'getUpdates', {
             'offset': update_offset,
             'timeout': min(poll_interval, TELEGRAM_LONG_POLL_MAX_SEC)
-        }, session_id)
+        }, session_id, workflow)
 
         if not updates_resp or not updates_resp.get('ok'):
             time.sleep(poll_interval)
@@ -383,7 +387,7 @@ def _telegram_approval_decision(tool: str, target: str, session_id: str, raw_tar
                 decision = _handle_callback_query(token, callback_query, message_id, session_id)
                 if decision:
                     log_tool_decision(session_id, '', tool, raw_target,
-                                      f'TG_{decision.upper()} user_id={user_id} via=button')
+                                      decision, workflow, 'telegram')
                     # Edit the original message to show result
                     _edit_message_result(token, chat_id, message_id, tool, truncated_target, decision, session_id)
                     return decision
@@ -400,39 +404,37 @@ def _telegram_approval_decision(tool: str, target: str, session_id: str, raw_tar
 
             # Check for /allow or /deny commands
             if text == '/allow' or text.startswith('/allow '):
-                log_tool_decision(session_id, '', tool, raw_target,
-                                  f'TG_ALLOW user_id={user_id} via=text')
+                log_tool_decision(session_id, '', tool, raw_target, 'allow', workflow, 'telegram')
                 # Send confirmation reply
                 _tg_api_request(token, 'sendMessage', {
                     'chat_id': chat_id,
                     'text': f"✅ Allowed: <code>{_escape_html(tool)}</code>",
                     'parse_mode': 'HTML',
                     'reply_to_message_id': msg.get('message_id')
-                }, session_id)
+                }, session_id, workflow)
                 # Edit the original message to show result
                 _edit_message_result(token, chat_id, message_id, tool, truncated_target, 'allow', session_id)
                 return 'allow'
             elif text == '/deny' or text.startswith('/deny '):
-                log_tool_decision(session_id, '', tool, raw_target,
-                                  f'TG_DENY user_id={user_id} via=text')
+                log_tool_decision(session_id, '', tool, raw_target, 'deny', workflow, 'telegram')
                 # Send confirmation reply
                 _tg_api_request(token, 'sendMessage', {
                     'chat_id': chat_id,
                     'text': f"❌ Denied: <code>{_escape_html(tool)}</code>",
                     'parse_mode': 'HTML',
                     'reply_to_message_id': msg.get('message_id')
-                }, session_id)
+                }, session_id, workflow)
                 # Edit the original message to show result
                 _edit_message_result(token, chat_id, message_id, tool, truncated_target, 'deny', session_id)
                 return 'deny'
 
     # Timeout reached
-    log_tool_decision(session_id, '', tool, raw_target, f'TG_TIMEOUT after {timeout}s')
+    log_tool_decision(session_id, '', tool, raw_target, 'ERROR:timeout', workflow, 'telegram')
     _edit_message_result(token, chat_id, message_id, tool, truncated_target, 'timeout', session_id)
     return None
 
 
-def _check_permission(tool: str, target: str, raw_target: str) -> Tuple[str, str]:
+def _check_permission(tool: str, target: str, raw_target: str, workflow: str = 'unknown') -> Tuple[str, str]:
     """Check permission for tool usage.
 
     Returns: (decision, source) where decision is 'allow'/'deny'/'ask'
@@ -462,12 +464,12 @@ def _check_permission(tool: str, target: str, raw_target: str) -> Tuple[str, str
             return (workflow_decision, 'workflow')
 
         # Stage 3: Haiku LLM evaluation (use raw_target for context)
-        haiku_decision = _ask_haiku_first(tool, raw_target)
+        haiku_decision = _ask_haiku_first(tool, raw_target, workflow, session_id)
         if haiku_decision in ('deny', 'allow'):
             return (haiku_decision, 'haiku')
 
         # Stage 4: Telegram - single final escalation for all 'ask' outcomes
-        tg_decision = _telegram_approval_decision(tool, target, session_id, raw_target)
+        tg_decision = _telegram_approval_decision(tool, target, session_id, raw_target, workflow)
         if tg_decision:
             return (tg_decision, 'telegram')
 
@@ -475,17 +477,17 @@ def _check_permission(tool: str, target: str, raw_target: str) -> Tuple[str, str
     except Exception:
         # Error recovery: try Haiku, then Telegram, then fallback to ask
         try:
-            haiku_decision = _ask_haiku_first(tool, raw_target)
+            haiku_decision = _ask_haiku_first(tool, raw_target, workflow, session_id)
             if haiku_decision in ('deny', 'allow'):
                 return (haiku_decision, 'haiku')
             # Haiku returned ask, try Telegram
-            tg_decision = _telegram_approval_decision(tool, target, session_id, raw_target)
+            tg_decision = _telegram_approval_decision(tool, target, session_id, raw_target, workflow)
             if tg_decision:
                 return (tg_decision, 'telegram')
             return ('ask', 'fallback')
         except Exception:
             # If even Haiku fails, try Telegram as last resort
-            tg_decision = _telegram_approval_decision(tool, target, session_id, raw_target)
+            tg_decision = _telegram_approval_decision(tool, target, session_id, raw_target, workflow)
             if tg_decision:
                 return (tg_decision, 'telegram')
             return ('ask', 'error')
@@ -499,33 +501,11 @@ def _session_dir() -> str:
 
 def _log_debug_info(session: str, workflow: str, tool: str, raw_target: str,
                     permission_decision: str, decision_source: str) -> None:
-    """Log debug information when HANDSOFF_DEBUG is enabled."""
+    """Log debug information to unified permission.txt when HANDSOFF_DEBUG is enabled."""
     if os.getenv('HANDSOFF_MODE', '1').lower() not in ['1', 'true', 'on', 'enable']:
         return
-    if os.getenv('HANDSOFF_DEBUG', '0').lower() not in ['1', 'true', 'on', 'enable']:
-        return
-
-    session_dir = _session_dir()
-    os.makedirs(session_dir, exist_ok=True)
-
-    # Log tool usage - separate files for rules vs haiku vs telegram vs workflow decisions
-    time_str = datetime.datetime.now().isoformat()
-    if decision_source == 'rules' and permission_decision == 'allow':
-        # Automatically approved tools go to tool-used.txt
-        with open(os.path.join(session_dir, 'tool-used.txt'), 'a') as f:
-            f.write(f'[{time_str}] [{session}] [{workflow}] {tool} | {raw_target}\n')
-    elif decision_source == 'workflow' and permission_decision == 'allow':
-        # Workflow-scoped auto-approved tools go to tool-used.txt
-        with open(os.path.join(session_dir, 'tool-used.txt'), 'a') as f:
-            f.write(f'[{time_str}] [{session}] [{workflow}] [workflow-auto] {tool} | {raw_target}\n')
-    elif decision_source == 'haiku':
-        # Haiku-determined tools go to their own file
-        with open(os.path.join(session_dir, 'tool-haiku-determined.txt'), 'a') as f:
-            f.write(f'[{time_str}] [{session}] [{workflow}] [{permission_decision}] {tool} | {raw_target}\n')
-    elif decision_source == 'telegram':
-        # Telegram-determined tools go to their own file
-        with open(os.path.join(session_dir, 'tool-telegram-determined.txt'), 'a') as f:
-            f.write(f'[{time_str}] [{session}] [{workflow}] [{permission_decision}] {tool} | {raw_target}\n')
+    # Note: log_tool_decision already checks HANDSOFF_DEBUG, so we don't need to check again
+    log_tool_decision(session, '', tool, raw_target, permission_decision, workflow, decision_source)
 
 
 def _detect_workflow(session: str) -> str:
@@ -631,11 +611,13 @@ def determine(stdin_data: str) -> dict:
     if tool == 'Bash':
         target = normalize_bash_command(target)
 
+    # Detect workflow for logging
+    workflow = _detect_workflow(session)
+
     # Check permission
-    permission_decision, decision_source = _check_permission(tool, target, raw_target)
+    permission_decision, decision_source = _check_permission(tool, target, raw_target, workflow)
 
     # Debug logging
-    workflow = _detect_workflow(session)
     _log_debug_info(session, workflow, tool, raw_target, permission_decision, decision_source)
 
     return {

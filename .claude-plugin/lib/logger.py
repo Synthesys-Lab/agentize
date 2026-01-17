@@ -25,13 +25,13 @@ def logger(sid, msg):
         log_file.write(f"[{time}] [{sid}] {msg}\n")
 
 
-def log_tool_decision(session, context, tool, target, decision):
-    # Log all Haiku decisions and errors to tool-haiku-determined.txt
+def log_tool_decision(session, context, tool, target, decision, workflow='unknown', source='error'):
+    # Log permission decisions to unified permission.txt file
     if os.getenv('HANDSOFF_DEBUG', '0').lower() in ['0', 'false', 'off', 'disable']:
         return
     session_dir = _session_dir()
     os.makedirs(session_dir, exist_ok=True)
     time = datetime.datetime.now().isoformat()
-    log_path = os.path.join(session_dir, 'tool-haiku-determined.txt')
+    log_path = os.path.join(session_dir, 'permission.txt')
     with open(log_path, 'a') as f:
-        f.write(f'[{time}] [{session}] {tool} | {target} => {decision}\n')
+        f.write(f'[{time}] [{session}] [{workflow}] [{source}] [{decision}] {tool} | {target}\n')

@@ -53,7 +53,7 @@ from lib.workflow import detect_workflow, get_continuation_prompt
 
 ### logger.py
 
-Debug logging utilities for hooks. Logs to `.tmp/hook-debug.log` when `HANDSOFF_DEBUG` is enabled.
+Debug logging utilities for hooks. Logs permission decisions to `.tmp/hooked-sessions/permission.txt` with unified format when `HANDSOFF_DEBUG` is enabled.
 
 **Usage:**
 ```python

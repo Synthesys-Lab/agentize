@@ -116,8 +116,9 @@ This prevents hook failures from blocking Claude Code execution.
 ## Logging Behavior
 
 When `HANDSOFF_DEBUG=1`:
-- Writes tool usage to `$AGENTIZE_HOME/.tmp/hooked-sessions/tool-used.txt` (falls back to worktree-local `.tmp/` if `AGENTIZE_HOME` is unset)
-- Format: `[timestamp] [session_id] [workflow] tool | target`
+- Writes all permission decisions to `$AGENTIZE_HOME/.tmp/hooked-sessions/permission.txt` (falls back to worktree-local `.tmp/` if `AGENTIZE_HOME` is unset)
+- Format: `[timestamp] [session_id] [workflow] [source] [decision] tool | target`
+- Unified log contains all decision sources: rules, haiku, telegram, workflow, error
 - Preserved regardless of permission decision
 
 ## Telegram Approval Integration
