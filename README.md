@@ -1,5 +1,31 @@
 # AI-powered SDK for Software Development
 
+## Prerequisites
+
+### Required Tools
+
+- **Git** - Version control (checked during installation)
+- **Make** - Build automation (checked during installation)
+- **Bash** - Shell interpreter, version 3.2+ (checked during installation)
+- **GitHub CLI (`gh`)** - Required for GitHub integration features
+  - Install: https://cli.github.com/
+  - Authenticate after installation: `gh auth login`
+  - Used by: `/setup-viewboard`, `/open-issue`, `/open-pr`, GitHub workflow automation
+
+### Recommended Libraries
+
+- **Anthropic Python Library** - For custom AI integrations (optional)
+  - Install: `pip install anthropic`
+  - Note: Not required for core SDK functionality, but recommended if you plan to extend or customize AI-powered features
+
+### Verification
+
+After installing prerequisites, the installer will automatically verify `git`, `make`, and `bash` availability. GitHub CLI authentication can be verified with:
+
+```bash
+gh auth status
+```
+
 ## Quick Start
 
 Agentize is an AI-powered SDK that helps you build your software projects
