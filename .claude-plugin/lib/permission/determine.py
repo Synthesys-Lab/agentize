@@ -561,6 +561,13 @@ _SETUP_VIEWBOARD_ALLOW_PATTERNS = [
     r'^gh label create --force',            # Label creation
 ]
 
+# Session state modification patterns (allowed for all workflows)
+# These patterns allow workflows to update their session state files to signal completion
+# Pattern: jq '.state = "done"' file.json > file.json.tmp && mv file.json.tmp file.json
+_SESSION_STATE_ALLOW_PATTERNS = [
+    r'^jq\s+[\'"]\s*\.\s*state\s*=\s*[\'"](done|completed|error|failed)[\'"]\s*[\'"]?\s+.*\.tmp/hooked-sessions/[a-zA-Z0-9_-]+\.json\s*>\s*.*\.tmp/hooked-sessions/[a-zA-Z0-9_-]+\.json\.tmp\s*&&\s*mv\s+.*\.tmp/hooked-sessions/[a-zA-Z0-9_-]+\.json\.tmp\s+.*\.tmp/hooked-sessions/[a-zA-Z0-9_-]+\.json$',
+]
+
 
 def _check_workflow_auto_allow(session: str, tool: str, target: str) -> Optional[str]:
     """Check if a tool should be auto-allowed based on active workflow.
@@ -575,6 +582,13 @@ def _check_workflow_auto_allow(session: str, tool: str, target: str) -> Optional
     """
     workflow = _get_workflow_type(session)
 
+    # Session state modifications allowed for ALL workflows during active sessions
+    if tool == 'Bash':
+        for pattern in _SESSION_STATE_ALLOW_PATTERNS:
+            if re.match(pattern, target):
+                return 'allow'
+
+    # Setup-viewboard specific patterns
     if workflow == 'setup-viewboard' and tool == 'Bash':
         for pattern in _SETUP_VIEWBOARD_ALLOW_PATTERNS:
             if re.match(pattern, target):

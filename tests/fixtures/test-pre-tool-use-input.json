@@ -147,5 +147,54 @@
       "command": "python3 test_script.py"
     },
     "session_id": "test-session-ordering"
+  },
+  "session_state_update_done": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "jq '.state = \"done\"' /tmp/.tmp/hooked-sessions/test-session-123.json > /tmp/.tmp/hooked-sessions/test-session-123.json.tmp && mv /tmp/.tmp/hooked-sessions/test-session-123.json.tmp /tmp/.tmp/hooked-sessions/test-session-123.json"
+    },
+    "session_id": "test-session-123"
+  },
+  "session_state_update_completed": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "jq '.state = \"completed\"' /home/user/.agentize/.tmp/hooked-sessions/session-abc.json > /home/user/.agentize/.tmp/hooked-sessions/session-abc.json.tmp && mv /home/user/.agentize/.tmp/hooked-sessions/session-abc.json.tmp /home/user/.agentize/.tmp/hooked-sessions/session-abc.json"
+    },
+    "session_id": "session-abc"
+  },
+  "session_state_update_error": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "jq '.state = \"error\"' .tmp/hooked-sessions/workflow-xyz.json > .tmp/hooked-sessions/workflow-xyz.json.tmp && mv .tmp/hooked-sessions/workflow-xyz.json.tmp .tmp/hooked-sessions/workflow-xyz.json"
+    },
+    "session_id": "workflow-xyz"
+  },
+  "session_state_update_failed": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "jq '.state = \"failed\"' /tmp/.tmp/hooked-sessions/test-session.json > /tmp/.tmp/hooked-sessions/test-session.json.tmp && mv /tmp/.tmp/hooked-sessions/test-session.json.tmp /tmp/.tmp/hooked-sessions/test-session.json"
+    },
+    "session_id": "test-session"
+  },
+  "session_state_with_quotes": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "jq '.state = \"done\"' /tmp/.tmp/hooked-sessions/test-1.json > /tmp/.tmp/hooked-sessions/test-1.json.tmp && mv /tmp/.tmp/hooked-sessions/test-1.json.tmp /tmp/.tmp/hooked-sessions/test-1.json"
+    },
+    "session_id": "test-1"
+  },
+  "session_state_invalid_path": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "jq '.state = \"done\"' /tmp/hooked-sessions/test.json > /tmp/hooked-sessions/test.json.tmp && mv /tmp/hooked-sessions/test.json.tmp /tmp/hooked-sessions/test.json"
+    },
+    "session_id": "test-session"
+  },
+  "session_state_path_traversal": {
+    "tool_name": "Bash",
+    "tool_input": {
+      "command": "jq '.state = \"done\"' /tmp/.tmp/hooked-sessions/../../../etc/passwd.json > /tmp/.tmp/hooked-sessions/../../../etc/passwd.json.tmp && mv /tmp/.tmp/hooked-sessions/../../../etc/passwd.json.tmp /tmp/.tmp/hooked-sessions/../../../etc/passwd.json"
+    },
+    "session_id": "test-session"
   }
 }

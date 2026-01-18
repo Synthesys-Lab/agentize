@@ -80,11 +80,18 @@ Workflow-specific permissions apply only when a workflow session is active. Thes
 - `allow` → Request is allowed. No further evaluation.
 - No match → Falls through to Stage 3 (Haiku LLM).
 
-**Example:** The `setup-viewboard` workflow auto-allows:
+**Example workflows:**
+
+**setup-viewboard:** Auto-allows GitHub configuration operations:
 - `gh auth status` (authentication verification)
 - `gh repo view --json owner` (repository lookup)
 - `gh api graphql` (project configuration)
 - `gh label create --force` (label creation)
+
+**Any workflow:** Auto-allows session state modifications:
+- `jq '.state = "done"' ~/.agentize/.tmp/hooked-sessions/{session-id}.json > ... && mv ...` (workflow completion signaling)
+
+This allows workflows to update their session state files to signal completion without requiring permission prompts. The pattern requires literal `.tmp/hooked-sessions/` path and alphanumeric session IDs, preventing path traversal attacks.
 
 These patterns are defined per-workflow and only active during that workflow's session.
 

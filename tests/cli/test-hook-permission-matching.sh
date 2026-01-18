@@ -430,4 +430,100 @@ PYEOF
 
 cleanup_dir "$ORDER_TMP_DIR"
 
+# =============================================================================
+# Session State Modification Tests (Issue #505)
+# These tests validate that workflows can update their session state files
+# to signal completion without requiring permission prompts
+# =============================================================================
+
+# Test 34: Session state update to "done" is auto-allowed during workflow
+test_info "Test 34: Session state update to 'done' → auto-allow"
+TMP_DIR=$(make_temp_dir "session-state-test")
+SESSION_ID="test-session-123"
+mkdir -p "$TMP_DIR/.tmp/hooked-sessions"
+# Create a session state file to indicate active workflow
+echo '{"workflow": "issue-to-impl", "state": "in_progress", "continuation_count": 0}' > "$TMP_DIR/.tmp/hooked-sessions/$SESSION_ID.json"
+
+input=$(jq -c '.session_state_update_done' "$FIXTURE_FILE")
+decision=$(
+    export AGENTIZE_HOME="$TMP_DIR"
+    unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
+    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+)
+[ "$decision" = "allow" ] || test_fail "Expected 'allow' for session state update to 'done', got '$decision'"
+
+# Test 35: Session state update to "completed" is auto-allowed
+test_info "Test 35: Session state update to 'completed' → auto-allow"
+SESSION_ID2="session-abc"
+echo '{"workflow": "plan-to-issue", "state": "in_progress", "continuation_count": 1}' > "$TMP_DIR/.tmp/hooked-sessions/$SESSION_ID2.json"
+
+input=$(jq -c '.session_state_update_completed' "$FIXTURE_FILE")
+decision=$(
+    export AGENTIZE_HOME="$TMP_DIR"
+    unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
+    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+)
+[ "$decision" = "allow" ] || test_fail "Expected 'allow' for session state update to 'completed', got '$decision'"
+
+# Test 36: Session state update to "error" is auto-allowed
+test_info "Test 36: Session state update to 'error' → auto-allow"
+SESSION_ID3="workflow-xyz"
+echo '{"workflow": "ultra-planner", "state": "failed", "continuation_count": 0}' > "$TMP_DIR/.tmp/hooked-sessions/$SESSION_ID3.json"
+
+input=$(jq -c '.session_state_update_error' "$FIXTURE_FILE")
+decision=$(
+    export AGENTIZE_HOME="$TMP_DIR"
+    unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
+    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+)
+[ "$decision" = "allow" ] || test_fail "Expected 'allow' for session state update to 'error', got '$decision'"
+
+# Test 37: Session state update to "failed" is auto-allowed
+test_info "Test 37: Session state update to 'failed' → auto-allow"
+SESSION_ID4="test-session"
+echo '{"workflow": "issue-to-impl", "state": "failed", "continuation_count": 0}' > "$TMP_DIR/.tmp/hooked-sessions/$SESSION_ID4.json"
+
+input=$(jq -c '.session_state_update_failed' "$FIXTURE_FILE")
+decision=$(
+    export AGENTIZE_HOME="$TMP_DIR"
+    unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
+    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+)
+[ "$decision" = "allow" ] || test_fail "Expected 'allow' for session state update to 'failed', got '$decision'"
+
+# Test 38: Session state update with different path formats is auto-allowed
+test_info "Test 38: Session state update with relative path → auto-allow"
+SESSION_ID5="test-1"
+echo '{"workflow": "issue-to-impl", "state": "in_progress", "continuation_count": 0}' > "$TMP_DIR/.tmp/hooked-sessions/$SESSION_ID5.json"
+
+input=$(jq -c '.session_state_with_quotes' "$FIXTURE_FILE")
+decision=$(
+    export AGENTIZE_HOME="$TMP_DIR"
+    unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
+    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+)
+[ "$decision" = "allow" ] || test_fail "Expected 'allow' for session state update with relative path, got '$decision'"
+
+# Test 39: Invalid path (missing .tmp) is NOT auto-allowed
+test_info "Test 39: Session state update with invalid path → ask (not auto-allowed)"
+input=$(jq -c '.session_state_invalid_path' "$FIXTURE_FILE")
+decision=$(
+    export AGENTIZE_HOME="$TMP_DIR"
+    unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
+    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+)
+[ "$decision" = "ask" ] || test_fail "Expected 'ask' for session state update with invalid path (missing .tmp), got '$decision'"
+
+# Test 40: Path traversal attempt is NOT auto-allowed
+test_info "Test 40: Session state with path traversal → ask (not auto-allowed)"
+input=$(jq -c '.session_state_path_traversal' "$FIXTURE_FILE")
+decision=$(
+    export AGENTIZE_HOME="$TMP_DIR"
+    unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
+    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+)
+[ "$decision" = "ask" ] || test_fail "Expected 'ask' for path traversal attempt, got '$decision'"
+
+cleanup_dir "$TMP_DIR"
+
 test_pass "PreToolUse hook permission matching works correctly"
