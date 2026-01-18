@@ -10,12 +10,18 @@ test_info "wt CLI logging output at startup"
 export AGENTIZE_HOME="$PROJECT_ROOT"
 source "$WT_CLI"
 
-# Test 1: Verify logging appears in stderr on normal command
-test_info "Test 1: Verify logging appears in stderr on normal command"
+# Test 0: Verify logging appears on invalid command (which shows help)
+test_info "Test 0: Verify logging appears on invalid command"
+output=$(wt nonexistent 2>&1 || true)
+echo "$output" | grep -q "^\[agentize\]" || test_fail "Logging should appear on invalid command"
+test_info "  ✓ Logging appears on invalid command"
+
+# Test 1: Verify logging appears in stderr on help command
+test_info "Test 1: Verify logging appears in stderr on help command"
 output=$(wt help 2>&1 >/dev/null)
 echo "$output" | grep -q "^\[agentize\]" || test_fail "Logging output missing from stderr"
 echo "$output" | grep -q "@" || test_fail "Logging format incorrect - missing commit hash separator"
-test_pass "Test 1: Logging appears in stderr"
+test_info "  ✓ Logging appears on help"
 
 # Test 2: Verify logging includes version tag or commit hash
 test_info "Test 2: Verify logging includes version tag or commit hash"
@@ -29,7 +35,7 @@ fi
 if ! echo "$version_part" | grep -qE '^(v[0-9]+\.[0-9]+\.[0-9]+|[a-f0-9]{7,40})$'; then
   test_fail "Version part format incorrect: $version_part"
 fi
-test_pass "Test 2: Logging includes version tag or commit hash"
+test_info "  ✓ Version format correct"
 
 # Test 3: Verify logging format includes full commit hash
 test_info "Test 3: Verify logging format includes full commit hash"
@@ -43,7 +49,7 @@ fi
 if ! echo "$commit_part" | grep -qE '^[a-f0-9]{7,40}$'; then
   test_fail "Commit hash format incorrect: $commit_part"
 fi
-test_pass "Test 3: Logging format includes full commit hash"
+test_info "  ✓ Commit hash format correct"
 
 # Test 4: Verify no logging in --complete mode
 test_info "Test 4: Verify no logging in --complete mode"
@@ -53,12 +59,12 @@ if echo "$output" | grep -q "^\[agentize\]"; then
 fi
 # But completion data should still appear
 echo "$output" | grep -q "^clone$" || test_fail "Completion data missing when logging suppressed"
-test_pass "Test 4: No logging in --complete mode"
+test_info "  ✓ No logging in --complete mode"
 
 # Test 5: Verify logging includes agentize branding
 test_info "Test 5: Verify logging includes agentize branding"
 output=$(wt help 2>&1 >/dev/null)
 echo "$output" | grep -q "^\[agentize\]" || test_fail "Missing agentize branding in logging"
-test_pass "Test 5: Logging includes agentize branding"
+test_info "  ✓ Agentize branding present"
 
 test_pass "wt CLI logging output verified successfully"

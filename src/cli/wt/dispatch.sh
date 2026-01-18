@@ -32,11 +32,6 @@ _wt_log_version() {
 
 # Main wt function
 wt() {
-    # Log version at startup (skip for --complete mode)
-    if [ "$1" != "--complete" ]; then
-        _wt_log_version "$1"
-    fi
-
     local command="$1"
     [ $# -gt 0 ] && shift
 
@@ -75,12 +70,14 @@ wt() {
             cmd_rebase "$@"
             ;;
         help|--help|-h|"")
+            _wt_log_version "$command"
             cmd_help
             ;;
         --complete)
             wt_complete "$@"
             ;;
         *)
+            _wt_log_version "$command"
             echo "Error: Unknown command: $command" >&2
             echo "Run 'wt help' for usage information" >&2
             return 1

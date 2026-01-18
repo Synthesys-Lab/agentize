@@ -56,11 +56,9 @@ lol() {
         return 1
     fi
 
-    # Log version at startup
-    _lol_log_version
-
     # Handle --version flag as alias for version subcommand
     if [ "$1" = "--version" ]; then
+        _lol_log_version
         lol_cmd_version
         return $?
     fi
@@ -86,9 +84,11 @@ lol() {
             _lol_parse_usage "$@"
             ;;
         version)
+            _lol_log_version
             lol_cmd_version
             ;;
         *)
+            _lol_log_version
             echo "lol: AI-powered SDK CLI"
             echo ""
             echo "Usage:"
