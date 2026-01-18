@@ -108,7 +108,7 @@ def _check_issue_has_label(issue_no: int, label: str) -> bool:
 
 
 def _cleanup_refinement(issue_no: int) -> None:
-    """Clean up after refinement: remove agentize:refine label.
+    """Clean up after refinement: remove agentize:refine label and reset status to Proposed.
 
     Args:
         issue_no: GitHub issue number
@@ -119,11 +119,21 @@ def _cleanup_refinement(issue_no: int) -> None:
         capture_output=True,
         text=True
     )
+
+    # Reset issue status to "Proposed" (best-effort pattern)
+    result = run_shell_function('wt pathto main', capture_output=True)
+    if result.returncode == 0:
+        worktree_path = result.stdout.strip()
+        run_shell_function(
+            f'wt_claim_issue_status {issue_no} "{worktree_path}" Proposed',
+            capture_output=True
+        )
+
     _log(f"Refinement cleanup for issue #{issue_no}: removed agentize:refine label")
 
 
 def _cleanup_feat_request(issue_no: int) -> None:
-    """Clean up after feat-request planning: remove agentize:dev-req label.
+    """Clean up after feat-request planning: remove agentize:dev-req label and reset status to Proposed.
 
     Args:
         issue_no: GitHub issue number
@@ -134,13 +144,23 @@ def _cleanup_feat_request(issue_no: int) -> None:
         capture_output=True,
         text=True
     )
+
+    # Reset issue status to "Proposed" (best-effort pattern)
+    result = run_shell_function('wt pathto main', capture_output=True)
+    if result.returncode == 0:
+        worktree_path = result.stdout.strip()
+        run_shell_function(
+            f'wt_claim_issue_status {issue_no} "{worktree_path}" Proposed',
+            capture_output=True
+        )
+
     _log(f"Dev-req cleanup for issue #{issue_no}: removed agentize:dev-req label")
 
 
 def spawn_refinement(issue_no: int, model: str | None = None) -> tuple[bool, int | None]:
     """Spawn a refinement session for the given issue.
 
-    Creates worktree if not exists, sets status to Refining, and spawns
+    Runs planning on main branch worktree, sets status to Refining, and spawns
     claude with /ultra-planner --refine headlessly.
 
     Args:
@@ -150,25 +170,12 @@ def spawn_refinement(issue_no: int, model: str | None = None) -> tuple[bool, int
     Returns:
         Tuple of (success, pid). pid is None if spawn failed.
     """
-    # Create worktree if not exists (reuse if exists)
-    if not worktree_exists(issue_no):
-        result = run_shell_function(f'wt spawn {issue_no} --no-agent --headless', capture_output=True)
-        if result.returncode != 0:
-            _log(f"Failed to create worktree for issue #{issue_no}", level="ERROR")
-            return False, None
-
-    # Get worktree path
-    result = run_shell_function(f'wt pathto {issue_no}', capture_output=True)
+    # Get main worktree path (planning runs on main branch)
+    result = run_shell_function('wt pathto main', capture_output=True)
     if result.returncode != 0:
-        _log(f"Failed to get worktree path for issue #{issue_no}", level="ERROR")
+        _log(f"Failed to get main worktree path", level="ERROR")
         return False, None
     worktree_path = result.stdout.strip()
-
-    # Set status to "Refining" (best-effort claim)
-    run_shell_function(
-        f'wt_claim_issue_status {issue_no} "{worktree_path}" Refining',
-        capture_output=True
-    )
 
     # Create log directory and file
     log_dir = Path(os.getenv('AGENTIZE_HOME', '.')) / '.tmp' / 'logs'
@@ -200,7 +207,7 @@ def spawn_refinement(issue_no: int, model: str | None = None) -> tuple[bool, int
 def spawn_feat_request(issue_no: int, model: str | None = None) -> tuple[bool, int | None]:
     """Spawn a feat-request planning session for the given issue.
 
-    Creates worktree if not exists, and spawns claude with /ultra-planner --from-issue headlessly.
+    Runs planning on main branch worktree, and spawns claude with /ultra-planner --from-issue headlessly.
 
     Args:
         issue_no: GitHub issue number
@@ -209,17 +216,10 @@ def spawn_feat_request(issue_no: int, model: str | None = None) -> tuple[bool, i
     Returns:
         Tuple of (success, pid). pid is None if spawn failed.
     """
-    # Create worktree if not exists (reuse if exists)
-    if not worktree_exists(issue_no):
-        result = run_shell_function(f'wt spawn {issue_no} --no-agent --headless', capture_output=True)
-        if result.returncode != 0:
-            _log(f"Failed to create worktree for feat-request issue #{issue_no}", level="ERROR")
-            return False, None
-
-    # Get worktree path
-    result = run_shell_function(f'wt pathto {issue_no}', capture_output=True)
+    # Get main worktree path (planning runs on main branch)
+    result = run_shell_function('wt pathto main', capture_output=True)
     if result.returncode != 0:
-        _log(f"Failed to get worktree path for issue #{issue_no}", level="ERROR")
+        _log(f"Failed to get main worktree path", level="ERROR")
         return False, None
     worktree_path = result.stdout.strip()
 

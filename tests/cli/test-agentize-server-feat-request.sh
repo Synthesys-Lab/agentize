@@ -188,4 +188,35 @@ if [ "$label_check_output" != "True" ]; then
   test_fail "_check_issue_has_label should return True for agentize:dev-req, got: $label_check_output"
 fi
 
+# Test 9: _cleanup_feat_request calls wt_claim_issue_status with "Proposed" status
+cleanup_status_output=$(PYTHONPATH="$PROJECT_ROOT/python" python3 -c "
+import subprocess
+import sys
+from unittest.mock import patch, MagicMock
+import agentize.server.workers as workers_module
+
+captured_calls = []
+
+def capture_shell_run(cmd, **kwargs):
+    captured_calls.append(cmd)
+    return MagicMock(returncode=0, stdout='/tmp/test-worktree')
+
+import io
+old_stdout = sys.stdout
+
+with patch.object(workers_module, 'run_shell_function', side_effect=capture_shell_run):
+    with patch('subprocess.run'):
+        sys.stdout = io.StringIO()  # Suppress _log output
+        from agentize.server.workers import _cleanup_feat_request
+        _cleanup_feat_request(42)
+        sys.stdout = old_stdout
+        # Check that wt_claim_issue_status was called with Proposed
+        status_called = any('wt_claim_issue_status' in str(c) and 'Proposed' in str(c) for c in captured_calls)
+        print('True' if status_called else 'False')
+" 2>/dev/null)
+
+if [ "$cleanup_status_output" != "True" ]; then
+  test_fail "_cleanup_feat_request should call wt_claim_issue_status with Proposed, got: $cleanup_status_output"
+fi
+
 test_pass "server feat-request worker tests work correctly"
