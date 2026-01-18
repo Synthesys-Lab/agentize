@@ -2,6 +2,24 @@
 # lol CLI main dispatcher
 # Entry point and help text
 
+# Log version information to stderr
+_lol_log_version() {
+    # Get version from git describe or short commit hash (from AGENTIZE_HOME)
+    local version="unknown"
+    if [ -n "$AGENTIZE_HOME" ] && command -v git >/dev/null 2>&1; then
+        # Try to get tag, fall back to short commit hash
+        version=$(git -C "$AGENTIZE_HOME" describe --tags --always 2>/dev/null || echo "unknown")
+    fi
+
+    # Get full commit hash (from AGENTIZE_HOME)
+    local commit="unknown"
+    if [ -n "$AGENTIZE_HOME" ] && command -v git >/dev/null 2>&1; then
+        commit=$(git -C "$AGENTIZE_HOME" rev-parse HEAD 2>/dev/null || echo "unknown")
+    fi
+
+    echo "[agentize] $version @ $commit" >&2
+}
+
 # Main lol function
 lol() {
     # Handle completion helper before AGENTIZE_HOME validation
@@ -37,6 +55,9 @@ lol() {
         echo "  AGENTIZE_HOME may not point to a valid agentize repository"
         return 1
     fi
+
+    # Log version at startup
+    _lol_log_version
 
     # Handle --version flag as alias for version subcommand
     if [ "$1" = "--version" ]; then

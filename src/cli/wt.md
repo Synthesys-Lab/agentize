@@ -37,6 +37,12 @@ wt <command> [options]
 - `0`: Command executed successfully
 - `1`: Invalid command, command failed, or help displayed
 
+**Logging Behavior:**
+- At startup, logs version information to stderr: `[agentize] <version-tag-or-commit> @ <full-commit-hash>`
+- Version information comes from git tags (via `git describe --tags --always`) and commit hash (via `git rev-parse HEAD`)
+- Logging is suppressed for `--complete` mode to avoid polluting completion output
+- When `AGENTIZE_HOME` is not set, logs as "standalone"
+
 **Commands:**
 - `clone <url> [dest]`: Clone repository as bare and initialize worktree environment
 - `common`: Print git common directory (bare repo path)

@@ -42,6 +42,11 @@ lol <command> [options]
 - `0`: Command executed successfully
 - `1`: Invalid command, command failed, or help displayed
 
+**Logging Behavior:**
+- At startup, logs version information to stderr: `[agentize] <version-tag-or-commit> @ <full-commit-hash>`
+- Version information comes from git tags (via `git describe --tags --always` from `AGENTIZE_HOME`) and commit hash (via `git rev-parse HEAD`)
+- Logging is suppressed for `--complete` mode to avoid polluting completion output
+
 **Commands:**
 - `upgrade`: Upgrade agentize installation
 - `project`: GitHub Projects v2 integration
