@@ -38,8 +38,8 @@ items = json.loads('''$TEST_ITEMS''')
 filter_ready_issues(items)
 " 2>&1)
 
-if ! echo "$debug_output" | grep -q '\[issue-filter\]'; then
-  test_fail "Debug output missing [issue-filter] prefix"
+if ! echo "$debug_output" | grep -q 'decision:'; then
+  test_fail "Debug output missing 'decision:' field"
 fi
 
 if ! echo "$debug_output" | grep -q 'READY'; then
@@ -241,8 +241,8 @@ items = json.loads('''$REFINEMENT_ITEMS''')
 filter_ready_refinements(items)
 " 2>&1)
 
-if ! echo "$refine_debug_output" | grep -q '\[refine-filter\]'; then
-  test_fail "Refinement debug output missing [refine-filter] prefix"
+if ! echo "$refine_debug_output" | grep -q 'decision:'; then
+  test_fail "Refinement debug output missing 'decision:' field"
 fi
 
 if ! echo "$refine_debug_output" | grep -q 'missing agentize:refine'; then
@@ -299,8 +299,8 @@ items = json.loads('''$FEAT_REQUEST_ITEMS''')
 filter_ready_feat_requests(items)
 " 2>&1)
 
-if ! echo "$feat_debug_output" | grep -q '\[dev-req-filter\]'; then
-  test_fail "Dev-req debug output missing [dev-req-filter] prefix"
+if ! echo "$feat_debug_output" | grep -q 'decision:'; then
+  test_fail "Dev-req debug output missing 'decision:' field"
 fi
 
 if ! echo "$feat_debug_output" | grep -q 'already has agentize:plan'; then

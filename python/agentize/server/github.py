@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
 from agentize.server.log import _log
@@ -327,7 +328,8 @@ def filter_ready_issues(items: list[dict]) -> list[int]:
 
     if debug:
         total_skip = skip_status + skip_label
-        _log(f"Summary: {len(ready)} ready, {total_skip} skipped ({skip_status} wrong status, {skip_label} missing label)")
+        timestamp = datetime.now().strftime("%y-%m-%d-%H:%M:%S")
+        print(f"[{timestamp}] [INFO] [github.py:330:filter_ready_issues] Summary: {len(ready)} ready, {total_skip} skipped ({skip_status} wrong status, {skip_label} missing label)", file=sys.stderr)
 
     return ready
 
@@ -383,7 +385,8 @@ def filter_ready_refinements(items: list[dict]) -> list[int]:
 
     if debug:
         total_skip = skip_status + skip_plan_label + skip_refine_label
-        _log(f"Summary: {len(ready)} ready, {total_skip} skipped ({skip_status} wrong status, {skip_plan_label} missing agentize:plan, {skip_refine_label} missing agentize:refine)")
+        timestamp = datetime.now().strftime("%y-%m-%d-%H:%M:%S")
+        print(f"[{timestamp}] [INFO] [github.py:386:filter_ready_refinements] Summary: {len(ready)} ready, {total_skip} skipped ({skip_status} wrong status, {skip_plan_label} missing agentize:plan, {skip_refine_label} missing agentize:refine)", file=sys.stderr)
 
     return ready
 
@@ -478,7 +481,8 @@ def filter_conflicting_prs(prs: list[dict], owner: str, repo: str, project_id: s
 
     if debug:
         total_skip = skip_healthy + skip_unknown + skip_rebasing
-        _log(f"Summary: {len(conflicting)} queued, {total_skip} skipped ({skip_healthy} healthy, {skip_unknown} unknown, {skip_rebasing} rebasing)")
+        timestamp = datetime.now().strftime("%y-%m-%d-%H:%M:%S")
+        print(f"[{timestamp}] [INFO] [github.py:481:filter_conflicting_prs] Summary: {len(conflicting)} queued, {total_skip} skipped ({skip_healthy} healthy, {skip_unknown} unknown, {skip_rebasing} rebasing)", file=sys.stderr)
 
     return conflicting
 
@@ -654,6 +658,7 @@ def filter_ready_feat_requests(items: list[dict]) -> list[int]:
 
     if debug:
         total_skip = skip_has_plan + skip_terminal
-        _log(f"Summary: {len(ready)} ready, {total_skip} skipped ({skip_has_plan} already planned, {skip_terminal} terminal status)")
+        timestamp = datetime.now().strftime("%y-%m-%d-%H:%M:%S")
+        print(f"[{timestamp}] [INFO] [github.py:657:filter_ready_feat_requests] Summary: {len(ready)} ready, {total_skip} skipped ({skip_has_plan} already planned, {skip_terminal} terminal status)", file=sys.stderr)
 
     return ready
