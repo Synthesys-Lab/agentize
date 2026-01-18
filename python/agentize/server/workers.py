@@ -160,7 +160,7 @@ def _cleanup_feat_request(issue_no: int) -> None:
 def spawn_refinement(issue_no: int, model: str | None = None) -> tuple[bool, int | None]:
     """Spawn a refinement session for the given issue.
 
-    Runs planning on main branch worktree, sets status to Refining, and spawns
+    Runs planning on main branch worktree and spawns
     claude with /ultra-planner --refine headlessly.
 
     Args:
@@ -173,7 +173,7 @@ def spawn_refinement(issue_no: int, model: str | None = None) -> tuple[bool, int
     # Get main worktree path (planning runs on main branch)
     result = run_shell_function('wt pathto main', capture_output=True)
     if result.returncode != 0:
-        _log(f"Failed to get main worktree path", level="ERROR")
+        _log(f"Failed to get main worktree path for refinement of issue #{issue_no}", level="ERROR")
         return False, None
     worktree_path = result.stdout.strip()
 
@@ -219,7 +219,7 @@ def spawn_feat_request(issue_no: int, model: str | None = None) -> tuple[bool, i
     # Get main worktree path (planning runs on main branch)
     result = run_shell_function('wt pathto main', capture_output=True)
     if result.returncode != 0:
-        _log(f"Failed to get main worktree path", level="ERROR")
+        _log(f"Failed to get main worktree path for feat-request of issue #{issue_no}", level="ERROR")
         return False, None
     worktree_path = result.stdout.strip()
 

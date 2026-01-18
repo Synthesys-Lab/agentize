@@ -16,9 +16,8 @@ Both `spawn_refinement()` and `spawn_feat_request()` functions run planning sess
 
 The functions follow this sequence:
 1. Get the main worktree path using `wt pathto main` (not `wt pathto {issue_no}`)
-2. Set appropriate status ("Refining" or appropriate status) on the worktree
-3. Spawn Claude with the planning command in the main worktree directory
-4. Return the spawned process ID for monitoring
+2. Spawn Claude with the planning command in the main worktree directory
+3. Return the spawned process ID for monitoring
 
 ## Cleanup Functions
 
