@@ -25,7 +25,7 @@ _lib_dir = Path(__file__).resolve().parent.parent
 if str(_lib_dir.parent) not in sys.path:
     sys.path.insert(0, str(_lib_dir.parent))
 from lib.telegram_utils import escape_html as _shared_escape_html, telegram_request
-from lib.logger import log_tool_decision
+from lib.logger import log_tool_decision, logger
 
 # Constants
 TELEGRAM_API_TIMEOUT_SEC = 10
@@ -603,6 +603,7 @@ def determine(stdin_data: str) -> dict:
     session = _hook_input['session_id']
     tool_input = _hook_input.get('tool_input', {})
 
+
     # Extract target
     target = extract_target(tool, tool_input)
 
@@ -610,6 +611,9 @@ def determine(stdin_data: str) -> dict:
     raw_target = target
     if tool == 'Bash':
         target = normalize_bash_command(target)
+
+    logger(session, f'PreToolUse hook determine.tool: {tool}')
+    logger(session, f'PreToolUse hook determine.target: {target}')
 
     # Detect workflow for logging
     workflow = _detect_workflow(session)

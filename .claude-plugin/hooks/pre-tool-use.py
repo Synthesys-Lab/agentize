@@ -12,8 +12,15 @@ import os
 import sys
 from pathlib import Path
 
+# Add .claude-plugin to path for lib imports
+_plugin_dir = Path(__file__).resolve().parent.parent
+if str(_plugin_dir) not in sys.path:
+    sys.path.insert(0, str(_plugin_dir))
+
+from lib.logger import logger
 
 def main():
+    logger('SYSTEM', f'PreToolUse hook started')
     try:
         # Add .claude-plugin to path for lib imports
         plugin_dir = os.environ.get("CLAUDE_PLUGIN_ROOT")
@@ -26,12 +33,9 @@ def main():
         from lib.permission import determine
         result = determine(sys.stdin.read())
     except Exception as e:
-        os.makedirs('.tmp', exist_ok=True)
-        with open('.tmp/pre_tool_use_hook_error.log', 'w') as f:
-            f.write("Error in PreToolUse hook:\n")
-            import traceback
-            traceback.print_exc(file=f)
-            f.write(str(e))
+        import traceback
+        logger('SYSTEM', f'PreToolUse hook error: {e}')
+        logger('SYSTEM', f'PreToolUse hook error traceback: {traceback.format_exc()}')
         result = {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask"}}
     print(json.dumps(result))
 
