@@ -213,7 +213,7 @@ Individual skills and commands are validated through dogfooding during actual de
 
 - **Name**: agentize
 - **Version**: 1.0.9
-- **Author**: SyntheSys-Lab
+- **Author**: Synthesys-Lab
 - **License**: MIT
 - **Homepage**: https://github.com/Synthesys-Lab/agentize
 - **Category**: development
