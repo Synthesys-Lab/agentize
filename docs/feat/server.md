@@ -125,10 +125,11 @@ If rebase fails due to conflicts:
 When `HANDSOFF_DEBUG=1` is set, the server logs PR discovery and filtering decisions:
 
 ```
-[pr-rebase-filter] #123 mergeable=CONFLICTING status=Backlog -> QUEUE
-[pr-rebase-filter] #124 mergeable=UNKNOWN -> SKIP (retry next poll)
-[pr-rebase-filter] #125 mergeable=MERGEABLE -> SKIP (healthy)
-[pr-rebase-filter] #126 mergeable=CONFLICTING status=Rebasing -> SKIP (already being rebased)
+  - PR #123: { mergeable: CONFLICTING, status: Backlog }, decision: QUEUE, reason: needs rebase
+  - PR #124: { mergeable: UNKNOWN }, decision: SKIP, reason: retry next poll
+  - PR #125: { mergeable: MERGEABLE }, decision: SKIP, reason: healthy
+  - PR #126: { mergeable: CONFLICTING, status: Rebasing }, decision: SKIP, reason: already being rebased
+[26-01-18-14:30:15] [INFO] [github.py:481:filter_conflicting_prs] Summary: 1 queued, 3 skipped (1 healthy, 1 unknown, 1 rebasing)
 ```
 
 ## Feature Request Planning Workflow
@@ -164,9 +165,10 @@ When a feature request candidate is found:
 When `HANDSOFF_DEBUG=1` is set:
 
 ```
-[dev-req-filter] #42 labels=[agentize:dev-req] status=Backlog -> READY
-[dev-req-filter] #43 labels=[agentize:dev-req, agentize:plan] -> SKIP (already has agentize:plan)
-[dev-req-filter] #44 labels=[agentize:dev-req] status=Done -> SKIP (terminal status)
+  - Issue #42: { labels: [agentize:dev-req], status: Backlog }, decision: READY, reason: matches criteria
+  - Issue #43: { labels: [agentize:dev-req, agentize:plan], status: Proposed }, decision: SKIP, reason: already has agentize:plan
+  - Issue #44: { labels: [agentize:dev-req], status: Done }, decision: SKIP, reason: terminal status
+[26-01-18-14:30:15] [INFO] [github.py:657:filter_ready_feat_requests] Summary: 1 ready, 2 skipped (1 already planned, 1 terminal status)
 ```
 
 ### Manual Feature Request Trigger
@@ -217,9 +219,10 @@ When a refinement candidate is found:
 When `HANDSOFF_DEBUG=1` is set:
 
 ```
-[refine-filter] #42 status=Proposed labels=[agentize:plan, agentize:refine] -> READY
-[refine-filter] #43 status=Proposed labels=[agentize:plan] -> SKIP (missing agentize:refine label)
-[refine-filter] #44 status=Plan Accepted labels=[agentize:plan, agentize:refine] -> SKIP (status != Proposed)
+  - Issue #42: { labels: [agentize:plan, agentize:refine], status: Proposed }, decision: READY, reason: matches criteria
+  - Issue #43: { labels: [agentize:plan], status: Proposed }, decision: SKIP, reason: missing agentize:refine label
+  - Issue #44: { labels: [agentize:plan, agentize:refine], status: Plan Accepted }, decision: SKIP, reason: status != Proposed
+[26-01-18-14:30:15] [INFO] [github.py:386:filter_ready_refinements] Summary: 1 ready, 2 skipped (1 wrong status, 1 missing agentize:refine)
 ```
 
 ### Manual Refinement Trigger
@@ -337,17 +340,17 @@ HANDSOFF_DEBUG=1 lol serve --tg-token=<token> --tg-chat-id=<id>
 Debug output shows per-issue inspection with status, labels, and rejection reasons:
 
 ```
-[issue-filter] #42 status=Plan Accepted labels=[agentize:plan, bug] -> READY
-[issue-filter] #43 status=Backlog labels=[enhancement] -> SKIP (status != Plan Accepted)
-[issue-filter] #44 status=Plan Accepted labels=[feature] -> SKIP (missing agentize:plan label)
-[issue-filter] Summary: 1 ready, 2 skipped (1 wrong status, 1 missing label)
+  - Issue #42: { labels: [agentize:plan, bug], status: Plan Accepted }, decision: READY, reason: matches criteria
+  - Issue #43: { labels: [enhancement], status: Backlog }, decision: SKIP, reason: status != Plan Accepted
+  - Issue #44: { labels: [feature], status: Plan Accepted }, decision: SKIP, reason: missing agentize:plan label
+[26-01-18-14:30:15] [INFO] [github.py:330:filter_ready_issues] Summary: 1 ready, 2 skipped (1 wrong status, 1 missing label)
 ```
 
-Each line includes:
-- Issue number
-- Current status value
-- Label list
-- Decision (READY or SKIP with reason)
+Each individual scan line includes:
+- Issue number with 2-space indentation
+- Structured format with labels and status
+- Decision (READY or SKIP) and reason
+- Summary line with timestamp and source location
 
 ## Telegram Notifications
 

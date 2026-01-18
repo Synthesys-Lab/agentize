@@ -310,24 +310,24 @@ def filter_ready_issues(items: list[dict]) -> list[int]:
         # Check status
         if status_name != 'Plan Accepted':
             if debug:
-                print(f"[issue-filter] #{issue_no} status={status_name} labels={label_names} -> SKIP (status != Plan Accepted)", file=sys.stderr)
+                print(f"  - Issue #{issue_no}: {{ labels: {label_names}, status: {status_name} }}, decision: SKIP, reason: status != Plan Accepted", file=sys.stderr)
             skip_status += 1
             continue
 
         # Check label
         if 'agentize:plan' not in label_names:
             if debug:
-                print(f"[issue-filter] #{issue_no} status={status_name} labels={label_names} -> SKIP (missing agentize:plan label)", file=sys.stderr)
+                print(f"  - Issue #{issue_no}: {{ labels: {label_names}, status: {status_name} }}, decision: SKIP, reason: missing agentize:plan label", file=sys.stderr)
             skip_label += 1
             continue
 
         if debug:
-            print(f"[issue-filter] #{issue_no} status={status_name} labels={label_names} -> READY", file=sys.stderr)
+            print(f"  - Issue #{issue_no}: {{ labels: {label_names}, status: {status_name} }}, decision: READY, reason: matches criteria", file=sys.stderr)
         ready.append(issue_no)
 
     if debug:
         total_skip = skip_status + skip_label
-        print(f"[issue-filter] Summary: {len(ready)} ready, {total_skip} skipped ({skip_status} wrong status, {skip_label} missing label)", file=sys.stderr)
+        _log(f"Summary: {len(ready)} ready, {total_skip} skipped ({skip_status} wrong status, {skip_label} missing label)")
 
     return ready
 
@@ -359,31 +359,31 @@ def filter_ready_refinements(items: list[dict]) -> list[int]:
         # Check status
         if status_name != 'Proposed':
             if debug:
-                print(f"[refine-filter] #{issue_no} status={status_name} labels={label_names} -> SKIP (status != Proposed)", file=sys.stderr)
+                print(f"  - Issue #{issue_no}: {{ labels: {label_names}, status: {status_name} }}, decision: SKIP, reason: status != Proposed", file=sys.stderr)
             skip_status += 1
             continue
 
         # Check agentize:plan label
         if 'agentize:plan' not in label_names:
             if debug:
-                print(f"[refine-filter] #{issue_no} status={status_name} labels={label_names} -> SKIP (missing agentize:plan label)", file=sys.stderr)
+                print(f"  - Issue #{issue_no}: {{ labels: {label_names}, status: {status_name} }}, decision: SKIP, reason: missing agentize:plan label", file=sys.stderr)
             skip_plan_label += 1
             continue
 
         # Check agentize:refine label
         if 'agentize:refine' not in label_names:
             if debug:
-                print(f"[refine-filter] #{issue_no} status={status_name} labels={label_names} -> SKIP (missing agentize:refine label)", file=sys.stderr)
+                print(f"  - Issue #{issue_no}: {{ labels: {label_names}, status: {status_name} }}, decision: SKIP, reason: missing agentize:refine label", file=sys.stderr)
             skip_refine_label += 1
             continue
 
         if debug:
-            print(f"[refine-filter] #{issue_no} status={status_name} labels={label_names} -> READY", file=sys.stderr)
+            print(f"  - Issue #{issue_no}: {{ labels: {label_names}, status: {status_name} }}, decision: READY, reason: matches criteria", file=sys.stderr)
         ready.append(issue_no)
 
     if debug:
         total_skip = skip_status + skip_plan_label + skip_refine_label
-        print(f"[refine-filter] Summary: {len(ready)} ready, {total_skip} skipped ({skip_status} wrong status, {skip_plan_label} missing agentize:plan, {skip_refine_label} missing agentize:refine)", file=sys.stderr)
+        _log(f"Summary: {len(ready)} ready, {total_skip} skipped ({skip_status} wrong status, {skip_plan_label} missing agentize:plan, {skip_refine_label} missing agentize:refine)")
 
     return ready
 
@@ -449,13 +449,13 @@ def filter_conflicting_prs(prs: list[dict], owner: str, repo: str, project_id: s
 
         if mergeable == 'UNKNOWN':
             if debug:
-                print(f"[pr-rebase-filter] #{pr_no} mergeable=UNKNOWN -> SKIP (retry next poll)", file=sys.stderr)
+                print(f"  - PR #{pr_no}: {{ mergeable: {mergeable} }}, decision: SKIP, reason: retry next poll", file=sys.stderr)
             skip_unknown += 1
             continue
 
         if mergeable != 'CONFLICTING':
             if debug:
-                print(f"[pr-rebase-filter] #{pr_no} mergeable={mergeable} -> SKIP (healthy)", file=sys.stderr)
+                print(f"  - PR #{pr_no}: {{ mergeable: {mergeable} }}, decision: SKIP, reason: healthy", file=sys.stderr)
             skip_healthy += 1
             continue
 
@@ -465,20 +465,20 @@ def filter_conflicting_prs(prs: list[dict], owner: str, repo: str, project_id: s
             status = query_issue_project_status(owner, repo, issue_no, project_id)
             if status == 'Rebasing':
                 if debug:
-                    print(f"[pr-rebase-filter] #{pr_no} mergeable=CONFLICTING status=Rebasing -> SKIP (already being rebased)", file=sys.stderr)
+                    print(f"  - PR #{pr_no}: {{ mergeable: {mergeable}, status: {status} }}, decision: SKIP, reason: already being rebased", file=sys.stderr)
                 skip_rebasing += 1
                 continue
-            status_str = f" status={status}" if status else ""
+            status_str = f", status: {status}" if status else ""
         else:
             status_str = ""
 
         if debug:
-            print(f"[pr-rebase-filter] #{pr_no} mergeable=CONFLICTING{status_str} -> QUEUE", file=sys.stderr)
+            print(f"  - PR #{pr_no}: {{ mergeable: {mergeable}{status_str} }}, decision: QUEUE, reason: needs rebase", file=sys.stderr)
         conflicting.append(pr_no)
 
     if debug:
         total_skip = skip_healthy + skip_unknown + skip_rebasing
-        print(f"[pr-rebase-filter] Summary: {len(conflicting)} queued, {total_skip} skipped ({skip_healthy} healthy, {skip_unknown} unknown, {skip_rebasing} rebasing)", file=sys.stderr)
+        _log(f"Summary: {len(conflicting)} queued, {total_skip} skipped ({skip_healthy} healthy, {skip_unknown} unknown, {skip_rebasing} rebasing)")
 
     return conflicting
 
@@ -637,23 +637,23 @@ def filter_ready_feat_requests(items: list[dict]) -> list[int]:
         # Check for agentize:plan label (already planned)
         if 'agentize:plan' in label_names:
             if debug:
-                print(f"[dev-req-filter] #{issue_no} labels={label_names} -> SKIP (already has agentize:plan)", file=sys.stderr)
+                print(f"  - Issue #{issue_no}: {{ labels: {label_names}, status: {status_name} }}, decision: SKIP, reason: already has agentize:plan", file=sys.stderr)
             skip_has_plan += 1
             continue
 
         # Check for terminal status
         if status_name in terminal_statuses:
             if debug:
-                print(f"[dev-req-filter] #{issue_no} status={status_name} labels={label_names} -> SKIP (terminal status)", file=sys.stderr)
+                print(f"  - Issue #{issue_no}: {{ labels: {label_names}, status: {status_name} }}, decision: SKIP, reason: terminal status", file=sys.stderr)
             skip_terminal += 1
             continue
 
         if debug:
-            print(f"[dev-req-filter] #{issue_no} labels={label_names} status={status_name} -> READY", file=sys.stderr)
+            print(f"  - Issue #{issue_no}: {{ labels: {label_names}, status: {status_name} }}, decision: READY, reason: matches criteria", file=sys.stderr)
         ready.append(issue_no)
 
     if debug:
         total_skip = skip_has_plan + skip_terminal
-        print(f"[dev-req-filter] Summary: {len(ready)} ready, {total_skip} skipped ({skip_has_plan} already planned, {skip_terminal} terminal status)", file=sys.stderr)
+        _log(f"Summary: {len(ready)} ready, {total_skip} skipped ({skip_has_plan} already planned, {skip_terminal} terminal status)")
 
     return ready
