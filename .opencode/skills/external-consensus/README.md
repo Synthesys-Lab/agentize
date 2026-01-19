@@ -70,15 +70,12 @@ When Codex is unavailable but Cursor Agent CLI is available with GPT-5.2-Codex-x
 
 **Detection**:
 ```bash
-command -v agent &> /dev/null                    # Check CLI availability
-agent --list-models | grep -q "gpt-5.2-codex-xhigh"  # Verify model availability
+command -v agent &> /dev/null       # Check CLI availability
 ```
 
 **Usage pattern**:
 ```bash
-agent exec \
-    -m gpt-5.2-codex-xhigh \        # Advanced reasoning model
-    < input.md > output.txt         # File I/O via redirection
+cat input.md | agent -p > output.txt  # Pipe input through agent -p flag
 ```
 
 **Features used**:

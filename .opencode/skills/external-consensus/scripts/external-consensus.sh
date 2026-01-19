@@ -211,19 +211,17 @@ if command -v codex &> /dev/null; then
         - < "$INPUT_FILE" >&2
 
     EXIT_CODE=$?
-# Tier 2: Check if Cursor Agent CLI is available with gpt-5.2-codex-xhigh model
-elif command -v agent &> /dev/null && agent --list-models 2>/dev/null | grep -q "gpt-5.2-codex-xhigh"; then
-    echo "- Tier 2: Model gpt-5.2-codex-xhigh (Cursor Agent CLI)" >&2
+# Tier 2: Check if Cursor Agent CLI is available
+elif command -v agent &> /dev/null; then
+    echo "- Tier 2: Cursor Agent CLI" >&2
     echo "  - Advanced reasoning: enabled" >&2
     echo "" >&2
     echo "This will take 1-3 minutes..." >&2
     echo "" >&2
 
-    # Invoke Cursor Agent CLI with gpt-5.2-codex-xhigh model
+    # Invoke Cursor Agent CLI with agent -p
     # Capture both stdout and stderr to output file (expected format for consensus output)
-    agent exec \
-        -m gpt-5.2-codex-xhigh \
-        < "$INPUT_FILE" > "$OUTPUT_FILE" 2>&1
+    cat "$INPUT_FILE" | agent -p > "$OUTPUT_FILE" 2>&1
 
     EXIT_CODE=$?
 # Tier 3: Fall back to Claude Opus
