@@ -11,6 +11,51 @@ Centralized reference for all environment variables used in Agentize.
 
 **Hook path resolution:** When `AGENTIZE_HOME` is set, hooks store session state and logs in `$AGENTIZE_HOME/.tmp/hooked-sessions/`. This enables workflow continuations across worktree switches. If `AGENTIZE_HOME` is unset, hooks use a "soft" fallback: first attempting repo root derivation (via `Makefile` and `src/cli/lol.sh` markers), then falling back to the current worktree (`.`).
 
+## External Agent Selection
+
+Environment variable for controlling which external AI agent is used for consensus review and workflow guidance.
+
+| Variable | Required | Type | Default | Description |
+|----------|----------|------|---------|-------------|
+| `AGENTIZE_EXTERNAL_AGENT` | No | Enum | `auto` | External agent selection: `auto`, `codex`, `agent`, `claude`. |
+
+### AGENTIZE_EXTERNAL_AGENT
+
+Control which external AI agent is used for external-consensus review and workflow guidance.
+
+**Used by:**
+- `scripts/invoke-external-agent.sh` - Unified agent wrapper
+- `.claude-plugin/skills/external-consensus/scripts/external-consensus.sh` - Consensus review
+- `.opencode/skills/external-consensus/scripts/external-consensus.sh` - Consensus review
+- `.claude-plugin/lib/workflow.py` - Workflow continuation guidance (inherits env var)
+
+**Default**: `auto` (three-tier fallback: Codex → Agent CLI → Claude)
+
+**Values**:
+- `auto`: Try codex first, then agent CLI, then Claude (default behavior)
+- `codex`: Force Codex (error if unavailable)
+- `agent`: Force Agent CLI (error if unavailable)
+- `claude`: Force Claude Opus (skip earlier options)
+
+**Examples**:
+```bash
+# Force Claude for all external agent calls
+export AGENTIZE_EXTERNAL_AGENT=claude
+
+# Force Agent CLI
+export AGENTIZE_EXTERNAL_AGENT=agent
+
+# Force Codex
+export AGENTIZE_EXTERNAL_AGENT=codex
+
+# Use auto-detection (default)
+unset AGENTIZE_EXTERNAL_AGENT
+```
+
+**Error behavior**:
+- If set to a specific agent but that CLI unavailable: Exit with clear error
+- If set to invalid value: Exit with error message
+
 ## Handsoff Mode
 
 Environment variables for automatic continuation of workflows without manual intervention.

@@ -26,6 +26,15 @@ This skill acts as the "tie-breaker" and "integrator" in the ultra-planner workf
 ### Required
 - **Combined debate report** - Output from debate-based-planning skill (3 agents)
 - **Prompt template** - external-review-prompt.md (in skill directory)
+- **Shared wrapper** - `scripts/invoke-external-agent.sh` (unified agent dispatcher)
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AGENTIZE_EXTERNAL_AGENT` | `auto` | Agent selection: `auto`, `codex`, `agent`, `claude` |
+
+See [Environment Variables Reference](../../../docs/envvar.md#agentize_external_agent) for details.
 
 ### External Tools (three-tier fallback)
 
@@ -126,7 +135,7 @@ claude -p \
 
 ## How It Works
 
-The skill uses a formalized script (`scripts/external-consensus.sh`) that:
+The skill uses a formalized script (`scripts/external-consensus.sh`) that delegates agent invocation to the shared wrapper (`scripts/invoke-external-agent.sh`):
 
 1. Parses input to detect issue number or path mode
 2. Resolves debate report path (`.tmp/issue-{N}-debate.md` if issue number provided)
@@ -137,14 +146,13 @@ The skill uses a formalized script (`scripts/external-consensus.sh`) that:
    - Scans reports 1 → 2 → 3 in priority order until first match found
    - Falls back to "Unknown Feature" only when no label exists in any report
 5. Loads and processes the prompt template with variable substitution
-6. Applies three-tier fallback strategy:
-   - **Tier 1**: Check if Codex available → use Codex with xhigh reasoning
-   - **Tier 2**: Check if Agent CLI available with gpt-5.2-codex-xhigh → use Agent CLI
-   - **Tier 3**: Fall back to Claude Opus with read-only tools
-7. Invokes external AI with appropriate configuration:
-   - **Codex**: gpt-5.2-codex, read-only sandbox, web search, xhigh reasoning
-   - **Agent CLI**: gpt-5.2-codex-xhigh via Cursor Agent CLI
-   - **Claude**: Opus model, read-only tools (Read, Grep, Glob, WebSearch, WebFetch)
+6. Calls shared wrapper `scripts/invoke-external-agent.sh` with:
+   - Model argument: `auto` (or value from `AGENTIZE_EXTERNAL_AGENT`)
+   - Input file: prepared prompt file
+   - Output file: destination for consensus plan
+7. Wrapper handles three-tier fallback based on `AGENTIZE_EXTERNAL_AGENT`:
+   - `auto`: Codex → Agent CLI → Claude (default)
+   - `codex`/`agent`/`claude`: Force specific agent
 8. Saves consensus plan to `.tmp/issue-{N}-consensus.md` (issue mode) or `.tmp/consensus-plan-{timestamp}.md` (path mode)
 9. Returns the consensus file path for validation and summary extraction
 

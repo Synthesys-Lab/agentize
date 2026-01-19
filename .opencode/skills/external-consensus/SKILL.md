@@ -11,7 +11,9 @@ allowed-tools:
 
 # External Consensus Skill
 
-This skill invokes an external AI reviewer (Codex or Claude Opus) to synthesize a balanced, consensus implementation plan from the combined multi-agent debate report.
+This skill invokes an external AI reviewer (Codex, Agent CLI, or Claude Opus) to synthesize a balanced, consensus implementation plan from the combined multi-agent debate report.
+
+**Environment variable**: Set `AGENTIZE_EXTERNAL_AGENT` to override agent selection (`auto`/`codex`/`agent`/`claude`). Default: `auto` (three-tier fallback).
 
 ## CLI Tool Usage
 
