@@ -6,10 +6,10 @@
 # supporting three-tier fallback: Codex -> Agent CLI -> Claude.
 #
 # Usage:
-#   ./invoke-external-agent.sh <model> <input_file> <output_file>
+#   ./invoke-external-agent.sh <agent> <input_file> <output_file>
 #
 # Arguments:
-#   model        Agent/model selection: auto, codex, agent, claude
+#   agent        Agent selection: auto, codex, agent, claude
 #   input_file   Path to input prompt file
 #   output_file  Path to output response file
 #
@@ -24,13 +24,13 @@
 set -euo pipefail
 
 # Parse arguments
-MODEL="${1:-}"
+AGENT_ARG="${1:-}"
 INPUT_FILE="${2:-}"
 OUTPUT_FILE="${3:-}"
 
 # Validate arguments
-if [ -z "$MODEL" ] || [ -z "$INPUT_FILE" ] || [ -z "$OUTPUT_FILE" ]; then
-    echo "Error: Usage: invoke-external-agent.sh <model> <input_file> <output_file>" >&2
+if [ -z "$AGENT_ARG" ] || [ -z "$INPUT_FILE" ] || [ -z "$OUTPUT_FILE" ]; then
+    echo "Error: Usage: invoke-external-agent.sh <agent> <input_file> <output_file>" >&2
     exit 2
 fi
 
@@ -43,8 +43,8 @@ fi
 # Ensure output directory exists
 mkdir -p "$(dirname "$OUTPUT_FILE")"
 
-# Read agent selection from environment (overrides model argument if set)
-EXTERNAL_AGENT="${AGENTIZE_EXTERNAL_AGENT:-$MODEL}"
+# Read agent selection from environment (overrides argument if set)
+EXTERNAL_AGENT="${AGENTIZE_EXTERNAL_AGENT:-$AGENT_ARG}"
 
 # Validate agent selection
 case "$EXTERNAL_AGENT" in

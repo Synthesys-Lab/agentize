@@ -9,16 +9,16 @@ This script consolidates the three-tier fallback logic (Codex -> Agent CLI -> Cl
 ## Interface
 
 ```bash
-./invoke-external-agent.sh <model> <input_file> <output_file>
+./invoke-external-agent.sh <agent> <input_file> <output_file>
 ```
 
 **Arguments:**
-- `model` - Agent selection: `auto`, `codex`, `agent`, `claude`
+- `agent` - Agent selection: `auto`, `codex`, `agent`, `claude`
 - `input_file` - Path to input prompt file
 - `output_file` - Path to output response file
 
 **Environment:**
-- `AGENTIZE_EXTERNAL_AGENT` - Override agent selection (takes precedence over model argument)
+- `AGENTIZE_EXTERNAL_AGENT` - Override agent selection (takes precedence over argument)
 
 ## Agent Routing Logic
 

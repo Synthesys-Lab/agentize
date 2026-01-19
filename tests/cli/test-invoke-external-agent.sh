@@ -126,13 +126,13 @@ result=$(PATH="/usr/bin:/bin" AGENTIZE_EXTERNAL_AGENT=claude "$WRAPPER_SCRIPT" a
 [ -d "$TMP_DIR/nested/path" ] || test_fail "Expected output directory to be created"
 
 # =============================================================================
-# Test 12: Environment variable overrides model argument
+# Test 12: Environment variable overrides agent argument
 # =============================================================================
-test_info "Test 12: AGENTIZE_EXTERNAL_AGENT overrides model argument"
-# If model arg is 'auto' but env is 'codex', should try codex
+test_info "Test 12: AGENTIZE_EXTERNAL_AGENT overrides agent argument"
+# If agent arg is 'claude' but env is 'codex', should try codex
 result=$(PATH="/usr/bin:/bin" AGENTIZE_EXTERNAL_AGENT=codex "$WRAPPER_SCRIPT" claude "$TEST_INPUT" "$TEST_OUTPUT" 2>&1) && exit_code=$? || exit_code=$?
 # Should fail trying codex (from env), not claude (from arg)
-echo "$result" | grep -q "codex CLI not found" || test_fail "Expected env var to override model argument"
+echo "$result" | grep -q "codex CLI not found" || test_fail "Expected env var to override agent argument"
 
 cleanup_dir "$TMP_DIR"
 
