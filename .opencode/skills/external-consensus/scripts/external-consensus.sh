@@ -220,6 +220,7 @@ elif command -v agent &> /dev/null && agent --list-models 2>/dev/null | grep -q 
     echo "" >&2
 
     # Invoke Cursor Agent CLI with gpt-5.2-codex-xhigh model
+    # Capture both stdout and stderr to output file (expected format for consensus output)
     agent exec \
         -m gpt-5.2-codex-xhigh \
         < "$INPUT_FILE" > "$OUTPUT_FILE" 2>&1

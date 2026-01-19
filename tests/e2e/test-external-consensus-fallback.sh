@@ -8,9 +8,6 @@
 
 source "$(dirname "$0")/../common.sh"
 
-# Override PROJECT_ROOT to use current worktree instead of AGENTIZE_HOME
-PROJECT_ROOT=$(git rev-parse --show-toplevel)
-
 test_info "Testing external-consensus.sh three-tier fallback cascade"
 
 # Setup: Create test agent reports
