@@ -15,7 +15,9 @@ Supported workflows:
 import re
 import os
 import subprocess
+import json
 from typing import Optional
+from datetime import datetime
 
 # ============================================================
 # Workflow name constants
@@ -138,6 +140,29 @@ The ultimate goal of this workflow is to sync the local main/master branch with 
 # AI Superviser functions (for dynamic continuation prompts)
 # ============================================================
 
+def _log_superviser_debug(message: dict):
+    """Log superviser activity to hook-debug.log for debugging.
+
+    Args:
+        message: Dictionary with debug information
+    """
+    try:
+        agentize_home = os.getenv('AGENTIZE_HOME', os.path.expanduser('~/.agentize'))
+        debug_log = os.path.join(agentize_home, '.tmp', 'hook-debug.log')
+
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(debug_log), exist_ok=True)
+
+        # Add timestamp
+        message['timestamp'] = datetime.now().isoformat()
+
+        # Append to log file
+        with open(debug_log, 'a') as f:
+            f.write(json.dumps(message) + '\n')
+    except Exception:
+        pass  # Silently ignore logging errors
+
+
 def _get_workflow_goal(workflow: str) -> str:
     """Get human-readable goal for a workflow.
 
@@ -178,9 +203,9 @@ def _ask_claude_for_guidance(workflow: str, continuation_count: int,
 
     # Read transcript if available for conversation context
     transcript_context = ""
+    transcript_entries = []
     if transcript_path and os.path.isfile(transcript_path):
         try:
-            import json
             transcript_lines = []
             with open(transcript_path, 'r') as f:
                 for line in f:
@@ -189,6 +214,7 @@ def _ask_claude_for_guidance(workflow: str, continuation_count: int,
                         # Extract role and content from transcript entry
                         if 'role' in entry and 'content' in entry:
                             transcript_lines.append(f"{entry['role']}: {entry['content'][:200]}")
+                            transcript_entries.append(entry)
 
             if transcript_lines:
                 # Include last 5 transcript entries for context
@@ -209,6 +235,17 @@ Based on the current workflow progress and conversation context, provide a conci
 
 Respond with ONLY the continuation instruction (2-3 sentences), no explanations.'''
 
+    # Log the request
+    _log_superviser_debug({
+        'event': 'superviser_request',
+        'workflow': workflow,
+        'continuation_count': continuation_count,
+        'max_continuations': max_continuations,
+        'transcript_path': transcript_path,
+        'transcript_entries_count': len(transcript_entries),
+        'prompt': prompt[:500]  # Log first 500 chars
+    })
+
     # Invoke Claude subprocess (similar to determine.py pattern)
     try:
         result = subprocess.check_output(
@@ -219,13 +256,26 @@ Respond with ONLY the continuation instruction (2-3 sentences), no explanations.
         )
         guidance = result.strip()
         if guidance:
+            _log_superviser_debug({
+                'event': 'superviser_success',
+                'workflow': workflow,
+                'guidance': guidance[:500]  # Log first 500 chars
+            })
             return guidance
     except (subprocess.TimeoutExpired, subprocess.CalledProcessError, Exception) as e:
         # Log error for debugging but don't break workflow
-        # Import logger if available
+        error_msg = str(e)[:200]
+        _log_superviser_debug({
+            'event': 'superviser_error',
+            'workflow': workflow,
+            'error_type': type(e).__name__,
+            'error_message': error_msg
+        })
+
+        # Try to log via logger if available
         try:
             from lib.logger import logger
-            logger('superviser', f'Claude guidance failed: {str(e)[:100]}')
+            logger('superviser', f'Claude guidance failed: {error_msg}')
         except Exception:
             pass  # Silently ignore if logger import fails
         return None
