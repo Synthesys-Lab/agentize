@@ -27,6 +27,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="$(dirname "$SCRIPT_DIR")"
 
+# Resolve project root for shared wrapper
+PROJECT_ROOT="$(cd "$SKILL_DIR/../../.." && pwd)"
+WRAPPER_SCRIPT="$PROJECT_ROOT/scripts/invoke-external-agent.sh"
+
 # Validate input arguments
 if [ $# -ne 3 ]; then
     echo "Error: Exactly 3 report paths are required" >&2
@@ -187,62 +191,22 @@ echo "" >&2
 echo "Configuration:" >&2
 echo "- Input: $INPUT_FILE ($(wc -l < "$INPUT_FILE") lines)" >&2
 echo "- Output: $OUTPUT_FILE" >&2
+echo "- Agent selection: ${AGENTIZE_EXTERNAL_AGENT:-auto}" >&2
 echo "" >&2
 
-# Three-tier fallback strategy: Codex → Cursor Agent CLI → Claude Opus
-
-# Tier 1: Check if Codex is available
-if command -v codex &> /dev/null; then
-    echo "- Tier 1: Model gpt-5.2-codex (Codex CLI)" >&2
-    echo "  - Sandbox: read-only" >&2
-    echo "  - Web search: enabled" >&2
-    echo "  - Reasoning effort: xhigh" >&2
-    echo "" >&2
-    echo "This will take 2-5 minutes with xhigh reasoning effort..." >&2
-    echo "" >&2
-
-    # Invoke Codex with advanced features
-    codex exec \
-        -m gpt-5.2-codex \
-        -s read-only \
-        --enable web_search_request \
-        -c model_reasoning_effort=xhigh \
-        -o "$OUTPUT_FILE" \
-        - < "$INPUT_FILE" >&2
-
-    EXIT_CODE=$?
-# Tier 2: Check if Cursor Agent CLI is available
-elif command -v agent &> /dev/null; then
-    echo "- Tier 2: Cursor Agent CLI" >&2
-    echo "  - Advanced reasoning: enabled" >&2
-    echo "" >&2
-    echo "This will take 1-3 minutes..." >&2
-    echo "" >&2
-
-    # Invoke Cursor Agent CLI with agent -p
-    # Capture both stdout and stderr to output file (expected format for consensus output)
-    cat "$INPUT_FILE" | agent -p > "$OUTPUT_FILE" 2>&1
-
-    EXIT_CODE=$?
-# Tier 3: Fall back to Claude Opus
-else
-    echo "Codex and Cursor Agent CLI not available. Using Claude Opus as fallback..." >&2
-    echo "- Tier 3: Model opus (Claude Code CLI)" >&2
-    echo "  - Tools: Read, Grep, Glob, WebSearch, WebFetch (read-only)" >&2
-    echo "  - Permission mode: bypassPermissions" >&2
-    echo "" >&2
-    echo "This will take 1-3 minutes..." >&2
-    echo "" >&2
-
-    # Invoke Claude Code with Opus and read-only tools
-    claude -p \
-        --model opus \
-        --tools "Read,Grep,Glob,WebSearch,WebFetch" \
-        --permission-mode bypassPermissions \
-        < "$INPUT_FILE" > "$OUTPUT_FILE" 2>&1
-
-    EXIT_CODE=$?
+# Validate shared wrapper exists
+if [ ! -x "$WRAPPER_SCRIPT" ]; then
+    echo "Error: Shared wrapper not found or not executable: $WRAPPER_SCRIPT" >&2
+    exit 1
 fi
+
+echo "Invoking shared wrapper: $WRAPPER_SCRIPT" >&2
+echo "This will take 1-5 minutes depending on agent..." >&2
+echo "" >&2
+
+# Use shared external agent wrapper
+"$WRAPPER_SCRIPT" "auto" "$INPUT_FILE" "$OUTPUT_FILE"
+EXIT_CODE=$?
 
 # Check if external review succeeded
 if [ $EXIT_CODE -ne 0 ] || [ ! -f "$OUTPUT_FILE" ] || [ ! -s "$OUTPUT_FILE" ]; then

@@ -189,6 +189,11 @@ def _ask_claude_for_guidance(workflow: str, continuation_count: int,
     Follows the same subprocess pattern as permission/determine.py's approach.
     Returns None on failure (fallback to static template).
 
+    Note: This function directly invokes 'claude -p' for guidance prompts.
+    For external-consensus and other agent invocations, use the shared wrapper
+    scripts/invoke-external-agent.sh which respects AGENTIZE_EXTERNAL_AGENT
+    for three-tier fallback (Codex -> Agent CLI -> Claude).
+
     Args:
         workflow: Workflow name string
         continuation_count: Current continuation count

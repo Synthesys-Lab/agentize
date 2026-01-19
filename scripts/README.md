@@ -59,6 +59,23 @@ This directory contains utility scripts, git hooks, and wrapper entrypoints for 
 
 - `worktree.sh` - Legacy worktree management (use `wt-cli.sh` instead)
 
+### External Agent Wrapper
+
+- `invoke-external-agent.sh` - Unified external agent invocation wrapper
+  - Usage: `./scripts/invoke-external-agent.sh <model> <input_file> <output_file>`
+  - Arguments:
+    - `model` - Agent selection: `auto`, `codex`, `agent`, `claude`
+    - `input_file` - Path to input prompt file
+    - `output_file` - Path to output response file
+  - Environment: `AGENTIZE_EXTERNAL_AGENT` overrides model argument
+  - Agent routing (when `auto` or env var):
+    - `auto`: Three-tier fallback (codex → agent → claude)
+    - `codex`: Force Codex (error if unavailable)
+    - `agent`: Force Agent CLI (error if unavailable)
+    - `claude`: Force Claude (error if unavailable)
+  - Exit codes: 0 (success), 1 (agent unavailable/invalid config), 2 (invalid arguments)
+  - See [invoke-external-agent.md](invoke-external-agent.md) for detailed documentation
+
 ### SDK CLI Wrappers
 
 These scripts delegate to `src/cli/lol.sh`:
