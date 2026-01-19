@@ -3,7 +3,8 @@
 # External Consensus Review Script
 #
 # This script synthesizes a consensus implementation plan from a multi-agent
-# debate report using an external AI reviewer (Codex or Claude Opus).
+# debate report using an external AI reviewer with three-tier fallback:
+# Codex (preferred) → Cursor Agent CLI (intermediate) → Claude Opus (final).
 #
 # Usage:
 #   ./external-consensus.sh <path-to-report1> <path-to-report2> <path-to-report3>
@@ -149,7 +150,7 @@ $(cat "$REPORT3_PATH")
 
 ## Next Steps
 
-This combined report will be reviewed by an external consensus agent (Codex or Claude Opus) to synthesize a final, balanced implementation plan.
+This combined report will be reviewed by an external consensus agent using a three-tier fallback strategy (Codex → Cursor Agent CLI → Claude Opus) to synthesize a final, balanced implementation plan.
 EOF
 
 # Load the combined debate report content for use in external review
@@ -188,12 +189,14 @@ echo "- Input: $INPUT_FILE ($(wc -l < "$INPUT_FILE") lines)" >&2
 echo "- Output: $OUTPUT_FILE" >&2
 echo "" >&2
 
-# Check if Codex is available
+# Three-tier fallback strategy: Codex → Cursor Agent CLI → Claude Opus
+
+# Tier 1: Check if Codex is available
 if command -v codex &> /dev/null; then
-    echo "- Model: gpt-5.2-codex (Codex CLI)" >&2
-    echo "- Sandbox: read-only" >&2
-    echo "- Web search: enabled" >&2
-    echo "- Reasoning effort: xhigh" >&2
+    echo "- Tier 1: Model gpt-5.2-codex (Codex CLI)" >&2
+    echo "  - Sandbox: read-only" >&2
+    echo "  - Web search: enabled" >&2
+    echo "  - Reasoning effort: xhigh" >&2
     echo "" >&2
     echo "This will take 2-5 minutes with xhigh reasoning effort..." >&2
     echo "" >&2
@@ -208,11 +211,26 @@ if command -v codex &> /dev/null; then
         - < "$INPUT_FILE" >&2
 
     EXIT_CODE=$?
+# Tier 2: Check if Cursor Agent CLI is available with gpt-5.2-codex-xhigh model
+elif command -v agent &> /dev/null && agent --list-models 2>/dev/null | grep -q "gpt-5.2-codex-xhigh"; then
+    echo "- Tier 2: Model gpt-5.2-codex-xhigh (Cursor Agent CLI)" >&2
+    echo "  - Advanced reasoning: enabled" >&2
+    echo "" >&2
+    echo "This will take 1-3 minutes..." >&2
+    echo "" >&2
+
+    # Invoke Cursor Agent CLI with gpt-5.2-codex-xhigh model
+    agent exec \
+        -m gpt-5.2-codex-xhigh \
+        < "$INPUT_FILE" > "$OUTPUT_FILE" 2>&1
+
+    EXIT_CODE=$?
+# Tier 3: Fall back to Claude Opus
 else
-    echo "Codex not available. Using Claude Opus as fallback..." >&2
-    echo "- Model: opus (Claude Code CLI)" >&2
-    echo "- Tools: Read, Grep, Glob, WebSearch, WebFetch (read-only)" >&2
-    echo "- Permission mode: bypassPermissions" >&2
+    echo "Codex and Cursor Agent CLI not available. Using Claude Opus as fallback..." >&2
+    echo "- Tier 3: Model opus (Claude Code CLI)" >&2
+    echo "  - Tools: Read, Grep, Glob, WebSearch, WebFetch (read-only)" >&2
+    echo "  - Permission mode: bypassPermissions" >&2
     echo "" >&2
     echo "This will take 1-3 minutes..." >&2
     echo "" >&2
