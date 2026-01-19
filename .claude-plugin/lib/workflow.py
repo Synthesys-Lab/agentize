@@ -13,6 +13,9 @@ Supported workflows:
 """
 
 import re
+import os
+import subprocess
+from typing import Optional
 
 # ============================================================
 # Workflow name constants
@@ -132,6 +135,83 @@ The ultimate goal of this workflow is to sync the local main/master branch with 
 
 
 # ============================================================
+# AI Superviser functions (for dynamic continuation prompts)
+# ============================================================
+
+def _get_workflow_goal(workflow: str) -> str:
+    """Get human-readable goal for a workflow.
+
+    Args:
+        workflow: Workflow name string
+
+    Returns:
+        Human-readable goal description
+    """
+    goals = {
+        ULTRA_PLANNER: 'Create a comprehensive implementation plan and post it on GitHub issue',
+        ISSUE_TO_IMPL: 'Implement an issue and deliver a working PR',
+        PLAN_TO_ISSUE: 'Create a GitHub [plan] issue from a user-provided plan',
+        SETUP_VIEWBOARD: 'Set up a GitHub Projects v2 board with proper configuration',
+        SYNC_MASTER: 'Sync local main/master branch with upstream',
+    }
+    return goals.get(workflow, 'Complete the current workflow')
+
+
+def _ask_claude_for_guidance(workflow: str, continuation_count: int,
+                             max_continuations: int) -> Optional[str]:
+    """Ask Claude for context-aware continuation guidance.
+
+    Follows the same subprocess pattern as permission/determine.py's approach.
+    Returns None on failure (fallback to static template).
+
+    Args:
+        workflow: Workflow name string
+        continuation_count: Current continuation count
+        max_continuations: Maximum continuations allowed
+
+    Returns:
+        Dynamic prompt from Claude, or None to use static template
+    """
+    if os.getenv('HANDSOFF_SUPERVISER', '0').lower() not in ['1', 'true', 'on']:
+        return None  # Feature disabled
+
+    # Build context prompt for Claude
+    prompt = f'''You are a workflow supervisor for an AI agent system.
+
+WORKFLOW: {workflow}
+GOAL: {_get_workflow_goal(workflow)}
+
+PROGRESS: {continuation_count} / {max_continuations} continuations
+
+Based on the current workflow progress, provide a concise instruction for what the agent should do next.
+
+Respond with ONLY the continuation instruction (2-3 sentences), no explanations.'''
+
+    # Invoke Claude subprocess (similar to determine.py pattern)
+    try:
+        result = subprocess.check_output(
+            ['claude', '-p'],
+            input=prompt,
+            text=True,
+            timeout=60  # 60 second timeout for prompt response
+        )
+        guidance = result.strip()
+        if guidance:
+            return guidance
+    except (subprocess.TimeoutExpired, subprocess.CalledProcessError, Exception) as e:
+        # Log error for debugging but don't break workflow
+        # Import logger if available
+        try:
+            from lib.logger import logger
+            logger('superviser', f'Claude guidance failed: {str(e)[:100]}')
+        except Exception:
+            pass  # Silently ignore if logger import fails
+        return None
+
+    return None
+
+
+# ============================================================
 # Public functions
 # ============================================================
 
@@ -215,6 +295,9 @@ def has_continuation_prompt(workflow):
 def get_continuation_prompt(workflow, session_id, fname, count, max_count, pr_no='unknown'):
     """Get formatted continuation prompt for a workflow.
 
+    Optionally uses Claude for dynamic guidance if HANDSOFF_SUPERVISER is enabled.
+    Falls back to static templates on any error.
+
     Args:
         workflow: Workflow name string
         session_id: Current session ID
@@ -226,6 +309,12 @@ def get_continuation_prompt(workflow, session_id, fname, count, max_count, pr_no
     Returns:
         Formatted continuation prompt string, or empty string if workflow not found
     """
+    # Try to get dynamic guidance from Claude if enabled
+    guidance = _ask_claude_for_guidance(workflow, count, max_count)
+    if guidance:
+        return guidance
+
+    # Fall back to static template (existing behavior)
     template = _CONTINUATION_PROMPTS.get(workflow, '')
     if not template:
         return ''
