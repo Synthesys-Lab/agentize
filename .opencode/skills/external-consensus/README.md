@@ -137,16 +137,44 @@ The skill uses a formalized script (`scripts/external-consensus.sh`) that:
    - Scans reports 1 → 2 → 3 in priority order until first match found
    - Falls back to "Unknown Feature" only when no label exists in any report
 5. Loads and processes the prompt template with variable substitution
-6. Applies three-tier fallback strategy:
-   - **Tier 1**: Check if Codex available → use Codex with xhigh reasoning
-   - **Tier 2**: Check if Agent CLI available with gpt-5.2-codex-xhigh → use Agent CLI
-   - **Tier 3**: Fall back to Claude Opus with read-only tools
-7. Invokes external AI with appropriate configuration:
+6. Invokes the shared external agent wrapper (`scripts/invoke-external-agent.sh`) which:
+   - Respects `AGENTIZE_EXTERNAL_AGENT` environment variable for agent selection
+   - Implements three-tier fallback: Codex → Agent CLI → Claude
+   - Handles file-based I/O with input and output paths
+   - Returns consistent exit codes for error handling
+7. Configuration applied based on selected agent:
    - **Codex**: gpt-5.2-codex, read-only sandbox, web search, xhigh reasoning
    - **Agent CLI**: gpt-5.2-codex-xhigh via Cursor Agent CLI
    - **Claude**: Opus model, read-only tools (Read, Grep, Glob, WebSearch, WebFetch)
 8. Saves consensus plan to `.tmp/issue-{N}-consensus.md` (issue mode) or `.tmp/consensus-plan-{timestamp}.md` (path mode)
 9. Returns the consensus file path for validation and summary extraction
+
+## Agent Selection
+
+The skill uses a unified external agent interface via `scripts/invoke-external-agent.sh`. Control which agent is invoked using the `AGENTIZE_EXTERNAL_AGENT` environment variable:
+
+**Default behavior (auto-detection):**
+```bash
+# No env var or AGENTIZE_EXTERNAL_AGENT=auto: Try Codex → Agent CLI → Claude
+/ultra-planner "your feature"
+```
+
+**Force specific agent:**
+```bash
+# Force Claude (skip Codex and Agent CLI)
+export AGENTIZE_EXTERNAL_AGENT=claude
+/ultra-planner "your feature"
+
+# Force Agent CLI
+export AGENTIZE_EXTERNAL_AGENT=agent
+/ultra-planner "your feature"
+
+# Force Codex
+export AGENTIZE_EXTERNAL_AGENT=codex
+/ultra-planner "your feature"
+```
+
+See `docs/envvar.md` for detailed `AGENTIZE_EXTERNAL_AGENT` documentation.
 
 ## Notes
 

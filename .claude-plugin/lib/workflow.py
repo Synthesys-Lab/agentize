@@ -246,22 +246,67 @@ Respond with ONLY the continuation instruction (2-3 sentences), no explanations.
         'prompt': prompt[:500]  # Log first 500 chars
     })
 
-    # Invoke Claude subprocess (similar to determine.py pattern)
+    # Invoke external agent wrapper (respects AGENTIZE_EXTERNAL_AGENT env var)
+    # Uses unified wrapper for consistency with external-consensus and other components
     try:
-        result = subprocess.check_output(
-            ['claude', '-p'],
-            input=prompt,
-            text=True,
-            timeout=900  # 15 minute timeout for prompt response
-        )
-        guidance = result.strip()
-        if guidance:
-            _log_superviser_debug({
-                'event': 'superviser_success',
-                'workflow': workflow,
-                'guidance': guidance[:500]  # Log first 500 chars
-            })
-            return guidance
+        import tempfile
+
+        # Create temporary files for input/output
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as input_file:
+            input_file.write(prompt)
+            input_path = input_file.name
+
+        output_path = input_path.replace('.txt', '-output.txt')
+
+        try:
+            # Get project root
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(os.path.dirname(script_dir))
+            wrapper_script = os.path.join(project_root, 'scripts', 'invoke-external-agent.sh')
+
+            if os.path.exists(wrapper_script):
+                # Use wrapper (respects AGENTIZE_EXTERNAL_AGENT env var)
+                result = subprocess.check_output(
+                    [wrapper_script, 'auto', input_path, output_path],
+                    text=True,
+                    timeout=900,  # 15 minute timeout
+                    env={**os.environ}  # Inherit AGENTIZE_EXTERNAL_AGENT env var
+                )
+
+                if os.path.exists(output_path):
+                    with open(output_path, 'r') as f:
+                        guidance = f.read().strip()
+                    if guidance:
+                        _log_superviser_debug({
+                            'event': 'superviser_success',
+                            'workflow': workflow,
+                            'guidance': guidance[:500]  # Log first 500 chars
+                        })
+                        return guidance
+            else:
+                # Fallback: use claude directly if wrapper not found
+                result = subprocess.check_output(
+                    ['claude', '-p'],
+                    input=prompt,
+                    text=True,
+                    timeout=900
+                )
+                guidance = result.strip()
+                if guidance:
+                    _log_superviser_debug({
+                        'event': 'superviser_success',
+                        'workflow': workflow,
+                        'guidance': guidance[:500]
+                    })
+                    return guidance
+        finally:
+            # Clean up temporary files
+            for path in [input_path, output_path]:
+                if os.path.exists(path):
+                    try:
+                        os.remove(path)
+                    except Exception:
+                        pass
     except (subprocess.TimeoutExpired, subprocess.CalledProcessError, Exception) as e:
         # Log error for debugging but don't break workflow
         error_msg = str(e)[:200]

@@ -189,60 +189,62 @@ echo "- Input: $INPUT_FILE ($(wc -l < "$INPUT_FILE") lines)" >&2
 echo "- Output: $OUTPUT_FILE" >&2
 echo "" >&2
 
-# Three-tier fallback strategy: Codex → Cursor Agent CLI → Claude Opus
+# Use shared external agent wrapper
+# Get the project root from the script location
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# Tier 1: Check if Codex is available
-if command -v codex &> /dev/null; then
-    echo "- Tier 1: Model gpt-5.2-codex (Codex CLI)" >&2
-    echo "  - Sandbox: read-only" >&2
-    echo "  - Web search: enabled" >&2
-    echo "  - Reasoning effort: xhigh" >&2
-    echo "" >&2
-    echo "This will take 2-5 minutes with xhigh reasoning effort..." >&2
-    echo "" >&2
+# Find the wrapper script
+WRAPPER_SCRIPT="$PROJECT_ROOT/scripts/invoke-external-agent.sh"
 
-    # Invoke Codex with advanced features
-    codex exec \
-        -m gpt-5.2-codex \
-        -s read-only \
-        --enable web_search_request \
-        -c model_reasoning_effort=xhigh \
-        -o "$OUTPUT_FILE" \
-        - < "$INPUT_FILE" >&2
-
-    EXIT_CODE=$?
-# Tier 2: Check if Cursor Agent CLI is available
-elif command -v agent &> /dev/null; then
-    echo "- Tier 2: Cursor Agent CLI" >&2
-    echo "  - Advanced reasoning: enabled" >&2
-    echo "" >&2
-    echo "This will take 1-3 minutes..." >&2
-    echo "" >&2
-
-    # Invoke Cursor Agent CLI with agent -p
-    # Capture both stdout and stderr to output file (expected format for consensus output)
-    cat "$INPUT_FILE" | agent -p > "$OUTPUT_FILE" 2>&1
-
-    EXIT_CODE=$?
-# Tier 3: Fall back to Claude Opus
-else
-    echo "Codex and Cursor Agent CLI not available. Using Claude Opus as fallback..." >&2
-    echo "- Tier 3: Model opus (Claude Code CLI)" >&2
-    echo "  - Tools: Read, Grep, Glob, WebSearch, WebFetch (read-only)" >&2
-    echo "  - Permission mode: bypassPermissions" >&2
-    echo "" >&2
-    echo "This will take 1-3 minutes..." >&2
-    echo "" >&2
-
-    # Invoke Claude Code with Opus and read-only tools
-    claude -p \
-        --model opus \
-        --tools "Read,Grep,Glob,WebSearch,WebFetch" \
-        --permission-mode bypassPermissions \
-        < "$INPUT_FILE" > "$OUTPUT_FILE" 2>&1
-
-    EXIT_CODE=$?
+if [ ! -f "$WRAPPER_SCRIPT" ]; then
+    echo "Error: External agent wrapper not found: $WRAPPER_SCRIPT" >&2
+    exit 1
 fi
+
+# Determine which agent will be used (for logging)
+AGENT_SELECTION="${AGENTIZE_EXTERNAL_AGENT:-auto}"
+if [ "$AGENT_SELECTION" = "auto" ]; then
+    if command -v codex &> /dev/null; then
+        echo "- Tier 1: Model gpt-5.2-codex (Codex CLI)" >&2
+        echo "  - Sandbox: read-only" >&2
+        echo "  - Web search: enabled" >&2
+        echo "  - Reasoning effort: xhigh" >&2
+    elif command -v agent &> /dev/null; then
+        echo "- Tier 2: Cursor Agent CLI" >&2
+        echo "  - Advanced reasoning: enabled" >&2
+    else
+        echo "- Tier 3: Model opus (Claude Code CLI)" >&2
+        echo "  - Tools: Read, Grep, Glob, WebSearch, WebFetch (read-only)" >&2
+        echo "  - Permission mode: bypassPermissions" >&2
+    fi
+else
+    case "$AGENT_SELECTION" in
+        codex)
+            echo "- Tier 1: Model gpt-5.2-codex (Codex CLI)" >&2
+            echo "  - Sandbox: read-only" >&2
+            echo "  - Web search: enabled" >&2
+            echo "  - Reasoning effort: xhigh" >&2
+            ;;
+        agent)
+            echo "- Tier 2: Cursor Agent CLI" >&2
+            echo "  - Advanced reasoning: enabled" >&2
+            ;;
+        claude)
+            echo "- Tier 3: Model opus (Claude Code CLI)" >&2
+            echo "  - Tools: Read, Grep, Glob, WebSearch, WebFetch (read-only)" >&2
+            echo "  - Permission mode: bypassPermissions" >&2
+            ;;
+    esac
+fi
+echo "" >&2
+echo "This will take 1-5 minutes..." >&2
+echo "" >&2
+
+# Invoke wrapper (respects AGENTIZE_EXTERNAL_AGENT env var)
+"$WRAPPER_SCRIPT" "auto" "$INPUT_FILE" "$OUTPUT_FILE" >&2
+
+EXIT_CODE=$?
 
 # Check if external review succeeded
 if [ $EXIT_CODE -ne 0 ] || [ ! -f "$OUTPUT_FILE" ] || [ ! -s "$OUTPUT_FILE" ]; then

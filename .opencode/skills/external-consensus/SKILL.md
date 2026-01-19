@@ -108,9 +108,12 @@ When invoked, this skill:
 
 1. **Loads combined debate report**: Three-agent perspectives from debate-based-planning skill
 2. **Prepares external review prompt**: Uses template with debate context
-3. **Invokes external reviewer**: Calls Codex (preferred) or Claude Opus (fallback)
-4. **Parses consensus plan**: Extracts structured implementation plan from response
-5. **Returns final plan**: Ready for user approval and GitHub issue creation
+3. **Invokes external reviewer**: Calls the shared external agent wrapper (`scripts/invoke-external-agent.sh`) which respects `AGENTIZE_EXTERNAL_AGENT` environment variable
+4. **Agent routing**: Default behavior tries Codex → Agent CLI → Claude; override with `AGENTIZE_EXTERNAL_AGENT` (see `docs/envvar.md`)
+5. **Parses consensus plan**: Extracts structured implementation plan from response
+6. **Returns final plan**: Ready for user approval and GitHub issue creation
+
+**Note**: This skill uses the unified external agent interface. Control agent selection via `AGENTIZE_EXTERNAL_AGENT` environment variable. See `docs/envvar.md` for details.
 
 ## Inputs
 
