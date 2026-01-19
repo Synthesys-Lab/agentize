@@ -158,7 +158,7 @@ def _get_workflow_goal(workflow: str) -> str:
 
 
 def _ask_claude_for_guidance(workflow: str, continuation_count: int,
-                             max_continuations: int) -> Optional[str]:
+                             max_continuations: int, transcript_path: str = None) -> Optional[str]:
     """Ask Claude for context-aware continuation guidance.
 
     Follows the same subprocess pattern as permission/determine.py's approach.
@@ -168,6 +168,7 @@ def _ask_claude_for_guidance(workflow: str, continuation_count: int,
         workflow: Workflow name string
         continuation_count: Current continuation count
         max_continuations: Maximum continuations allowed
+        transcript_path: Optional path to JSONL transcript file for conversation context
 
     Returns:
         Dynamic prompt from Claude, or None to use static template
@@ -175,15 +176,36 @@ def _ask_claude_for_guidance(workflow: str, continuation_count: int,
     if os.getenv('HANDSOFF_SUPERVISER', '0').lower() not in ['1', 'true', 'on']:
         return None  # Feature disabled
 
+    # Read transcript if available for conversation context
+    transcript_context = ""
+    if transcript_path and os.path.isfile(transcript_path):
+        try:
+            import json
+            transcript_lines = []
+            with open(transcript_path, 'r') as f:
+                for line in f:
+                    if line.strip():
+                        entry = json.loads(line)
+                        # Extract role and content from transcript entry
+                        if 'role' in entry and 'content' in entry:
+                            transcript_lines.append(f"{entry['role']}: {entry['content'][:200]}")
+
+            if transcript_lines:
+                # Include last 5 transcript entries for context
+                recent_context = "\n".join(transcript_lines[-5:])
+                transcript_context = f"\n\nRECENT CONVERSATION CONTEXT:\n{recent_context}"
+        except Exception:
+            pass  # Silently ignore transcript read errors
+
     # Build context prompt for Claude
     prompt = f'''You are a workflow supervisor for an AI agent system.
 
 WORKFLOW: {workflow}
 GOAL: {_get_workflow_goal(workflow)}
 
-PROGRESS: {continuation_count} / {max_continuations} continuations
+PROGRESS: {continuation_count} / {max_continuations} continuations{transcript_context}
 
-Based on the current workflow progress, provide a concise instruction for what the agent should do next.
+Based on the current workflow progress and conversation context, provide a concise instruction for what the agent should do next.
 
 Respond with ONLY the continuation instruction (2-3 sentences), no explanations.'''
 
@@ -193,7 +215,7 @@ Respond with ONLY the continuation instruction (2-3 sentences), no explanations.
             ['claude', '-p'],
             input=prompt,
             text=True,
-            timeout=60  # 60 second timeout for prompt response
+            timeout=900  # 15 minute timeout for prompt response
         )
         guidance = result.strip()
         if guidance:
@@ -292,7 +314,7 @@ def has_continuation_prompt(workflow):
     return workflow in _CONTINUATION_PROMPTS
 
 
-def get_continuation_prompt(workflow, session_id, fname, count, max_count, pr_no='unknown'):
+def get_continuation_prompt(workflow, session_id, fname, count, max_count, pr_no='unknown', transcript_path=None):
     """Get formatted continuation prompt for a workflow.
 
     Optionally uses Claude for dynamic guidance if HANDSOFF_SUPERVISER is enabled.
@@ -305,12 +327,13 @@ def get_continuation_prompt(workflow, session_id, fname, count, max_count, pr_no
         count: Current continuation count
         max_count: Maximum continuations allowed
         pr_no: PR number (only used for sync-master workflow)
+        transcript_path: Optional path to JSONL transcript for Claude context
 
     Returns:
         Formatted continuation prompt string, or empty string if workflow not found
     """
     # Try to get dynamic guidance from Claude if enabled
-    guidance = _ask_claude_for_guidance(workflow, count, max_count)
+    guidance = _ask_claude_for_guidance(workflow, count, max_count, transcript_path)
     if guidance:
         return guidance
 
