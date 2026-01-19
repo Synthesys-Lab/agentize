@@ -13,48 +13,59 @@ Centralized reference for all environment variables used in Agentize.
 
 ## External Agent Selection
 
-Environment variable for controlling which external AI agent is used for consensus review and workflow guidance.
+Environment variables for controlling which external AI agent and model are used for consensus review.
 
 | Variable | Required | Type | Default | Description |
 |----------|----------|------|---------|-------------|
-| `AGENTIZE_EXTERNAL_AGENT` | No | Enum | `auto` | External agent selection: `auto`, `codex`, `agent`, `claude`. |
+| `AGENTIZE_EXTERNAL_AGENT` | No | Enum | `auto` | Agent selection: `auto`, `codex`, `agent`, `claude`. |
+| `AGENTIZE_EXTERNAL_MODEL` | No | String | `opus` | Model version (e.g., `opus`, `gpt-5.2-codex`). |
 
 ### AGENTIZE_EXTERNAL_AGENT
 
-Control which external AI agent is used for external-consensus review and workflow guidance.
+Control which external AI agent CLI is used.
 
 **Used by:**
 - `scripts/invoke-external-agent.sh` - Unified agent wrapper
 - `.claude-plugin/skills/external-consensus/scripts/external-consensus.sh` - Consensus review
 - `.opencode/skills/external-consensus/scripts/external-consensus.sh` - Consensus review
-- `.claude-plugin/lib/workflow.py` - Workflow continuation guidance (inherits env var)
 
 **Default**: `auto` (three-tier fallback: Codex → Agent CLI → Claude)
 
 **Values**:
-- `auto`: Try codex first, then agent CLI, then Claude (default behavior)
+- `auto`: Try codex first, then agent CLI, then Claude (default)
 - `codex`: Force Codex (error if unavailable)
 - `agent`: Force Agent CLI (error if unavailable)
-- `claude`: Force Claude Opus (skip earlier options)
+- `claude`: Force Claude (skip earlier options)
 
-**Examples**:
+### AGENTIZE_EXTERNAL_MODEL
+
+Specify the model version to pass to the selected agent.
+
+**Default**: `opus`
+
+**Examples**: `opus`, `gpt-5.2-codex`, `sonnet`
+
+### Usage Examples
+
 ```bash
-# Force Claude for all external agent calls
+# Force Claude with Opus model (default)
 export AGENTIZE_EXTERNAL_AGENT=claude
+export AGENTIZE_EXTERNAL_MODEL=opus
 
-# Force Agent CLI
-export AGENTIZE_EXTERNAL_AGENT=agent
-
-# Force Codex
+# Force Codex with specific model
 export AGENTIZE_EXTERNAL_AGENT=codex
+export AGENTIZE_EXTERNAL_MODEL=gpt-5.2-codex
 
-# Use auto-detection (default)
-unset AGENTIZE_EXTERNAL_AGENT
+# Use auto agent selection with Sonnet model
+export AGENTIZE_EXTERNAL_MODEL=sonnet
+
+# Use defaults (auto agent, opus model)
+unset AGENTIZE_EXTERNAL_AGENT AGENTIZE_EXTERNAL_MODEL
 ```
 
 **Error behavior**:
-- If set to a specific agent but that CLI unavailable: Exit with clear error
-- If set to invalid value: Exit with error message
+- If agent set but CLI unavailable: Exit with clear error
+- If invalid agent value: Exit with error message
 
 ## Handsoff Mode
 

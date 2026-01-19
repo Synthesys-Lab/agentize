@@ -204,8 +204,8 @@ echo "Invoking shared wrapper: $WRAPPER_SCRIPT" >&2
 echo "This will take 1-5 minutes depending on agent..." >&2
 echo "" >&2
 
-# Use shared external agent wrapper
-"$WRAPPER_SCRIPT" "auto" "$INPUT_FILE" "$OUTPUT_FILE"
+# Use shared external agent wrapper (model from AGENTIZE_EXTERNAL_MODEL, default opus)
+"$WRAPPER_SCRIPT" "$INPUT_FILE" "$OUTPUT_FILE"
 EXIT_CODE=$?
 
 # Check if external review succeeded

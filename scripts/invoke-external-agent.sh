@@ -6,16 +6,16 @@
 # supporting three-tier fallback: Codex -> Agent CLI -> Claude.
 #
 # Usage:
-#   ./invoke-external-agent.sh <model> <input_file> <output_file>
+#   ./invoke-external-agent.sh <input_file> <output_file>
 #
 # Arguments:
-#   model        Model version to use (e.g., opus, gpt-5.2-codex). Passed to the agent.
 #   input_file   Path to input prompt file
 #   output_file  Path to output response file
 #
 # Environment:
 #   AGENTIZE_EXTERNAL_AGENT  Agent selection (auto/codex/agent/claude). Default: auto
 #                            auto = three-tier fallback: codex -> agent -> claude
+#   AGENTIZE_EXTERNAL_MODEL  Model version to use (e.g., opus, gpt-5.2-codex). Default: opus
 #
 # Exit codes:
 #   0  Success
@@ -25,15 +25,17 @@
 set -euo pipefail
 
 # Parse arguments
-MODEL="${1:-}"
-INPUT_FILE="${2:-}"
-OUTPUT_FILE="${3:-}"
+INPUT_FILE="${1:-}"
+OUTPUT_FILE="${2:-}"
 
 # Validate arguments
-if [ -z "$MODEL" ] || [ -z "$INPUT_FILE" ] || [ -z "$OUTPUT_FILE" ]; then
-    echo "Error: Usage: invoke-external-agent.sh <model> <input_file> <output_file>" >&2
+if [ -z "$INPUT_FILE" ] || [ -z "$OUTPUT_FILE" ]; then
+    echo "Error: Usage: invoke-external-agent.sh <input_file> <output_file>" >&2
     exit 2
 fi
+
+# Read model from environment, default to opus
+MODEL="${AGENTIZE_EXTERNAL_MODEL:-opus}"
 
 # Validate input file exists
 if [ ! -f "$INPUT_FILE" ]; then
