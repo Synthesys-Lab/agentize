@@ -120,19 +120,19 @@ chmod +x "$MOCK_DIR/claude"
 # =============================================================================
 test_info "Test 11: Output directory is created if missing"
 NESTED_OUTPUT="$TMP_DIR/nested/path/output.txt"
-# Use invalid agent to test directory creation before agent invocation
-result=$(PATH="/usr/bin:/bin" AGENTIZE_EXTERNAL_AGENT=claude "$WRAPPER_SCRIPT" auto "$TEST_INPUT" "$NESTED_OUTPUT" 2>&1) && exit_code=$? || exit_code=$?
+# Use claude agent (will fail due to missing CLI) to test directory creation
+result=$(PATH="/usr/bin:/bin" AGENTIZE_EXTERNAL_AGENT=claude "$WRAPPER_SCRIPT" opus "$TEST_INPUT" "$NESTED_OUTPUT" 2>&1) && exit_code=$? || exit_code=$?
 # Should fail due to missing claude, but directory should be created
 [ -d "$TMP_DIR/nested/path" ] || test_fail "Expected output directory to be created"
 
 # =============================================================================
-# Test 12: Environment variable overrides agent argument
+# Test 12: AGENTIZE_EXTERNAL_AGENT selects agent, model arg is passed through
 # =============================================================================
-test_info "Test 12: AGENTIZE_EXTERNAL_AGENT overrides agent argument"
-# If agent arg is 'claude' but env is 'codex', should try codex
-result=$(PATH="/usr/bin:/bin" AGENTIZE_EXTERNAL_AGENT=codex "$WRAPPER_SCRIPT" claude "$TEST_INPUT" "$TEST_OUTPUT" 2>&1) && exit_code=$? || exit_code=$?
-# Should fail trying codex (from env), not claude (from arg)
-echo "$result" | grep -q "codex CLI not found" || test_fail "Expected env var to override agent argument"
+test_info "Test 12: AGENTIZE_EXTERNAL_AGENT selects agent"
+# Model arg is 'opus' but env selects codex agent, should try codex with model=opus
+result=$(PATH="/usr/bin:/bin" AGENTIZE_EXTERNAL_AGENT=codex "$WRAPPER_SCRIPT" opus "$TEST_INPUT" "$TEST_OUTPUT" 2>&1) && exit_code=$? || exit_code=$?
+# Should fail trying codex (from env)
+echo "$result" | grep -q "codex CLI not found" || test_fail "Expected AGENTIZE_EXTERNAL_AGENT to select agent"
 
 cleanup_dir "$TMP_DIR"
 

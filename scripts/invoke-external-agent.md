@@ -9,18 +9,20 @@ This script consolidates the three-tier fallback logic (Codex -> Agent CLI -> Cl
 ## Interface
 
 ```bash
-./invoke-external-agent.sh <agent> <input_file> <output_file>
+./invoke-external-agent.sh <model> <input_file> <output_file>
 ```
 
 **Arguments:**
-- `agent` - Agent selection: `auto`, `codex`, `agent`, `claude`
+- `model` - Model version to use (e.g., `opus`, `gpt-5.2-codex`). Passed to the selected agent.
 - `input_file` - Path to input prompt file
 - `output_file` - Path to output response file
 
 **Environment:**
-- `AGENTIZE_EXTERNAL_AGENT` - Override agent selection (takes precedence over argument)
+- `AGENTIZE_EXTERNAL_AGENT` - Agent selection (`auto`/`codex`/`agent`/`claude`). Default: `auto`
 
 ## Agent Routing Logic
+
+The agent is selected via `AGENTIZE_EXTERNAL_AGENT` environment variable:
 
 | AGENTIZE_EXTERNAL_AGENT | Behavior |
 |-------------------------|----------|
@@ -29,6 +31,8 @@ This script consolidates the three-tier fallback logic (Codex -> Agent CLI -> Cl
 | `agent` | Force agent CLI; error if unavailable |
 | `claude` | Force claude; error if unavailable |
 | invalid | Exit with error message |
+
+The `model` argument is passed to whichever agent is selected.
 
 ## Exit Codes
 

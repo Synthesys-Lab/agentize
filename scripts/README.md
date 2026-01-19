@@ -62,13 +62,13 @@ This directory contains utility scripts, git hooks, and wrapper entrypoints for 
 ### External Agent Wrapper
 
 - `invoke-external-agent.sh` - Unified external agent invocation wrapper
-  - Usage: `./scripts/invoke-external-agent.sh <agent> <input_file> <output_file>`
+  - Usage: `./scripts/invoke-external-agent.sh <model> <input_file> <output_file>`
   - Arguments:
-    - `agent` - Agent selection: `auto`, `codex`, `agent`, `claude`
+    - `model` - Model version to use (e.g., `opus`, `gpt-5.2-codex`)
     - `input_file` - Path to input prompt file
     - `output_file` - Path to output response file
-  - Environment: `AGENTIZE_EXTERNAL_AGENT` overrides agent argument
-  - Agent routing (when `auto` or env var):
+  - Environment: `AGENTIZE_EXTERNAL_AGENT` selects agent (default: `auto`)
+  - Agent routing via `AGENTIZE_EXTERNAL_AGENT`:
     - `auto`: Three-tier fallback (codex → agent → claude)
     - `codex`: Force Codex (error if unavailable)
     - `agent`: Force Agent CLI (error if unavailable)

@@ -6,15 +6,16 @@
 # supporting three-tier fallback: Codex -> Agent CLI -> Claude.
 #
 # Usage:
-#   ./invoke-external-agent.sh <agent> <input_file> <output_file>
+#   ./invoke-external-agent.sh <model> <input_file> <output_file>
 #
 # Arguments:
-#   agent        Agent selection: auto, codex, agent, claude
+#   model        Model version to use (e.g., opus, gpt-5.2-codex). Passed to the agent.
 #   input_file   Path to input prompt file
 #   output_file  Path to output response file
 #
 # Environment:
-#   AGENTIZE_EXTERNAL_AGENT  Override agent selection (auto/codex/agent/claude)
+#   AGENTIZE_EXTERNAL_AGENT  Agent selection (auto/codex/agent/claude). Default: auto
+#                            auto = three-tier fallback: codex -> agent -> claude
 #
 # Exit codes:
 #   0  Success
@@ -24,13 +25,13 @@
 set -euo pipefail
 
 # Parse arguments
-AGENT_ARG="${1:-}"
+MODEL="${1:-}"
 INPUT_FILE="${2:-}"
 OUTPUT_FILE="${3:-}"
 
 # Validate arguments
-if [ -z "$AGENT_ARG" ] || [ -z "$INPUT_FILE" ] || [ -z "$OUTPUT_FILE" ]; then
-    echo "Error: Usage: invoke-external-agent.sh <agent> <input_file> <output_file>" >&2
+if [ -z "$MODEL" ] || [ -z "$INPUT_FILE" ] || [ -z "$OUTPUT_FILE" ]; then
+    echo "Error: Usage: invoke-external-agent.sh <model> <input_file> <output_file>" >&2
     exit 2
 fi
 
@@ -43,8 +44,8 @@ fi
 # Ensure output directory exists
 mkdir -p "$(dirname "$OUTPUT_FILE")"
 
-# Read agent selection from environment (overrides argument if set)
-EXTERNAL_AGENT="${AGENTIZE_EXTERNAL_AGENT:-$AGENT_ARG}"
+# Read agent selection from environment, default to auto
+EXTERNAL_AGENT="${AGENTIZE_EXTERNAL_AGENT:-auto}"
 
 # Validate agent selection
 case "$EXTERNAL_AGENT" in
@@ -57,14 +58,15 @@ cli_available() {
     command -v "$1" &>/dev/null
 }
 
-# Helper: Invoke specific agent
+# Helper: Invoke specific agent with model
 invoke_agent() {
     local agent_name="$1"
+    local model="$2"
     case "$agent_name" in
         codex)
-            echo "Using Codex CLI (gpt-5.2-codex)..." >&2
+            echo "Using Codex CLI (model: ${model})..." >&2
             codex exec \
-                -m gpt-5.2-codex \
+                -m "$model" \
                 -s read-only \
                 --enable web_search_request \
                 -c model_reasoning_effort=xhigh \
@@ -72,13 +74,13 @@ invoke_agent() {
                 - < "$INPUT_FILE" >&2
             ;;
         agent)
-            echo "Using Agent CLI..." >&2
-            cat "$INPUT_FILE" | agent -p > "$OUTPUT_FILE" 2>&1
+            echo "Using Agent CLI (model: ${model})..." >&2
+            cat "$INPUT_FILE" | agent -p -m "$model" > "$OUTPUT_FILE" 2>&1
             ;;
         claude)
-            echo "Using Claude Opus..." >&2
+            echo "Using Claude (model: ${model})..." >&2
             claude -p \
-                --model opus \
+                --model "$model" \
                 --tools "Read,Grep,Glob,WebSearch,WebFetch" \
                 --permission-mode bypassPermissions \
                 < "$INPUT_FILE" > "$OUTPUT_FILE" 2>&1
@@ -90,24 +92,24 @@ invoke_agent() {
 case "$EXTERNAL_AGENT" in
     codex)
         cli_available codex || { echo "Error: AGENTIZE_EXTERNAL_AGENT=codex but codex CLI not found" >&2; exit 1; }
-        invoke_agent codex
+        invoke_agent codex "$MODEL"
         ;;
     agent)
         cli_available agent || { echo "Error: AGENTIZE_EXTERNAL_AGENT=agent but agent CLI not found" >&2; exit 1; }
-        invoke_agent agent
+        invoke_agent agent "$MODEL"
         ;;
     claude)
         cli_available claude || { echo "Error: AGENTIZE_EXTERNAL_AGENT=claude but claude CLI not found" >&2; exit 1; }
-        invoke_agent claude
+        invoke_agent claude "$MODEL"
         ;;
     auto)
         # Three-tier fallback: codex -> agent -> claude
         if cli_available codex; then
-            invoke_agent codex
+            invoke_agent codex "$MODEL"
         elif cli_available agent; then
-            invoke_agent agent
+            invoke_agent agent "$MODEL"
         elif cli_available claude; then
-            invoke_agent claude
+            invoke_agent claude "$MODEL"
         else
             echo "Error: No external agent available (tried codex, agent, claude)" >&2
             exit 1
