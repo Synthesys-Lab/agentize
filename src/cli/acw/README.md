@@ -8,7 +8,7 @@ Modular implementation of the Agent CLI Wrapper (`acw`) command.
 
 | File | Dependencies | Exports |
 |------|--------------|---------|
-| `helpers.sh` | None | `acw_validate_args`, `acw_check_cli`, `acw_ensure_output_dir` |
+| `helpers.sh` | None | `acw_validate_args`, `acw_check_cli`, `acw_ensure_output_dir`, `acw_check_input_file` |
 | `providers.sh` | `helpers.sh` | `acw_invoke_claude`, `acw_invoke_codex`, `acw_invoke_opencode`, `acw_invoke_cursor` |
 | `dispatch.sh` | `helpers.sh`, `providers.sh` | `acw` |
 
@@ -29,6 +29,7 @@ acw.sh (thin loader)
     |     +-- acw_validate_args()
     |     +-- acw_check_cli()
     |     +-- acw_ensure_output_dir()
+    |     +-- acw_check_input_file()
     |
     +-- providers.sh
     |     +-- acw_invoke_claude()
