@@ -25,7 +25,7 @@ acw_invoke_codex() {
     shift 3
 
     # Codex reads from stdin, outputs to stdout
-    codex --model "$model" "$@" < "$input" > "$output"
+    codex exec --model "$model" "$@" < "$input" > "$output"
 }
 
 # Invoke Opencode CLI (best-effort)
