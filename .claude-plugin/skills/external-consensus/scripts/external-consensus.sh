@@ -204,8 +204,8 @@ if command -v codex &> /dev/null; then
     echo "This will take 2-5 minutes with xhigh reasoning effort..." >&2
     echo "" >&2
 
-    # Invoke Codex via acw wrapper (stderr passes through for progress)
-    acw_invoke_codex "gpt-5.2-codex" "$INPUT_FILE" "$OUTPUT_FILE" \
+    # Invoke Codex via acw public CLI (stderr passes through for progress)
+    acw codex "gpt-5.2-codex" "$INPUT_FILE" "$OUTPUT_FILE" \
         -s read-only \
         --enable web_search_request \
         -c model_reasoning_effort=xhigh
@@ -220,8 +220,8 @@ else
     echo "This will take 1-3 minutes..." >&2
     echo "" >&2
 
-    # Invoke Claude via acw wrapper (stderr passes through for progress)
-    acw_invoke_claude "opus" "$INPUT_FILE" "$OUTPUT_FILE" \
+    # Invoke Claude via acw public CLI (stderr passes through for progress)
+    acw claude "opus" "$INPUT_FILE" "$OUTPUT_FILE" \
         --tools "Read,Grep,Glob,WebSearch,WebFetch" \
         --permission-mode bypassPermissions
 
