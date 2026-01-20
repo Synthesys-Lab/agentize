@@ -21,25 +21,21 @@ This skill uses external CLI tools for consensus review. The implementation patt
 
 ### Codex CLI (Preferred)
 
-The skill uses `codex exec` with advanced features:
+The skill uses the `acw` (Agent CLI Wrapper) abstraction for CLI invocations:
 
 ```bash
+# Source acw wrapper
+source "$AGENTIZE_HOME/src/cli/acw.sh"
+
 # Create temporary files for input/output
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-INPUT_FILE=".tmp/external-review-input-$TIMESTAMP.md"
-OUTPUT_FILE=".tmp/external-review-output-$TIMESTAMP.txt"
+INPUT_FILE=".tmp/issue-${ISSUE_NUMBER}-external-review-input.md"
+OUTPUT_FILE=".tmp/issue-${ISSUE_NUMBER}-external-review-output.txt"
 
-# Write prompt to input file
-echo "$FULL_PROMPT" > "$INPUT_FILE"
-
-# Invoke Codex with advanced features (prompt read from stdin via -)
-codex exec \
-    -m gpt-5.2-codex \
+# Invoke Codex via acw wrapper (stderr passes through for progress)
+acw_invoke_codex "gpt-5.2-codex" "$INPUT_FILE" "$OUTPUT_FILE" \
     -s read-only \
     --enable web_search_request \
-    -c model_reasoning_effort=xhigh \
-    -o "$OUTPUT_FILE" \
-    - < "$INPUT_FILE"
+    -c model_reasoning_effort=xhigh
 
 # Read output
 CONSENSUS_PLAN=$(cat "$OUTPUT_FILE")
@@ -59,22 +55,20 @@ CONSENSUS_PLAN=$(cat "$OUTPUT_FILE")
 
 ### Claude Code CLI (Fallback)
 
-When Codex is unavailable, the skill falls back to Claude Code with Opus:
+When Codex is unavailable, the skill falls back to Claude Code with Opus via acw:
 
 ```bash
+# Source acw wrapper
+source "$AGENTIZE_HOME/src/cli/acw.sh"
+
 # Create temporary files
-INPUT_FILE=".tmp/external-review-input-$TIMESTAMP.md"
-OUTPUT_FILE=".tmp/external-review-output-$TIMESTAMP.txt"
+INPUT_FILE=".tmp/issue-${ISSUE_NUMBER}-external-review-input.md"
+OUTPUT_FILE=".tmp/issue-${ISSUE_NUMBER}-external-review-output.txt"
 
-# Write prompt to input file
-echo "$FULL_PROMPT" > "$INPUT_FILE"
-
-# Invoke Claude Code with Opus model and read-only tools
-claude -p \
-    --model opus \
+# Invoke Claude via acw wrapper (stderr passes through for progress)
+acw_invoke_claude "opus" "$INPUT_FILE" "$OUTPUT_FILE" \
     --tools "Read,Grep,Glob,WebSearch,WebFetch" \
-    --permission-mode bypassPermissions \
-    < "$INPUT_FILE" > "$OUTPUT_FILE"
+    --permission-mode bypassPermissions
 
 # Read output
 CONSENSUS_PLAN=$(cat "$OUTPUT_FILE")

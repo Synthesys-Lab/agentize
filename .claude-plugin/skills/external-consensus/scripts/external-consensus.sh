@@ -26,6 +26,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="$(dirname "$SCRIPT_DIR")"
 
+# Source acw wrapper for CLI invocation functions
+if [ -z "$AGENTIZE_HOME" ]; then
+    AGENTIZE_HOME="$(cd "$SKILL_DIR/../../../../.." && pwd)"
+fi
+source "$AGENTIZE_HOME/src/cli/acw.sh"
+
 # Validate input arguments
 if [ $# -ne 3 ]; then
     echo "Error: Exactly 3 report paths are required" >&2
@@ -198,14 +204,11 @@ if command -v codex &> /dev/null; then
     echo "This will take 2-5 minutes with xhigh reasoning effort..." >&2
     echo "" >&2
 
-    # Invoke Codex with advanced features
-    codex exec \
-        -m gpt-5.2-codex \
+    # Invoke Codex via acw wrapper (stderr passes through for progress)
+    acw_invoke_codex "gpt-5.2-codex" "$INPUT_FILE" "$OUTPUT_FILE" \
         -s read-only \
         --enable web_search_request \
-        -c model_reasoning_effort=xhigh \
-        -o "$OUTPUT_FILE" \
-        - < "$INPUT_FILE" >&2
+        -c model_reasoning_effort=xhigh
 
     EXIT_CODE=$?
 else
@@ -217,12 +220,10 @@ else
     echo "This will take 1-3 minutes..." >&2
     echo "" >&2
 
-    # Invoke Claude Code with Opus and read-only tools
-    claude -p \
-        --model opus \
+    # Invoke Claude via acw wrapper (stderr passes through for progress)
+    acw_invoke_claude "opus" "$INPUT_FILE" "$OUTPUT_FILE" \
         --tools "Read,Grep,Glob,WebSearch,WebFetch" \
-        --permission-mode bypassPermissions \
-        < "$INPUT_FILE" > "$OUTPUT_FILE" 2>&1
+        --permission-mode bypassPermissions
 
     EXIT_CODE=$?
 fi
