@@ -73,7 +73,7 @@ Target: {target}
 
 Risk categories:
 - allow: Read-only operations, file search, git status, safe builds, test runs,
-  or auto coder linters and formmatters
+  or auto coder linters and formmatters; changing state files in $AGENTIZE_HOME/.tmp.
 - deny: Destructive ops (rm -rf, git reset --hard), secrets access (e.g. env to see all env vars),
   sudo, force push to non-dev branches, overriding anything outside this repo or tmp
 - ask: Unclear intent, external API writes, untrusted script execution, something between ---
@@ -94,7 +94,7 @@ Reply with allow, deny, or ask as the first word. Brief reasoning is optional.''
         full_response = result.strip().lower()
 
         # Check first word using startswith (handles "allow.", "allow because...", etc.)
-        if full_response.startswith('allow'):
+        if full_response.startswith('allow') or full_response.startswith('**allow**'):
             log_tool_decision(session_id, transcript, tool, target, 'allow', workflow, 'haiku')
             return 'allow'
         elif full_response.startswith('deny'):
