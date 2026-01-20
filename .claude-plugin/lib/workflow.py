@@ -137,11 +137,11 @@ The ultimate goal of this workflow is to sync the local main/master branch with 
 
 
 # ============================================================
-# AI Superviser functions (for dynamic continuation prompts)
+# AI Supervisor functions (for dynamic continuation prompts)
 # ============================================================
 
-def _log_superviser_debug(message: dict):
-    """Log superviser activity to hook-debug.log for debugging.
+def _log_supervisor_debug(message: dict):
+    """Log supervisor activity to hook-debug.log for debugging.
 
     Args:
         message: Dictionary with debug information
@@ -198,7 +198,7 @@ def _ask_claude_for_guidance(workflow: str, continuation_count: int,
     Returns:
         Dynamic prompt from Claude, or None to use static template
     """
-    if os.getenv('HANDSOFF_SUPERVISER', '0').lower() not in ['1', 'true', 'on']:
+    if os.getenv('HANDSOFF_SUPERVISOR', '0').lower() not in ['1', 'true', 'on']:
         return None  # Feature disabled
 
     # Read transcript if available for conversation context
@@ -236,8 +236,8 @@ Based on the current workflow progress and conversation context, provide a conci
 Respond with ONLY the continuation instruction (2-3 sentences), no explanations.'''
 
     # Log the request
-    _log_superviser_debug({
-        'event': 'superviser_request',
+    _log_supervisor_debug({
+        'event': 'supervisor_request',
         'workflow': workflow,
         'continuation_count': continuation_count,
         'max_continuations': max_continuations,
@@ -256,8 +256,8 @@ Respond with ONLY the continuation instruction (2-3 sentences), no explanations.
         )
         guidance = result.strip()
         if guidance:
-            _log_superviser_debug({
-                'event': 'superviser_success',
+            _log_supervisor_debug({
+                'event': 'supervisor_success',
                 'workflow': workflow,
                 'guidance': guidance[:500]  # Log first 500 chars
             })
@@ -265,8 +265,8 @@ Respond with ONLY the continuation instruction (2-3 sentences), no explanations.
     except (subprocess.TimeoutExpired, subprocess.CalledProcessError, Exception) as e:
         # Log error for debugging but don't break workflow
         error_msg = str(e)[:200]
-        _log_superviser_debug({
-            'event': 'superviser_error',
+        _log_supervisor_debug({
+            'event': 'supervisor_error',
             'workflow': workflow,
             'error_type': type(e).__name__,
             'error_message': error_msg
@@ -275,7 +275,7 @@ Respond with ONLY the continuation instruction (2-3 sentences), no explanations.
         # Try to log via logger if available
         try:
             from lib.logger import logger
-            logger('superviser', f'Claude guidance failed: {error_msg}')
+            logger('supervisor', f'Claude guidance failed: {error_msg}')
         except Exception:
             pass  # Silently ignore if logger import fails
         return None
@@ -367,7 +367,7 @@ def has_continuation_prompt(workflow):
 def get_continuation_prompt(workflow, session_id, fname, count, max_count, pr_no='unknown', transcript_path=None):
     """Get formatted continuation prompt for a workflow.
 
-    Optionally uses Claude for dynamic guidance if HANDSOFF_SUPERVISER is enabled.
+    Optionally uses Claude for dynamic guidance if HANDSOFF_SUPERVISOR is enabled.
     Falls back to static templates on any error.
 
     Args:

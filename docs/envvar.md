@@ -22,10 +22,10 @@ See [Handsoff Mode](feat/core/handsoff.md) for detailed documentation.
 | `HANDSOFF_MODE` | No | Boolean | `1` | Enable handsoff auto-continuation. Values: `1`, `true`, `on`, `enable`. |
 | `HANDSOFF_MAX_CONTINUATIONS` | No | Integer | `10` | Maximum number of auto-continuations per workflow. |
 | `HANDSOFF_AUTO_PERMISSION` | No | Boolean | `1` | Enable Haiku LLM-based auto-permission decisions. Values: `1`, `true`, `on`, `enable`. |
-| `HANDSOFF_SUPERVISER` | No | Boolean | `0` | Enable Claude-powered dynamic continuation guidance. Values: `1`, `true`, `on`. |
+| `HANDSOFF_SUPERVISOR` | No | Boolean | `0` | Enable Claude-powered dynamic continuation guidance. Values: `1`, `true`, `on`. |
 | `HANDSOFF_DEBUG` | No | Boolean | `0` | Enable detailed debug logging to `.tmp/`. Values: `1`, `true`, `on`, `enable`. |
 
-### HANDSOFF_SUPERVISER
+### HANDSOFF_SUPERVISOR
 
 Control whether workflows use Claude for dynamic continuation guidance.
 
@@ -38,7 +38,7 @@ Control whether workflows use Claude for dynamic continuation guidance.
 **Example**:
 ```bash
 # Enable Claude-powered continuation guidance
-export HANDSOFF_SUPERVISER=1
+export HANDSOFF_SUPERVISOR=1
 
 # Run workflow with dynamic prompts
 /ultra-planner "your feature request here"
