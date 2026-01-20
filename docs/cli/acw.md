@@ -106,7 +106,7 @@ autoload -Uz compinit && compinit
 - Provider-specific options are passed through unchanged
 - The wrapper returns the provider's exit code on successful execution
 - Best-effort providers (opencode, cursor) may have limited functionality
-- Helper functions are internal (prefixed with `_acw_`) and won't appear in tab completion
+- Only `acw` is the public function; all helper functions (provider invocation, completion, validation) are internal (prefixed with `_acw_`) and won't appear in tab completion
 
 ## See Also
 

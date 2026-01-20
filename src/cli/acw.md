@@ -19,13 +19,13 @@ acw/
 ## Load Order
 
 1. `helpers.sh` - Provides validation helpers (`_acw_validate_args`, `_acw_check_cli`, etc.)
-2. `providers.sh` - Provides provider functions (`acw_invoke_claude`, etc.)
-3. `completion.sh` - Provides completion helper (`acw_complete`)
+2. `providers.sh` - Provides provider functions (`_acw_invoke_claude`, etc.)
+3. `completion.sh` - Provides completion helper (`_acw_complete`)
 4. `dispatch.sh` - Provides main entry point (`acw`)
 
 ## Exported Functions
 
-### Main Entry Point
+### Public Entry Point
 
 ```bash
 acw <cli-name> <model-name> <input-file> <output-file> [options...]
@@ -33,29 +33,22 @@ acw <cli-name> <model-name> <input-file> <output-file> [options...]
 
 Validates arguments, dispatches to provider function, returns provider exit code.
 
-### Provider Functions
+This is the **only public function** exported by `acw.sh`. All other functions are internal (prefixed with `_acw_`).
 
-```bash
-acw_invoke_claude <model> <input> <output> [options...]
-acw_invoke_codex <model> <input> <output> [options...]
-acw_invoke_opencode <model> <input> <output> [options...]
-acw_invoke_cursor <model> <input> <output> [options...]
-```
+### Private Functions
 
-Each provider function handles CLI-specific invocation patterns.
+All helper functions are prefixed with `_acw_` to prevent tab-completion pollution and indicate internal use:
 
-### Completion Function
+**Provider functions:**
+- `_acw_invoke_claude` - Invokes Claude CLI
+- `_acw_invoke_codex` - Invokes Codex CLI
+- `_acw_invoke_opencode` - Invokes Opencode CLI
+- `_acw_invoke_cursor` - Invokes Cursor/Agent CLI
 
-```bash
-acw_complete <topic>
-# Returns: newline-separated list of completions for the topic
-# Topics: providers, cli-options
-```
+**Completion function:**
+- `_acw_complete` - Returns completion values for shell integration
 
-### Private Helper Functions
-
-Helper functions are prefixed with `_acw_` to prevent tab-completion pollution:
-
+**Validation helpers:**
 - `_acw_validate_args` - Validates required arguments
 - `_acw_check_cli` - Checks if provider CLI binary exists
 - `_acw_ensure_output_dir` - Creates output directory if needed

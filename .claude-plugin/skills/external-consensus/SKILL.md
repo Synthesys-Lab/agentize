@@ -31,8 +31,8 @@ source "$AGENTIZE_HOME/src/cli/acw.sh"
 INPUT_FILE=".tmp/issue-${ISSUE_NUMBER}-external-review-input.md"
 OUTPUT_FILE=".tmp/issue-${ISSUE_NUMBER}-external-review-output.txt"
 
-# Invoke Codex via acw wrapper (stderr passes through for progress)
-acw_invoke_codex "gpt-5.2-codex" "$INPUT_FILE" "$OUTPUT_FILE" \
+# Invoke Codex via acw public CLI (stderr passes through for progress)
+acw codex "gpt-5.2-codex" "$INPUT_FILE" "$OUTPUT_FILE" \
     -s read-only \
     --enable web_search_request \
     -c model_reasoning_effort=xhigh
@@ -65,8 +65,8 @@ source "$AGENTIZE_HOME/src/cli/acw.sh"
 INPUT_FILE=".tmp/issue-${ISSUE_NUMBER}-external-review-input.md"
 OUTPUT_FILE=".tmp/issue-${ISSUE_NUMBER}-external-review-output.txt"
 
-# Invoke Claude via acw wrapper (stderr passes through for progress)
-acw_invoke_claude "opus" "$INPUT_FILE" "$OUTPUT_FILE" \
+# Invoke Claude via acw public CLI (stderr passes through for progress)
+acw claude "opus" "$INPUT_FILE" "$OUTPUT_FILE" \
     --tools "Read,Grep,Glob,WebSearch,WebFetch" \
     --permission-mode bypassPermissions
 

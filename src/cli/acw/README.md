@@ -9,9 +9,9 @@ Modular implementation of the Agent CLI Wrapper (`acw`) command.
 | File | Dependencies | Exports |
 |------|--------------|---------|
 | `helpers.sh` | None | `_acw_validate_args`, `_acw_check_cli`, `_acw_ensure_output_dir`, `_acw_check_input_file` (private) |
-| `providers.sh` | `helpers.sh` | `acw_invoke_claude`, `acw_invoke_codex`, `acw_invoke_opencode`, `acw_invoke_cursor` |
-| `completion.sh` | None | `acw_complete` |
-| `dispatch.sh` | `helpers.sh`, `providers.sh`, `completion.sh` | `acw` |
+| `providers.sh` | `helpers.sh` | `_acw_invoke_claude`, `_acw_invoke_codex`, `_acw_invoke_opencode`, `_acw_invoke_cursor` (private) |
+| `completion.sh` | None | `_acw_complete` (private) |
+| `dispatch.sh` | `helpers.sh`, `providers.sh`, `completion.sh` | `acw` (public) |
 
 ## Load Order
 
@@ -33,17 +33,17 @@ acw.sh (thin loader)
     |     +-- _acw_ensure_output_dir()
     |     +-- _acw_check_input_file()
     |
-    +-- providers.sh
-    |     +-- acw_invoke_claude()
-    |     +-- acw_invoke_codex()
-    |     +-- acw_invoke_opencode()
-    |     +-- acw_invoke_cursor()
+    +-- providers.sh (private)
+    |     +-- _acw_invoke_claude()
+    |     +-- _acw_invoke_codex()
+    |     +-- _acw_invoke_opencode()
+    |     +-- _acw_invoke_cursor()
     |
-    +-- completion.sh
-    |     +-- acw_complete()
+    +-- completion.sh (private)
+    |     +-- _acw_complete()
     |
     +-- dispatch.sh
-          +-- acw()  [main entry point]
+          +-- acw()  [public entry point]
           +-- _acw_usage()
 ```
 
@@ -58,7 +58,7 @@ acw.sh (thin loader)
 
 ## Conventions
 
-- Function names prefixed with `acw_` for public API
-- Function names prefixed with `_acw_` for internal use
+- Only `acw` is the public function (no prefix)
+- All other function names prefixed with `_acw_` for internal use
 - Exit codes follow `acw.md` specification (0-4, 127)
 - All functions support both bash and zsh
