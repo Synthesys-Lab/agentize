@@ -2,9 +2,9 @@
 # acw CLI completion helper
 # Returns newline-delimited lists for shell completion systems
 
-# Usage: acw_complete <topic>
+# Usage: _acw_complete <topic>
 # Topics: providers, cli-options
-acw_complete() {
+_acw_complete() {
     local topic="$1"
 
     case "$topic" in

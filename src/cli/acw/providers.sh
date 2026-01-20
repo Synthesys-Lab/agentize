@@ -8,10 +8,10 @@
 #   - This allows callers to display real-time progress while capturing results
 
 # Invoke Claude CLI
-# Usage: acw_invoke_claude <model> <input> <output> [options...]
+# Usage: _acw_invoke_claude <model> <input> <output> [options...]
 # I/O: stdout -> output file, stderr -> passthrough (progress messages visible)
 # Returns: claude exit code
-acw_invoke_claude() {
+_acw_invoke_claude() {
     local model="$1"
     local input="$2"
     local output="$3"
@@ -23,10 +23,10 @@ acw_invoke_claude() {
 }
 
 # Invoke Codex CLI
-# Usage: acw_invoke_codex <model> <input> <output> [options...]
+# Usage: _acw_invoke_codex <model> <input> <output> [options...]
 # I/O: stdout -> output file, stderr -> passthrough (progress messages visible)
 # Returns: codex exit code
-acw_invoke_codex() {
+_acw_invoke_codex() {
     local model="$1"
     local input="$2"
     local output="$3"
@@ -38,10 +38,10 @@ acw_invoke_codex() {
 }
 
 # Invoke Opencode CLI (best-effort)
-# Usage: acw_invoke_opencode <model> <input> <output> [options...]
+# Usage: _acw_invoke_opencode <model> <input> <output> [options...]
 # I/O: stdout -> output file, stderr -> passthrough (progress messages visible)
 # Returns: opencode exit code
-acw_invoke_opencode() {
+_acw_invoke_opencode() {
     local model="$1"
     local input="$2"
     local output="$3"
@@ -54,10 +54,10 @@ acw_invoke_opencode() {
 }
 
 # Invoke Cursor/Agent CLI (best-effort)
-# Usage: acw_invoke_cursor <model> <input> <output> [options...]
+# Usage: _acw_invoke_cursor <model> <input> <output> [options...]
 # I/O: stdout -> output file, stderr -> passthrough (progress messages visible)
 # Returns: agent exit code
-acw_invoke_cursor() {
+_acw_invoke_cursor() {
     local model="$1"
     local input="$2"
     local output="$3"

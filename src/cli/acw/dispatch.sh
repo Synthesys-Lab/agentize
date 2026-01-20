@@ -54,7 +54,7 @@ acw() {
 
     # Handle --complete flag for shell completion
     if [ "$1" = "--complete" ]; then
-        acw_complete "$2"
+        _acw_complete "$2"
         return 0
     fi
 
@@ -110,16 +110,16 @@ acw() {
     # Dispatch to provider function
     case "$cli_name" in
         claude)
-            acw_invoke_claude "$model_name" "$input_file" "$output_file" "$@"
+            _acw_invoke_claude "$model_name" "$input_file" "$output_file" "$@"
             ;;
         codex)
-            acw_invoke_codex "$model_name" "$input_file" "$output_file" "$@"
+            _acw_invoke_codex "$model_name" "$input_file" "$output_file" "$@"
             ;;
         opencode)
-            acw_invoke_opencode "$model_name" "$input_file" "$output_file" "$@"
+            _acw_invoke_opencode "$model_name" "$input_file" "$output_file" "$@"
             ;;
         cursor)
-            acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@"
+            _acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@"
             ;;
     esac
 }
