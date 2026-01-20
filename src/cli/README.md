@@ -8,6 +8,18 @@ Source-first libraries for Agentize CLI commands. These files are the canonical 
 
 ### Key Files
 
+- `acw.sh` - Agent CLI Wrapper library (canonical source, thin loader)
+  - Sources modular files from `acw/` directory
+  - Exports `acw` command for unified AI CLI invocation
+  - Handles providers: `claude`, `codex`, `opencode`, `cursor`
+  - Interface documentation: `acw.md`
+
+- `acw/` - Agent CLI Wrapper modular implementation
+  - `helpers.sh` - Validation and utility functions
+  - `providers.sh` - Provider-specific invocation functions
+  - `dispatch.sh` - Main dispatcher and entry point
+  - See `acw/README.md` for module map and load order
+
 - `wt.sh` - Worktree CLI library (canonical source, thin loader)
   - Sources modular files from `wt/` directory
   - Exports `wt` command for managing git worktrees
@@ -110,5 +122,6 @@ The source-first pattern ensures:
 - [tests/cli/](../../tests/cli/) - CLI command tests
 - [tests/e2e/](../../tests/e2e/) - End-to-end integration tests
 - [scripts/README.md](../../scripts/README.md) - Wrapper scripts overview
+- [docs/cli/acw.md](../../docs/cli/acw.md) - `acw` command user documentation
 - [docs/cli/wt.md](../../docs/cli/wt.md) - `wt` command user documentation
 - [docs/cli/lol.md](../../docs/cli/lol.md) - `lol` command user documentation

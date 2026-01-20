@@ -17,6 +17,7 @@ See [`tutorial/README.md`](tutorial/README.md) for the complete tutorial series:
 ### CLI Reference
 
 Command-line interface documentation for Agentize tools:
+- `cli/acw.md` - `acw` agent CLI wrapper interface
 - `cli/lol.md` - `lol` command interface and options
 - `cli/wt.md` - `wt` command interface and options
 
