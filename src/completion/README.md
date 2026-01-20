@@ -15,6 +15,7 @@ Completion scripts follow the naming pattern `_<command>` for zsh completions:
 
 - `_wt` - Completion for the `wt` (worktree) command
 - `_lol` - Completion for the `lol` (SDK CLI) command
+- `_acw` - Completion for the `acw` (Agent CLI Wrapper) command
 
 ## How Completions Are Loaded
 

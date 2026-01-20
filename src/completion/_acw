@@ -1,0 +1,57 @@
+#compdef acw
+
+# Zsh completion for acw (Agent CLI Wrapper)
+# This completion file provides interactive command-line hints for acw arguments and flags
+
+_acw() {
+    local curcontext="$curcontext" state line
+    typeset -A opt_args
+
+    # Try to use acw --complete if available, fallback to static lists
+    local -a providers
+    if (( $+commands[acw] )); then
+        # Dynamically fetch providers from acw --complete
+        providers=( ${(f)"$(acw --complete providers 2>/dev/null)"} )
+    fi
+
+    # Fallback to static provider list if dynamic fetch failed
+    if (( ${#providers} == 0 )); then
+        providers=(
+            'claude:Anthropic Claude CLI (full support)'
+            'codex:OpenAI Codex CLI (full support)'
+            'opencode:Opencode CLI (best-effort)'
+            'cursor:Cursor Agent CLI (best-effort)'
+        )
+    else
+        # Add descriptions to dynamically fetched providers
+        local -a providers_with_desc
+        for provider in $providers; do
+            case $provider in
+                claude) providers_with_desc+=('claude:Anthropic Claude CLI (full support)') ;;
+                codex) providers_with_desc+=('codex:OpenAI Codex CLI (full support)') ;;
+                opencode) providers_with_desc+=('opencode:Opencode CLI (best-effort)') ;;
+                cursor) providers_with_desc+=('cursor:Cursor Agent CLI (best-effort)') ;;
+                *) providers_with_desc+=("$provider") ;;
+            esac
+        done
+        providers=( $providers_with_desc )
+    fi
+
+    _arguments -C \
+        '--help[Show help message]' \
+        '-h[Show help message]' \
+        '--complete[Shell completion helper]:topic:(providers cli-options)' \
+        '1:provider:->provider' \
+        '2:model:' \
+        '3:input-file:_files' \
+        '4:output-file:_files' \
+        '*:additional options:'
+
+    case $state in
+        provider)
+            _describe -t providers 'acw providers' providers
+            ;;
+    esac
+}
+
+_acw "$@"

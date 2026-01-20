@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# acw helper functions
+# acw helper functions (private)
 # Validation and utility functions for the Agent CLI Wrapper
+# All functions prefixed with _acw_ to prevent tab-completion pollution
 
 # Validate required arguments
-# Usage: acw_validate_args <cli> <model> <input> <output>
+# Usage: _acw_validate_args <cli> <model> <input> <output>
 # Returns: 0 if valid, 1 if missing args
-acw_validate_args() {
+_acw_validate_args() {
     local cli="$1"
     local model="$2"
     local input="$3"
@@ -35,9 +36,9 @@ acw_validate_args() {
 }
 
 # Check if provider CLI binary exists
-# Usage: acw_check_cli <cli-name>
+# Usage: _acw_check_cli <cli-name>
 # Returns: 0 if exists, 4 if not found
-acw_check_cli() {
+_acw_check_cli() {
     local cli_name="$1"
     local binary=""
 
@@ -69,9 +70,9 @@ acw_check_cli() {
 }
 
 # Ensure output directory exists
-# Usage: acw_ensure_output_dir <output-file>
+# Usage: _acw_ensure_output_dir <output-file>
 # Returns: 0 on success, non-zero on failure
-acw_ensure_output_dir() {
+_acw_ensure_output_dir() {
     local output="$1"
     local dir
 
@@ -88,9 +89,9 @@ acw_ensure_output_dir() {
 }
 
 # Check if input file exists and is readable
-# Usage: acw_check_input_file <input-file>
+# Usage: _acw_check_input_file <input-file>
 # Returns: 0 if exists and readable, 3 otherwise
-acw_check_input_file() {
+_acw_check_input_file() {
     local input="$1"
 
     if [ ! -f "$input" ]; then

@@ -6,6 +6,8 @@ Unified file-based interface for invoking multiple AI CLI tools.
 
 ```bash
 acw <cli-name> <model-name> <input-file> <output-file> [cli-options...]
+acw --complete <topic>
+acw --help
 ```
 
 ## Description
@@ -76,12 +78,35 @@ fi
 |----------|-------------|
 | `AGENTIZE_HOME` | Required. Path to agentize installation. |
 
+## Shell Completion
+
+`acw` supports shell autocompletion for zsh. The completion is provided by `src/completion/_acw`.
+
+### Completion Topics
+
+Use `acw --complete <topic>` to get completion values programmatically:
+
+| Topic | Description |
+|-------|-------------|
+| `providers` | List of supported providers (claude, codex, opencode, cursor) |
+| `cli-options` | Common CLI options |
+
+### Setup
+
+For zsh, add the completion directory to your `fpath`:
+
+```bash
+fpath=($AGENTIZE_HOME/src/completion $fpath)
+autoload -Uz compinit && compinit
+```
+
 ## Notes
 
 - The output directory is created automatically if it doesn't exist
 - Provider-specific options are passed through unchanged
 - The wrapper returns the provider's exit code on successful execution
 - Best-effort providers (opencode, cursor) may have limited functionality
+- Helper functions are internal (prefixed with `_acw_`) and won't appear in tab completion
 
 ## See Also
 

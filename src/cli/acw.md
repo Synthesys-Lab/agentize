@@ -9,17 +9,19 @@ Thin loader for the Agent CLI Wrapper module, providing a unified file-based int
 ```
 acw.sh          # Entry point (this file) - thin loader
 acw/
-  helpers.sh    # Validation and utility functions
+  helpers.sh    # Validation and utility functions (private)
   providers.sh  # Provider-specific invocation functions
+  completion.sh # Completion helper for shell integration
   dispatch.sh   # Main dispatcher, help text, argument parsing
   README.md     # Module map and architecture
 ```
 
 ## Load Order
 
-1. `helpers.sh` - Provides validation helpers (`acw_validate_args`, `acw_check_cli`)
+1. `helpers.sh` - Provides validation helpers (`_acw_validate_args`, `_acw_check_cli`, etc.)
 2. `providers.sh` - Provides provider functions (`acw_invoke_claude`, etc.)
-3. `dispatch.sh` - Provides main entry point (`acw`)
+3. `completion.sh` - Provides completion helper (`acw_complete`)
+4. `dispatch.sh` - Provides main entry point (`acw`)
 
 ## Exported Functions
 
@@ -42,15 +44,24 @@ acw_invoke_cursor <model> <input> <output> [options...]
 
 Each provider function handles CLI-specific invocation patterns.
 
-### Helper Functions
+### Completion Function
 
 ```bash
-acw_validate_args <cli> <model> <input> <output>
-# Returns: 0 if valid, non-zero with error message otherwise
-
-acw_check_cli <cli-name>
-# Returns: 0 if CLI binary exists, 4 otherwise
+acw_complete <topic>
+# Returns: newline-separated list of completions for the topic
+# Topics: providers, cli-options
 ```
+
+### Private Helper Functions
+
+Helper functions are prefixed with `_acw_` to prevent tab-completion pollution:
+
+- `_acw_validate_args` - Validates required arguments
+- `_acw_check_cli` - Checks if provider CLI binary exists
+- `_acw_ensure_output_dir` - Creates output directory if needed
+- `_acw_check_input_file` - Verifies input file exists and is readable
+
+These are internal functions not intended for direct use.
 
 ## Design Rationale
 

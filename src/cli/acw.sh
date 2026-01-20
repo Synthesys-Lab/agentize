@@ -26,4 +26,5 @@ _ACW_DIR="$(_acw_script_dir)"
 # Source all modules in dependency order
 source "$_ACW_DIR/acw/helpers.sh"
 source "$_ACW_DIR/acw/providers.sh"
+source "$_ACW_DIR/acw/completion.sh"
 source "$_ACW_DIR/acw/dispatch.sh"
