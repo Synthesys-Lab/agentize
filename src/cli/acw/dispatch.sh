@@ -52,6 +52,12 @@ acw() {
         return 0
     fi
 
+    # Handle --complete flag for shell completion
+    if [ "$1" = "--complete" ]; then
+        acw_complete "$2"
+        return 0
+    fi
+
     # Parse arguments
     local cli_name="$1"
     local model_name="$2"
@@ -65,7 +71,7 @@ acw() {
     fi
 
     # Validate required arguments
-    if ! acw_validate_args "$cli_name" "$model_name" "$input_file" "$output_file"; then
+    if ! _acw_validate_args "$cli_name" "$model_name" "$input_file" "$output_file"; then
         echo "" >&2
         echo "Usage: acw <cli-name> <model-name> <input-file> <output-file> [options...]" >&2
         return 1
@@ -84,17 +90,17 @@ acw() {
     esac
 
     # Check if input file exists
-    if ! acw_check_input_file "$input_file"; then
+    if ! _acw_check_input_file "$input_file"; then
         return 3
     fi
 
     # Ensure output directory exists
-    if ! acw_ensure_output_dir "$output_file"; then
+    if ! _acw_ensure_output_dir "$output_file"; then
         return 1
     fi
 
     # Check if CLI binary exists
-    if ! acw_check_cli "$cli_name"; then
+    if ! _acw_check_cli "$cli_name"; then
         return 4
     fi
 

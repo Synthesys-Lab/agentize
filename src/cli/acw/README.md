@@ -8,34 +8,39 @@ Modular implementation of the Agent CLI Wrapper (`acw`) command.
 
 | File | Dependencies | Exports |
 |------|--------------|---------|
-| `helpers.sh` | None | `acw_validate_args`, `acw_check_cli`, `acw_ensure_output_dir`, `acw_check_input_file` |
+| `helpers.sh` | None | `_acw_validate_args`, `_acw_check_cli`, `_acw_ensure_output_dir`, `_acw_check_input_file` (private) |
 | `providers.sh` | `helpers.sh` | `acw_invoke_claude`, `acw_invoke_codex`, `acw_invoke_opencode`, `acw_invoke_cursor` |
-| `dispatch.sh` | `helpers.sh`, `providers.sh` | `acw` |
+| `completion.sh` | None | `acw_complete` |
+| `dispatch.sh` | `helpers.sh`, `providers.sh`, `completion.sh` | `acw` |
 
 ## Load Order
 
 The parent `acw.sh` sources modules in this order:
 
-1. `helpers.sh` - No dependencies
+1. `helpers.sh` - No dependencies (private helper functions)
 2. `providers.sh` - Uses helper functions
-3. `dispatch.sh` - Uses helpers and providers
+3. `completion.sh` - No dependencies (completion support)
+4. `dispatch.sh` - Uses helpers, providers, and completion
 
 ## Architecture
 
 ```
 acw.sh (thin loader)
     |
-    +-- helpers.sh
-    |     +-- acw_validate_args()
-    |     +-- acw_check_cli()
-    |     +-- acw_ensure_output_dir()
-    |     +-- acw_check_input_file()
+    +-- helpers.sh (private)
+    |     +-- _acw_validate_args()
+    |     +-- _acw_check_cli()
+    |     +-- _acw_ensure_output_dir()
+    |     +-- _acw_check_input_file()
     |
     +-- providers.sh
     |     +-- acw_invoke_claude()
     |     +-- acw_invoke_codex()
     |     +-- acw_invoke_opencode()
     |     +-- acw_invoke_cursor()
+    |
+    +-- completion.sh
+    |     +-- acw_complete()
     |
     +-- dispatch.sh
           +-- acw()  [main entry point]
