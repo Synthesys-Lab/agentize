@@ -121,7 +121,7 @@ Subshell command functions called by main dispatcher. Each runs in a subshell to
 
 ### lol_cmd_upgrade()
 
-Upgrade agentize installation via git pull.
+Upgrade agentize installation via git pull and rebuild environment.
 
 **Parameters:** None (rejects any arguments)
 
@@ -130,11 +130,12 @@ Upgrade agentize installation via git pull.
 2. Check for uncommitted changes (dirty-tree guard)
 3. Resolve default branch from `origin/HEAD`
 4. Run `git pull --rebase origin <branch>`
-5. Print shell reload instructions on success
+5. Run `make setup` to rebuild environment configuration
+6. Print shell reload instructions on success
 
 **Return codes:**
 - `0`: Upgrade successful
-- `1`: Not a worktree, dirty tree, or rebase failed
+- `1`: Not a worktree, dirty tree, rebase failed, or make setup failed
 
 ### lol_cmd_project()
 

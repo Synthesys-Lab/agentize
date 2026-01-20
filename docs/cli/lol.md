@@ -27,6 +27,12 @@ Upgrade the agentize installation.
 lol upgrade
 ```
 
+The upgrade process has two phases:
+1. **Pull updates**: Runs `git pull --rebase` to fetch latest changes
+2. **Rebuild environment**: Runs `make setup` to regenerate `setup.sh` with any build process changes
+
+This mirrors the installation process in `scripts/install`, ensuring updates to the build configuration are applied.
+
 ### lol project
 
 Manage GitHub Projects v2 integration.
