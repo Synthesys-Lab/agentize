@@ -40,7 +40,14 @@ lol_cmd_upgrade() (
     # Run git pull --rebase
     if git -C "$AGENTIZE_HOME" pull --rebase origin "$default_branch"; then
         echo ""
-        echo "Upgrade successful!"
+        echo "Running make setup to rebuild environment configuration..."
+        if ! make -C "$AGENTIZE_HOME" setup; then
+            echo ""
+            echo "Error: make setup failed after pull"
+            exit 1
+        fi
+        echo ""
+        echo "Upgrade successful! (pulled updates and rebuilt setup.sh)"
         echo ""
         echo "To apply changes, reload your shell:"
         echo "  exec \$SHELL                # Clean shell restart (recommended)"
