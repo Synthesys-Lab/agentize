@@ -11,14 +11,9 @@ test_info "Testing acw public API - only public functions should be exposed"
 export AGENTIZE_HOME="$PROJECT_ROOT"
 source "$ACW_CLI"
 
-# List of expected PUBLIC functions (acw_ prefix without underscore)
+# List of expected PUBLIC functions (only acw is public)
 EXPECTED_PUBLIC_FUNCTIONS=(
     "acw"
-    "acw_invoke_claude"
-    "acw_invoke_codex"
-    "acw_invoke_opencode"
-    "acw_invoke_cursor"
-    "acw_complete"
 )
 
 # List of PRIVATE functions that should exist but be prefixed with _acw_
@@ -27,6 +22,11 @@ EXPECTED_PRIVATE_FUNCTIONS=(
     "_acw_check_cli"
     "_acw_ensure_output_dir"
     "_acw_check_input_file"
+    "_acw_invoke_claude"
+    "_acw_invoke_codex"
+    "_acw_invoke_opencode"
+    "_acw_invoke_cursor"
+    "_acw_complete"
 )
 
 # Check each public function is defined
@@ -52,6 +52,11 @@ OLD_HELPER_NAMES=(
     "acw_check_cli"
     "acw_ensure_output_dir"
     "acw_check_input_file"
+    "acw_invoke_claude"
+    "acw_invoke_codex"
+    "acw_invoke_opencode"
+    "acw_invoke_cursor"
+    "acw_complete"
 )
 
 for func in "${OLD_HELPER_NAMES[@]}"; do

@@ -39,10 +39,16 @@ if [ -n "$unknown_output" ]; then
     test_fail "Expected empty output for unknown completion topic, got: $unknown_output"
 fi
 
-# Test 4: acw_complete function is available
-test_info "Checking acw_complete function exists"
-if ! type acw_complete 2>/dev/null | grep -q "function"; then
-    test_fail "acw_complete function is not defined"
+# Test 4: _acw_complete function is available (private)
+test_info "Checking _acw_complete function exists"
+if ! type _acw_complete 2>/dev/null | grep -q "function"; then
+    test_fail "_acw_complete function is not defined"
+fi
+
+# Test 5: old acw_complete function is NOT available
+test_info "Checking old acw_complete function is removed"
+if type acw_complete 2>/dev/null | grep -q "function"; then
+    test_fail "Old acw_complete function should be renamed to _acw_complete"
 fi
 
 test_pass "All completion tests passed"
