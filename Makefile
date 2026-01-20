@@ -47,6 +47,7 @@ setup:
 	@echo 'export PYTHONPATH="$$AGENTIZE_HOME/python:$$PYTHONPATH"' >> setup.sh
 	@echo 'source "$$AGENTIZE_HOME/src/cli/wt.sh"' >> setup.sh
 	@echo 'source "$$AGENTIZE_HOME/src/cli/lol.sh"' >> setup.sh
+	@echo 'source "$$AGENTIZE_HOME/src/cli/acw.sh"' >> setup.sh
 	@echo '' >> setup.sh
 	@echo '# Enable zsh completion for wt command' >> setup.sh
 	@echo 'if [ -n "$$ZSH_VERSION" ]; then  # zsh-only setup' >> setup.sh
