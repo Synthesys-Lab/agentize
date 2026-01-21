@@ -5,7 +5,7 @@ description: Fetch unresolved PR review threads and apply fixes with user confir
 
 # Resolve Review Command
 
-Automates resolving unresolved PR review comments by fetching threads via GitHub's GraphQL API, applying AI-driven code modifications with user confirmation, running tests with bounded retry, and pushing changes with proper `[review]` tag commit formatting.
+Automates resolving unresolved PR review comments by fetching threads via GitHub's GraphQL API, applying AI-driven code modifications with user confirmation, running tests with bounded retry, and pushing changes with proper `[review]` tag commit formatting. Validates branch context and fails fast on mismatch (automation-friendly).
 
 Invoke the skill: /resolve-review <pr-no>
 
@@ -65,20 +65,23 @@ gh repo view --json owner,name
 
 ### Step 3: Validate Working Branch
 
-Check that the current branch matches the PR head branch:
+Check that the current branch matches the PR head branch. On mismatch, abort immediately and leave a failure comment on the PR (fail-fast for automation compatibility):
 
 ```bash
 CURRENT_BRANCH=$(git branch --show-current)
 PR_HEAD=$(gh pr view "$PR_NO" --json headRefName --jq '.headRefName')
 
 if [ "$CURRENT_BRANCH" != "$PR_HEAD" ]; then
-  echo "Warning: Current branch ($CURRENT_BRANCH) differs from PR head ($PR_HEAD)"
-  echo ""
-  echo "Run: gh pr checkout $PR_NO"
+  # Leave failure comment on PR for visibility
+  gh pr comment "$PR_NO" --body "⚠️ /resolve-review aborted: Current branch ($CURRENT_BRANCH) does not match PR head ($PR_HEAD). Please ensure the correct worktree is active."
+
+  echo "Error: Branch mismatch - current ($CURRENT_BRANCH) != PR head ($PR_HEAD)"
+  echo "Failure comment left on PR #$PR_NO"
+  exit 1
 fi
 ```
 
-If branches don't match, prompt user to switch branches or confirm continuing on current branch.
+This fail-fast behavior ensures compatibility with server-managed worktree workflows that require non-interactive execution.
 
 ### Step 4: Fetch Unresolved Review Threads
 
@@ -230,13 +233,20 @@ All review comments have been addressed.
 
 ### Branch Mismatch
 
-```
-Warning: Current branch (main) differs from PR head (feature-branch)
+When the current branch doesn't match the PR head, the command aborts immediately and leaves a failure comment on the PR:
 
-Options:
-1. Switch to PR branch: gh pr checkout 123
-2. Continue on current branch (not recommended)
+**Terminal output:**
 ```
+Error: Branch mismatch - current (main) != PR head (feature-branch)
+Failure comment left on PR #123
+```
+
+**PR comment:**
+```
+⚠️ /resolve-review aborted: Current branch (main) does not match PR head (feature-branch). Please ensure the correct worktree is active.
+```
+
+This fail-fast behavior supports automation workflows where interactive prompts are not compatible.
 
 ### GraphQL Pagination Warning
 
