@@ -1,0 +1,96 @@
+{
+  "data": {
+    "repository": {
+      "pullRequest": {
+        "reviewThreads": {
+          "nodes": [
+            {
+              "id": "PRRT_kwDOA1_test1",
+              "isResolved": false,
+              "isOutdated": false,
+              "path": "src/utils/parser.py",
+              "line": 42,
+              "startLine": 40,
+              "comments": {
+                "nodes": [
+                  {
+                    "id": "PRRC_kwDOA1_comment1",
+                    "body": "Consider adding error handling for empty input",
+                    "author": {
+                      "login": "reviewer1"
+                    },
+                    "createdAt": "2025-01-15T10:30:00Z"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "PRRT_kwDOA1_test2",
+              "isResolved": true,
+              "isOutdated": false,
+              "path": "src/api/handler.py",
+              "line": 15,
+              "startLine": 15,
+              "comments": {
+                "nodes": [
+                  {
+                    "id": "PRRC_kwDOA1_comment2",
+                    "body": "This was already addressed",
+                    "author": {
+                      "login": "reviewer2"
+                    },
+                    "createdAt": "2025-01-14T09:00:00Z"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "PRRT_kwDOA1_test3",
+              "isResolved": false,
+              "isOutdated": true,
+              "path": "src/config/settings.py",
+              "line": 100,
+              "startLine": 98,
+              "comments": {
+                "nodes": [
+                  {
+                    "id": "PRRC_kwDOA1_comment3",
+                    "body": "This code was refactored already",
+                    "author": {
+                      "login": "reviewer1"
+                    },
+                    "createdAt": "2025-01-13T14:20:00Z"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "PRRT_kwDOA1_test4",
+              "isResolved": false,
+              "isOutdated": false,
+              "path": "tests/test_parser.py",
+              "line": 25,
+              "startLine": 22,
+              "comments": {
+                "nodes": [
+                  {
+                    "id": "PRRC_kwDOA1_comment4",
+                    "body": "Add a test case for edge cases with special characters",
+                    "author": {
+                      "login": "reviewer2"
+                    },
+                    "createdAt": "2025-01-15T11:45:00Z"
+                  }
+                ]
+              }
+            }
+          ],
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          }
+        }
+      }
+    }
+  }
+}

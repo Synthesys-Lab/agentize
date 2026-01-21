@@ -66,6 +66,9 @@ return_fixture() {
         create-field-option)
             fixture_file="$FIXTURES_DIR/create-field-option-response.json"
             ;;
+        review-threads)
+            fixture_file="$FIXTURES_DIR/review-threads-response.json"
+            ;;
         *)
             echo "Error: Unknown fixture operation '$operation'" >&2
             exit 1
@@ -262,6 +265,51 @@ graphql_update_field() {
         }' -f projectId="$project_id" -f itemId="$item_id" -f fieldId="$field_id" -f optionId="$option_id"
 }
 
+# Execute GraphQL query for review-threads
+# Fetches PR review threads with resolution status, path, and line information
+graphql_review_threads() {
+    local owner="$1"
+    local repo="$2"
+    local pr_number="$3"
+
+    if [ "$FIXTURE_MODE" = "1" ]; then
+        return_fixture "review-threads"
+        return 0
+    fi
+
+    gh api graphql -f query='
+        query($owner: String!, $repo: String!, $prNumber: Int!) {
+            repository(owner: $owner, name: $repo) {
+                pullRequest(number: $prNumber) {
+                    reviewThreads(first: 100) {
+                        nodes {
+                            id
+                            isResolved
+                            isOutdated
+                            path
+                            line
+                            startLine
+                            comments(first: 10) {
+                                nodes {
+                                    id
+                                    body
+                                    author {
+                                        login
+                                    }
+                                    createdAt
+                                }
+                            }
+                        }
+                        pageInfo {
+                            hasNextPage
+                            endCursor
+                        }
+                    }
+                }
+            }
+        }' -f owner="$owner" -f repo="$repo" -F prNumber="$pr_number"
+}
+
 # Execute GraphQL mutation for create-field-option
 # Creates a new option for a single select field (like Status)
 graphql_create_field_option() {
@@ -320,6 +368,9 @@ main() {
         create-field-option)
             graphql_create_field_option "$@"
             ;;
+        review-threads)
+            graphql_review_threads "$@"
+            ;;
         *)
             echo "Error: Unknown operation '$operation'" >&2
             echo "" >&2
@@ -332,6 +383,7 @@ main() {
             echo "  $0 get-issue-project-item <owner> <repo> <issue-number>" >&2
             echo "  $0 update-field <project-id> <item-id> <field-id> <option-id>" >&2
             echo "  $0 create-field-option <field-id> <option-name> [color]" >&2
+            echo "  $0 review-threads <owner> <repo> <pr-number>" >&2
             exit 1
             ;;
     esac
