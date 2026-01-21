@@ -46,6 +46,8 @@ from agentize.server.github import (
     discover_candidate_feat_requests,
     query_feat_request_items,
     filter_ready_feat_requests,
+    has_unresolved_review_threads,
+    filter_ready_review_prs,
     ISSUE_STATUS_QUERY,
     _project_id_cache,
 )
@@ -54,6 +56,7 @@ from agentize.server.workers import (
     spawn_worktree,
     spawn_refinement,
     spawn_feat_request,
+    spawn_review_resolution,
     rebase_worktree,
     init_worker_status_files,
     read_worker_status,
@@ -64,6 +67,7 @@ from agentize.server.workers import (
     _check_issue_has_label,
     _cleanup_refinement,
     _cleanup_feat_request,
+    _cleanup_review_resolution,
     DEFAULT_WORKERS_DIR,
 )
 
@@ -292,6 +296,47 @@ def run_server(
                             _log(f"Failed to rebase PR #{pr_no}", level="ERROR")
             except RuntimeError as e:
                 _log(f"Failed to process conflicting PRs: {e}", level="ERROR")
+
+            # Process review resolution candidates
+            try:
+                owner, repo = get_repo_owner_name()
+                review_project_id = lookup_project_graphql_id(org, project_id)
+                review_prs = discover_candidate_prs(owner, repo)
+                ready_review_prs = filter_ready_review_prs(review_prs, owner, repo, review_project_id)
+
+                for pr_no, issue_no in ready_review_prs:
+                    # Check if worktree exists
+                    if not worktree_exists(issue_no):
+                        _log(f"PR #{pr_no} (issue #{issue_no}): worktree does not exist, skipping review resolution", level="WARNING")
+                        continue
+
+                    # Worker assignment and spawn (follows existing pattern)
+                    if num_workers > 0:
+                        worker_id = get_free_worker(num_workers)
+                        if worker_id is None:
+                            print(f"All {num_workers} workers busy, waiting for next poll")
+                            break
+
+                        write_worker_status(worker_id, 'BUSY', issue_no, None)
+                        success, pid = spawn_review_resolution(pr_no, issue_no)
+                        if success:
+                            write_worker_status(worker_id, 'BUSY', issue_no, pid)
+                            print(f"PR #{pr_no} (issue #{issue_no}) review resolution assigned to worker {worker_id}")
+
+                            if token and chat_id:
+                                pr_url = f"https://github.com/{repo_slug}/pull/{pr_no}" if repo_slug else None
+                                msg = f"📝 Review resolution started: <a href=\"{pr_url}\">#{pr_no}</a> (issue #{issue_no})" if pr_url else f"📝 Review resolution started: #{pr_no} (issue #{issue_no})"
+                                send_telegram_message(token, chat_id, msg)
+                        else:
+                            write_worker_status(worker_id, 'FREE', None, None)
+                            _log(f"Failed to spawn review resolution for PR #{pr_no}", level="ERROR")
+                    else:
+                        # Unlimited workers mode
+                        success, _ = spawn_review_resolution(pr_no, issue_no)
+                        if not success:
+                            _log(f"Failed to spawn review resolution for PR #{pr_no}", level="ERROR")
+            except RuntimeError as e:
+                _log(f"Failed to process review resolution: {e}", level="ERROR")
 
             if running[0]:
                 time.sleep(period)

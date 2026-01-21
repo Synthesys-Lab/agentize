@@ -662,3 +662,105 @@ def filter_ready_feat_requests(items: list[dict]) -> list[int]:
         print(f"[{timestamp}] [INFO] [github.py:657:filter_ready_feat_requests] Summary: {len(ready)} ready, {total_skip} skipped ({skip_has_plan} already planned, {skip_terminal} terminal status)", file=sys.stderr)
 
     return ready
+
+
+def has_unresolved_review_threads(owner: str, repo: str, pr_no: int) -> bool:
+    """Check if a PR has unresolved, non-outdated review threads.
+
+    Args:
+        owner: Repository owner
+        repo: Repository name
+        pr_no: Pull request number
+
+    Returns:
+        True if any unresolved, non-outdated thread exists, False otherwise.
+    """
+    result = subprocess.run(
+        ['scripts/gh-graphql.sh', 'review-threads', owner, repo, str(pr_no)],
+        capture_output=True, text=True
+    )
+
+    if result.returncode != 0:
+        _log(f"Failed to fetch review threads for PR #{pr_no}: {result.stderr}", level="ERROR")
+        return False
+
+    try:
+        data = json.loads(result.stdout)
+        threads = data['data']['repository']['pullRequest']['reviewThreads']['nodes']
+        page_info = data['data']['repository']['pullRequest']['reviewThreads']['pageInfo']
+
+        # Warn about pagination
+        if page_info.get('hasNextPage'):
+            _log(f"PR #{pr_no} has more than 100 review threads, only first page checked", level="WARNING")
+
+        # Check for any unresolved AND non-outdated thread
+        for thread in threads:
+            if not thread.get('isResolved', True) and not thread.get('isOutdated', True):
+                return True
+
+        return False
+    except (KeyError, TypeError, json.JSONDecodeError) as e:
+        _log(f"Failed to parse review threads response: {e}", level="ERROR")
+        return False
+
+
+def filter_ready_review_prs(prs: list[dict], owner: str, repo: str, project_id: str) -> list[tuple[int, int]]:
+    """Filter PRs to those eligible for review resolution.
+
+    Requirements:
+    - Can resolve issue number from PR metadata
+    - Linked issue has Status == 'Proposed'
+    - PR has at least one unresolved, non-outdated review thread
+
+    Args:
+        prs: List of PR metadata dicts from discover_candidate_prs()
+        owner: Repository owner
+        repo: Repository name
+        project_id: Project GraphQL ID for status lookup
+
+    Returns:
+        List of (pr_no, issue_no) tuples for PRs ready for review resolution.
+    """
+    debug = os.getenv('HANDSOFF_DEBUG')
+    ready = []
+    skip_no_issue = 0
+    skip_wrong_status = 0
+    skip_no_threads = 0
+
+    for pr in prs:
+        pr_no = pr.get('number')
+
+        # Resolve issue number
+        issue_no = resolve_issue_from_pr(pr)
+        if issue_no is None:
+            if debug:
+                print(f"  - PR #{pr_no}: {{ issue: None }}, decision: SKIP, reason: cannot resolve issue", file=sys.stderr)
+            skip_no_issue += 1
+            continue
+
+        # Check issue status (must be Proposed)
+        status = query_issue_project_status(owner, repo, issue_no, project_id)
+        if status != 'Proposed':
+            if debug:
+                print(f"  - PR #{pr_no}: {{ issue: {issue_no}, status: {status} }}, decision: SKIP, reason: status != Proposed", file=sys.stderr)
+            skip_wrong_status += 1
+            continue
+
+        # Check for unresolved review threads
+        has_threads = has_unresolved_review_threads(owner, repo, pr_no)
+        if not has_threads:
+            if debug:
+                print(f"  - PR #{pr_no}: {{ issue: {issue_no}, status: {status}, threads: 0 unresolved }}, decision: SKIP, reason: no unresolved threads", file=sys.stderr)
+            skip_no_threads += 1
+            continue
+
+        if debug:
+            print(f"  - PR #{pr_no}: {{ issue: {issue_no}, status: {status}, threads: has unresolved }}, decision: READY, reason: matches criteria", file=sys.stderr)
+        ready.append((pr_no, issue_no))
+
+    if debug:
+        total_skip = skip_no_issue + skip_wrong_status + skip_no_threads
+        timestamp = datetime.now().strftime("%y-%m-%d-%H:%M:%S")
+        print(f"[{timestamp}] [INFO] [github.py:720:filter_ready_review_prs] Summary: {len(ready)} ready, {total_skip} skipped ({skip_no_issue} no issue, {skip_wrong_status} wrong status, {skip_no_threads} no threads)", file=sys.stderr)
+
+    return ready

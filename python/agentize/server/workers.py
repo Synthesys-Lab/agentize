@@ -248,6 +248,77 @@ def spawn_feat_request(issue_no: int, model: str | None = None) -> tuple[bool, i
     return True, proc.pid
 
 
+def spawn_review_resolution(pr_no: int, issue_no: int, model: str | None = None) -> tuple[bool, int | None]:
+    """Spawn a review resolution session for the given PR.
+
+    Runs in the issue-specific worktree (not main), spawns claude with /resolve-review headlessly.
+
+    Args:
+        pr_no: GitHub PR number
+        issue_no: GitHub issue number (for worktree and status claim)
+        model: Claude model to use (opus, sonnet, haiku); uses default if not specified
+
+    Returns:
+        Tuple of (success, pid). pid is None if spawn failed.
+    """
+    # Get issue worktree path (review resolution runs on issue branch)
+    result = run_shell_function(f'wt pathto {issue_no}', capture_output=True)
+    if result.returncode != 0:
+        _log(f"Failed to get worktree path for issue #{issue_no}", level="ERROR")
+        return False, None
+    worktree_path = result.stdout.strip()
+
+    # Set status to "In Progress" (concurrency control)
+    run_shell_function(
+        f'wt_claim_issue_status {issue_no} "{worktree_path}" "In Progress"',
+        capture_output=True
+    )
+
+    # Create log directory and file
+    log_dir = Path(os.getenv('AGENTIZE_HOME', '.')) / '.tmp' / 'logs'
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / f'review-resolution-{pr_no}-{int(time.time())}.log'
+
+    # Build claude command with optional model
+    claude_args = ['claude']
+    if model:
+        claude_args.extend(['--model', model])
+    claude_args.extend(['--print', f'/resolve-review {pr_no}'])
+
+    # Spawn Claude with /resolve-review
+    with open(log_file, 'w') as f:
+        proc = subprocess.Popen(
+            claude_args,
+            cwd=worktree_path,
+            stdin=subprocess.DEVNULL,
+            stdout=f,
+            stderr=subprocess.STDOUT
+        )
+
+    _log(f"Spawned review resolution for PR #{pr_no} (issue #{issue_no}), PID: {proc.pid}, log: {log_file}")
+    return True, proc.pid
+
+
+def _cleanup_review_resolution(issue_no: int) -> None:
+    """Clean up after review resolution: reset status to Proposed.
+
+    Unlike refinement/feat-request cleanup, this does NOT remove any labels.
+
+    Args:
+        issue_no: GitHub issue number
+    """
+    # Reset issue status to "Proposed" (best-effort pattern)
+    result = run_shell_function(f'wt pathto {issue_no}', capture_output=True)
+    if result.returncode == 0:
+        worktree_path = result.stdout.strip()
+        run_shell_function(
+            f'wt_claim_issue_status {issue_no} "{worktree_path}" Proposed',
+            capture_output=True
+        )
+
+    _log(f"Review resolution cleanup for issue #{issue_no}: reset status to Proposed")
+
+
 def init_worker_status_files(num_workers: int, workers_dir: str = DEFAULT_WORKERS_DIR) -> None:
     """Initialize worker status files with state=FREE.
 
@@ -414,6 +485,10 @@ def cleanup_dead_workers(
                     is_feat_request = _check_issue_has_label(issue_no, 'agentize:dev-req')
                     if is_feat_request:
                         _cleanup_feat_request(issue_no)
+
+                    # Always try review resolution cleanup (idempotent, no label to detect)
+                    # This resets "In Progress" to "Proposed" if applicable
+                    _cleanup_review_resolution(issue_no)
 
                     issue_url = f"https://github.com/{repo_slug}/issues/{issue_no}" if repo_slug else None
 
