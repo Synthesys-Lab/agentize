@@ -189,6 +189,73 @@ If you have existing issues labeled with the old `agentize:feat-request` label, 
 gh issue edit <issue-no> --remove-label agentize:feat-request --add-label agentize:dev-req
 ```
 
+## PR Review Resolution Workflow
+
+The server automatically discovers PRs with unresolved review threads and processes them using `/resolve-review`.
+
+### Review Resolution Discovery
+
+PRs eligible for review resolution must have:
+1. Label `agentize:pr` (PRs created by agentize)
+2. Linked issue with Status = `Proposed` (ensures work is ready for review, not actively being developed)
+3. At least one review thread that is both `isResolved == false` AND `isOutdated == false`
+
+The server polls for candidate PRs using:
+```bash
+gh pr list --label agentize:pr --state open --json number,headRefName,body,closingIssuesReferences
+```
+
+### Review Resolution State Machine
+
+When a review resolution candidate is found:
+
+1. **Discover**: Server finds PRs with `agentize:pr` label
+2. **Filter**: Server checks linked issue Status == `Proposed` and calls `has_unresolved_review_threads()` via GraphQL
+3. **Claim**: Server sets linked issue Status to `In Progress` (concurrency control)
+4. **Spawn**: Server runs `/resolve-review <pr-no>` headlessly in the issue worktree
+5. **Cleanup**: After completion, Status is reset to `Proposed` (best-effort)
+
+### Status Lifecycle
+
+The review resolution workflow uses the `Proposed → In Progress → Proposed` status lifecycle:
+
+| Phase | Status | Reason |
+|-------|--------|--------|
+| Before claim | `Proposed` | Work is complete, awaiting review resolution |
+| During resolution | `In Progress` | Prevents duplicate workers, indicates active processing |
+| After completion | `Proposed` | Ready for next review cycle or PR merge |
+
+This lifecycle uses existing Status options without requiring new statuses like "Reviewing".
+
+### Debug Logging (Review Resolution)
+
+When `HANDSOFF_DEBUG=1` is set:
+
+```
+  - PR #123: { issue: 42, status: Proposed, threads: 3 unresolved }, decision: READY, reason: matches criteria
+  - PR #124: { issue: 43, status: In Progress }, decision: SKIP, reason: status != Proposed
+  - PR #125: { issue: 44, status: Proposed, threads: 0 unresolved }, decision: SKIP, reason: no unresolved threads
+[26-01-22-14:30:15] [INFO] [github.py:720:filter_ready_review_prs] Summary: 1 ready, 2 skipped (1 wrong status, 1 no threads)
+```
+
+### Manual Review Resolution Trigger
+
+To trigger review resolution for a PR:
+1. Ensure the linked issue is in `Proposed` status
+2. Add unresolved review comments to the PR
+3. Wait for the next server poll cycle
+
+Or manually run:
+```bash
+claude --print "/resolve-review <pr-no>"
+```
+
+### Stuck In Progress Recovery
+
+If an issue gets stuck in `In Progress` status (e.g., after a server crash):
+1. Manually reset Status to `Proposed` via GitHub Projects UI
+2. The PR will be picked up on the next poll cycle
+
 ## Plan Refinement Workflow
 
 The server automatically discovers and processes plan refinement candidates.

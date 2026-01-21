@@ -13,6 +13,7 @@ This module implements a long-running server that:
 4. Discovers feature request issues using `gh issue list --label agentize:dev-req --state open`
 5. Spawns worktrees for ready issues via `wt spawn`, triggers refinement, or runs feature request planning via `/ultra-planner --from-issue`
 6. Discovers conflicting PRs with `agentize:pr` label via `gh pr list` and rebases their worktrees automatically
+7. Discovers PRs with unresolved review threads (Status=`Proposed`) and spawns `/resolve-review` to address them
 
 ## Module Layout
 

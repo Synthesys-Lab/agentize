@@ -230,6 +230,68 @@ Discover open PRs with `agentize:pr` label using `gh pr list`.
 
 **Returns:** List of PR metadata dicts with `number`, `headRefName`, `mergeable`, `body`, and `closingIssuesReferences` fields.
 
+### `has_unresolved_review_threads(owner: str, repo: str, pr_no: int) -> bool`
+
+Check if a PR has unresolved, non-outdated review threads.
+
+**Parameters:**
+- `owner`: Repository owner
+- `repo`: Repository name
+- `pr_no`: Pull request number
+
+**Operations:**
+1. Calls `scripts/gh-graphql.sh review-threads` for the PR
+2. Parses JSON nodes for threads with `isResolved == false` and `isOutdated == false`
+3. Logs warning if `pageInfo.hasNextPage` is true (pagination limit)
+
+**Returns:** `True` if any unresolved, non-outdated thread exists, `False` otherwise.
+
+### `filter_ready_review_prs(prs: list[dict], owner: str, repo: str, project_id: str) -> list[tuple[int, int]]`
+
+Filter PRs to those eligible for review resolution.
+
+**Parameters:**
+- `prs`: List of PR metadata dicts from `discover_candidate_prs()`
+- `owner`: Repository owner
+- `repo`: Repository name
+- `project_id`: Project GraphQL ID for status lookup
+
+**Filtering logic:**
+- Resolves issue number from PR metadata
+- Requires linked issue Status == `Proposed`
+- Requires at least one unresolved, non-outdated review thread
+
+When `HANDSOFF_DEBUG=1`, logs per-PR inspection with `[review-resolution-filter]` prefix.
+
+**Returns:** List of `(pr_no, issue_no)` tuples for PRs ready for review resolution.
+
+### `spawn_review_resolution(pr_no: int, issue_no: int, model: str | None = None) -> tuple[bool, int | None]`
+
+Spawn a review resolution session for the given PR.
+
+**Parameters:**
+- `pr_no`: GitHub PR number
+- `issue_no`: GitHub issue number (for worktree and status claim)
+- `model`: Claude model to use (opus, sonnet, haiku); uses default if not specified
+
+**Operations:**
+1. Gets issue worktree path via `wt pathto <issue_no>`
+2. Sets issue Status to `In Progress` via `wt_claim_issue_status()` (concurrency control)
+3. Spawns `claude --model <model> --print /resolve-review <pr_no>` headlessly
+4. Returns (success, pid) tuple
+
+**Returns:** Tuple of (success, pid). pid is None if spawn failed.
+
+### `_cleanup_review_resolution(issue_no: int) -> None`
+
+Clean up after review resolution completion: reset Status to `Proposed`.
+
+**Operations:**
+1. Reset issue status to `Proposed` via `wt_claim_issue_status()` (best-effort)
+2. Log cleanup action
+
+This cleanup does NOT remove any labels (unlike refinement/feat-request workflows).
+
 ### `filter_conflicting_prs(prs: list[dict], owner: str, repo: str, project_id: str) -> list[int]`
 
 Filter PRs to those with merge conflicts and not already being rebased.

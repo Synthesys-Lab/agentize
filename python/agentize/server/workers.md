@@ -2,13 +2,22 @@
 
 ## Overview
 
-The `workers.py` module manages spawning and cleanup of Claude sessions for refinement and feature request planning tasks. It handles worktree management, process spawning, and worker status tracking.
+The `workers.py` module manages spawning and cleanup of Claude sessions for refinement, feature request planning, and review resolution tasks. It handles worktree management, process spawning, and worker status tracking.
 
-## spawn_refinement and spawn_feat_request
+## spawn_refinement, spawn_feat_request, and spawn_review_resolution
 
-### Planning on Main Branch
+### Planning on Main Branch (Refinement and Feat-Request)
 
 Both `spawn_refinement()` and `spawn_feat_request()` functions run planning sessions on the main branch worktree. This is critical to avoid worktree conflicts:
+
+### Review Resolution on Issue Branch
+
+Unlike planning functions, `spawn_review_resolution()` runs in the **issue-specific worktree**:
+- **Issue worktree location**: `.git/trees/issue-{N}/`
+- **Why**: Review resolution modifies code in the PR branch, which requires the issue worktree context
+- Gets worktree path via `wt pathto {issue_no}` (not `wt pathto main`)
+
+### Planning on Main Branch (Refinement and Feat-Request Only)
 
 - **Main worktree location**: `.git/trees/main/`
 - **Planning process**: The Claude session is launched with `cwd=worktree_path` pointing to the main worktree
@@ -20,6 +29,13 @@ The functions follow this sequence:
 3. Return the spawned process ID for monitoring
 
 ## Cleanup Functions
+
+### _cleanup_review_resolution()
+
+Called after a review resolution session completes. Responsibilities:
+- Reset issue status to "Proposed" on the GitHub Projects board
+- Best-effort pattern: failures do not block cleanup completion
+- Does NOT remove any labels (unlike refinement/feat-request workflows)
 
 ### _cleanup_refinement()
 

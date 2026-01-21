@@ -25,7 +25,7 @@ Command files include:
 
 - `agent-review`: Review code changes via agent with isolated context and Opus model
 - `code-review`: Review code changes from current HEAD to main/HEAD following review standards
-- `resolve-review`: Fetch unresolved PR review threads and apply fixes with user confirmation
+- `resolve-review`: Fetch unresolved PR review threads and apply fixes automatically (automation-friendly, invoked by server)
 
 ### Planning & Implementation
 
