@@ -59,6 +59,14 @@ This directory contains utility scripts, git hooks, and wrapper entrypoints for 
 
 - `worktree.sh` - Legacy worktree management (use `wt-cli.sh` instead)
 
+### GitHub API Wrapper
+
+- `gh-graphql.sh` - GraphQL wrapper for GitHub Projects v2 API
+  - Usage: `./scripts/gh-graphql.sh <operation> [args...]`
+  - Operations: create-project, lookup-owner, lookup-project, add-item, list-fields, get-issue-project-item, update-field, create-field-option, review-threads
+  - Supports fixture mode for testing via `AGENTIZE_GH_API=fixture`
+  - See `gh-graphql.md` for complete documentation
+
 ### SDK CLI Wrappers
 
 These scripts delegate to `src/cli/lol.sh`:
