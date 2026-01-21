@@ -11,18 +11,13 @@ if str(_plugin_dir) not in sys.path:
     sys.path.insert(0, str(_plugin_dir))
 
 from lib.logger import logger
+from lib.session_utils import session_dir
 from lib.workflow import (
     detect_workflow,
     extract_issue_no,
     extract_pr_no,
     SYNC_MASTER,
 )
-
-
-def _session_dir():
-    """Get session directory path using AGENTIZE_HOME fallback."""
-    base = os.getenv('AGENTIZE_HOME', '.')
-    return os.path.join(base, '.tmp', 'hooked-sessions')
 
 
 def main():
@@ -73,17 +68,16 @@ def main():
         state['continuation_count'] = 0
 
         # Create session directory using AGENTIZE_HOME fallback
-        session_dir = _session_dir()
-        os.makedirs(session_dir, exist_ok=True)
+        sess_dir = session_dir(makedirs=True)
 
-        session_file = os.path.join(session_dir, f'{session_id}.json')
+        session_file = os.path.join(sess_dir, f'{session_id}.json')
         with open(session_file, 'w') as f:
             logger(session_id, f"Writing state: {state}")
             json.dump(state, f)
 
         # Create issue index file if issue_no is present
         if issue_no is not None:
-            by_issue_dir = os.path.join(session_dir, 'by-issue')
+            by_issue_dir = os.path.join(sess_dir, 'by-issue')
             os.makedirs(by_issue_dir, exist_ok=True)
             issue_index_file = os.path.join(by_issue_dir, f'{issue_no}.json')
             with open(issue_index_file, 'w') as f:

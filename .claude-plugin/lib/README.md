@@ -17,6 +17,8 @@ This directory contains all reusable libraries for the Claude Code plugin system
 │   │   └── strips.py              # Command normalization
 │   ├── workflow.py                # Handsoff workflow definitions
 │   ├── logger.py                  # Debug logging utilities
+│   ├── session_utils.py           # Session directory path resolution
+│   ├── session_utils.md           # Session utilities documentation
 │   ├── telegram_utils.py          # Telegram Bot API helpers
 │   └── telegram_utils.md          # Telegram utilities documentation
 ├── hooks/                         # Entry points only (import from lib/)
@@ -58,6 +60,18 @@ Debug logging utilities for hooks. Logs permission decisions to `.tmp/hooked-ses
 **Usage:**
 ```python
 from lib.logger import logger, log_tool_decision
+```
+
+### session_utils.py
+
+Shared session directory path resolution. Returns `.tmp/hooked-sessions` path with optional directory creation.
+
+**Usage:**
+```python
+from lib.session_utils import session_dir
+
+path = session_dir()              # Get path without creating
+path = session_dir(makedirs=True) # Get path and create directories
 ```
 
 ### telegram_utils.py

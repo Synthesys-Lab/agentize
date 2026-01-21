@@ -56,8 +56,9 @@ Shared logging utility module used by hook scripts.
 
 **Functions**:
 - `logger(sid, msg)`: Log debug messages when `HANDSOFF_DEBUG=1`
-- `_session_dir()`: Get session directory path using AGENTIZE_HOME fallback
 - `_tmp_dir()`: Get tmp directory path using AGENTIZE_HOME fallback
+
+Note: `session_dir()` is now provided by `lib/session_utils.py`.
 
 ## Development Guidelines
 

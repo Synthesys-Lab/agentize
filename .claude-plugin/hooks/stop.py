@@ -10,13 +10,8 @@ if str(_plugin_dir) not in sys.path:
     sys.path.insert(0, str(_plugin_dir))
 
 from lib.logger import logger
+from lib.session_utils import session_dir
 from lib.workflow import get_continuation_prompt
-
-
-def _session_dir():
-    """Get session directory path using AGENTIZE_HOME fallback."""
-    base = os.getenv('AGENTIZE_HOME', '.')
-    return os.path.join(base, '.tmp', 'hooked-sessions')
 
 
 def main():
@@ -43,8 +38,8 @@ def main():
 
 
     # Check the file existence using AGENTIZE_HOME fallback
-    session_dir = _session_dir()
-    fname = os.path.join(session_dir, f'{session_id}.json')
+    sess_dir = session_dir()
+    fname = os.path.join(sess_dir, f'{session_id}.json')
     if os.path.exists(fname):
         logger(session_id, f"Found existing state file: {fname}")
         with open(fname, 'r') as f:
