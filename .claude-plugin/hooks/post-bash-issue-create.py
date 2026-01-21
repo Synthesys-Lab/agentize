@@ -26,13 +26,8 @@ if str(_plugin_dir) not in sys.path:
     sys.path.insert(0, str(_plugin_dir))
 
 from lib.logger import logger
+from lib.session_utils import session_dir
 from lib.workflow import ULTRA_PLANNER
-
-
-def _session_dir():
-    """Get session directory path using AGENTIZE_HOME fallback."""
-    base = os.getenv('AGENTIZE_HOME', '.')
-    return os.path.join(base, '.tmp', 'hooked-sessions')
 
 
 def _extract_issue_number_from_output(output: str) -> int | None:
@@ -90,8 +85,8 @@ def main():
     logger(session_id, f"Captured issue number {issue_no} from gh issue create")
 
     # Check if we're in an Ultra Planner workflow
-    session_dir = _session_dir()
-    session_file = os.path.join(session_dir, f'{session_id}.json')
+    sess_dir = session_dir()
+    session_file = os.path.join(sess_dir, f'{session_id}.json')
 
     if not os.path.exists(session_file):
         logger(session_id, f"No session state file found at {session_file}")
@@ -120,7 +115,7 @@ def main():
         json.dump(state, f)
 
     # Create issue index file for reverse lookup
-    by_issue_dir = os.path.join(session_dir, 'by-issue')
+    by_issue_dir = os.path.join(sess_dir, 'by-issue')
     os.makedirs(by_issue_dir, exist_ok=True)
     issue_index_file = os.path.join(by_issue_dir, f'{issue_no}.json')
     with open(issue_index_file, 'w') as f:

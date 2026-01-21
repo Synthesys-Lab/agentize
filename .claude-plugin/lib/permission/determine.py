@@ -25,6 +25,7 @@ _lib_dir = Path(__file__).resolve().parent.parent
 if str(_lib_dir.parent) not in sys.path:
     sys.path.insert(0, str(_lib_dir.parent))
 from lib.telegram_utils import escape_html as _shared_escape_html, telegram_request
+from lib.session_utils import session_dir
 from lib.logger import log_tool_decision, logger
 
 # Constants
@@ -478,12 +479,6 @@ def _check_permission(tool: str, target: str, raw_target: str, workflow: str = '
         return ('ask', 'error')
 
 
-def _session_dir() -> str:
-    """Get session directory path using AGENTIZE_HOME fallback."""
-    base = os.getenv('AGENTIZE_HOME', '.')
-    return os.path.join(base, '.tmp', 'hooked-sessions')
-
-
 def _log_debug_info(session: str, workflow: str, tool: str, raw_target: str,
                     permission_decision: str, decision_source: str) -> None:
     """Log debug information to unified permission.txt when HANDSOFF_DEBUG is enabled."""
@@ -495,7 +490,7 @@ def _log_debug_info(session: str, workflow: str, tool: str, raw_target: str,
 
 def _detect_workflow(session: str) -> str:
     """Detect workflow state from session state file."""
-    state_file = os.path.join(_session_dir(), f'{session}.json')
+    state_file = os.path.join(session_dir(), f'{session}.json')
     if not os.path.exists(state_file):
         return 'unknown'
 
@@ -523,7 +518,7 @@ def _get_workflow_type(session: str) -> str:
     Returns the workflow value directly without mapping to short names.
     Used for workflow-scoped permission checks.
     """
-    state_file = os.path.join(_session_dir(), f'{session}.json')
+    state_file = os.path.join(session_dir(), f'{session}.json')
     if not os.path.exists(state_file):
         return ''
 

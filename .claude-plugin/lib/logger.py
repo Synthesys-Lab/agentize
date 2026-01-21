@@ -1,11 +1,7 @@
 import os
 import datetime
 
-
-def _session_dir():
-    """Get session directory path using AGENTIZE_HOME fallback."""
-    base = os.getenv('AGENTIZE_HOME', '.')
-    return os.path.join(base, '.tmp', 'hooked-sessions')
+from lib.session_utils import session_dir
 
 
 def _tmp_dir():
@@ -29,9 +25,8 @@ def log_tool_decision(session, context, tool, target, decision, workflow='unknow
     # Log permission decisions to unified permission.txt file
     if os.getenv('HANDSOFF_DEBUG', '0').lower() in ['0', 'false', 'off', 'disable']:
         return
-    session_dir = _session_dir()
-    os.makedirs(session_dir, exist_ok=True)
+    sess_dir = session_dir(makedirs=True)
     time = datetime.datetime.now().isoformat()
-    log_path = os.path.join(session_dir, 'permission.txt')
+    log_path = os.path.join(sess_dir, 'permission.txt')
     with open(log_path, 'a') as f:
         f.write(f'[{time}] [{session}] [{workflow}] [{source}] [{decision}] {tool} | {target}\n')
