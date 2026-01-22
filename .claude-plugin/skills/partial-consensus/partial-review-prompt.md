@@ -398,8 +398,8 @@ Use this format for ALL outputs (consensus or partial consensus):
 
 | Timestamp | Disagreement | Options Summary | Selected Option | User Comments |
 |-----------|--------------|-----------------|-----------------|---------------|
-| 2026-01-22 19:30 | 1: Agent Naming | 1A (Paranoia): suffix; 1B (Bold): prefix | 1B (Bold) | Prefix matches existing |
 | [Previous rows from history file] |
+| 2026-01-22 19:30 | 1: Agent Naming | 1A (Paranoia): suffix; 1B (Bold): prefix | 1B (Bold) | Prefix matches existing |
 
 ## Refine History
 
@@ -407,8 +407,8 @@ Use this format for ALL outputs (consensus or partial consensus):
 
 | Timestamp | Summary |
 |-----------|---------|
-| 2026-01-22 16:00 | Add error handling to Step 3 |
 | [Previous rows from history file] |
+| 2026-01-22 16:00 | Add error handling to Step 3 |
 
 ## Option Compatibility Check
 
