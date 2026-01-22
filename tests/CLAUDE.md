@@ -1,6 +1,8 @@
 # Test Registration
 
-When adding a new test:
+## Shell Tests
+
+When adding a new shell test:
 
 1. Choose the appropriate category directory:
    - `tests/sdk/` for SDK template tests
@@ -16,6 +18,15 @@ When adding a new test:
    ```json
    "Bash(tests/<category>/test-<feature>-<case>.sh)"
    ```
+
+## Python Tests (pytest)
+
+Python unit tests for server modules live in `python/tests/`:
+
+1. Create test files: `python/tests/test_<module>.py`
+2. Tests are automatically discovered by pytest (files matching `test_*.py`)
+3. Use `conftest.py` fixtures for path setup (`PROJECT_ROOT`, `PYTHONPATH`)
+4. Run with: `pytest python/tests` or via `make test`/`make test-fast`
 
 Both `tests/sdk/` and `tests/cli/` are emulating how users would interact with the SDK and CLI.
 DO NOT try to modify `setup.sh` or `session-init.sh` to accomodate the test cases.

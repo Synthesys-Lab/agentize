@@ -25,7 +25,14 @@ Agentize follows a **dogfooding-first** testing approach:
 - Traditional unit tests complement but don't replace dogfooding
 - Validation status is tracked and documented for transparency
 
-## Shell Test Runner
+## Test Runners
+
+Agentize uses two test frameworks:
+
+1. **Shell tests** (`tests/`): CLI and SDK integration tests using bash/zsh
+2. **Pytest** (`python/tests/`): Python module unit tests for server components
+
+### Shell Test Runner
 
 The shell test suite supports running tests under multiple shells to ensure shell-neutral compatibility:
 
@@ -35,6 +42,15 @@ The shell test suite supports running tests under multiple shells to ensure shel
 - **CI enforcement**: GitHub Actions runs `make test-shells` on every push/PR with zsh installed, ensuring bash+zsh compatibility is maintained.
 
 This enables early detection of shell-specific issues (e.g., bashisms) before users encounter them in different shell environments.
+
+### Pytest Runner
+
+Python tests for server modules live in `python/tests/` and run via pytest:
+
+- Tests are automatically discovered by pytest (files matching `test_*.py`)
+- Both `make test` and `make test-fast` run pytest after shell tests
+- To run pytest only: `pytest python/tests`
+- Install dev dependencies: `python -m pip install -r python/requirements-dev.txt`
 
 ## Test Structure
 
@@ -55,15 +71,15 @@ The shared helper `tests/common.sh` provides:
 
 ## Running Tests
 
-All tests are executed via `tests/test-all.sh`, which automatically discovers tests in categorical subdirectories. The commands documented in `docs/architecture/architecture.md`:
+Shell tests are executed via `tests/test-all.sh`, which automatically discovers tests in categorical subdirectories. Python tests run via pytest. The commands documented in `docs/architecture/architecture.md`:
 
-- `make test` - Run all tests under bash
+- `make test` - Run all tests (shell tests under bash + pytest)
 - `make test-shells` - Run all tests under bash and zsh (fails if zsh not installed)
 - `make test-sdk` - Run SDK template tests
 - `make test-cli` - Run CLI command tests
 - `make test-lint` - Run validation tests
 - `make test-e2e` - Run end-to-end integration tests
-- `make test-fast` - Run fast tests (sdk + cli + lint)
+- `make test-fast` - Run fast tests (sdk + cli + lint + pytest)
 
 **Note**: When `TEST_SHELLS` is explicitly set (e.g., via `make test-shells`), the test runner enforces strict shell availability and exits with an error if any required shell is missing.
 

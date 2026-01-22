@@ -85,7 +85,9 @@ The shared helper `tests/common.sh` provides:
 
 ## Adding New Tests
 
-All tests must live in a categorized subdirectory under `tests/`. Do not create tests under `.claude/*/tests/` or other locations.
+### Shell Tests
+
+All shell tests must live in a categorized subdirectory under `tests/`. Do not create tests under `.claude/*/tests/` or other locations.
 
 1. Choose the appropriate category directory:
    - `tests/sdk/` for SDK template tests
@@ -99,6 +101,16 @@ All tests must live in a categorized subdirectory under `tests/`. Do not create 
 6. Use helper functions from `common.sh` or feature-specific helpers
 7. The test will be automatically discovered by `test-all.sh` (no manual registration required)
 8. Update `.claude/settings.local.json` to allow execution without permission prompts (see `tests/CLAUDE.md`)
+
+### Python Tests (pytest)
+
+Python unit tests for server modules live in `python/tests/`:
+
+1. Create test files: `python/tests/test_<module>.py`
+2. Tests are automatically discovered by pytest (files matching `test_*.py`)
+3. Use `conftest.py` fixtures for path setup (`PROJECT_ROOT`, `PYTHONPATH`)
+4. Use `unittest.mock` for mocking subprocess calls and external dependencies
+5. Run with: `pytest python/tests` or via `make test`/`make test-fast`
 
 ## Integration
 
