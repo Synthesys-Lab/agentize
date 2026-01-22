@@ -2,7 +2,7 @@
 
 # Zsh completion for lol (AI-powered SDK CLI)
 # Provides interactive command-line hints for lol subcommands and flags
-# Supports: upgrade, project, usage, version, claude-clean
+# Supports: upgrade, project, usage, version, serve, claude-clean
 
 _lol() {
     local curcontext="$curcontext" state line
