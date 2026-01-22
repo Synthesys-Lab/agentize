@@ -2,6 +2,7 @@
 
 # Zsh completion for wt (Git Worktree Helper)
 # This completion file provides interactive command-line hints for wt subcommands and flags
+# Supports: clone, common, init, goto, spawn, list, remove, prune, purge, pathto, rebase, help
 
 _wt() {
     local curcontext="$curcontext" state line
