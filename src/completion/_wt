@@ -28,6 +28,7 @@ _wt() {
             'prune:Clean up stale worktree metadata'
             'purge:Remove worktrees for closed GitHub issues'
             'pathto:Print absolute path to worktree target'
+            'rebase:Rebase worktree branch onto main'
             'help:Display help message'
         )
     else
@@ -45,6 +46,7 @@ _wt() {
                 prune) commands_with_desc+=('prune:Clean up stale worktree metadata') ;;
                 purge) commands_with_desc+=('purge:Remove worktrees for closed GitHub issues') ;;
                 pathto) commands_with_desc+=('pathto:Print absolute path to worktree target') ;;
+                rebase) commands_with_desc+=('rebase:Rebase worktree branch onto main') ;;
                 help) commands_with_desc+=('help:Display help message') ;;
             esac
         done
