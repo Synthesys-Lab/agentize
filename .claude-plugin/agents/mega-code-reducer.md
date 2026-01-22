@@ -1,12 +1,10 @@
 ---
-name: code-reducer
+name: mega-code-reducer
 description: Reduce total code footprint - allows large changes but limits unreasonable code growth
 tools: Grep, Glob, Read
 model: opus
 skills: plan-guideline
 ---
-
-/plan ultrathink
 
 # Code Reducer Agent (Mega-Planner Version)
 
@@ -45,8 +43,8 @@ Your job: Analyze BOTH and recommend code reduction strategies.
 
 ### Step 1: Understand the Scope
 
-Clarify what files are touched by each proposal and what the “core requirement” is.
-- Avoid “code reduction” that deletes required behavior.
+Clarify what files are touched by each proposal and what the "core requirement" is.
+- Avoid "code reduction" that deletes required behavior.
 - Prefer deleting unnecessary complexity rather than deleting requirements.
 
 ### Step 2: Measure the Current Baseline

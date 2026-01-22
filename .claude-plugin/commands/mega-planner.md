@@ -276,7 +276,7 @@ Task tool parameters:
 **Task tool call #1 - Bold Proposer:**
 ```
 Task tool parameters:
-  subagent_type: "mega-planner:bold-proposer"
+  subagent_type: "agentize:mega-bold-proposer"
   prompt: "Research and propose an innovative solution for: {FEATURE_DESC}
 
 CODEBASE CONTEXT (from understander):
@@ -291,7 +291,7 @@ Use ```diff blocks to show proposed changes."
 **Task tool call #2 - Paranoia Proposer:**
 ```
 Task tool parameters:
-  subagent_type: "mega-planner:paranoia-proposer"
+  subagent_type: "agentize:mega-paranoia-proposer"
   prompt: "Critically analyze and propose a destructive refactoring solution for: {FEATURE_DESC}
 
 CODEBASE CONTEXT (from understander):
@@ -320,7 +320,7 @@ Use ```diff blocks to show proposed changes."
 **Task tool call #1 - Critique Agent:**
 ```
 Task tool parameters:
-  subagent_type: "mega-planner:proposal-critique"
+  subagent_type: "agentize:mega-proposal-critique"
   prompt: "Analyze BOTH proposals for feasibility and risks:
 
 Feature: {FEATURE_DESC}
@@ -339,7 +339,7 @@ Compare both approaches and provide critical analysis."
 **Task tool call #2 - Proposal Reducer:**
 ```
 Task tool parameters:
-  subagent_type: "mega-planner:proposal-reducer"
+  subagent_type: "agentize:mega-proposal-reducer"
   prompt: "Simplify BOTH proposals using 'less is more' philosophy:
 
 Feature: {FEATURE_DESC}
@@ -358,7 +358,7 @@ Identify unnecessary complexity in both and propose simpler alternatives."
 **Task tool call #3 - Code Reducer:**
 ```
 Task tool parameters:
-  subagent_type: "mega-planner:code-reducer"
+  subagent_type: "agentize:mega-code-reducer"
   prompt: "Analyze code changes in BOTH proposals:
 
 Feature: {FEATURE_DESC}

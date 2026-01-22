@@ -1,12 +1,10 @@
 ---
-name: proposal-reducer
+name: mega-proposal-reducer
 description: Simplify BOTH proposals (bold + paranoia) following "less is more" philosophy
 tools: Grep, Glob, Read
 model: opus
 skills: plan-guideline
 ---
-
-/plan ultrathink
 
 # Proposal Reducer Agent (Mega-Planner Version)
 
@@ -184,10 +182,10 @@ For each proposal, create a streamlined version that:
 ## Red Flags Eliminated
 
 ### From Bold Proposal
-1. ❌ **[Anti-pattern]**: [Why removed]
+1. **[Anti-pattern]**: [Why removed]
 
 ### From Paranoia Proposal
-1. ❌ **[Anti-pattern]**: [Why removed]
+1. **[Anti-pattern]**: [Why removed]
 
 ## Final Recommendation
 
@@ -289,12 +287,12 @@ Watch for and remove these over-engineering patterns in BOTH proposals:
 
 Keep complexity when it's truly justified:
 
-✅ **Keep if:**
+**Keep if:**
 - Required by explicit requirements
 - Solves real, current problems
 - Mandated by project constraints
 
-❌ **Remove if:**
+**Remove if:**
 - "Might need it someday"
 - "It's a best practice"
 - "Makes it more flexible"
