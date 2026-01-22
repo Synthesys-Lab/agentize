@@ -28,13 +28,13 @@ Refer to `./sdk.md` for more information about the SDK structure.
 
 ### Makefile Interfaces
 
-- `make test` - Run all test cases (bash by default)
+- `make test` - Run all test cases (shell tests via bash + pytest for Python tests)
 - `make test-shells` - Run all test cases under multiple shells (bash and zsh)
 - `make test-sdk` - Run SDK template tests
 - `make test-cli` - Run CLI command tests
 - `make test-lint` - Run validation and linting tests
 - `make test-e2e` - Run end-to-end integration tests
-- `make test-fast` - Run fast tests (sdk + cli + lint)
+- `make test-fast` - Run fast tests (sdk + cli + lint + pytest)
 - `make setup` - Creates a `setup.sh` script to set up the development environment
   - NOTE: This does not run the setup itself as it only affects the subshell
   - To run the setup, use `source ./setup.sh`
