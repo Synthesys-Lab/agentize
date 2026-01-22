@@ -3,6 +3,7 @@
 
 test:
 	./tests/test-all.sh
+	pytest python/tests
 
 test-shells:
 	TEST_SHELLS="bash zsh" ./tests/test-all.sh
@@ -21,6 +22,7 @@ test-e2e:
 
 test-fast:
 	./tests/test-all.sh sdk cli lint
+	pytest python/tests
 
 pre-commit:
 	HOOKS_DIR=$$(git rev-parse --git-path hooks 2>/dev/null || echo ".git/hooks"); \
