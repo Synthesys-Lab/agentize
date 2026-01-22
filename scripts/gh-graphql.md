@@ -151,6 +151,21 @@ Fetches review threads from a pull request with resolution status and comments.
 - `line` / `startLine`: Line numbers
 - `comments`: Array of comments with author, body, and timestamp
 
+#### resolve-thread
+
+Resolves a single review thread by its GraphQL ID.
+
+```bash
+./scripts/gh-graphql.sh resolve-thread <thread-id>
+```
+
+**Parameters:**
+- `thread-id`: The GraphQL ID of the review thread to resolve
+
+**Output:** JSON with the resolved thread containing:
+- `id`: Thread ID
+- `isResolved`: Should be `true` after successful resolution
+
 ### Environment Variables
 
 #### AGENTIZE_GH_API
@@ -244,6 +259,7 @@ Dispatches to the appropriate fixture file based on operation name and environme
 | update-field | update-field-response.json | - | - |
 | create-field-option | create-field-option-response.json | - | - |
 | review-threads | review-threads-response.json | - | - |
+| resolve-thread | resolve-thread-response.json | - | - |
 
 ### graphql_create_project(owner_id, title)
 
@@ -338,6 +354,15 @@ Fetches PR review threads via GraphQL query.
 
 **Returns:** JSON with `repository.pullRequest.reviewThreads` containing thread details and comments
 
+### graphql_resolve_thread(thread_id)
+
+Resolves a single PR review thread via GraphQL mutation.
+
+**Parameters:**
+- `thread_id`: The GraphQL ID of the review thread
+
+**Returns:** JSON with `resolveReviewThread.thread` containing id and isResolved status
+
 ## Usage Examples
 
 ### Live API: Create and Configure Project
@@ -381,4 +406,4 @@ This script is used by:
 
 - `src/cli/lol/project-lib.sh`: Project management operations (create, lookup, add-item, list-fields, update-field, create-field-option)
 - `src/cli/wt/helpers.sh`: Worktree spawn status claiming (get-issue-project-item, update-field)
-- `.claude-plugin/commands/resolve-review/COMMAND.md`: PR review thread resolution (review-threads)
+- `.claude-plugin/commands/resolve-review.md`: PR review thread resolution (review-threads, resolve-thread)

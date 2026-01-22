@@ -245,9 +245,9 @@ To trigger review resolution for a PR:
 2. Add unresolved review comments to the PR
 3. Wait for the next server poll cycle
 
-Or manually run:
+Or manually run (from the issue branch with an open PR):
 ```bash
-claude --print "/resolve-review <pr-no>"
+claude --print "/resolve-review"
 ```
 
 ### Stuck In Progress Recovery

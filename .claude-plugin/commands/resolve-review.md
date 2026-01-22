@@ -7,7 +7,7 @@ description: Fetch unresolved PR review threads and apply fixes with user confir
 
 Automates resolving unresolved PR review comments by fetching threads via GitHub's GraphQL API, applying AI-driven code modifications with user confirmation, running tests with bounded retry, and pushing changes with proper `[review]` tag commit formatting. Validates branch context and fails fast on mismatch (automation-friendly).
 
-Invocation: /resolve-review <pr-no>
+Invocation: /resolve-review [pr-no]
 
 > NOTE: This command is designed to be hands-off!
 > Just faithfully apply changes to resolve all the unresolved and non-outdated review threads
@@ -16,7 +16,7 @@ Invocation: /resolve-review <pr-no>
 ## Inputs
 
 **From arguments:**
-- `<pr-no>` (required): The pull request number to process
+- `[pr-no]` (optional): The pull request number to process. If not provided, auto-detects from current branch.
 
 **From GitHub (via `gh` CLI):**
 - PR metadata: state, headRefName
@@ -40,16 +40,27 @@ Invocation: /resolve-review <pr-no>
 
 ## Workflow Steps
 
-### Step 1: Validate PR Number
+### Step 1: Get PR Number (Auto-detect or Argument)
 
-Check that `<pr-no>` is provided and numeric:
+If a PR number is provided as argument, validate it. Otherwise, auto-detect from current branch:
 
 ```bash
-# Validate argument exists and is numeric
-if [ -z "$PR_NO" ] || ! [[ "$PR_NO" =~ ^[0-9]+$ ]]; then
-  echo "Error: Please provide a valid PR number"
-  echo "Usage: /resolve-review <pr-no>"
-  exit 1
+# If argument provided, validate it's numeric
+if [ -n "$PR_NO" ]; then
+  if ! [[ "$PR_NO" =~ ^[0-9]+$ ]]; then
+    echo "Error: Invalid PR number '$PR_NO'"
+    echo "Usage: /resolve-review [pr-no]"
+    exit 1
+  fi
+else
+  # Auto-detect PR from current branch
+  PR_NO=$(gh pr view --json number --jq '.number' 2>/dev/null)
+  if [ -z "$PR_NO" ]; then
+    echo "Error: No PR number provided and could not auto-detect PR for current branch"
+    echo "Usage: /resolve-review [pr-no]"
+    exit 1
+  fi
+  echo "Auto-detected PR #$PR_NO from current branch"
 fi
 ```
 
@@ -147,6 +158,14 @@ For each unresolved thread:
 
 5. **Apply changes (if confirmed):**
    Use Edit tool to apply the proposed modifications.
+
+6. **Resolve thread via GraphQL (best-effort):**
+   After successfully applying a fix, attempt to resolve the review thread:
+   ```bash
+   THREAD_ID=$(echo "$THREAD" | jq -r '.id')
+   scripts/gh-graphql.sh resolve-thread "$THREAD_ID"
+   ```
+   If the resolve call fails, log a warning and continue processing remaining threads.
 
 ### Step 7: Show Diff Summary and Confirm Tests
 
