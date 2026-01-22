@@ -1,0 +1,12 @@
+{
+  "data": {
+    "resolveReviewThread": {
+      "thread": {
+        "id": "PRRT_kwDOA1_test1",
+        "isResolved": true,
+        "viewerCanResolve": false,
+        "viewerCanUnresolve": true
+      }
+    }
+  }
+}

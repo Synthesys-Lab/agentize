@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test: scripts/gh-graphql.sh review-threads returns fixture JSON in fixture mode
+# Test: scripts/gh-graphql.sh review-threads and resolve-thread return fixture JSON in fixture mode
 
 source "$(dirname "$0")/../common.sh"
 
@@ -44,3 +44,26 @@ if ! echo "$FIRST_THREAD" | jq -e '.comments.nodes' > /dev/null 2>&1; then
 fi
 
 test_pass "gh-graphql.sh review-threads returns expected fixture data"
+
+# Test 6: resolve-thread operation returns valid JSON
+test_info "gh-graphql.sh resolve-thread returns expected fixture data"
+
+RESOLVE_OUTPUT=$("$PROJECT_ROOT/scripts/gh-graphql.sh" resolve-thread "PRRT_kwDOA1_test1")
+
+if [ -z "$RESOLVE_OUTPUT" ]; then
+  test_fail "resolve-thread returned empty output"
+fi
+
+# Test 7: Verify resolve-thread response has isResolved=true
+IS_RESOLVED=$(echo "$RESOLVE_OUTPUT" | jq -r '.data.resolveReviewThread.thread.isResolved')
+if [ "$IS_RESOLVED" != "true" ]; then
+  test_fail "Expected isResolved=true, got $IS_RESOLVED"
+fi
+
+# Test 8: Verify resolve-thread response includes thread id
+THREAD_ID=$(echo "$RESOLVE_OUTPUT" | jq -r '.data.resolveReviewThread.thread.id')
+if [ -z "$THREAD_ID" ] || [ "$THREAD_ID" = "null" ]; then
+  test_fail "Missing thread id in resolve-thread response"
+fi
+
+test_pass "gh-graphql.sh resolve-thread returns expected fixture data"
