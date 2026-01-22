@@ -280,10 +280,11 @@ def spawn_review_resolution(pr_no: int, issue_no: int, model: str | None = None)
     log_file = log_dir / f'review-resolution-{pr_no}-{int(time.time())}.log'
 
     # Build claude command with optional model
+    # Note: /resolve-review auto-detects PR from current branch, no pr_no needed
     claude_args = ['claude']
     if model:
         claude_args.extend(['--model', model])
-    claude_args.extend(['--print', f'/resolve-review {pr_no}'])
+    claude_args.extend(['--print', '/resolve-review'])
 
     # Spawn Claude with /resolve-review
     with open(log_file, 'w') as f:
