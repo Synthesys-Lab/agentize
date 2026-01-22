@@ -2,7 +2,7 @@
 name: partial-consensus
 description: Determine consensus/disagreement from 5-agent debate - exposes disagreements as developer decisions
 allowed-tools:
-  - Bash(.claude/skills/partial-consensus/scripts/partial-consensus.sh:*)
+  - Bash(.claude-plugin/skills/partial-consensus/scripts/partial-consensus.sh:*)
   - Bash(cat:*)
   - Bash(test:*)
   - Bash(wc:*)
@@ -76,7 +76,7 @@ leveraging LLM recency bias to prioritize the current request.
 ### Step 1: Invoke Partial Consensus Script
 
 ```bash
-.claude/skills/partial-consensus/scripts/partial-consensus.sh \
+.claude-plugin/skills/partial-consensus/scripts/partial-consensus.sh \
     .tmp/issue-42-bold.md \
     .tmp/issue-42-paranoia.md \
     .tmp/issue-42-critique.md \
@@ -111,7 +111,7 @@ leveraging LLM recency bias to prioritize the current request.
 
 ```bash
 # Standard mode
-.claude/skills/partial-consensus/scripts/partial-consensus.sh \
+.claude-plugin/skills/partial-consensus/scripts/partial-consensus.sh \
     .tmp/issue-42-bold.md \
     .tmp/issue-42-paranoia.md \
     .tmp/issue-42-critique.md \
