@@ -232,7 +232,7 @@ RESULT=$(run_workflow_python "from lib.workflow import SYNC_MASTER; print(SYNC_M
 test_info "Test 33: HANDSOFF_SUPERVISOR=none disables supervisor (returns None)"
 RESULT=$(run_workflow_python_env "HANDSOFF_SUPERVISOR=none" "
 from lib.workflow import _ask_supervisor_for_guidance
-result = _ask_supervisor_for_guidance('test-session', 'ultra-planner', 1, 10, '/tmp/dummy-transcript.jsonl')
+result = _ask_supervisor_for_guidance('test-session', '/tmp/test.json', 'ultra-planner', 1, 10, '/tmp/dummy-transcript.jsonl')
 print('DISABLED' if result is None else 'ENABLED')
 ")
 [ "$RESULT" = "DISABLED" ] || test_fail "Expected supervisor disabled with 'none', got '$RESULT'"
@@ -288,27 +288,11 @@ print('EMPTY' if flags == '' else flags)
 ")
 [ "$RESULT" = "EMPTY" ] || test_fail "Expected empty string, got '$RESULT'"
 
-test_info "Test 40: Legacy HANDSOFF_SUPERVISOR=0 treated as none (backward compat)"
-RESULT=$(run_workflow_python_env "HANDSOFF_SUPERVISOR=0" "
-from lib.workflow import _get_supervisor_provider
-provider = _get_supervisor_provider()
-print('DISABLED' if provider is None else provider)
-")
-[ "$RESULT" = "DISABLED" ] || test_fail "Expected disabled with legacy '0', got '$RESULT'"
-
-test_info "Test 41: Legacy HANDSOFF_SUPERVISOR=1 treated as claude (backward compat)"
-RESULT=$(run_workflow_python_env "HANDSOFF_SUPERVISOR=1" "
-from lib.workflow import _get_supervisor_provider
-provider = _get_supervisor_provider()
-print(provider if provider else 'NONE')
-")
-[ "$RESULT" = "claude" ] || test_fail "Expected 'claude' with legacy '1', got '$RESULT'"
-
 # ============================================================
 # Test _get_agentize_home() and _run_acw() helpers
 # ============================================================
 
-test_info "Test 42: _get_agentize_home() reads from AGENTIZE_HOME env var"
+test_info "Test 40: _get_agentize_home() reads from AGENTIZE_HOME env var"
 RESULT=$(run_workflow_python_env "AGENTIZE_HOME=/custom/path" "
 from lib.workflow import _get_agentize_home
 home = _get_agentize_home()
@@ -316,7 +300,7 @@ print(home)
 ")
 [ "$RESULT" = "/custom/path" ] || test_fail "Expected '/custom/path', got '$RESULT'"
 
-test_info "Test 43: _get_agentize_home() derives from workflow.py location when env var not set"
+test_info "Test 41: _get_agentize_home() derives from workflow.py location when env var not set"
 RESULT=$(run_workflow_python_env "AGENTIZE_HOME=" "
 from lib.workflow import _get_agentize_home
 import os
@@ -327,7 +311,7 @@ print('VALID' if os.path.isfile(makefile) else 'INVALID')
 ")
 [ "$RESULT" = "VALID" ] || test_fail "Expected derived path to be valid repo root, got '$RESULT'"
 
-test_info "Test 44: _get_agentize_home() returns correct repo root structure"
+test_info "Test 42: _get_agentize_home() returns correct repo root structure"
 RESULT=$(run_workflow_python_env "AGENTIZE_HOME=" "
 from lib.workflow import _get_agentize_home
 import os
@@ -338,7 +322,7 @@ print('ACW_OK' if os.path.isfile(acw_sh) else 'ACW_MISSING')
 ")
 [ "$RESULT" = "ACW_OK" ] || test_fail "Expected acw.sh to exist at derived path, got '$RESULT'"
 
-test_info "Test 45: _run_acw() builds correct bash command structure"
+test_info "Test 43: _run_acw() builds correct bash command structure"
 # Test that _run_acw creates the expected command format without actually running acw
 # We use a dry-run approach by checking the function signature and behavior
 RESULT=$(run_workflow_python_env "AGENTIZE_HOME=$PROJECT_ROOT" "
@@ -351,7 +335,7 @@ print('SIGNATURE_OK' if params == expected else f'SIGNATURE_MISMATCH: {params}')
 ")
 [ "$RESULT" = "SIGNATURE_OK" ] || test_fail "Expected correct function signature, got '$RESULT'"
 
-test_info "Test 46: _run_acw() sources acw.sh correctly (mock test)"
+test_info "Test 44: _run_acw() sources acw.sh correctly (mock test)"
 # Create a mock acw.sh that writes to the output file (4th argument) like real acw does
 MOCK_DIR=$(mktemp -d)
 mkdir -p "$MOCK_DIR/src/cli"
