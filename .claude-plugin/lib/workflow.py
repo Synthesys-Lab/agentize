@@ -239,10 +239,16 @@ def _log_supervisor_debug(message: dict):
 
         # Append to log file
         with open(debug_log, 'a') as f:
-            f.write(json.dumps(message) + '\n')
-        
-        with open(os.path.join(agentize_home, '.tmp', 'hook-last.log'), 'w') as f:
-            f.write(json.dumps(message) + '\n')
+            log_ver = message.copy()
+            log_ver.pop('prompt', None)  # Remove prompt from main log for brevity
+            f.write(json.dumps(log_ver) + '\n')
+
+        n = message.get('continuation_count', 0)
+        m = message.get('max_continuations', 0)
+        prompt_log = os.path.join(agentize_home, '.tmp', f'{message.get("session_id", "unknown")}-cont-{n}-{m}.log')
+        with open(prompt_log, 'w') as f:
+            f.write(message.get('prompt', '') + '\n')
+
     except Exception:
         pass  # Silently ignore logging errors
 
