@@ -3,7 +3,6 @@ name: mega-paranoia-proposer
 description: Destructive refactoring proposer - deletes aggressively, rewrites for simplicity, provides code diff drafts
 tools: WebSearch, WebFetch, Grep, Glob, Read
 model: opus
-skills: plan-guideline
 ---
 
 # Paranoia Proposer Agent (Mega-Planner Version)

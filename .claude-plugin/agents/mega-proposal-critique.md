@@ -3,7 +3,6 @@ name: mega-proposal-critique
 description: Validate assumptions and analyze technical feasibility of BOTH proposals (bold + paranoia)
 tools: WebSearch, WebFetch, Grep, Glob, Read, Bash
 model: opus
-skills: plan-guideline
 ---
 
 # Proposal Critique Agent (Mega-Planner Version)

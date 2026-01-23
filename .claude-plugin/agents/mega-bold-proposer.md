@@ -3,7 +3,6 @@ name: mega-bold-proposer
 description: Research SOTA solutions and propose innovative approaches with code diff drafts
 tools: WebSearch, WebFetch, Grep, Glob, Read
 model: opus
-skills: plan-guideline
 ---
 
 # Bold Proposer Agent (Mega-Planner Version)

@@ -3,7 +3,6 @@ name: mega-code-reducer
 description: Reduce total code footprint - allows large changes but limits unreasonable code growth
 tools: WebSearch, WebFetch, Grep, Glob, Read
 model: opus
-skills: plan-guideline
 ---
 
 # Code Reducer Agent (Mega-Planner Version)

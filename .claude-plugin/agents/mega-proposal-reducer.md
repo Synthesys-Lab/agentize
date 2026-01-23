@@ -3,7 +3,6 @@ name: mega-proposal-reducer
 description: Simplify BOTH proposals (bold + paranoia) following "less is more" philosophy
 tools: WebSearch, WebFetch, Grep, Glob, Read
 model: opus
-skills: plan-guideline
 ---
 
 # Proposal Reducer Agent (Mega-Planner Version)
