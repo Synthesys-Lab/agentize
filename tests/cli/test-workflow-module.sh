@@ -9,7 +9,14 @@ test_info "Workflow module tests"
 # Disable HANDSOFF_SUPERVISOR to test static template behavior
 run_workflow_python() {
     local python_code="$1"
-    HANDSOFF_SUPERVISOR=0 PYTHONPATH="$PROJECT_ROOT/.claude-plugin" python3 -c "$python_code"
+    HANDSOFF_SUPERVISOR=none PYTHONPATH="$PROJECT_ROOT/.claude-plugin" python3 -c "$python_code"
+}
+
+# Helper to run Python code with custom env vars
+run_workflow_python_env() {
+    local env_vars="$1"
+    local python_code="$2"
+    env $env_vars PYTHONPATH="$PROJECT_ROOT/.claude-plugin" python3 -c "$python_code"
 }
 
 # ============================================================
@@ -216,5 +223,84 @@ RESULT=$(run_workflow_python "from lib.workflow import SETUP_VIEWBOARD; print(SE
 test_info "Test 32: SYNC_MASTER constant equals 'sync-master'"
 RESULT=$(run_workflow_python "from lib.workflow import SYNC_MASTER; print(SYNC_MASTER)")
 [ "$RESULT" = "sync-master" ] || test_fail "Expected 'sync-master', got '$RESULT'"
+
+# ============================================================
+# Test HANDSOFF_SUPERVISOR provider enum behavior
+# ============================================================
+
+test_info "Test 33: HANDSOFF_SUPERVISOR=none disables supervisor (returns None)"
+RESULT=$(run_workflow_python_env "HANDSOFF_SUPERVISOR=none" "
+from lib.workflow import _ask_claude_for_guidance
+result = _ask_claude_for_guidance('ultra-planner', 1, 10)
+print('DISABLED' if result is None else 'ENABLED')
+")
+[ "$RESULT" = "DISABLED" ] || test_fail "Expected supervisor disabled with 'none', got '$RESULT'"
+
+test_info "Test 34: HANDSOFF_SUPERVISOR=claude enables supervisor path"
+# We can't actually test the full supervisor path without mocking acw,
+# but we can verify the provider is recognized and passes validation
+RESULT=$(run_workflow_python_env "HANDSOFF_SUPERVISOR=claude" "
+import os
+from lib.workflow import _get_supervisor_provider
+provider = _get_supervisor_provider()
+print(provider if provider else 'NONE')
+")
+[ "$RESULT" = "claude" ] || test_fail "Expected 'claude', got '$RESULT'"
+
+test_info "Test 35: HANDSOFF_SUPERVISOR=codex sets codex as provider"
+RESULT=$(run_workflow_python_env "HANDSOFF_SUPERVISOR=codex" "
+from lib.workflow import _get_supervisor_provider
+provider = _get_supervisor_provider()
+print(provider if provider else 'NONE')
+")
+[ "$RESULT" = "codex" ] || test_fail "Expected 'codex', got '$RESULT'"
+
+test_info "Test 36: HANDSOFF_SUPERVISOR_MODEL reads model correctly"
+RESULT=$(run_workflow_python_env "HANDSOFF_SUPERVISOR=claude HANDSOFF_SUPERVISOR_MODEL=opus" "
+from lib.workflow import _get_supervisor_model
+model = _get_supervisor_model('claude')
+print(model)
+")
+[ "$RESULT" = "opus" ] || test_fail "Expected 'opus', got '$RESULT'"
+
+test_info "Test 37: HANDSOFF_SUPERVISOR_MODEL uses provider default when not set"
+RESULT=$(run_workflow_python_env "HANDSOFF_SUPERVISOR=claude" "
+from lib.workflow import _get_supervisor_model
+model = _get_supervisor_model('claude')
+print(model)
+")
+[ "$RESULT" = "sonnet" ] || test_fail "Expected default 'sonnet', got '$RESULT'"
+
+test_info "Test 38: HANDSOFF_SUPERVISOR_FLAGS is read correctly"
+RESULT=$(run_workflow_python_env "HANDSOFF_SUPERVISOR=claude HANDSOFF_SUPERVISOR_FLAGS=--timeout 1800" "
+from lib.workflow import _get_supervisor_flags
+flags = _get_supervisor_flags()
+print(flags)
+")
+[ "$RESULT" = "--timeout 1800" ] || test_fail "Expected '--timeout 1800', got '$RESULT'"
+
+test_info "Test 39: HANDSOFF_SUPERVISOR_FLAGS defaults to empty string"
+RESULT=$(run_workflow_python_env "HANDSOFF_SUPERVISOR=claude" "
+from lib.workflow import _get_supervisor_flags
+flags = _get_supervisor_flags()
+print('EMPTY' if flags == '' else flags)
+")
+[ "$RESULT" = "EMPTY" ] || test_fail "Expected empty string, got '$RESULT'"
+
+test_info "Test 40: Legacy HANDSOFF_SUPERVISOR=0 treated as none (backward compat)"
+RESULT=$(run_workflow_python_env "HANDSOFF_SUPERVISOR=0" "
+from lib.workflow import _get_supervisor_provider
+provider = _get_supervisor_provider()
+print('DISABLED' if provider is None else provider)
+")
+[ "$RESULT" = "DISABLED" ] || test_fail "Expected disabled with legacy '0', got '$RESULT'"
+
+test_info "Test 41: Legacy HANDSOFF_SUPERVISOR=1 treated as claude (backward compat)"
+RESULT=$(run_workflow_python_env "HANDSOFF_SUPERVISOR=1" "
+from lib.workflow import _get_supervisor_provider
+provider = _get_supervisor_provider()
+print(provider if provider else 'NONE')
+")
+[ "$RESULT" = "claude" ] || test_fail "Expected 'claude' with legacy '1', got '$RESULT'"
 
 test_pass "Workflow module works correctly"
