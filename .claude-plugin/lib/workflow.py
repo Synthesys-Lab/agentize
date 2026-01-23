@@ -290,17 +290,47 @@ def _ask_supervisor_for_guidance(
                 for line in f:
                     if line.strip():
                         entry = json.loads(line)
-                        # Extract role and content from transcript entry
-                        if 'role' in entry and 'content' in entry:
-                            transcript_lines.append(f"{entry['role']}: {entry['content'][:200]}")
-                            transcript_entries.append(entry)
+                        transcript_entries.append(entry)
+                        # Claude Code transcript format: check for message.role and message.content
+                        # or direct role/content keys
+                        if 'message' in entry:
+                            msg = entry['message']
+                            role = msg.get('role', 'unknown')
+                            content = msg.get('content', '')
+                            # content can be a list of blocks or a string
+                            if isinstance(content, list):
+                                # Extract text from content blocks
+                                text_parts = []
+                                for block in content:
+                                    if isinstance(block, dict) and block.get('type') == 'text':
+                                        text_parts.append(block.get('text', ''))
+                                    elif isinstance(block, str):
+                                        text_parts.append(block)
+                                content = ' '.join(text_parts)
+                            if content:
+                                transcript_lines.append(f"{role}: {content[:500]}")
+                        elif 'role' in entry and 'content' in entry:
+                            transcript_lines.append(f"{entry['role']}: {str(entry['content'])[:500]}")
+
+            if not transcript_lines:
+                _log_supervisor_debug({
+                    'event': 'transcript_parse_failed',
+                    'transcript_path': transcript_path,
+                    'entries_count': len(transcript_entries),
+                    'sample_keys': list(transcript_entries[0].keys()) if transcript_entries else []
+                })
 
             if transcript_lines:
-                # Include last 5 transcript entries for context
-                recent_context = "\n".join(transcript_lines[-5:])
+                # Include last 10 transcript entries for context
+                recent_context = "\n".join(transcript_lines[-10:])
                 transcript_context = f"\n\nRECENT CONVERSATION CONTEXT:\n{recent_context}"
-        except Exception:
-            pass  # Silently ignore transcript read errors
+
+        except Exception as e:
+            _log_supervisor_debug({
+                'event': 'transcript_read_error',
+                'transcript_path': transcript_path,
+                'error': str(e)
+            })
 
     # Get the full prompt template for this workflow
     try:
