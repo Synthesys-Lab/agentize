@@ -272,7 +272,7 @@ print(model)
 [ "$RESULT" = "sonnet" ] || test_fail "Expected default 'sonnet', got '$RESULT'"
 
 test_info "Test 38: HANDSOFF_SUPERVISOR_FLAGS is read correctly"
-RESULT=$(run_workflow_python_env "HANDSOFF_SUPERVISOR=claude HANDSOFF_SUPERVISOR_FLAGS=--timeout 1800" "
+RESULT=$(HANDSOFF_SUPERVISOR=claude HANDSOFF_SUPERVISOR_FLAGS="--timeout 1800" PYTHONPATH="$PROJECT_ROOT/.claude-plugin" python3 -c "
 from lib.workflow import _get_supervisor_flags
 flags = _get_supervisor_flags()
 print(flags)
