@@ -308,9 +308,9 @@ def _ask_supervisor_for_guidance(
                                         text_parts.append(block)
                                 content = ' '.join(text_parts)
                             if content:
-                                transcript_lines.append(f"{role}: {content[:500]}")
+                                transcript_lines.append(f"{role}: {content}")
                         elif 'role' in entry and 'content' in entry:
-                            transcript_lines.append(f"{entry['role']}: {str(entry['content'])[:500]}")
+                            transcript_lines.append(f"{entry['role']}: {str(entry['content'])}")
 
             if not transcript_lines:
                 _log_supervisor_debug({
@@ -321,9 +321,9 @@ def _ask_supervisor_for_guidance(
                 })
 
             if transcript_lines:
-                # Include last 10 transcript entries for context
-                recent_context = "\n".join(transcript_lines[-10:])
-                transcript_context = f"\n\nRECENT CONVERSATION CONTEXT:\n{recent_context}"
+                # Include full conversation context
+                full_context = "\n".join(transcript_lines)
+                transcript_context = f"\n\nFULL CONVERSATION CONTEXT:\n{full_context}"
 
         except Exception as e:
             _log_supervisor_debug({
