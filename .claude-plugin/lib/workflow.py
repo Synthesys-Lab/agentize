@@ -94,11 +94,6 @@ _DEFAULT_MODELS = {
     'opencode': 'openai/gpt-5.2-codex'
 }
 
-# Legacy boolean mappings for backward compatibility
-_LEGACY_DISABLE = {'0', 'false', 'off', 'no', 'disable', 'disabled'}
-_LEGACY_ENABLE = {'1', 'true', 'on', 'yes', 'enable', 'enabled'}
-
-
 def _get_supervisor_provider() -> Optional[str]:
     """Get the supervisor provider from environment.
 
@@ -117,14 +112,6 @@ def _get_supervisor_provider() -> Optional[str]:
     # Check for valid provider name
     if value in _VALID_PROVIDERS:
         return value
-
-    # Backward compatibility: legacy boolean disable values
-    if value in _LEGACY_DISABLE:
-        return None
-
-    # Backward compatibility: legacy boolean enable values → default to claude
-    if value in _LEGACY_ENABLE:
-        return 'claude'
 
     # Unknown value - treat as disabled and log warning
     return None
