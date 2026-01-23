@@ -10,15 +10,13 @@ if str(_plugin_dir) not in sys.path:
     sys.path.insert(0, str(_plugin_dir))
 
 from lib.logger import logger
-from lib.session_utils import session_dir
+from lib.session_utils import session_dir, is_handsoff_enabled
 from lib.workflow import get_continuation_prompt, ISSUE_TO_IMPL
 
 
 def main():
-
-    handsoff = os.getenv('HANDSOFF_MODE', '1')
     # Do nothing if handsoff mode is disabled
-    if handsoff.lower() in ['0', 'false', 'off', 'disable']:
+    if not is_handsoff_enabled():
         sys.exit(0)
 
     hook_input = json.load(sys.stdin)

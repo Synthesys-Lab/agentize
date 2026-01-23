@@ -22,14 +22,6 @@ from lib.logger import logger
 def main():
     logger('SYSTEM', f'PreToolUse hook started')
     try:
-        # Add .claude-plugin to path for lib imports
-        plugin_dir = os.environ.get("CLAUDE_PLUGIN_ROOT")
-        if plugin_dir:
-            sys.path.insert(0, plugin_dir)
-        else:
-            # Project-local mode: hooks/ is at .claude-plugin/hooks/
-            plugin_dir = Path(__file__).resolve().parent.parent
-            sys.path.insert(0, str(plugin_dir))
         from lib.permission import determine
         result = determine(sys.stdin.read(), caller='PreToolUse')
     except Exception as e:

@@ -11,7 +11,7 @@ if str(_plugin_dir) not in sys.path:
     sys.path.insert(0, str(_plugin_dir))
 
 from lib.logger import logger
-from lib.session_utils import session_dir
+from lib.session_utils import session_dir, is_handsoff_enabled, write_issue_index
 from lib.workflow import (
     detect_workflow,
     extract_issue_no,
@@ -21,12 +21,9 @@ from lib.workflow import (
 
 
 def main():
-
-    handsoff = os.getenv('HANDSOFF_MODE', '1')
-
     # Do nothing if handsoff mode is disabled
-    if handsoff.lower() in ['0', 'false', 'off', 'disable']:
-        logger('SYSTEM', f'Handsoff mode disabled, exiting hook, {handsoff}')
+    if not is_handsoff_enabled():
+        logger('SYSTEM', f'Handsoff mode disabled, exiting hook')
         sys.exit(0)
 
     hook_input = json.load(sys.stdin)
@@ -77,13 +74,8 @@ def main():
 
         # Create issue index file if issue_no is present
         if issue_no is not None:
-            by_issue_dir = os.path.join(sess_dir, 'by-issue')
-            os.makedirs(by_issue_dir, exist_ok=True)
-            issue_index_file = os.path.join(by_issue_dir, f'{issue_no}.json')
-            with open(issue_index_file, 'w') as f:
-                index_data = {'session_id': session_id, 'workflow': state['workflow']}
-                logger(session_id, f"Writing issue index: {index_data}")
-                json.dump(index_data, f)
+            write_issue_index(session_id, issue_no, state['workflow'], sess_dir=sess_dir)
+            logger(session_id, f"Writing issue index: session_id={session_id}, issue_no={issue_no}")
     else:
         logger(session_id, "No workflow matched, doing nothing.")
 
