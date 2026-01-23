@@ -152,6 +152,72 @@ def _get_supervisor_flags() -> str:
 
 
 # ============================================================
+# Self-contained acw invocation helpers
+# ============================================================
+
+def _get_agentize_home() -> str:
+    """Get AGENTIZE_HOME path for acw invocation.
+
+    Derives the path in the following order:
+    1. AGENTIZE_HOME environment variable (if set)
+    2. Derive from workflow.py location (.claude-plugin/lib/workflow.py → repo root)
+
+    Returns:
+        Path to agentize repository root
+
+    Note:
+        Does not validate the path - caller should handle errors if acw.sh is missing.
+    """
+    # First, check environment variable
+    env_home = os.getenv('AGENTIZE_HOME', '').strip()
+    if env_home:
+        return env_home
+
+    # Derive from workflow.py location: .claude-plugin/lib/workflow.py → ../../
+    module_dir = os.path.dirname(os.path.abspath(__file__))
+    repo_root = os.path.dirname(os.path.dirname(module_dir))
+    return repo_root
+
+
+def _run_acw(provider: str, model: str, input_file: str, output_file: str,
+             extra_flags: list) -> subprocess.CompletedProcess:
+    """Run acw shell function by sourcing acw.sh directly.
+
+    This is a self-contained helper that does not depend on agentize.shell
+    or setup.sh, maintaining plugin standalone capability.
+
+    Args:
+        provider: AI provider name (e.g., 'claude', 'codex')
+        model: Model name (e.g., 'opus', 'sonnet')
+        input_file: Path to input prompt file
+        output_file: Path to output file for response
+        extra_flags: Additional flags to pass to acw
+
+    Returns:
+        subprocess.CompletedProcess result
+    """
+    agentize_home = _get_agentize_home()
+    acw_script = os.path.join(agentize_home, 'src', 'cli', 'acw.sh')
+
+    # Build the bash command to source acw.sh and invoke acw function
+    # Quote paths to handle spaces
+    cmd_parts = [provider, model, input_file, output_file] + extra_flags
+    cmd_args = ' '.join(f'"{arg}"' for arg in cmd_parts)
+    bash_cmd = f'source "{acw_script}" && acw {cmd_args}'
+
+    # Set up environment with AGENTIZE_HOME
+    env = os.environ.copy()
+    env['AGENTIZE_HOME'] = agentize_home
+
+    return subprocess.run(
+        ['bash', '-c', bash_cmd],
+        env=env,
+        capture_output=True,
+        text=True
+    )
+
+
+# ============================================================
 # AI Supervisor functions (for dynamic continuation prompts)
 # ============================================================
 
@@ -227,37 +293,26 @@ def _ask_supervisor_for_guidance(workflow: str, continuation_count: int,
         return None  # No template for this workflow
 
     # Build context prompt for supervisor with full workflow template
-    prompt = f'''You are a workflow supervisor for an AI agent system.
-You are evaluating an exisint `host session` to see:
+    prompt = f'''You are a workflow supervisor for an AI agent development session.
+You are evaluating this given `host session` to see:
 1. If it is sticking to the original purpose of the workflow.
+   If not, suggest the corrective moves.
 2. If it is making progress towards completing the workflow.
-3. What the next best steps are to continue progress.
-
-Based on the given workflow template and the conversation context, provide clear, comprehensive,
-and instructions for what the agent should do next.
-
-If the workflow is done, use instruct the host agent to use the command below to end the auto-continuation:
+   If so, acknowledge the progress, and suggest next steps to continue on the path.
+3. If the workflow is complete, provide specific instructions to end it!
+    jq '.state = "done"' {{#fname#}} > {{#fname#}}.tmp && mv {{#fname#}}.tmp {{#fname#}}
+4. Always remind the host session to use `--body-file` for detailed descriptions when creating Issues or PRs.
+   As `--body` with embedded `--` may confuse the CLI parser.
 
 # Input:
 
-WORKFLOW: {workflow}
-
 PROGRESS: {continuation_count} / {max_continuations} continuations
 
-WORKFLOW PROMPT TEMPLATE (this is what the agent receives as instructions):
+WORKFLOW-SPECIFIC INSTRUCTIONS:
 {workflow_template}
 
----
+CONTEXT:
 {transcript_context}
-
-# Output:
-
-1. If it is not sticking to the original purpose, provide corrective instructions to get back on track.
-2. If it sticks to the original purpose of the workflow, clearly state what to do next.
-3. If the goal is complete, ask the host session to use the command below to mark the workflow as done:
-    jq '.state = "done"' {{#fname#}} > {{#fname#}}.tmp && mv {{#fname#}}.tmp {{#fname#}}
-4. No matter creating a Issue or PR, always as the host session to use `--body-file` to provide detailed descriptions,
-   as embedded `--` in `--body` may confuse the CLI parser.
 
 '''
 
@@ -291,26 +346,20 @@ WORKFLOW PROMPT TEMPLATE (this is what the agent receives as instructions):
         with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
             output_file = f.name
 
-        # Build acw command
-        # acw <provider> <model> <input-file> <output-file> [options...]
-        cmd = ['acw', provider, model, input_file, output_file]
-        if extra_flags:
-            # Split extra flags and append (handles flags like "--timeout 1800")
-            cmd.extend(extra_flags.split())
+        # Build extra flags list
+        flags_list = extra_flags.split() if extra_flags else []
 
         _log_supervisor_debug({
             'event': 'supervisor_acw_command',
-            'cmd': ' '.join(cmd)
+            'cmd': f'_run_acw({provider}, {model}, {input_file}, {output_file}, {flags_list})'
         })
 
-        # Run acw command
-        subprocess.run(
-            cmd,
-            timeout=900,  # 15 minute timeout for prompt response
-            check=True,
-            capture_output=True,
-            text=True
-        )
+        # Run acw via self-contained helper (sources acw.sh directly)
+        result = _run_acw(provider, model, input_file, output_file, flags_list)
+        if result.returncode != 0:
+            raise subprocess.CalledProcessError(
+                result.returncode, 'acw', result.stdout, result.stderr
+            )
 
         # Read result from output file
         with open(output_file, 'r') as f:
@@ -321,7 +370,7 @@ WORKFLOW PROMPT TEMPLATE (this is what the agent receives as instructions):
                 'event': 'supervisor_success',
                 'workflow': workflow,
                 'provider': provider,
-                'guidance': guidance[:500]  # Log first 500 chars
+                'guidance': guidance  # Log first 500 chars
             })
             return guidance
 
@@ -472,8 +521,8 @@ def get_continuation_prompt(workflow, session_id, fname, count, max_count, pr_no
         template += '''
 - If the goal is complete, ask the host session to use the command below to mark the workflow as done:
     jq '.state = "done"' {{#fname#}} > {{#fname#}}.tmp && mv {{#fname#}}.tmp {{#fname#}}
--  No matter creating a Issue or PR, always as the host session to use `--body-file` to provide detailed descriptions,
-   as embedded `--` in `--body` may confuse the CLI parser.
+- No matter creating an Issue or PR, always ask the host session to use `--body-file` to provide detailed descriptions,
+  as embedded `--` in `--body` may confuse the CLI parser.
 '''
     except FileNotFoundError:
         return ''

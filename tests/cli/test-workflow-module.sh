@@ -352,12 +352,14 @@ print('SIGNATURE_OK' if params == expected else f'SIGNATURE_MISMATCH: {params}')
 [ "$RESULT" = "SIGNATURE_OK" ] || test_fail "Expected correct function signature, got '$RESULT'"
 
 test_info "Test 46: _run_acw() sources acw.sh correctly (mock test)"
-# Create a mock acw.sh that just echoes the args to verify the sourcing works
+# Create a mock acw.sh that writes to the output file (4th argument) like real acw does
 MOCK_DIR=$(mktemp -d)
 mkdir -p "$MOCK_DIR/src/cli"
 cat > "$MOCK_DIR/src/cli/acw.sh" << 'MOCK_ACW'
 acw() {
-    echo "ACW_CALLED: $@"
+    # Real acw writes to 4th argument (output_file)
+    local output_file="$4"
+    echo "ACW_CALLED: provider=$1 model=$2 input=$3 output=$4" > "$output_file"
 }
 MOCK_ACW
 
@@ -380,6 +382,8 @@ if [ -f "$OUTPUT_FILE" ]; then
     else
         RESULT="MOCK_FAIL: $OUTPUT_CONTENT"
     fi
+else
+    RESULT="MOCK_FAIL: output file not found"
 fi
 
 # Cleanup
