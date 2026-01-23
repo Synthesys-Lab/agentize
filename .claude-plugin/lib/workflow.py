@@ -16,6 +16,7 @@ import re
 import os
 import subprocess
 import json
+import tempfile
 from typing import Optional
 from datetime import datetime
 
@@ -73,6 +74,78 @@ def _load_prompt_template(workflow_type: str) -> str:
 
 
 # ============================================================
+# AI Supervisor configuration
+# ============================================================
+
+# Valid supervisor providers
+_VALID_PROVIDERS = {'claude', 'codex', 'cursor', 'opencode'}
+
+# Default models per provider
+_DEFAULT_MODELS = {
+    'claude': 'sonnet',
+    'codex': 'gpt-5.2-codex',
+    'cursor': 'claude-3.5-sonnet',
+    'opencode': 'sonnet'
+}
+
+# Legacy boolean mappings for backward compatibility
+_LEGACY_DISABLE = {'0', 'false', 'off', 'no', 'disable', 'disabled'}
+_LEGACY_ENABLE = {'1', 'true', 'on', 'yes', 'enable', 'enabled'}
+
+
+def _get_supervisor_provider() -> Optional[str]:
+    """Get the supervisor provider from environment.
+
+    Supports both new provider names and legacy boolean values for
+    backward compatibility.
+
+    Returns:
+        Provider name ('claude', 'codex', 'cursor', 'opencode') or None if disabled
+    """
+    value = os.getenv('HANDSOFF_SUPERVISOR', 'none').lower().strip()
+
+    # Check for explicit 'none' or empty
+    if value in ('none', ''):
+        return None
+
+    # Check for valid provider name
+    if value in _VALID_PROVIDERS:
+        return value
+
+    # Backward compatibility: legacy boolean disable values
+    if value in _LEGACY_DISABLE:
+        return None
+
+    # Backward compatibility: legacy boolean enable values → default to claude
+    if value in _LEGACY_ENABLE:
+        return 'claude'
+
+    # Unknown value - treat as disabled and log warning
+    return None
+
+
+def _get_supervisor_model(provider: str) -> str:
+    """Get the model name for the supervisor provider.
+
+    Args:
+        provider: Provider name ('claude', 'codex', 'cursor', 'opencode')
+
+    Returns:
+        Model name from HANDSOFF_SUPERVISOR_MODEL or provider default
+    """
+    return os.getenv('HANDSOFF_SUPERVISOR_MODEL', _DEFAULT_MODELS.get(provider, 'sonnet'))
+
+
+def _get_supervisor_flags() -> str:
+    """Get extra flags to pass to acw.
+
+    Returns:
+        Value of HANDSOFF_SUPERVISOR_FLAGS or empty string
+    """
+    return os.getenv('HANDSOFF_SUPERVISOR_FLAGS', '')
+
+
+# ============================================================
 # AI Supervisor functions (for dynamic continuation prompts)
 # ============================================================
 
@@ -101,9 +174,9 @@ def _log_supervisor_debug(message: dict):
 
 def _ask_claude_for_guidance(workflow: str, continuation_count: int,
                              max_continuations: int, transcript_path: str = None) -> Optional[str]:
-    """Ask Claude for context-aware continuation guidance.
+    """Ask AI provider for context-aware continuation guidance.
 
-    Follows the same subprocess pattern as permission/determine.py's approach.
+    Uses acw (Agent CLI Wrapper) to invoke the configured AI provider.
     Returns None on failure (fallback to static template).
 
     Args:
@@ -113,10 +186,11 @@ def _ask_claude_for_guidance(workflow: str, continuation_count: int,
         transcript_path: Optional path to JSONL transcript file for conversation context
 
     Returns:
-        Dynamic prompt from Claude, or None to use static template
+        Dynamic prompt from provider, or None to use static template
     """
-    if os.getenv('HANDSOFF_SUPERVISOR', '0').lower() not in ['1', 'true', 'on']:
-        return None  # Feature disabled
+    provider = _get_supervisor_provider()
+    if provider is None:
+        return None  # Supervisor disabled
 
     # Read transcript if available for conversation context
     transcript_context = ""
@@ -182,10 +256,16 @@ WORKFLOW PROMPT TEMPLATE (this is what the agent receives as instructions):
 '''
 
 
+    # Get provider configuration
+    model = _get_supervisor_model(provider)
+    extra_flags = _get_supervisor_flags()
+
     # Log the request
     _log_supervisor_debug({
         'event': 'supervisor_request',
         'workflow': workflow,
+        'provider': provider,
+        'model': model,
         'continuation_count': continuation_count,
         'max_continuations': max_continuations,
         'transcript_path': transcript_path,
@@ -193,28 +273,59 @@ WORKFLOW PROMPT TEMPLATE (this is what the agent receives as instructions):
         'prompt': prompt[:500]  # Log first 500 chars
     })
 
-    # Invoke Claude subprocess (similar to determine.py pattern)
+    # Invoke acw via subprocess with temp files for I/O
+    input_file = None
+    output_file = None
     try:
-        result = subprocess.check_output(
-            ['claude', '-p'],
-            input=prompt,
-            text=True,
-            timeout=900  # 15 minute timeout for prompt response
+        # Create temp files for acw I/O
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+            f.write(prompt)
+            input_file = f.name
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+            output_file = f.name
+
+        # Build acw command
+        # acw <provider> <model> <input-file> <output-file> [options...]
+        cmd = ['acw', provider, model, input_file, output_file]
+        if extra_flags:
+            # Split extra flags and append (handles flags like "--timeout 1800")
+            cmd.extend(extra_flags.split())
+
+        _log_supervisor_debug({
+            'event': 'supervisor_acw_command',
+            'cmd': ' '.join(cmd)
+        })
+
+        # Run acw command
+        subprocess.run(
+            cmd,
+            timeout=900,  # 15 minute timeout for prompt response
+            check=True,
+            capture_output=True,
+            text=True
         )
-        guidance = result.strip()
+
+        # Read result from output file
+        with open(output_file, 'r') as f:
+            guidance = f.read().strip()
+
         if guidance:
             _log_supervisor_debug({
                 'event': 'supervisor_success',
                 'workflow': workflow,
+                'provider': provider,
                 'guidance': guidance[:500]  # Log first 500 chars
             })
             return guidance
+
     except (subprocess.TimeoutExpired, subprocess.CalledProcessError, Exception) as e:
         # Log error for debugging but don't break workflow
         error_msg = str(e)[:200]
         _log_supervisor_debug({
             'event': 'supervisor_error',
             'workflow': workflow,
+            'provider': provider,
             'error_type': type(e).__name__,
             'error_message': error_msg
         })
@@ -222,10 +333,23 @@ WORKFLOW PROMPT TEMPLATE (this is what the agent receives as instructions):
         # Try to log via logger if available
         try:
             from lib.logger import logger
-            logger('supervisor', f'Claude guidance failed: {error_msg}')
+            logger('supervisor', f'{provider} guidance failed: {error_msg}')
         except Exception:
             pass  # Silently ignore if logger import fails
         return None
+
+    finally:
+        # Clean up temp files
+        if input_file and os.path.exists(input_file):
+            try:
+                os.unlink(input_file)
+            except Exception:
+                pass
+        if output_file and os.path.exists(output_file):
+            try:
+                os.unlink(output_file)
+            except Exception:
+                pass
 
     return None
 
