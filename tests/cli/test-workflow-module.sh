@@ -304,4 +304,87 @@ print(provider if provider else 'NONE')
 ")
 [ "$RESULT" = "claude" ] || test_fail "Expected 'claude' with legacy '1', got '$RESULT'"
 
+# ============================================================
+# Test _get_agentize_home() and _run_acw() helpers
+# ============================================================
+
+test_info "Test 42: _get_agentize_home() reads from AGENTIZE_HOME env var"
+RESULT=$(run_workflow_python_env "AGENTIZE_HOME=/custom/path" "
+from lib.workflow import _get_agentize_home
+home = _get_agentize_home()
+print(home)
+")
+[ "$RESULT" = "/custom/path" ] || test_fail "Expected '/custom/path', got '$RESULT'"
+
+test_info "Test 43: _get_agentize_home() derives from workflow.py location when env var not set"
+RESULT=$(run_workflow_python_env "AGENTIZE_HOME=" "
+from lib.workflow import _get_agentize_home
+import os
+home = _get_agentize_home()
+# Should derive to repo root where Makefile exists
+makefile = os.path.join(home, 'Makefile')
+print('VALID' if os.path.isfile(makefile) else 'INVALID')
+")
+[ "$RESULT" = "VALID" ] || test_fail "Expected derived path to be valid repo root, got '$RESULT'"
+
+test_info "Test 44: _get_agentize_home() returns correct repo root structure"
+RESULT=$(run_workflow_python_env "AGENTIZE_HOME=" "
+from lib.workflow import _get_agentize_home
+import os
+home = _get_agentize_home()
+# Verify expected files exist
+acw_sh = os.path.join(home, 'src', 'cli', 'acw.sh')
+print('ACW_OK' if os.path.isfile(acw_sh) else 'ACW_MISSING')
+")
+[ "$RESULT" = "ACW_OK" ] || test_fail "Expected acw.sh to exist at derived path, got '$RESULT'"
+
+test_info "Test 45: _run_acw() builds correct bash command structure"
+# Test that _run_acw creates the expected command format without actually running acw
+# We use a dry-run approach by checking the function signature and behavior
+RESULT=$(run_workflow_python_env "AGENTIZE_HOME=$PROJECT_ROOT" "
+from lib.workflow import _run_acw
+import inspect
+sig = inspect.signature(_run_acw)
+params = list(sig.parameters.keys())
+expected = ['provider', 'model', 'input_file', 'output_file', 'extra_flags']
+print('SIGNATURE_OK' if params == expected else f'SIGNATURE_MISMATCH: {params}')
+")
+[ "$RESULT" = "SIGNATURE_OK" ] || test_fail "Expected correct function signature, got '$RESULT'"
+
+test_info "Test 46: _run_acw() sources acw.sh correctly (mock test)"
+# Create a mock acw.sh that just echoes the args to verify the sourcing works
+MOCK_DIR=$(mktemp -d)
+mkdir -p "$MOCK_DIR/src/cli"
+cat > "$MOCK_DIR/src/cli/acw.sh" << 'MOCK_ACW'
+acw() {
+    echo "ACW_CALLED: $@"
+}
+MOCK_ACW
+
+# Create input file
+INPUT_FILE=$(mktemp)
+echo "test input" > "$INPUT_FILE"
+OUTPUT_FILE=$(mktemp)
+
+RESULT=$(run_workflow_python_env "AGENTIZE_HOME=$MOCK_DIR" "
+from lib.workflow import _run_acw
+result = _run_acw('claude', 'opus', '$INPUT_FILE', '$OUTPUT_FILE', [])
+print('SUCCESS' if result.returncode == 0 else f'FAILED: {result.returncode}')
+")
+
+# Check output file contains the expected mock output
+if [ -f "$OUTPUT_FILE" ]; then
+    OUTPUT_CONTENT=$(cat "$OUTPUT_FILE")
+    if echo "$OUTPUT_CONTENT" | grep -q "ACW_CALLED"; then
+        RESULT="MOCK_OK"
+    else
+        RESULT="MOCK_FAIL: $OUTPUT_CONTENT"
+    fi
+fi
+
+# Cleanup
+rm -rf "$MOCK_DIR" "$INPUT_FILE" "$OUTPUT_FILE"
+
+[ "$RESULT" = "MOCK_OK" ] || test_fail "Expected mock acw to be called, got '$RESULT'"
+
 test_pass "Workflow module works correctly"

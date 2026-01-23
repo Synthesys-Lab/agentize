@@ -48,6 +48,8 @@ Tool permission evaluation for the PreToolUse hook. Provides rule-based matching
 
 Unified workflow definitions for handsoff mode. Centralizes workflow detection, issue extraction, and continuation prompts.
 
+**Self-contained design:** This module includes its own `_get_agentize_home()` and `_run_acw()` helpers to invoke the `acw` shell function without importing from `agentize.shell` or depending on `setup.sh`. This maintains plugin standalone capability.
+
 **Usage:**
 ```python
 from lib.workflow import detect_workflow, get_continuation_prompt

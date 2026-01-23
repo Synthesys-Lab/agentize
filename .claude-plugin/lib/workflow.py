@@ -10,6 +10,12 @@ Supported workflows:
 - /plan-to-issue: Create GitHub [plan] issues from user-provided plans
 - /setup-viewboard: GitHub Projects v2 board setup
 - /sync-master: Sync local main/master with upstream
+
+Self-contained design:
+- This module provides its own `_get_agentize_home()` and `_run_acw()` helpers
+- These invoke the `acw` shell function by sourcing `src/cli/acw.sh` directly
+- No imports from `agentize.shell` or dependency on `setup.sh`
+- Maintains plugin standalone capability for handsoff supervisor workflows
 """
 
 import re
