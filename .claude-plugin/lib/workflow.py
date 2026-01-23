@@ -172,8 +172,8 @@ def _log_supervisor_debug(message: dict):
         pass  # Silently ignore logging errors
 
 
-def _ask_claude_for_guidance(workflow: str, continuation_count: int,
-                             max_continuations: int, transcript_path: str = None) -> Optional[str]:
+def _ask_supervisor_for_guidance(workflow: str, continuation_count: int,
+                                 max_continuations: int, transcript_path: str = None) -> Optional[str]:
     """Ask AI provider for context-aware continuation guidance.
 
     Uses acw (Agent CLI Wrapper) to invoke the configured AI provider.
@@ -220,7 +220,7 @@ def _ask_claude_for_guidance(workflow: str, continuation_count: int,
     except FileNotFoundError:
         return None  # No template for this workflow
 
-    # Build context prompt for Claude with full workflow template
+    # Build context prompt for supervisor with full workflow template
     prompt = f'''You are a workflow supervisor for an AI agent system.
 You are evaluating an exisint `host session` to see:
 1. If it is sticking to the original purpose of the workflow.
@@ -455,8 +455,8 @@ def get_continuation_prompt(workflow, session_id, fname, count, max_count, pr_no
     Returns:
         Formatted continuation prompt string, or empty string if workflow not found
     """
-    # Try to get dynamic guidance from Claude if enabled
-    guidance = _ask_claude_for_guidance(workflow, count, max_count, transcript_path)
+    # Try to get dynamic guidance from supervisor if enabled
+    guidance = _ask_supervisor_for_guidance(workflow, count, max_count, transcript_path)
     if guidance:
         return guidance
 

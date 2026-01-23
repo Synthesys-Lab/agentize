@@ -231,8 +231,8 @@ RESULT=$(run_workflow_python "from lib.workflow import SYNC_MASTER; print(SYNC_M
 
 test_info "Test 33: HANDSOFF_SUPERVISOR=none disables supervisor (returns None)"
 RESULT=$(run_workflow_python_env "HANDSOFF_SUPERVISOR=none" "
-from lib.workflow import _ask_claude_for_guidance
-result = _ask_claude_for_guidance('ultra-planner', 1, 10)
+from lib.workflow import _ask_supervisor_for_guidance
+result = _ask_supervisor_for_guidance('ultra-planner', 1, 10)
 print('DISABLED' if result is None else 'ENABLED')
 ")
 [ "$RESULT" = "DISABLED" ] || test_fail "Expected supervisor disabled with 'none', got '$RESULT'"

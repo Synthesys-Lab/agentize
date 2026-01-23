@@ -39,4 +39,4 @@ The `{#variable#}` delimiter avoids conflicts with:
 
 ## Usage
 
-Templates are loaded by `workflow.py::get_continuation_prompt()` and `workflow.py::_ask_claude_for_guidance()`. The public API remains unchanged - callers continue using `get_continuation_prompt(workflow, ...)` without knowing about template files.
+Templates are loaded by `workflow.py::get_continuation_prompt()` and `workflow.py::_ask_supervisor_for_guidance()`. The public API remains unchanged - callers continue using `get_continuation_prompt(workflow, ...)` without knowing about template files.
