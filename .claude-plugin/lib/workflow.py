@@ -260,7 +260,8 @@ def _ask_supervisor_for_guidance(
         session_id: str,
         workflow: str,
         continuation_count: int,
-        max_continuations: int) -> Optional[str]:
+        max_continuations: int,
+        transcript_path: Optional[str] = None) -> Optional[str]:
     """Ask AI provider for context-aware continuation guidance.
 
     Uses acw (Agent CLI Wrapper) to invoke the configured AI provider.
