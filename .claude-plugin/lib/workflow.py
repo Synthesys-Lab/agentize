@@ -180,7 +180,7 @@ def _get_agentize_home() -> str:
 
 
 def _run_acw(provider: str, model: str, input_file: str, output_file: str,
-             extra_flags: list) -> subprocess.CompletedProcess:
+             extra_flags: list, timeout: int = 900) -> subprocess.CompletedProcess:
     """Run acw shell function by sourcing acw.sh directly.
 
     This is a self-contained helper that does not depend on agentize.shell
@@ -192,6 +192,7 @@ def _run_acw(provider: str, model: str, input_file: str, output_file: str,
         input_file: Path to input prompt file
         output_file: Path to output file for response
         extra_flags: Additional flags to pass to acw
+        timeout: Timeout in seconds (default: 900 = 15 minutes)
 
     Returns:
         subprocess.CompletedProcess result
@@ -213,7 +214,8 @@ def _run_acw(provider: str, model: str, input_file: str, output_file: str,
         ['bash', '-c', bash_cmd],
         env=env,
         capture_output=True,
-        text=True
+        text=True,
+        timeout=timeout
     )
 
 

@@ -346,7 +346,7 @@ from lib.workflow import _run_acw
 import inspect
 sig = inspect.signature(_run_acw)
 params = list(sig.parameters.keys())
-expected = ['provider', 'model', 'input_file', 'output_file', 'extra_flags']
+expected = ['provider', 'model', 'input_file', 'output_file', 'extra_flags', 'timeout']
 print('SIGNATURE_OK' if params == expected else f'SIGNATURE_MISMATCH: {params}')
 ")
 [ "$RESULT" = "SIGNATURE_OK" ] || test_fail "Expected correct function signature, got '$RESULT'"
