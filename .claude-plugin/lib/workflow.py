@@ -247,6 +247,7 @@ def _log_supervisor_debug(message: dict):
 
         n = message.get('continuation_count', 0)
         m = message.get('max_continuations', 0)
+        os.makedirs(os.path.join(agentize_home, '.tmp', 'debug-stop'), exist_ok=True)
         prompt_log = os.path.join(agentize_home, '.tmp', 'debug-stop', f'{message.get("session_id", "unknown")}-cont-{n}-{m}.log')
         with open(prompt_log, 'w') as f:
             f.write(message.get('prompt', '') + '\n')
