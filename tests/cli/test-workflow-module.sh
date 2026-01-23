@@ -13,10 +13,11 @@ run_workflow_python() {
 }
 
 # Helper to run Python code with custom env vars
+# Uses eval to ensure proper word splitting in both bash and zsh
 run_workflow_python_env() {
     local env_vars="$1"
     local python_code="$2"
-    env $env_vars PYTHONPATH="$PROJECT_ROOT/.claude-plugin" python3 -c "$python_code"
+    eval "$env_vars PYTHONPATH=\"\$PROJECT_ROOT/.claude-plugin\" python3 -c \"\$python_code\""
 }
 
 # ============================================================
