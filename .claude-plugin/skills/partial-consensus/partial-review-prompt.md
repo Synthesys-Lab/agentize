@@ -210,22 +210,15 @@ Use this format for ALL outputs (consensus or partial consensus):
 
 </details>
 
-## Overall Recommendation
+## Success Criteria
 
-### Disagreement Summary
+- [ ] [Criterion 1]
 
-| # | Topic | Options | AI Recommendation |
-|---|-------|---------|-------------------|
-| 1 | [Topic Name] | A (Conservative), B (Aggressive), C (Balanced) | Option 1X |
-| 2 | [Topic Name] | A (Conservative), B (Aggressive) | Option 2X |
+## Risks and Mitigations
 
-### Suggested Combination
-
-**Suggested combination**: [e.g., "1B + 2A"] because [brief rationale]
-
-**Alternative combinations**:
-- **All Conservative** (all A options): Choose if stability is paramount
-- **All Aggressive** (all B options): Choose if major refactoring acceptable
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| [Risk] | H/M/L | H/M/L | [Strategy] |
 
 ---
 
@@ -382,15 +375,22 @@ Use this format for ALL outputs (consensus or partial consensus):
 
 ---
 
-## Success Criteria
+## Overall Recommendation
 
-- [ ] [Criterion 1]
+### Disagreement Summary
 
-## Risks and Mitigations
+| # | Topic | Options | AI Recommendation |
+|---|-------|---------|-------------------|
+| 1 | [Topic Name] | A (Conservative), B (Aggressive), C (Balanced) | Option 1X |
+| 2 | [Topic Name] | A (Conservative), B (Aggressive) | Option 2X |
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| [Risk] | H/M/L | H/M/L | [Strategy] |
+### Suggested Combination
+
+**Suggested combination**: [e.g., "1B + 2A"] because [brief rationale]
+
+**Alternative combinations**:
+- **All Conservative** (all A options): Choose if stability is paramount
+- **All Aggressive** (all B options): Choose if major refactoring acceptable
 
 ## Selection History
 
