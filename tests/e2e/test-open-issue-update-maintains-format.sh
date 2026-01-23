@@ -2,7 +2,7 @@
 # Test: --update maintains [plan][tag] format
 
 source "$(dirname "$0")/../common.sh"
-source "$(dirname "$0")/../helpers-open-issue.sh"
+source "$(dirname "$0")/../helpers-gh-mock.sh"
 
 test_info "--update maintains [plan][tag] format"
 

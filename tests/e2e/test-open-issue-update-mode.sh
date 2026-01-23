@@ -2,7 +2,7 @@
 # Test: --update mode uses gh issue edit
 
 source "$(dirname "$0")/../common.sh"
-source "$(dirname "$0")/../helpers-open-issue.sh"
+source "$(dirname "$0")/../helpers-gh-mock.sh"
 
 test_info "--update mode uses gh issue edit"
 
