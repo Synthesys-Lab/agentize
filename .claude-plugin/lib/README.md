@@ -66,14 +66,22 @@ from lib.logger import logger, log_tool_decision
 
 ### session_utils.py
 
-Shared session directory path resolution. Returns `.tmp/hooked-sessions` path with optional directory creation.
+Shared session utilities for hooks: directory path resolution, handsoff mode checks, and issue index file management.
 
 **Usage:**
 ```python
-from lib.session_utils import session_dir
+from lib.session_utils import session_dir, is_handsoff_enabled, write_issue_index
 
+# Session directory path resolution
 path = session_dir()              # Get path without creating
 path = session_dir(makedirs=True) # Get path and create directories
+
+# Handsoff mode check
+if not is_handsoff_enabled():
+    sys.exit(0)  # Skip hook when handsoff disabled
+
+# Issue index file creation
+write_issue_index(session_id, issue_no, workflow, sess_dir=sess_dir)
 ```
 
 ### telegram_utils.py

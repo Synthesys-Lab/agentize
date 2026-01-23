@@ -25,3 +25,17 @@ Currently, we support:
 To differentiate each workflow, upon user prompt submit, we have a hook to create a metadata file
 to store the workflow status metadata, including the current step, issue number, PR number, etc.
 Currently, we register the hook for `ultra-planner`, `issue-to-impl`, and `plan-to-issue` workflows.
+
+## Handsoff Mode Check
+
+Hooks that need to respect handsoff mode use a centralized helper:
+
+```python
+from lib.session_utils import is_handsoff_enabled
+
+if not is_handsoff_enabled():
+    sys.exit(0)  # Skip hook when handsoff disabled
+```
+
+The helper returns `False` only when `HANDSOFF_MODE` is set to `0`, `false`, `off`, or `disable`
+(case-insensitive). All other values (including unset) default to enabled.
