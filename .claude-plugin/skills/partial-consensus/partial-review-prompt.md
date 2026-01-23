@@ -381,8 +381,8 @@ Use this format for ALL outputs (consensus or partial consensus):
 
 | # | Topic | Options | AI Recommendation |
 |---|-------|---------|-------------------|
-| 1 | [Topic Name] | A (Conservative), B (Aggressive), C (Balanced) | Option 1X |
-| 2 | [Topic Name] | A (Conservative), B (Aggressive) | Option 2X |
+| 1 | [Topic Name] | A (Paranoia): suffix; B (Bold): prefix | Option 1X |
+| 2 | [Topic Name] | A (Code Reducer): suffix; B (Paranoia): prefix | Option 2X |
 
 ### Suggested Combination
 
