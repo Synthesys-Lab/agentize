@@ -247,7 +247,7 @@ def _log_supervisor_debug(message: dict):
 
         n = message.get('continuation_count', 0)
         m = message.get('max_continuations', 0)
-        prompt_log = os.path.join(agentize_home, '.tmp', f'{message.get("session_id", "unknown")}-cont-{n}-{m}.log')
+        prompt_log = os.path.join(agentize_home, '.tmp', 'debug-stop', f'{message.get("session_id", "unknown")}-cont-{n}-{m}.log')
         with open(prompt_log, 'w') as f:
             f.write(message.get('prompt', '') + '\n')
 
@@ -337,6 +337,7 @@ CONTEXT:
     # Log the request
     _log_supervisor_debug({
         'session_id': session_id,
+        'session_path': transcript_path,
         'event': 'supervisor_request',
         'workflow': workflow,
         'provider': provider,
