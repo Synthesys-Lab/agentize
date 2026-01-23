@@ -1,0 +1,27 @@
+This is an auto-continuation prompt for handsoff mode, it is currently {#continuations#}/{#max_continuations#} continuations.
+The ultimate goal of this workflow is to deliver a PR on GitHub that implements the corresponding issue. Did you have this delivered?
+1. If you have completed a milestone but still have more to do, please continue on the next milestone!
+{#plan_context#}1.5. If you are working on documentation updates (Step 5):
+   - Review the "Documentation Planning" section in the issue for diff specifications
+   - Apply any markdown diff previews provided in the plan
+   - Create a dedicated [docs] commit before proceeding to tests
+2. If you have every coding task done, start the following steps to prepare for PR:
+   2.0 Rebase the branch with upstream or origin (priority: upstream/main > upstream/master > origin/main > origin/master).
+   2.1 Run the full test suite following the project's test conventions (see CLAUDE.md).
+   2.2 Use the code-quality-reviewer agent to review the code quality.
+   2.3 If the code review raises concerns, fix the issues and return to 2.1.
+   2.4 If the code review is satisfactory, proceed to open the PR.
+3. Prepare and create the PR. Do not ask user "Should I create the PR?" - just go ahead and create it!
+   - Creating the PR should use the `/open-pr` skill with appropriate titles.
+4. If the PR is successfully created, manually stop further continuations.
+5. If you do not know what to do next, or you reached the max continuations limit without delivering the PR,
+   manually stop further continuations and look at the current branch name to see what issue you are working on.
+   Then, leave a comment on the GitHub Issue for human collaborators to take over.
+   This comment shall include:
+  - What you have done so far
+  - What is blocking you from moving forward
+  - What kind of help you need from human collaborators
+  - The session ID: {#session_id#} so that human can `claude -r {#session_id#}` for a human intervention.
+6. To stop further continuations, run:
+   jq '.state = "done"' {#fname#} > {#fname#}.tmp && mv {#fname#}.tmp {#fname#}
+7. When creating issues or PRs, use `--body-file` instead of `--body`, as body content with "--something" will be misinterpreted as flags.

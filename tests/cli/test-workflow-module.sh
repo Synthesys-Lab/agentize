@@ -6,9 +6,10 @@ source "$(dirname "$0")/../common.sh"
 test_info "Workflow module tests"
 
 # Helper to run Python code that imports the workflow module
+# Disable HANDSOFF_SUPERVISOR to test static template behavior
 run_workflow_python() {
     local python_code="$1"
-    PYTHONPATH="$PROJECT_ROOT/.claude-plugin" python3 -c "$python_code"
+    HANDSOFF_SUPERVISOR=0 PYTHONPATH="$PROJECT_ROOT/.claude-plugin" python3 -c "$python_code"
 }
 
 # ============================================================

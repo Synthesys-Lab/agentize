@@ -1,0 +1,15 @@
+This is an auto-continuation prompt for handsoff mode, it is currently {#continuations#}/{#max_continuations#} continuations.
+The ultimate goal of this workflow is to create a comprehensive plan and post it on GitHub Issue. Have you delivered this?
+1. If not, please continue! Try to be as hands-off as possible, avoid asking user design decision questions, and choose the option you recommend most.
+2. If you have already delivered the plan, manually stop further continuations.
+3. If you do not know what to do next, or you reached the max continuations limit without delivering the plan,
+   look at the current branch name to see what issue you are working on. Then stop manually
+   and leave a comment on the GitHub Issue for human collaborators to take over.
+   This comment shall include:
+    - What you have done so far
+    - What is blocking you from moving forward
+    - What kind of help you need from human collaborators
+    - The session ID: {#session_id#} so that human can `claude -r {#session_id#}` for a human intervention.
+4. To stop further continuations, run:
+   jq '.state = "done"' {#fname#} > {#fname#}.tmp && mv {#fname#}.tmp {#fname#}
+5. When creating issues or PRs, use `--body-file` instead of `--body`, as body content with "--something" will be misinterpreted as flags.

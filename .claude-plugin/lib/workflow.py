@@ -42,98 +42,34 @@ WORKFLOW_COMMANDS = {
 }
 
 # ============================================================
-# Continuation prompt templates
+# Supported workflow types for template loading
 # ============================================================
 
-_CONTINUATION_PROMPTS = {
-    ULTRA_PLANNER: '''This is an auto-continuation prompt for handsoff mode, it is currently {count}/{max_count} continuations.
-The ultimate goal of this workflow is to create a comprehensive plan and post it on GitHub Issue. Have you delivered this?
-1. If not, please continue! Try to be as hands-off as possible, avoid asking user design decision questions, and choose the option you recommend most.
-2. If you have already delivered the plan, manually stop further continuations.
-3. If you do not know what to do next, or you reached the max continuations limit without delivering the plan,
-   look at the current branch name to see what issue you are working on. Then stop manually
-   and leave a comment on the GitHub Issue for human collaborators to take over.
-   This comment shall include:
-    - What you have done so far
-    - What is blocking you from moving forward
-    - What kind of help you need from human collaborators
-    - The session ID: {session_id} so that human can `claude -r {session_id}` for a human intervention.
-4. To stop further continuations, run:
-   jq '.state = "done"' {fname} > {fname}.tmp && mv {fname}.tmp {fname}
-5. When creating issues or PRs, use `--body-file` instead of `--body`, as body content with "--something" will be misinterpreted as flags.''',
+_SUPPORTED_WORKFLOWS = {ULTRA_PLANNER, ISSUE_TO_IMPL, PLAN_TO_ISSUE, SETUP_VIEWBOARD, SYNC_MASTER}
 
-    ISSUE_TO_IMPL: '''This is an auto-continuation prompt for handsoff mode, it is currently {count}/{max_count} continuations.
-The ultimate goal of this workflow is to deliver a PR on GitHub that implements the corresponding issue. Did you have this delivered?
-1. If you have completed a milestone but still have more to do, please continue on the next milestone!
-{plan_context}1.5. If you are working on documentation updates (Step 5):
-   - Review the "Documentation Planning" section in the issue for diff specifications
-   - Apply any markdown diff previews provided in the plan
-   - Create a dedicated [docs] commit before proceeding to tests
-2. If you have every coding task done, start the following steps to prepare for PR:
-   2.0 Rebase the branch with upstream or origin (priority: upstream/main > upstream/master > origin/main > origin/master).
-   2.1 Run the full test suite following the project's test conventions (see CLAUDE.md).
-   2.2 Use the code-quality-reviewer agent to review the code quality.
-   2.3 If the code review raises concerns, fix the issues and return to 2.1.
-   2.4 If the code review is satisfactory, proceed to open the PR.
-3. Prepare and create the PR. Do not ask user "Should I create the PR?" - just go ahead and create it!
-   - Creating the PR should use the `/open-pr` skill with appropriate titles.
-4. If the PR is successfully created, manually stop further continuations.
-5. If you do not know what to do next, or you reached the max continuations limit without delivering the PR,
-   manually stop further continuations and look at the current branch name to see what issue you are working on.
-   Then, leave a comment on the GitHub Issue for human collaborators to take over.
-   This comment shall include:
-  - What you have done so far
-  - What is blocking you from moving forward
-  - What kind of help you need from human collaborators
-  - The session ID: {session_id} so that human can `claude -r {session_id}` for a human intervention.
-6. To stop further continuations, run:
-   jq '.state = "done"' {fname} > {fname}.tmp && mv {fname}.tmp {fname}
-7. When creating issues or PRs, use `--body-file` instead of `--body`, as body content with "--something" will be misinterpreted as flags.''',
 
-    PLAN_TO_ISSUE: '''This is an auto-continuation prompt for handsoff mode, it is currently {count}/{max_count} continuations.
-The ultimate goal of this workflow is to create a GitHub [plan] issue from the user-provided plan.
+def _load_prompt_template(workflow_type: str) -> str:
+    """Load a continuation prompt template from external file.
 
-1. If you have not yet created the GitHub issue, please continue working on it!
-   - Parse and format the plan content appropriately
-   - Create the issue with proper labels and formatting
-   - Use `--body-file` instead of `--body` to avoid flag parsing issues
-2. If you have successfully created the GitHub issue, manually stop further continuations.
-3. If you are blocked or reached the max continuations limit without creating the issue:
-   - Stop manually and inform the user what happened
-   - Include what you have done so far
-   - Include what is blocking you
-   - Include the session ID: {session_id} so that human can `claude -r {session_id}` for intervention.
-4. To stop further continuations, run:
-   jq '.state = "done"' {fname} > {fname}.tmp && mv {fname}.tmp {fname}''',
+    Args:
+        workflow_type: Workflow name (e.g., 'ultra-planner', 'issue-to-impl')
 
-    SETUP_VIEWBOARD: '''This is an auto-continuation prompt for handsoff mode, it is currently {count}/{max_count} continuations.
-The ultimate goal of this workflow is to set up a GitHub Projects v2 board. Have you completed all steps?
-1. If not, please continue with the remaining setup steps!
-2. If setup is complete, manually stop further continuations.
-3. To stop further continuations, run:
-   jq '.state = "done"' {fname} > {fname}.tmp && mv {fname}.tmp {fname}''',
+    Returns:
+        Template string with {#variable#} placeholders
 
-    SYNC_MASTER: '''This is an auto-continuation prompt for handsoff mode, it is currently {count}/{max_count} continuations.
-The ultimate goal of this workflow is to sync the local main/master branch with upstream and force-push the PR branch.
+    Raises:
+        FileNotFoundError: If template file does not exist
+    """
+    # Determine the prompts directory relative to this module
+    module_dir = os.path.dirname(os.path.abspath(__file__))
+    prompts_dir = os.path.join(os.path.dirname(module_dir), 'prompts')
+    template_path = os.path.join(prompts_dir, f'{workflow_type}.txt')
 
-1. Check if the rebase has completed successfully:
-   - Run `git status` to verify the working tree state
-   - If rebase conflicts are detected, resolve them and run `git rebase --continue`
-   - If rebase was aborted, re-run the sync-master workflow from the beginning
-2. After successful rebase, verify the PR number is available: {pr_no}
-   - If PR number is 'unknown', check the current branch name for the PR association
-3. Force-push the rebased branch to update the PR:
-   - Run `git push -f` to push the rebased changes
-   - Verify the push succeeded without errors
-4. After successful push, manually stop further continuations.
-5. If you encounter unresolvable conflicts or errors:
-   - Stop manually and inform the user what happened
-   - Include what you have done so far
-   - Include what is blocking you
-   - Include the session ID: {session_id} so that human can `claude -r {session_id}` for intervention.
-6. To stop further continuations, run:
-   jq '.state = "done"' {fname} > {fname}.tmp && mv {fname}.tmp {fname}''',
-}
+    if not os.path.isfile(template_path):
+        raise FileNotFoundError(f"Template file not found: {template_path}")
+
+    with open(template_path, 'r') as f:
+        return f.read()
 
 
 # ============================================================
@@ -205,8 +141,9 @@ def _ask_claude_for_guidance(workflow: str, continuation_count: int,
             pass  # Silently ignore transcript read errors
 
     # Get the full prompt template for this workflow
-    workflow_template = _CONTINUATION_PROMPTS.get(workflow, '')
-    if not workflow_template:
+    try:
+        workflow_template = _load_prompt_template(workflow)
+    except FileNotFoundError:
         return None  # No template for this workflow
 
     # Build context prompt for Claude with full workflow template
@@ -351,7 +288,7 @@ def has_continuation_prompt(workflow):
     Returns:
         True if workflow has continuation prompt, False otherwise
     """
-    return workflow in _CONTINUATION_PROMPTS
+    return workflow in _SUPPORTED_WORKFLOWS
 
 
 def get_continuation_prompt(workflow, session_id, fname, count, max_count, pr_no='unknown', transcript_path=None, plan_path=None, plan_excerpt=None):
@@ -379,9 +316,10 @@ def get_continuation_prompt(workflow, session_id, fname, count, max_count, pr_no
     if guidance:
         return guidance
 
-    # Fall back to static template (existing behavior)
-    template = _CONTINUATION_PROMPTS.get(workflow, '')
-    if not template:
+    # Fall back to static template from external file
+    try:
+        template = _load_prompt_template(workflow)
+    except FileNotFoundError:
         return ''
 
     # Build plan context for issue-to-impl workflow
@@ -393,11 +331,11 @@ def get_continuation_prompt(workflow, session_id, fname, count, max_count, pr_no
         if plan_excerpt:
             plan_context += f'   {plan_excerpt}\n'
 
-    return template.format(
-        session_id=session_id,
-        fname=fname,
-        count=count,
-        max_count=max_count,
-        pr_no=pr_no,
-        plan_context=plan_context,
-    )
+    # Apply variable substitution using str.replace() with {#var#} syntax
+    return (template
+            .replace('{#session_id#}', session_id or 'N/A')
+            .replace('{#fname#}', fname or 'N/A')
+            .replace('{#continuations#}', str(count))
+            .replace('{#max_continuations#}', str(max_count))
+            .replace('{#pr_no#}', str(pr_no) if pr_no else 'N/A')
+            .replace('{#plan_context#}', plan_context))
