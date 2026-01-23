@@ -11,7 +11,7 @@ if str(_plugin_dir) not in sys.path:
 
 from lib.logger import logger
 from lib.session_utils import session_dir
-from lib.workflow import get_continuation_prompt
+from lib.workflow import get_continuation_prompt, ISSUE_TO_IMPL
 
 
 def main():
@@ -63,13 +63,41 @@ def main():
 
         # Get continuation prompt from centralized workflow module
         pr_no = state.get('pr_no', 'unknown')
+
+        # Read cached plan for issue-to-impl workflow
+        plan_path = None
+        plan_excerpt = None
+        if workflow == ISSUE_TO_IMPL:
+            issue_no = state.get('issue_no')
+            if issue_no:
+                agentize_home = os.getenv('AGENTIZE_HOME', '.')
+                plan_path = os.path.join(agentize_home, '.tmp', f'plan-of-issue-{issue_no}.md')
+                if os.path.isfile(plan_path):
+                    try:
+                        with open(plan_path, 'r') as pf:
+                            plan_content = pf.read()
+                        # Truncate to reasonable size (first 500 chars)
+                        if len(plan_content) > 500:
+                            plan_excerpt = plan_content[:500] + '...'
+                        else:
+                            plan_excerpt = plan_content
+                        logger(session_id, f"Read cached plan from {plan_path} ({len(plan_content)} chars)")
+                    except Exception as e:
+                        logger(session_id, f"Failed to read cached plan: {e}")
+                        plan_path = None  # Reset if read fails
+                else:
+                    logger(session_id, f"No cached plan found at {plan_path}")
+                    plan_path = None  # No plan file exists
+
         prompt = get_continuation_prompt(
             workflow,
             session_id,
             fname,
             continuation_count + 1,
             max_continuations,
-            pr_no=pr_no
+            pr_no=pr_no,
+            plan_path=plan_path,
+            plan_excerpt=plan_excerpt
         )
 
         if prompt:

@@ -41,3 +41,16 @@ This separation provides:
 - Ability to revert documentation independently from code
 - Explicit tracking of documentation completeness
 
+## Plan Caching
+
+During Step 4 (Read Implementation Plan), the workflow extracts the "Proposed Solution" section from the GitHub issue and caches it locally:
+
+**Cache location:** `${AGENTIZE_HOME:-.}/.tmp/plan-of-issue-{N}.md`
+
+This cached plan enables:
+- Drift awareness during handsoff continuation prompts
+- Easier resumption when sessions are interrupted
+- Context preservation across multiple continuation cycles
+
+The stop hook reads this cached plan (when available) and includes it in the `/issue-to-impl` continuation prompt. If the plan cache is missing, the continuation prompt gracefully degrades without the plan context.
+

@@ -179,11 +179,16 @@ The ultimate goal of this workflow is to create a comprehensive plan and post it
 
 **Goal:** Deliver a PR on GitHub that implements the corresponding issue.
 
+**Plan caching:** During Step 4 (Read Implementation Plan), the workflow caches the extracted "Proposed Solution" section to `.tmp/plan-of-issue-{N}.md`. This cached plan is included in continuation prompts to provide drift awareness and easier resumption during autonomous workflows.
+
 **Auto-continuation prompt (injected by Stop hook):**
 ```
 This is an auto-continuation prompt for handsoff mode, it is currently {N}/{MAX} continuations.
 The ultimate goal of this workflow is to deliver a PR on GitHub that implements the corresponding issue. Did you have this delivered?
 1. If you have completed a milestone but still have more to do, please continue on the next milestone!
+1.5. Review the cached plan (if available):
+   - Plan file: {plan_path}
+   {plan_excerpt}
 2. If you have every coding task done, start the following steps to prepare for PR:
    2.0 Rebase the branch with upstream or origin (priority: upstream/main > upstream/master > origin/main > origin/master).
    2.1 Run the full test suite following the project's test conventions (see CLAUDE.md).

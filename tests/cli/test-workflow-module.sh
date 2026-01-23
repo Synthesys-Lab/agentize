@@ -164,6 +164,35 @@ print('EMPTY' if prompt == '' else 'NOT_EMPTY')
 [ "$RESULT" = "EMPTY" ] || test_fail "Expected empty string for unknown workflow, got '$RESULT'"
 
 # ============================================================
+# Test plan context in continuation prompt
+# ============================================================
+
+test_info "Test 27a: get_continuation_prompt() for issue-to-impl includes plan_path when provided"
+RESULT=$(run_workflow_python "
+from lib.workflow import get_continuation_prompt
+prompt = get_continuation_prompt('issue-to-impl', 'test-session', '/tmp/test.json', 1, 10, plan_path='/tmp/plan-of-issue-42.md')
+print('PLAN_PATH_OK' if '/tmp/plan-of-issue-42.md' in prompt else 'PLAN_PATH_MISSING')
+")
+[ "$RESULT" = "PLAN_PATH_OK" ] || test_fail "Expected plan_path in issue-to-impl prompt, got '$RESULT'"
+
+test_info "Test 27b: get_continuation_prompt() for issue-to-impl includes plan_excerpt when provided"
+RESULT=$(run_workflow_python "
+from lib.workflow import get_continuation_prompt
+prompt = get_continuation_prompt('issue-to-impl', 'test-session', '/tmp/test.json', 1, 10, plan_path='/tmp/plan.md', plan_excerpt='Step 1: Add feature X')
+print('PLAN_EXCERPT_OK' if 'Step 1: Add feature X' in prompt else 'PLAN_EXCERPT_MISSING')
+")
+[ "$RESULT" = "PLAN_EXCERPT_OK" ] || test_fail "Expected plan_excerpt in issue-to-impl prompt, got '$RESULT'"
+
+test_info "Test 27c: get_continuation_prompt() for issue-to-impl works without plan context"
+RESULT=$(run_workflow_python "
+from lib.workflow import get_continuation_prompt
+prompt = get_continuation_prompt('issue-to-impl', 'test-session', '/tmp/test.json', 1, 10)
+# Should still have the base prompt without plan context
+print('NO_PLAN_OK' if 'milestone' in prompt.lower() and 'Plan file:' not in prompt else 'NO_PLAN_FAIL')
+")
+[ "$RESULT" = "NO_PLAN_OK" ] || test_fail "Expected prompt without plan context to still work, got '$RESULT'"
+
+# ============================================================
 # Test workflow constants
 # ============================================================
 

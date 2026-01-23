@@ -65,7 +65,7 @@ The ultimate goal of this workflow is to create a comprehensive plan and post it
     ISSUE_TO_IMPL: '''This is an auto-continuation prompt for handsoff mode, it is currently {count}/{max_count} continuations.
 The ultimate goal of this workflow is to deliver a PR on GitHub that implements the corresponding issue. Did you have this delivered?
 1. If you have completed a milestone but still have more to do, please continue on the next milestone!
-1.5. If you are working on documentation updates (Step 5):
+{plan_context}1.5. If you are working on documentation updates (Step 5):
    - Review the "Documentation Planning" section in the issue for diff specifications
    - Apply any markdown diff previews provided in the plan
    - Create a dedicated [docs] commit before proceeding to tests
@@ -354,7 +354,7 @@ def has_continuation_prompt(workflow):
     return workflow in _CONTINUATION_PROMPTS
 
 
-def get_continuation_prompt(workflow, session_id, fname, count, max_count, pr_no='unknown', transcript_path=None):
+def get_continuation_prompt(workflow, session_id, fname, count, max_count, pr_no='unknown', transcript_path=None, plan_path=None, plan_excerpt=None):
     """Get formatted continuation prompt for a workflow.
 
     Optionally uses Claude for dynamic guidance if HANDSOFF_SUPERVISOR is enabled.
@@ -368,6 +368,8 @@ def get_continuation_prompt(workflow, session_id, fname, count, max_count, pr_no
         max_count: Maximum continuations allowed
         pr_no: PR number (only used for sync-master workflow)
         transcript_path: Optional path to JSONL transcript for Claude context
+        plan_path: Optional path to cached plan file (for issue-to-impl workflow)
+        plan_excerpt: Optional excerpt from cached plan (for issue-to-impl workflow)
 
     Returns:
         Formatted continuation prompt string, or empty string if workflow not found
@@ -382,10 +384,20 @@ def get_continuation_prompt(workflow, session_id, fname, count, max_count, pr_no
     if not template:
         return ''
 
+    # Build plan context for issue-to-impl workflow
+    plan_context = ''
+    if workflow == ISSUE_TO_IMPL and plan_path:
+        plan_context = f'''1.5. Review the cached plan (if available):
+   - Plan file: {plan_path}
+'''
+        if plan_excerpt:
+            plan_context += f'   {plan_excerpt}\n'
+
     return template.format(
         session_id=session_id,
         fname=fname,
         count=count,
         max_count=max_count,
         pr_no=pr_no,
+        plan_context=plan_context,
     )

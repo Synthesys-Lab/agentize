@@ -49,16 +49,21 @@ When you run `/issue-to-impl`:
 - Creates/updates documentation files
 - Adds README files as needed
 
-**4. Test Cases (from plan)**
+**4. Plan Caching**
+- Extracts "Proposed Solution" from issue body
+- Caches to `.tmp/plan-of-issue-{N}.md` for drift awareness
+- Plan is included in continuation prompts for easier resumption
+
+**5. Test Cases (from plan)**
 - Creates test files
 - Implements test cases from Test Strategy
 
-**5. Milestone 1 Commit**
+**6. Milestone 1 Commit**
 - Commits docs + tests
 - Status: 0/N tests passing (expected)
 - Uses `--no-verify` (tests not implemented yet)
 
-**6. Implementation Loop**
+**7. Implementation Loop**
 - Implements code in chunks (~100-200 LOC)
 - Runs tests after each chunk
 - Tracks total LOC with `git diff --stat`

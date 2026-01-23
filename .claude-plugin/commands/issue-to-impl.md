@@ -180,6 +180,16 @@ gh issue view {issue-number} --json body --jq '.body'
 - LOC estimates
 - Test strategy details
 
+**Cache the plan locally:**
+
+After extracting the "Proposed Solution" section, write it to a local cache file for drift awareness during handsoff continuation:
+
+```
+${AGENTIZE_HOME:-.}/.tmp/plan-of-issue-{N}.md
+```
+
+This cached plan is read by the stop hook and included in continuation prompts to help the agent maintain context across sessions.
+
 **Error handling:**
 - No "Proposed Solution" section found:
   ```
