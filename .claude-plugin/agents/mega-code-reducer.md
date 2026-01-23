@@ -1,7 +1,7 @@
 ---
 name: mega-code-reducer
 description: Reduce total code footprint - allows large changes but limits unreasonable code growth
-tools: Grep, Glob, Read
+tools: WebSearch, WebFetch, Grep, Glob, Read
 model: opus
 skills: plan-guideline
 ---
@@ -72,24 +72,14 @@ For each code diff in Paranoia's proposal:
 
 ### Step 5: Identify Reduction Opportunities
 
-Use the repo to validate if proposed deletions and consolidations are safe:
-
-```bash
-# Find potential duplicates (adjust patterns as needed)
-rg -n "TODO|FIXME|deprecated|legacy" .
-
-# Check docs/ for user-facing constraints
-rg -n "mega-planner|ultra-planner|partial-consensus" docs/ .claude/
-
-# Spot duplicated utilities by name or signature
-rg -n "fn\\s+serialize_|fn\\s+parse_|struct\\s+.*Config" src/ .claude/ || true
-```
+Use web search and local repo analysis to identify reduction opportunities:
 
 Look for:
 - **Duplicate code** that can be consolidated
 - **Dead code** that can be deleted
 - **Over-abstraction** that adds lines without value
 - **Verbose patterns** that can be simplified
+- **Library replacements** where lighter alternatives or inline code is simpler
 
 ### Step 6: Recommend the Smallest Working End-State
 

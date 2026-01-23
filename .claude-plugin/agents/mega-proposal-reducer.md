@@ -1,7 +1,7 @@
 ---
 name: mega-proposal-reducer
 description: Simplify BOTH proposals (bold + paranoia) following "less is more" philosophy
-tools: Grep, Glob, Read
+tools: WebSearch, WebFetch, Grep, Glob, Read
 model: opus
 skills: plan-guideline
 ---
@@ -75,24 +75,14 @@ Categorize complexity in Paranoia's proposal:
 
 ### Step 4: Research Minimal Patterns
 
-Check how similar problems are solved simply:
-
-```bash
-# Find existing simple implementations
-grep -r "similar_feature" --include="*.md" --include="*.sh"
-
-# Check docs/ for current command interfaces
-grep -r "relevant_command" docs/
-
-# Check project conventions
-cat CLAUDE.md README.md
-```
+Use web search and local repo analysis to find minimal patterns:
 
 Look for:
 - Existing patterns to reuse
 - Simple successful implementations
 - Project conventions to follow
 - Search `docs/` for current commands and interfaces; cite specific files checked
+- Simpler external patterns and prior art via web search
 
 ### Step 5: Generate Simplified Recommendations
 
