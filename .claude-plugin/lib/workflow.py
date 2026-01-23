@@ -261,7 +261,7 @@ def _ask_supervisor_for_guidance(
         workflow: str,
         continuation_count: int,
         max_continuations: int,
-        transcript_path: Optional[str] = None) -> Optional[str]:
+        transcript_path: str) -> Optional[str]:
     """Ask AI provider for context-aware continuation guidance.
 
     Uses acw (Agent CLI Wrapper) to invoke the configured AI provider.
@@ -527,11 +527,12 @@ def get_continuation_prompt(workflow, session_id, fname, count, max_count, pr_no
     Returns:
         Formatted continuation prompt string, or empty string if workflow not found
     """
-    # Try to get dynamic guidance from supervisor if enabled
-    guidance = _ask_supervisor_for_guidance(
-        session_id, workflow, count, max_count, transcript_path)
-    if guidance:
-        return guidance
+    # Try to get dynamic guidance from supervisor if enabled and transcript available
+    if transcript_path:
+        guidance = _ask_supervisor_for_guidance(
+            session_id, workflow, count, max_count, transcript_path)
+        if guidance:
+            return guidance
 
     # Fall back to static template from external file
     try:
