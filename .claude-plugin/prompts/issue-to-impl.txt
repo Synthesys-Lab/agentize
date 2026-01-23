@@ -1,5 +1,8 @@
 This is an auto-continuation prompt for handsoff mode, it is currently {#continuations#}/{#max_continuations#} continuations.
 The ultimate goal of this workflow is to deliver a PR on GitHub that implements the corresponding issue. Did you have this delivered?
+
+0. Use `git branch --show-current` to see what issue you are working on, it is in the branch name!
+   - Use `gh issue view` to view the original plan of the workflow.
 1. If you have completed a milestone but still have more to do, please continue on the next milestone!
 {#plan_context#}1.5. If you are working on documentation updates (Step 5):
    - Review the "Documentation Planning" section in the issue for diff specifications
@@ -22,6 +25,3 @@ The ultimate goal of this workflow is to deliver a PR on GitHub that implements 
   - What is blocking you from moving forward
   - What kind of help you need from human collaborators
   - The session ID: {#session_id#} so that human can `claude -r {#session_id#}` for a human intervention.
-6. To stop further continuations, run:
-   jq '.state = "done"' {#fname#} > {#fname#}.tmp && mv {#fname#}.tmp {#fname#}
-7. When creating issues or PRs, use `--body-file` instead of `--body`, as body content with "--something" will be misinterpreted as flags.

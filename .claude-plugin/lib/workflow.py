@@ -148,19 +148,39 @@ def _ask_claude_for_guidance(workflow: str, continuation_count: int,
 
     # Build context prompt for Claude with full workflow template
     prompt = f'''You are a workflow supervisor for an AI agent system.
+You are evaluating an exisint `host session` to see:
+1. If it is sticking to the original purpose of the workflow.
+2. If it is making progress towards completing the workflow.
+3. What the next best steps are to continue progress.
+
+Based on the given workflow template and the conversation context, provide clear, comprehensive,
+and instructions for what the agent should do next.
+
+If the workflow is done, use instruct the host agent to use the command below to end the auto-continuation:
+
+# Input:
 
 WORKFLOW: {workflow}
+
 PROGRESS: {continuation_count} / {max_continuations} continuations
 
 WORKFLOW PROMPT TEMPLATE (this is what the agent receives as instructions):
----
 {workflow_template}
+
 ---
 {transcript_context}
 
-Based on the workflow template above and the conversation context, provide a concise instruction for what the agent should do next.
+# Output:
 
-Respond with ONLY the continuation instruction (2-3 sentences), no explanations.'''
+1. If it is not sticking to the original purpose, provide corrective instructions to get back on track.
+2. If it sticks to the original purpose of the workflow, clearly state what to do next.
+3. If the goal is complete, ask the host session to use the command below to mark the workflow as done:
+    jq '.state = "done"' {{#fname#}} > {{#fname#}}.tmp && mv {{#fname#}}.tmp {{#fname#}}
+4. No matter creating a Issue or PR, always as the host session to use `--body-file` to provide detailed descriptions,
+   as embedded `--` in `--body` may confuse the CLI parser.
+
+'''
+
 
     # Log the request
     _log_supervisor_debug({
@@ -319,15 +339,19 @@ def get_continuation_prompt(workflow, session_id, fname, count, max_count, pr_no
     # Fall back to static template from external file
     try:
         template = _load_prompt_template(workflow)
+        template += '''
+- If the goal is complete, ask the host session to use the command below to mark the workflow as done:
+    jq '.state = "done"' {{#fname#}} > {{#fname#}}.tmp && mv {{#fname#}}.tmp {{#fname#}}
+-  No matter creating a Issue or PR, always as the host session to use `--body-file` to provide detailed descriptions,
+   as embedded `--` in `--body` may confuse the CLI parser.
+'''
     except FileNotFoundError:
         return ''
 
     # Build plan context for issue-to-impl workflow
     plan_context = ''
     if workflow == ISSUE_TO_IMPL and plan_path:
-        plan_context = f'''1.5. Review the cached plan (if available):
-   - Plan file: {plan_path}
-'''
+        plan_context = f'''- Plan file: {plan_path}'''
         if plan_excerpt:
             plan_context += f'   {plan_excerpt}\n'
 

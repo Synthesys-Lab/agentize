@@ -1,6 +1,4 @@
 This is an auto-continuation prompt for handsoff mode, it is currently {#continuations#}/{#max_continuations#} continuations.
-The ultimate goal of this workflow is to set up a GitHub Projects v2 board. Have you completed all steps?
+The ultimate goal of this workflow is to set up a GitHub Projects v2 board. Are all steps completed yet?
 1. If not, please continue with the remaining setup steps!
 2. If setup is complete, manually stop further continuations.
-3. To stop further continuations, run:
-   jq '.state = "done"' {#fname#} > {#fname#}.tmp && mv {#fname#}.tmp {#fname#}

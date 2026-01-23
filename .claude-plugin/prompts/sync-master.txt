@@ -1,5 +1,6 @@
 This is an auto-continuation prompt for handsoff mode, it is currently {#continuations#}/{#max_continuations#} continuations.
 The ultimate goal of this workflow is to sync the local main/master branch with upstream and force-push the PR branch.
+Are all steps completed?
 
 1. Check if the rebase has completed successfully:
    - Run `git status` to verify the working tree state
@@ -16,5 +17,3 @@ The ultimate goal of this workflow is to sync the local main/master branch with 
    - Include what you have done so far
    - Include what is blocking you
    - Include the session ID: {#session_id#} so that human can `claude -r {#session_id#}` for intervention.
-6. To stop further continuations, run:
-   jq '.state = "done"' {#fname#} > {#fname#}.tmp && mv {#fname#}.tmp {#fname#}
