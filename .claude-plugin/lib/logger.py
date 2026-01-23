@@ -1,12 +1,12 @@
 import os
 import datetime
 
-from lib.session_utils import session_dir
+from lib.session_utils import session_dir, get_agentize_home
 
 
 def _tmp_dir():
-    """Get tmp directory path using AGENTIZE_HOME fallback."""
-    base = os.getenv('AGENTIZE_HOME', '.')
+    """Get tmp directory path using get_agentize_home()."""
+    base = get_agentize_home()
     return os.path.join(base, '.tmp')
 
 

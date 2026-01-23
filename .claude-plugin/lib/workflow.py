@@ -12,8 +12,8 @@ Supported workflows:
 - /sync-master: Sync local main/master with upstream
 
 Self-contained design:
-- This module provides its own `_get_agentize_home()` and `_run_acw()` helpers
-- These invoke the `acw` shell function by sourcing `src/cli/acw.sh` directly
+- Uses `get_agentize_home()` from `session_utils.py` for AGENTIZE_HOME resolution
+- Provides `_run_acw()` helper that invokes `acw` by sourcing `src/cli/acw.sh`
 - No imports from `agentize.shell` or dependency on `setup.sh`
 - Maintains plugin standalone capability for handsoff supervisor workflows
 """
@@ -25,6 +25,8 @@ import json
 import tempfile
 from typing import Optional
 from datetime import datetime
+
+from lib.session_utils import get_agentize_home
 
 # ============================================================
 # Workflow name constants
@@ -142,30 +144,6 @@ def _get_supervisor_flags() -> str:
 # Self-contained acw invocation helpers
 # ============================================================
 
-def _get_agentize_home() -> str:
-    """Get AGENTIZE_HOME path for acw invocation.
-
-    Derives the path in the following order:
-    1. AGENTIZE_HOME environment variable (if set)
-    2. Derive from workflow.py location (.claude-plugin/lib/workflow.py → repo root)
-
-    Returns:
-        Path to agentize repository root
-
-    Note:
-        Does not validate the path - caller should handle errors if acw.sh is missing.
-    """
-    # First, check environment variable
-    env_home = os.getenv('AGENTIZE_HOME', '').strip()
-    if env_home:
-        return env_home
-
-    # Derive from workflow.py location: .claude-plugin/lib/workflow.py → ../../
-    module_dir = os.path.dirname(os.path.abspath(__file__))
-    repo_root = os.path.dirname(os.path.dirname(module_dir))
-    return repo_root
-
-
 def _run_acw(provider: str, model: str, input_file: str, output_file: str,
              extra_flags: list, timeout: int = 900) -> subprocess.CompletedProcess:
     """Run acw shell function by sourcing acw.sh directly.
@@ -184,7 +162,7 @@ def _run_acw(provider: str, model: str, input_file: str, output_file: str,
     Returns:
         subprocess.CompletedProcess result
     """
-    agentize_home = _get_agentize_home()
+    agentize_home = get_agentize_home()
     acw_script = os.path.join(agentize_home, 'src', 'cli', 'acw.sh')
 
     # Build the bash command to source acw.sh and invoke acw function

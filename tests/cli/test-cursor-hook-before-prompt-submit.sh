@@ -53,17 +53,22 @@ STATE_FILE_2="$CENTRAL_HOME/.tmp/hooked-sessions/$SESSION_ID_2.json"
 ISSUE_NO_2=$(jq -r '.issue_no' "$STATE_FILE_2")
 [ "$ISSUE_NO_2" = "42" ] || test_fail "Expected issue_no=42, got '$ISSUE_NO_2'"
 
-# Test 3: Without AGENTIZE_HOME, session file created in local .tmp/
-test_info "Test 3: AGENTIZE_HOME unset → local session file"
+# Test 3: Without AGENTIZE_HOME, session file created at repo root (derived from module location)
+test_info "Test 3: AGENTIZE_HOME unset → session file at repo root (derived from session_utils.py)"
 SESSION_ID_3="test-session-local-3"
 run_hook "/issue-to-impl 99" "$SESSION_ID_3" ""
 
-STATE_FILE_3="$LOCAL_HOME/.tmp/hooked-sessions/$SESSION_ID_3.json"
-[ -f "$STATE_FILE_3" ] || test_fail "Session file not created at local path: $STATE_FILE_3"
+# When AGENTIZE_HOME is unset, get_agentize_home() derives from session_utils.py location
+# which resolves to the repo root, not the current working directory
+STATE_FILE_3="$PROJECT_ROOT/.tmp/hooked-sessions/$SESSION_ID_3.json"
+[ -f "$STATE_FILE_3" ] || test_fail "Session file not created at repo root path: $STATE_FILE_3"
 
 # Verify issue_no is extracted
 ISSUE_NO_3=$(jq -r '.issue_no' "$STATE_FILE_3")
 [ "$ISSUE_NO_3" = "99" ] || test_fail "Expected issue_no=99, got '$ISSUE_NO_3'"
+
+# Clean up the session file from repo root
+rm -f "$STATE_FILE_3"
 
 # Test 4: /ultra-planner with --refine <issue> extracts issue_no
 test_info "Test 4: /ultra-planner --refine 123 → issue_no=123"

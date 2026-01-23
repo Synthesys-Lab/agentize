@@ -289,33 +289,33 @@ print('EMPTY' if flags == '' else flags)
 [ "$RESULT" = "EMPTY" ] || test_fail "Expected empty string, got '$RESULT'"
 
 # ============================================================
-# Test _get_agentize_home() and _run_acw() helpers
+# Test get_agentize_home() (session_utils) and _run_acw() helpers
 # ============================================================
 
-test_info "Test 40: _get_agentize_home() reads from AGENTIZE_HOME env var"
+test_info "Test 40: get_agentize_home() reads from AGENTIZE_HOME env var"
 RESULT=$(run_workflow_python_env "AGENTIZE_HOME=/custom/path" "
-from lib.workflow import _get_agentize_home
-home = _get_agentize_home()
+from lib.session_utils import get_agentize_home
+home = get_agentize_home()
 print(home)
 ")
 [ "$RESULT" = "/custom/path" ] || test_fail "Expected '/custom/path', got '$RESULT'"
 
-test_info "Test 41: _get_agentize_home() derives from workflow.py location when env var not set"
+test_info "Test 41: get_agentize_home() derives from session_utils.py location when env var not set"
 RESULT=$(run_workflow_python_env "AGENTIZE_HOME=" "
-from lib.workflow import _get_agentize_home
+from lib.session_utils import get_agentize_home
 import os
-home = _get_agentize_home()
+home = get_agentize_home()
 # Should derive to repo root where Makefile exists
 makefile = os.path.join(home, 'Makefile')
 print('VALID' if os.path.isfile(makefile) else 'INVALID')
 ")
 [ "$RESULT" = "VALID" ] || test_fail "Expected derived path to be valid repo root, got '$RESULT'"
 
-test_info "Test 42: _get_agentize_home() returns correct repo root structure"
+test_info "Test 42: get_agentize_home() returns correct repo root structure"
 RESULT=$(run_workflow_python_env "AGENTIZE_HOME=" "
-from lib.workflow import _get_agentize_home
+from lib.session_utils import get_agentize_home
 import os
-home = _get_agentize_home()
+home = get_agentize_home()
 # Verify expected files exist
 acw_sh = os.path.join(home, 'src', 'cli', 'acw.sh')
 print('ACW_OK' if os.path.isfile(acw_sh) else 'ACW_MISSING')

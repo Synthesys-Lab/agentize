@@ -4,6 +4,28 @@ Shared utilities for session directory resolution, handsoff mode checks, and iss
 
 ## External Interface
 
+### `get_agentize_home() -> str`
+
+Get the AGENTIZE_HOME path for agentize repository root resolution.
+
+**Returns:** String path to the agentize repository root
+
+**Behavior:**
+- First checks `AGENTIZE_HOME` environment variable
+- If not set, derives from module location (`.claude-plugin/lib/session_utils.py` → `../../`)
+- Uses `os.path.realpath()` to resolve symlinks (e.g., `.cursor/hooks/lib` → `.claude-plugin/lib`)
+- Does not validate the path - caller should handle errors if expected files are missing
+
+**Usage:**
+
+```python
+from lib.session_utils import get_agentize_home
+
+# Get agentize repository root
+agentize_home = get_agentize_home()
+# Returns: "{AGENTIZE_HOME}" or derived repo root path
+```
+
 ### `session_dir(makedirs: bool = False) -> str`
 
 Get the session directory path using `AGENTIZE_HOME` fallback.
@@ -87,7 +109,8 @@ index_path = write_issue_index(session_id, issue_no, workflow, sess_dir=custom_d
 - `.claude-plugin/hooks/user-prompt-submit.py`: Session tracking, handsoff check, issue index
 - `.claude-plugin/hooks/stop.py`: Session cleanup, handsoff check
 - `.claude-plugin/hooks/post-bash-issue-create.py`: Issue number persistence, issue index
-- `.claude-plugin/lib/logger.py`: Log file path resolution
+- `.claude-plugin/lib/logger.py`: Log file path resolution (uses `get_agentize_home()`)
+- `.claude-plugin/lib/workflow.py`: acw invocation (uses `get_agentize_home()`)
 - `.claude-plugin/lib/permission/determine.py`: Permission decision logging
 - `.cursor/hooks/before-prompt-submit.py`: Cursor hook session tracking
 - `.cursor/hooks/stop.py`: Cursor hook session cleanup

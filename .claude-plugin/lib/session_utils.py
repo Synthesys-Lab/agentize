@@ -1,11 +1,38 @@
 """Session utilities for hooks and lib modules.
 
 Provides shared session directory path resolution, handsoff mode checks,
-and issue index file management used across multiple hook and library files.
+AGENTIZE_HOME resolution, and issue index file management used across
+multiple hook and library files.
 """
 
 import json
 import os
+
+
+def get_agentize_home() -> str:
+    """Get AGENTIZE_HOME path for agentize repository root resolution.
+
+    Derives the path in the following order:
+    1. AGENTIZE_HOME environment variable (if set)
+    2. Derive from session_utils.py location (.claude-plugin/lib/session_utils.py → repo root)
+
+    Returns:
+        Path to agentize repository root
+
+    Note:
+        Does not validate the path - caller should handle errors if expected files are missing.
+        Uses os.path.realpath to resolve symlinks (e.g., .cursor/hooks/lib -> .claude-plugin/lib).
+    """
+    # First, check environment variable
+    env_home = os.getenv('AGENTIZE_HOME', '').strip()
+    if env_home:
+        return env_home
+
+    # Derive from session_utils.py location: .claude-plugin/lib/session_utils.py → ../../
+    # Use realpath to resolve symlinks (e.g., .cursor/hooks/lib -> .claude-plugin/lib)
+    module_dir = os.path.dirname(os.path.realpath(__file__))
+    repo_root = os.path.dirname(os.path.dirname(module_dir))
+    return repo_root
 
 
 def is_handsoff_enabled() -> bool:
@@ -61,7 +88,7 @@ def session_dir(makedirs: bool = False) -> str:
     Returns:
         String path to the session directory (.tmp/hooked-sessions under base).
     """
-    base = os.getenv('AGENTIZE_HOME', '.')
+    base = get_agentize_home()
     path = os.path.join(base, '.tmp', 'hooked-sessions')
 
     if makedirs:
