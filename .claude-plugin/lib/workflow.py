@@ -240,11 +240,16 @@ def _log_supervisor_debug(message: dict):
         # Append to log file
         with open(debug_log, 'a') as f:
             f.write(json.dumps(message) + '\n')
+        
+        with open(os.path.join(agentize_home, '.tmp', 'hook-last.log'), 'w') as f:
+            f.write(json.dumps(message) + '\n')
     except Exception:
         pass  # Silently ignore logging errors
 
 
-def _ask_supervisor_for_guidance(workflow: str, continuation_count: int,
+def _ask_supervisor_for_guidance(
+        session_id: str,
+        workflow: str, continuation_count: int,
                                  max_continuations: int, transcript_path: str = None) -> Optional[str]:
     """Ask AI provider for context-aware continuation guidance.
 
@@ -323,6 +328,7 @@ CONTEXT:
 
     # Log the request
     _log_supervisor_debug({
+        'session_id': session_id,
         'event': 'supervisor_request',
         'workflow': workflow,
         'provider': provider,
@@ -331,7 +337,7 @@ CONTEXT:
         'max_continuations': max_continuations,
         'transcript_path': transcript_path,
         'transcript_entries_count': len(transcript_entries),
-        'prompt': prompt[:500]  # Log first 500 chars
+        'prompt': prompt
     })
 
     # Invoke acw via subprocess with temp files for I/O
@@ -511,7 +517,8 @@ def get_continuation_prompt(workflow, session_id, fname, count, max_count, pr_no
         Formatted continuation prompt string, or empty string if workflow not found
     """
     # Try to get dynamic guidance from supervisor if enabled
-    guidance = _ask_supervisor_for_guidance(workflow, count, max_count, transcript_path)
+    guidance = _ask_supervisor_for_guidance(
+        session_id, workflow, count, max_count, transcript_path)
     if guidance:
         return guidance
 
