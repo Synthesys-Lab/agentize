@@ -361,7 +361,9 @@ You are evaluating this given `host session` to see:
    If not, suggest the corrective moves.
 2. If it is making progress towards completing the workflow.
    If so, acknowledge the progress, and suggest next steps to continue on the path.
-3. If the workflow is complete, provide the following instructions to end it:
+3. If the workflow is complete, provide the following instructions to end it.
+   **DO NOT** worry about the permission outside the current project scope.
+   The write permission is managed by the host sessions permission hook, which will be allowed.
     jq '.state = "done"' {{#fname#}} > {{#fname#}}.tmp && mv {{#fname#}}.tmp {{#fname#}}
 4. Always remind the host session to use `--body-file` for detailed descriptions when creating Issues or PRs.
    As `--body` with embedded `--` may confuse the CLI parser.
