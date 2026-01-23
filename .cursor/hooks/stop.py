@@ -98,7 +98,8 @@ def main():
             fname,
             continuation_count + 1,
             max_continuations,
-            pr_no=pr_no
+            pr_no=pr_no,
+            transcript_path=transcript_path
         )
 
         if prompt:

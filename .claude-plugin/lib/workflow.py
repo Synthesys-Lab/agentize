@@ -258,8 +258,9 @@ def _log_supervisor_debug(message: dict):
 
 def _ask_supervisor_for_guidance(
         session_id: str,
-        workflow: str, continuation_count: int,
-                                 max_continuations: int, transcript_path: str = None) -> Optional[str]:
+        workflow: str,
+        continuation_count: int,
+        max_continuations: int) -> Optional[str]:
     """Ask AI provider for context-aware continuation guidance.
 
     Uses acw (Agent CLI Wrapper) to invoke the configured AI provider.
@@ -504,7 +505,6 @@ def has_continuation_prompt(workflow):
         True if workflow has continuation prompt, False otherwise
     """
     return workflow in _SUPPORTED_WORKFLOWS
-
 
 def get_continuation_prompt(workflow, session_id, fname, count, max_count, pr_no='unknown', transcript_path=None, plan_path=None, plan_excerpt=None):
     """Get formatted continuation prompt for a workflow.

@@ -96,6 +96,7 @@ def main():
             continuation_count + 1,
             max_continuations,
             pr_no=pr_no,
+            transcript_path=transcript_path,
             plan_path=plan_path,
             plan_excerpt=plan_excerpt
         )
