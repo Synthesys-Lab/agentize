@@ -82,10 +82,10 @@ _VALID_PROVIDERS = {'claude', 'codex', 'cursor', 'opencode'}
 
 # Default models per provider
 _DEFAULT_MODELS = {
-    'claude': 'sonnet',
+    'claude': 'opus',
     'codex': 'gpt-5.2-codex',
-    'cursor': 'claude-3.5-sonnet',
-    'opencode': 'sonnet'
+    'cursor': 'gpt-5.2-codex-xhigh',
+    'opencode': 'openai/gpt-5.2-codex'
 }
 
 # Legacy boolean mappings for backward compatibility

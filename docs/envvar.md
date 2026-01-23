@@ -47,10 +47,10 @@ Control which AI provider is used for dynamic continuation guidance.
 **Provider Defaults**:
 | Provider | Default Model |
 |----------|---------------|
-| `claude` | `sonnet` |
+| `claude` | `opus` |
 | `codex` | `gpt-5.2-codex` |
-| `cursor` | `claude-3.5-sonnet` |
-| `opencode` | `sonnet` |
+| `cursor` | `gpt-5.2-codex-xhigh` |
+| `opencode` | `openai/gpt-5.2-codex` |
 
 **Examples**:
 ```bash

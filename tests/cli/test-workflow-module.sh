@@ -270,7 +270,7 @@ from lib.workflow import _get_supervisor_model
 model = _get_supervisor_model('claude')
 print(model)
 ")
-[ "$RESULT" = "sonnet" ] || test_fail "Expected default 'sonnet', got '$RESULT'"
+[ "$RESULT" = "opus" ] || test_fail "Expected default 'opus', got '$RESULT'"
 
 test_info "Test 38: HANDSOFF_SUPERVISOR_FLAGS is read correctly"
 RESULT=$(HANDSOFF_SUPERVISOR=claude HANDSOFF_SUPERVISOR_FLAGS="--timeout 1800" PYTHONPATH="$PROJECT_ROOT/.claude-plugin" python3 -c "
