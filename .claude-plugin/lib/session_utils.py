@@ -22,9 +22,9 @@ def is_handsoff_enabled() -> bool:
 
 def write_issue_index(
     session_id: str,
-    issue_no: int | str,
+    issue_no,
     workflow: str,
-    sess_dir: str | None = None
+    sess_dir = None
 ) -> str:
     """Write an issue index file for reverse lookup from issue number to session.
 
