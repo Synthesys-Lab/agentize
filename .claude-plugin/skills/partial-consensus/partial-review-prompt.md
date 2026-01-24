@@ -53,6 +53,7 @@ If the combined report contains a `## Part 7: Selection & Refine History` sectio
   - Use standard format: Goal, Codebase Analysis, Implementation Steps
   - Include code drafts from the selected options
   - **Skip Overall Recommendation section** (no Disagreement Summary, no Suggested Combination - already resolved)
+  - **Skip Consensus Assessment section** (consensus already determined in previous iteration)
   - Include Validation section at the end (see output format below)
 - Skip the "if consensus IS possible / IS NOT possible" logic below
 
@@ -164,6 +165,16 @@ Use this format for ALL outputs (consensus or partial consensus):
 | **Critique** | [Key finding] | [Critical risk or validation] |
 | **Proposal Reducer** | [Simplification direction] | [What complexity was removed] |
 | **Code Reducer** | [Code impact assessment] | [LOC delta summary] |
+
+## Consensus Assessment
+
+| # | Condition | Result | Evidence |
+|---|-----------|--------|----------|
+| 1 | Approach alignment | PASS/FAIL | [Brief evidence] |
+| 2 | No critical blockers | PASS/FAIL | [Brief evidence] |
+| 3 | Minimal modifications | PASS/FAIL | [Brief evidence] |
+
+**Verdict**: CONSENSUS / DISAGREEMENT
 
 ## Goal
 
