@@ -146,6 +146,7 @@ File: `path/to/another.rs`
 
 **MANDATORY**: Every destruction/rewrite MUST include test code that proves the new simpler code behaves correctly.
 
+- Use the project's test layers: inline `#[cfg(test)]` for unit, `tests/integration/` for integration, `tests/e2e/` for end-to-end
 - Existing tests that cover deleted code: show how they are updated or replaced
 - New tests for rewritten code: verify the simplified behavior still works
 
