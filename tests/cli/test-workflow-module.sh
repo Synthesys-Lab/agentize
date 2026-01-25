@@ -80,6 +80,14 @@ test_info "Test 13: extract_issue_no('/plan-to-issue') → None"
 RESULT=$(run_workflow_python "from lib.workflow import extract_issue_no; print(extract_issue_no('/plan-to-issue'))")
 [ "$RESULT" = "None" ] || test_fail "Expected 'None', got '$RESULT'"
 
+test_info "Test 13a: extract_issue_no('/issue-to-impl 42 --dry-run') → 42"
+RESULT=$(run_workflow_python "from lib.workflow import extract_issue_no; print(extract_issue_no('/issue-to-impl 42 --dry-run'))")
+[ "$RESULT" = "42" ] || test_fail "Expected '42', got '$RESULT'"
+
+test_info "Test 13b: extract_issue_no('/issue-to-impl --dry-run 42') → 42"
+RESULT=$(run_workflow_python "from lib.workflow import extract_issue_no; print(extract_issue_no('/issue-to-impl --dry-run 42'))")
+[ "$RESULT" = "42" ] || test_fail "Expected '42', got '$RESULT'"
+
 # ============================================================
 # Test extract_pr_no()
 # ============================================================
