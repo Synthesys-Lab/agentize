@@ -33,6 +33,7 @@ PERMISSION_RULES = {
         ('Skill', r'^commit-msg'),
         ('Skill', r'^review-standard'),
         ('Skill', r'^external-consensus'),
+        ('Skill', r'^partial-consensus'),
         ('Skill', r'^milestone'),
         ('Skill', r'^code-review'),
         ('Skill', r'^pull-request'),
@@ -43,6 +44,7 @@ PERMISSION_RULES = {
         ('Skill', r'^agentize:commit-msg'),
         ('Skill', r'^agentize:review-standard'),
         ('Skill', r'^agentize:external-consensus'),
+        ('Skill', r'^agentize:partial-consensus'),
         ('Skill', r'^agentize:milestone'),
         ('Skill', r'^agentize:code-review'),
         ('Skill', r'^agentize:pull-request'),
@@ -118,6 +120,9 @@ PERMISSION_RULES = {
 
         # Bash - External consensus script
         ('Bash', r'^\.claude/skills/external-consensus/scripts/external-consensus\.sh'),
+
+        # Bash - Partial consensus script
+        ('Bash', r'^\.claude-plugin/skills/partial-consensus/scripts/partial-consensus\.sh'),
 
         # Bash - Git write operations (more aggressive)
         ('Bash', r'^git add'),

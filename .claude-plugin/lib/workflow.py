@@ -5,7 +5,8 @@ prompts for all supported handsoff workflows. Adding a new workflow requires
 editing only this file.
 
 Supported workflows:
-- /ultra-planner: Multi-agent debate-based planning
+- /ultra-planner: Multi-agent debate-based planning (3-agent)
+- /mega-planner: Multi-agent debate-based planning (5-agent, shares ultra-planner prompt)
 - /issue-to-impl: Complete development cycle from issue to PR
 - /plan-to-issue: Create GitHub [plan] issues from user-provided plans
 - /setup-viewboard: GitHub Projects v2 board setup
@@ -33,6 +34,7 @@ from lib.session_utils import get_agentize_home
 # ============================================================
 
 ULTRA_PLANNER = 'ultra-planner'
+MEGA_PLANNER = 'mega-planner'
 ISSUE_TO_IMPL = 'issue-to-impl'
 PLAN_TO_ISSUE = 'plan-to-issue'
 SETUP_VIEWBOARD = 'setup-viewboard'
@@ -44,6 +46,7 @@ SYNC_MASTER = 'sync-master'
 
 WORKFLOW_COMMANDS = {
     '/ultra-planner': ULTRA_PLANNER,
+    '/mega-planner': MEGA_PLANNER,
     '/issue-to-impl': ISSUE_TO_IMPL,
     '/plan-to-issue': PLAN_TO_ISSUE,
     '/setup-viewboard': SETUP_VIEWBOARD,
@@ -54,7 +57,7 @@ WORKFLOW_COMMANDS = {
 # Supported workflow types for template loading
 # ============================================================
 
-_SUPPORTED_WORKFLOWS = {ULTRA_PLANNER, ISSUE_TO_IMPL, PLAN_TO_ISSUE, SETUP_VIEWBOARD, SYNC_MASTER}
+_SUPPORTED_WORKFLOWS = {ULTRA_PLANNER, MEGA_PLANNER, ISSUE_TO_IMPL, PLAN_TO_ISSUE, SETUP_VIEWBOARD, SYNC_MASTER}
 
 
 def _load_prompt_template(workflow_type: str) -> str:

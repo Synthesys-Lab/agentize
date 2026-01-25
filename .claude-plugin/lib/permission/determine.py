@@ -514,6 +514,8 @@ def _detect_workflow(session: str) -> str:
             workflow_type = state.get('workflow', '')
             if workflow_type == 'ultra-planner':
                 return 'plan'
+            elif workflow_type == 'mega-planner':
+                return 'plan'
             elif workflow_type == 'issue-to-impl':
                 return 'impl'
             elif workflow_type == 'plan-to-issue':
@@ -576,12 +578,13 @@ def _check_workflow_auto_allow(session: str, tool: str, target: str) -> Optional
     """
     workflow = _get_workflow_type(session)
 
-    # Auto-allow issue creation and editing for ultra-planner workflow
-    if workflow == 'ultra-planner' and tool == 'Bash':
+    # Auto-allow issue creation and editing for ultra-planner and mega-planner workflows
+    if workflow in ('ultra-planner', 'mega-planner') and tool == 'Bash':
         issue_creation_patterns = [
             r'^gh issue create\s+--title\s+.*--body\s+.*',  # gh issue create with title and body
             r'^gh issue edit\s+\d+\s+--title\s+.*',         # gh issue edit with title
             r'^gh issue edit\s+\d+\s+--body\s+.*',          # gh issue edit with body
+            r'^gh issue edit\s+\d+\s+--body-file\s+.*',     # gh issue edit with body-file
         ]
         for pattern in issue_creation_patterns:
             if re.match(pattern, target):
