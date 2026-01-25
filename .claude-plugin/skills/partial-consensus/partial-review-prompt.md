@@ -233,6 +233,23 @@ Use this format for ALL outputs (consensus or partial consensus):
 |------|------------|--------|------------|
 | [Risk] | H/M/L | H/M/L | [Strategy] |
 
+## Overall Recommendation
+
+### Disagreement Summary
+
+| # | Topic | Options | AI Recommendation |
+|---|-------|---------|-------------------|
+| 1 | [Topic Name] | A (Paranoia): suffix; B (Bold): prefix | Option 1X |
+| 2 | [Topic Name] | A (Code Reducer): suffix; B (Paranoia): prefix | Option 2X |
+
+### Suggested Combination
+
+**Suggested combination**: [e.g., "1B + 2A"] because [brief rationale]
+
+**Alternative combinations**:
+- **All Conservative** (all A options): Choose if stability is paramount
+- **All Aggressive** (all B options): Choose if major refactoring acceptable
+
 ---
 
 ## Disagreement 1: [Topic Name]
@@ -387,23 +404,6 @@ Use this format for ALL outputs (consensus or partial consensus):
 [Same structure as Disagreement 1]
 
 ---
-
-## Overall Recommendation
-
-### Disagreement Summary
-
-| # | Topic | Options | AI Recommendation |
-|---|-------|---------|-------------------|
-| 1 | [Topic Name] | A (Paranoia): suffix; B (Bold): prefix | Option 1X |
-| 2 | [Topic Name] | A (Code Reducer): suffix; B (Paranoia): prefix | Option 2X |
-
-### Suggested Combination
-
-**Suggested combination**: [e.g., "1B + 2A"] because [brief rationale]
-
-**Alternative combinations**:
-- **All Conservative** (all A options): Choose if stability is paramount
-- **All Aggressive** (all B options): Choose if major refactoring acceptable
 
 ## Selection History
 
