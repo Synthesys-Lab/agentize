@@ -31,8 +31,8 @@ Command files include:
 
 - `make-a-plan`: Creates comprehensive implementation plans following design-first TDD approach
 - `plan-to-issue`: Create GitHub [plan] issues from implementation plans with proper formatting
-- `issue-to-impl`: Orchestrates full implementation workflow from issue to completion (creates branch, docs, tests, and first milestone)
-- `ultra-planner`: Multi-agent debate-based planning with /ultra-planner command (supports --refine mode for iterative improvement)
+- `issue-to-impl`: Orchestrates full implementation workflow from issue to completion (creates branch, docs, tests, and first milestone); supports `--dry-run` for preview
+- `ultra-planner`: Multi-agent debate-based planning with /ultra-planner command (supports `--refine` for iterative improvement and `--dry-run` for preview without GitHub changes)
 
 ### Project Setup
 

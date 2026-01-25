@@ -54,3 +54,22 @@ This cached plan enables:
 
 The stop hook reads this cached plan (when available) and includes it in the `/issue-to-impl` continuation prompt. If the plan cache is missing, the continuation prompt gracefully degrades without the plan context.
 
+## Dry-Run Mode
+
+Use `--dry-run` to preview the implementation workflow without making changes:
+
+```
+/issue-to-impl 42 --dry-run
+```
+
+**Behavior:**
+- Reads the issue plan and validates it has a "Proposed Solution" section
+- Prints a preview of intended actions:
+  - Branch that would be created
+  - Files that would be modified/created
+  - Estimated LOC per step
+  - Test strategy summary
+- **Does NOT**: Create branch, modify files, create commits, write milestone files, or create PR
+
+**Use case:** Verify the issue has a complete plan before starting implementation.
+

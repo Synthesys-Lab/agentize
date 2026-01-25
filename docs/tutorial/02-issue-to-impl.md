@@ -247,6 +247,28 @@ See `docs/milestone-workflow.md` for complete documentation.
 
 - **Tutorial 03**: Learn how to scale up with parallel development (multiple issues at once)
 
+## Dry-Run Mode
+
+Preview the implementation plan before making changes:
+
+```
+/issue-to-impl 42 --dry-run
+```
+
+**What you see:**
+- Branch that would be created
+- Files from the plan (documentation, tests, implementation)
+- Estimated LOC per step
+- Test strategy summary
+
+**What doesn't happen:**
+- No branch created
+- No files modified
+- No commits or milestones
+- No PR created
+
+Use dry-run to verify an issue has a complete plan before starting implementation.
+
 ## Common Issues
 
 **"No milestone files found"**

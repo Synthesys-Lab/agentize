@@ -122,6 +122,26 @@ This enables stakeholders to request plan improvements without CLI access.
 4. **Refine when needed**: First consensus not perfect? Use `--refine`
 5. **Trust auto-routing**: `/ultra-planner` automatically uses the lite path for simple changes
 
+## Dry-Run Mode
+
+Preview what would be created without making GitHub changes:
+
+```
+/ultra-planner --dry-run Add user authentication with JWT tokens
+```
+
+**What happens:**
+- Full debate workflow runs (understander → bold-proposer → critique/reducer → consensus)
+- Plan files saved to `.tmp/` for review
+- Prints summary of what issue would be created
+
+**What doesn't happen:**
+- No placeholder issue created
+- No issue body updated
+- No labels added
+
+**Cost note:** Token costs are similar to regular runs since agents still execute. Use `--dry-run` when you want to review the plan before committing to GitHub.
+
 ## Cost & Time
 
 **With automatic routing:**

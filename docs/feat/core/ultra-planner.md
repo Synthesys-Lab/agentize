@@ -304,6 +304,25 @@ Creates initial plan via automatic routing (lite or full path) and auto-creates 
 
 **Output:** Plan issue URL and refinement/implementation instructions
 
+### `/ultra-planner --dry-run <feature-description>`
+
+Runs the full planning workflow but skips GitHub issue creation/updates.
+
+**Usage:**
+```
+/ultra-planner --dry-run Add user authentication with JWT tokens
+```
+
+**Behavior:**
+- Runs understander, bold-proposer, critique, and reducer agents
+- Generates consensus plan to `.tmp/` files
+- Prints dry-run summary showing what issue would be created
+- **Does NOT**: Create placeholder issue, update issue body, or add labels
+
+**Output:** Dry-run summary with planned issue title, tags, and LOC estimate
+
+**Note:** Token costs remain similar to regular runs since the multi-agent debate still executes. Use this when you want to review the plan before committing to GitHub.
+
 ### `/ultra-planner --force-full <feature-description>`
 
 Forces full multi-agent debate regardless of complexity estimation.
