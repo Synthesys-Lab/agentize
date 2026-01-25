@@ -29,8 +29,6 @@ lol_complete() {
             echo "--write"
             ;;
         serve-flags)
-            echo "--tg-token"
-            echo "--tg-chat-id"
             echo "--period"
             echo "--num-workers"
             ;;

@@ -144,6 +144,34 @@ fi
 
 echo "Setup complete: $INSTALL_DIR/setup.sh"
 
+# Create user-wide .agentize.local.yaml if it doesn't exist
+LOCAL_CONFIG_FILE="$HOME/.agentize.local.yaml"
+if [ ! -f "$LOCAL_CONFIG_FILE" ]; then
+    echo "Creating user-wide config: $LOCAL_CONFIG_FILE"
+    cat > "$LOCAL_CONFIG_FILE" <<'YAML'
+# Agentize Local Configuration
+# This file is searched in: project root > $AGENTIZE_HOME > $HOME
+# See docs/envvar.md for configuration reference
+
+handsoff:
+  enabled: true
+  debug: false
+  auto_permission: true
+
+# Telegram approval (optional)
+# telegram:
+#   enabled: false
+#   token: "your-bot-token"
+#   chat_id: "your-chat-id"
+
+# Server runtime (optional)
+# server:
+#   period: 5m
+#   num_workers: 5
+YAML
+    echo "User-wide config created"
+fi
+
 # Print shell RC integration instructions
 cat <<EOF
 

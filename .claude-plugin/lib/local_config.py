@@ -1,10 +1,14 @@
 """Local configuration loader for .agentize.local.yaml files.
 
-This module provides YAML-first configuration for hooks with environment variable override.
-It loads developer-specific settings (handsoff, Telegram, server) from .agentize.local.yaml
-and allows environment variables to override any setting.
+This module provides YAML-only configuration for hooks. It loads developer-specific
+settings (handsoff, Telegram, server) from .agentize.local.yaml.
 
-Configuration precedence: env vars > .agentize.local.yaml > defaults
+YAML search order:
+1. Project root .agentize.local.yaml
+2. $AGENTIZE_HOME/.agentize.local.yaml
+3. $HOME/.agentize.local.yaml (user-wide, created by installer)
+
+Configuration precedence: .agentize.local.yaml > defaults
 """
 
 import os
@@ -19,7 +23,11 @@ _cached_path: Optional[Path] = None
 def load_local_config(start_dir: Optional[Path] = None) -> tuple[dict, Optional[Path]]:
     """Load local configuration from .agentize.local.yaml.
 
-    Searches from start_dir up to parent directories until the config file is found.
+    Search order:
+    1. Walk up from start_dir to parent directories
+    2. Try $AGENTIZE_HOME/.agentize.local.yaml
+    3. Try $HOME/.agentize.local.yaml
+
     Results are cached for subsequent calls.
 
     Args:
@@ -54,6 +62,22 @@ def load_local_config(start_dir: Optional[Path] = None) -> tuple[dict, Optional[
             # Reached root
             break
         current = parent
+
+    # Fallback 1: Try $AGENTIZE_HOME
+    if config_path is None:
+        agentize_home = os.getenv("AGENTIZE_HOME")
+        if agentize_home:
+            candidate = Path(agentize_home) / ".agentize.local.yaml"
+            if candidate.is_file():
+                config_path = candidate
+
+    # Fallback 2: Try $HOME (user-wide config)
+    if config_path is None:
+        home = os.getenv("HOME")
+        if home:
+            candidate = Path(home) / ".agentize.local.yaml"
+            if candidate.is_file():
+                config_path = candidate
 
     if config_path is None:
         return {}, None
@@ -275,31 +299,21 @@ def _get_nested_value(config: dict, path: str) -> Any:
 
 def get_local_value(
     path: str,
-    env: Optional[str],
     default: Any,
     coerce: Optional[Callable[[Any, Any], Any]] = None
 ) -> Any:
-    """Get a config value with environment variable override.
+    """Get a config value from YAML only.
 
-    Precedence: env var > YAML value > default
+    Precedence: YAML value > default
 
     Args:
         path: Dotted path to YAML value (e.g., 'handsoff.enabled')
-        env: Environment variable name to check (or None to skip env check)
         default: Default value if not found
         coerce: Optional coercion function (e.g., coerce_bool, coerce_int)
 
     Returns:
         Resolved value with coercion applied
     """
-    # Check environment variable first (highest precedence)
-    if env:
-        env_value = os.getenv(env)
-        if env_value is not None:
-            if coerce:
-                return coerce(env_value, default)
-            return env_value
-
     # Check YAML config
     config, _ = load_local_config()
     yaml_value = _get_nested_value(config, path)

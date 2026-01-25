@@ -97,16 +97,14 @@ _DEFAULT_MODELS = {
 }
 
 def _get_supervisor_provider() -> Optional[str]:
-    """Get the supervisor provider from YAML config with env override.
-
-    Precedence: HANDSOFF_SUPERVISOR env > handsoff.supervisor.provider YAML > None
+    """Get the supervisor provider from YAML config.
 
     Returns:
         Provider name ('claude', 'codex', 'cursor', 'opencode') or None if disabled
     """
     from lib.local_config import get_local_value
 
-    value = get_local_value('handsoff.supervisor.provider', 'HANDSOFF_SUPERVISOR', 'none')
+    value = get_local_value('handsoff.supervisor.provider', 'none')
     if isinstance(value, str):
         value = value.lower().strip()
 
@@ -123,9 +121,7 @@ def _get_supervisor_provider() -> Optional[str]:
 
 
 def _get_supervisor_model(provider: str) -> str:
-    """Get the model name for the supervisor provider from YAML with env override.
-
-    Precedence: HANDSOFF_SUPERVISOR_MODEL env > handsoff.supervisor.model YAML > provider default
+    """Get the model name for the supervisor provider from YAML config.
 
     Args:
         provider: Provider name ('claude', 'codex', 'cursor', 'opencode')
@@ -136,20 +132,18 @@ def _get_supervisor_model(provider: str) -> str:
     from lib.local_config import get_local_value
 
     default_model = _DEFAULT_MODELS.get(provider, 'sonnet')
-    return get_local_value('handsoff.supervisor.model', 'HANDSOFF_SUPERVISOR_MODEL', default_model)
+    return get_local_value('handsoff.supervisor.model', default_model)
 
 
 def _get_supervisor_flags() -> str:
-    """Get extra flags to pass to acw from YAML with env override.
-
-    Precedence: HANDSOFF_SUPERVISOR_FLAGS env > handsoff.supervisor.flags YAML > ""
+    """Get extra flags to pass to acw from YAML config.
 
     Returns:
         Value of flags or empty string
     """
     from lib.local_config import get_local_value
 
-    return get_local_value('handsoff.supervisor.flags', 'HANDSOFF_SUPERVISOR_FLAGS', '')
+    return get_local_value('handsoff.supervisor.flags', '')
 
 
 # ============================================================

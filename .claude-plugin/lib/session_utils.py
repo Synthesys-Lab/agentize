@@ -36,17 +36,14 @@ def get_agentize_home() -> str:
 
 
 def is_handsoff_enabled() -> bool:
-    """Check if handsoff mode is enabled via YAML config with env override.
-
-    Precedence: HANDSOFF_MODE env > handsoff.enabled YAML > True (default)
+    """Check if handsoff mode is enabled via YAML config.
 
     Returns:
         True if handsoff mode is enabled (default), False if disabled.
-        Returns False only when value is 0, false, off, or disable
-        (case-insensitive). All other values including unset default to enabled.
+        Returns False only when handsoff.enabled is set to false in YAML.
     """
     from lib.local_config import get_local_value, coerce_bool
-    return get_local_value('handsoff.enabled', 'HANDSOFF_MODE', True, coerce_bool)
+    return get_local_value('handsoff.enabled', True, coerce_bool)
 
 
 def write_issue_index(

@@ -1,44 +1,49 @@
 # Local Configuration Interface
 
-Loads developer-specific settings from `.agentize.local.yaml` with environment variable override support.
+Loads developer-specific settings from `.agentize.local.yaml`.
 
 ## Purpose
 
-Provides YAML-first configuration for hooks and lib modules, with environment variables as overrides. This enables persistent local settings while maintaining CLI/env flexibility.
+Provides YAML-only configuration for hooks and lib modules. This enables persistent local settings with a simple, unified configuration source.
+
+## YAML Search Order
+
+1. Walk up from current directory to find `.agentize.local.yaml`
+2. `$AGENTIZE_HOME/.agentize.local.yaml`
+3. `$HOME/.agentize.local.yaml` (user-wide, created by installer)
 
 ## External Interface
 
 ### `load_local_config(start_dir: Path | None = None) -> tuple[dict, Path | None]`
 
-Parse `.agentize.local.yaml` by walking parent directories.
+Parse `.agentize.local.yaml` using the YAML search order.
 
 **Parameters:**
 - `start_dir`: Directory to start searching from (default: current directory)
 
 **Returns:** Tuple of (config_dict, config_path). config_path is None if file not found.
 
-**Search behavior:** Walks up from `start_dir` to parent directories until `.agentize.local.yaml` is found or root is reached.
+**Search behavior:** Walks up from `start_dir` to parent directories, then falls back to `$AGENTIZE_HOME` and `$HOME`.
 
-### `get_local_value(path: str, env: str | None, default: Any, coerce: Callable | None = None) -> Any`
+### `get_local_value(path: str, default: Any, coerce: Callable | None = None) -> Any`
 
-Resolve YAML value by dotted path, apply env override, optional coercion.
+Resolve YAML value by dotted path with optional coercion.
 
 **Parameters:**
 - `path`: Dotted path to YAML value (e.g., `'handsoff.enabled'`)
-- `env`: Environment variable name to check for override (or `None`)
-- `default`: Default value if not found in YAML or env
+- `default`: Default value if not found in YAML
 - `coerce`: Optional coercion function (e.g., `coerce_bool`, `coerce_int`)
 
-**Returns:** Resolved value with env override and coercion applied.
+**Returns:** Resolved value with coercion applied.
 
-**Precedence:** Environment variable > YAML value > default
+**Precedence:** YAML value > default
 
 **Example:**
 ```python
 from lib.local_config import get_local_value, coerce_bool
 
-# Get handsoff.enabled with HANDSOFF_MODE env override
-enabled = get_local_value('handsoff.enabled', 'HANDSOFF_MODE', True, coerce_bool)
+# Get handsoff.enabled from YAML
+enabled = get_local_value('handsoff.enabled', True, coerce_bool)
 ```
 
 ### `coerce_bool(value: Any, default: bool) -> bool`
@@ -69,22 +74,22 @@ Parse comma-separated user IDs to list of integers.
 # .agentize.local.yaml
 
 handsoff:
-  enabled: true                    # HANDSOFF_MODE
-  max_continuations: 10            # HANDSOFF_MAX_CONTINUATIONS
-  auto_permission: true            # HANDSOFF_AUTO_PERMISSION
-  debug: false                     # HANDSOFF_DEBUG
+  enabled: true
+  max_continuations: 10
+  auto_permission: true
+  debug: false
   supervisor:
-    provider: claude               # HANDSOFF_SUPERVISOR
-    model: opus                    # HANDSOFF_SUPERVISOR_MODEL
-    flags: ""                      # HANDSOFF_SUPERVISOR_FLAGS
+    provider: claude
+    model: opus
+    flags: ""
 
 telegram:
-  enabled: false                   # AGENTIZE_USE_TG
-  token: "..."                     # TG_API_TOKEN
-  chat_id: "..."                   # TG_CHAT_ID
-  timeout_sec: 60                  # TG_APPROVAL_TIMEOUT_SEC
-  poll_interval_sec: 5             # TG_POLL_INTERVAL_SEC
-  allowed_user_ids: "123,456"      # TG_ALLOWED_USER_IDS (CSV)
+  enabled: false
+  token: "..."
+  chat_id: "..."
+  timeout_sec: 60
+  poll_interval_sec: 5
+  allowed_user_ids: "123,456"
 
 server:
   period: 5m
@@ -101,9 +106,9 @@ workflows:
 
 **Caching:** Config is loaded once per process and cached. This avoids repeated file I/O during permission checks.
 
-**Parent directory search:** Enables running hooks from any subdirectory while finding config at project root.
+**YAML search order:** Enables running hooks from any subdirectory while finding config at project root, with fallback to user-wide settings at `$HOME`.
 
-**Env override:** Environment variables take precedence over YAML, enabling CI/CD and ad-hoc runs without modifying the config file.
+**No environment overrides:** YAML is the sole configuration source, providing a single, predictable place to manage settings.
 
 **Minimal parser:** Uses the same minimal YAML parser as `runtime_config.py` to avoid external dependencies.
 

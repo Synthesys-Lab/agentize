@@ -108,8 +108,6 @@ _lol_parse_project() {
 # Parse serve command arguments and call lol_cmd_serve
 _lol_parse_serve() {
     local period="5m"
-    local tg_token=""
-    local tg_chat_id=""
     local num_workers="5"
 
     # Parse arguments
@@ -119,28 +117,20 @@ _lol_parse_serve() {
                 period="${1#*=}"
                 shift
                 ;;
-            --tg-token=*)
-                tg_token="${1#*=}"
-                shift
-                ;;
-            --tg-chat-id=*)
-                tg_chat_id="${1#*=}"
-                shift
-                ;;
             --num-workers=*)
                 num_workers="${1#*=}"
                 shift
                 ;;
             *)
                 echo "Error: Unknown option '$1'"
-                echo "Usage: lol serve [--tg-token=<token>] [--tg-chat-id=<id>] [--period=5m] [--num-workers=5]"
+                echo "Usage: lol serve [--period=5m] [--num-workers=5]"
                 return 1
                 ;;
         esac
     done
 
-    # TG credentials are now optional - resolved from CLI > env > YAML in Python
-    lol_cmd_serve "$period" "$tg_token" "$tg_chat_id" "$num_workers"
+    # TG credentials are YAML-only - loaded from .agentize.local.yaml in Python
+    lol_cmd_serve "$period" "$num_workers"
 }
 
 # Parse claude-clean command arguments and call lol_cmd_claude_clean

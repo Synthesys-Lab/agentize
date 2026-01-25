@@ -48,17 +48,22 @@ Tool permission evaluation for the PreToolUse hook. Provides rule-based matching
 
 ### local_config.py
 
-Local configuration loader for `.agentize.local.yaml` with environment variable override support. Used by hooks to read handsoff, Telegram, and other developer-specific settings.
+Local configuration loader for `.agentize.local.yaml`. Used by hooks to read handsoff, Telegram, and other developer-specific settings.
+
+**YAML search order:**
+1. Walk up from current directory to find `.agentize.local.yaml`
+2. `$AGENTIZE_HOME/.agentize.local.yaml`
+3. `$HOME/.agentize.local.yaml` (user-wide, created by installer)
 
 **Usage:**
 ```python
 from lib.local_config import get_local_value, coerce_bool, coerce_int
 
-# Get handsoff enabled with env override
-enabled = get_local_value('handsoff.enabled', 'HANDSOFF_MODE', True, coerce_bool)
+# Get handsoff enabled from YAML
+enabled = get_local_value('handsoff.enabled', True, coerce_bool)
 
 # Get Telegram token
-token = get_local_value('telegram.token', 'TG_API_TOKEN', '')
+token = get_local_value('telegram.token', '')
 ```
 
 See [local_config.md](local_config.md) for details.

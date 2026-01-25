@@ -11,12 +11,12 @@ def _tmp_dir():
 
 
 def _is_debug_enabled() -> bool:
-    """Check if debug logging is enabled via YAML config with env override.
+    """Check if debug logging is enabled via YAML config.
 
-    Precedence: HANDSOFF_DEBUG env > handsoff.debug YAML > False (default)
+    Returns True if handsoff.debug is set to true in YAML.
     """
     from lib.local_config import get_local_value, coerce_bool
-    return get_local_value('handsoff.debug', 'HANDSOFF_DEBUG', False, coerce_bool)
+    return get_local_value('handsoff.debug', False, coerce_bool)
 
 
 def logger(sid, msg):

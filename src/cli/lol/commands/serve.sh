@@ -2,14 +2,13 @@
 
 # lol_cmd_serve: Run polling server for GitHub Projects automation
 # Runs in subshell to preserve set -e semantics
-# Usage: lol_cmd_serve <period> [tg_token] [tg_chat_id] [num_workers]
+# Usage: lol_cmd_serve <period> [num_workers]
+# TG credentials are YAML-only (loaded from .agentize.local.yaml in Python)
 lol_cmd_serve() (
     set -e
 
     local period="$1"
-    local tg_token="$2"
-    local tg_chat_id="$3"
-    local num_workers="${4:-5}"
+    local num_workers="${2:-5}"
 
     # Check if in a bare repo with wt initialized
     if ! wt_is_bare_repo 2>/dev/null; then
@@ -27,17 +26,8 @@ lol_cmd_serve() (
         exit 1
     fi
 
-    # Conditionally export TG credentials for spawned sessions
-    # Empty exports would override YAML config, so only export when provided
-    if [ -n "$tg_token" ]; then
-        export TG_API_TOKEN="$tg_token"
-    fi
-    if [ -n "$tg_chat_id" ]; then
-        export TG_CHAT_ID="$tg_chat_id"
-    fi
-    if [ -n "$tg_token" ] && [ -n "$tg_chat_id" ]; then
-        export AGENTIZE_USE_TG=1
-    fi
+    # TG credentials are YAML-only - loaded from .agentize.local.yaml in Python
+    # No environment variable exports needed
 
     # Invoke Python server module
     exec python -m agentize.server --period="$period" --num-workers="$num_workers"

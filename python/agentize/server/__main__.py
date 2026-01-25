@@ -73,61 +73,38 @@ from agentize.server.workers import (
 from agentize.server.runtime_config import load_runtime_config
 
 
-def _resolve_tg_credentials(
-    tg_token: str | None,
-    tg_chat_id: str | None,
-) -> tuple[str, str]:
-    """Resolve Telegram credentials with precedence: CLI > env > YAML > default.
-
-    Args:
-        tg_token: CLI-provided token (may be None or empty)
-        tg_chat_id: CLI-provided chat ID (may be None or empty)
+def _resolve_tg_credentials() -> tuple[str, str]:
+    """Resolve Telegram credentials from YAML only.
 
     Returns:
         Tuple of (token, chat_id), both as strings (empty if not configured)
     """
-    # Load YAML config for fallback
+    # Load YAML config
     config, _ = load_runtime_config()
     telegram = config.get("telegram", {}) if isinstance(config.get("telegram"), dict) else {}
 
-    # Get values from each source (normalize empty strings to None)
-    env_token = os.getenv("TG_API_TOKEN") or None
-    env_chat_id = os.getenv("TG_CHAT_ID") or None
-    cfg_token = telegram.get("token") or None
+    cfg_token = telegram.get("token") or ""
     cfg_chat_id = telegram.get("chat_id")
 
     # Handle chat_id being an int in YAML
     if isinstance(cfg_chat_id, int):
         cfg_chat_id = str(cfg_chat_id)
-    cfg_chat_id = cfg_chat_id or None
+    cfg_chat_id = cfg_chat_id or ""
 
-    # Resolve with precedence: CLI > env > YAML > ""
-    # Normalize empty CLI args to None for precedence logic
-    cli_token = tg_token if tg_token else None
-    cli_chat_id = tg_chat_id if tg_chat_id else None
-
-    token = cli_token or env_token or cfg_token or ""
-    chat_id = cli_chat_id or env_chat_id or cfg_chat_id or ""
-
-    return token, chat_id
+    return cfg_token, cfg_chat_id
 
 
 def run_server(
     period: int,
-    tg_token: str | None = None,
-    tg_chat_id: str | None = None,
     num_workers: int = 5
 ) -> None:
     """Main polling loop.
 
     Args:
         period: Polling interval in seconds
-        tg_token: Telegram Bot API token (optional)
-        tg_chat_id: Telegram chat ID (optional)
         num_workers: Maximum concurrent workers (0 = unlimited)
 
-    Telegram credentials are resolved with precedence:
-    CLI args > env vars (TG_API_TOKEN, TG_CHAT_ID) > .agentize.local.yaml > default ("")
+    Telegram credentials are loaded from .agentize.local.yaml only.
     """
     org, project_id, remote_url = load_config()
     print(f"Starting server: org={org}, project={project_id}, period={period}s, workers={num_workers}")
@@ -135,8 +112,8 @@ def run_server(
     # Extract repo slug for issue links (computed once)
     repo_slug = _extract_repo_slug(remote_url) if remote_url else None
 
-    # Resolve Telegram credentials (CLI > env > YAML > "")
-    token, chat_id = _resolve_tg_credentials(tg_token, tg_chat_id)
+    # Resolve Telegram credentials (YAML only)
+    token, chat_id = _resolve_tg_credentials()
 
     # Resolve session directory for completion notifications
     session_dir = _resolve_session_dir()
@@ -399,14 +376,6 @@ def main() -> None:
         help='Polling interval (e.g., 5m, 300s). Default: 5m'
     )
     parser.add_argument(
-        '--tg-token',
-        help='Telegram Bot API token (or set TG_API_TOKEN env var)'
-    )
-    parser.add_argument(
-        '--tg-chat-id',
-        help='Telegram chat ID (or set TG_CHAT_ID env var)'
-    )
-    parser.add_argument(
         '--num-workers', type=int, default=5,
         help='Maximum concurrent workers (0 = unlimited). Default: 5'
     )
@@ -418,7 +387,7 @@ def main() -> None:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
-    run_server(period_seconds, args.tg_token, args.tg_chat_id, args.num_workers)
+    run_server(period_seconds, args.num_workers)
 
 
 if __name__ == '__main__':
