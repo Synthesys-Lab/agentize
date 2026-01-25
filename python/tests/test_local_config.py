@@ -1,4 +1,4 @@
-"""Tests for .claude-plugin/lib/local_config.py YAML config loading and env override."""
+"""Tests for .claude-plugin/lib/local_config.py YAML-only config loading."""
 
 import os
 import pytest
@@ -133,44 +133,25 @@ class TestGetNestedValue:
 
 
 class TestGetLocalValue:
-    """Tests for get_local_value function with env override."""
+    """Tests for get_local_value function (YAML-only, no env override)."""
 
     def test_get_local_value_from_yaml(self, tmp_path, monkeypatch):
-        """Test get_local_value reads from YAML when env not set."""
+        """Test get_local_value reads from YAML."""
         config_content = """
 handsoff:
   max_continuations: 20
 """
         config_file = tmp_path / ".agentize.local.yaml"
         config_file.write_text(config_content)
-
-        # Clear env var
-        monkeypatch.delenv("HANDSOFF_MAX_CONTINUATIONS", raising=False)
 
         # Change to tmp_path for config lookup
         monkeypatch.chdir(tmp_path)
 
-        result = get_local_value("handsoff.max_continuations", "HANDSOFF_MAX_CONTINUATIONS", 10, coerce_int)
+        result = get_local_value("handsoff.max_continuations", 10, coerce_int)
         assert result == 20
 
-    def test_get_local_value_env_overrides_yaml(self, tmp_path, monkeypatch):
-        """Test get_local_value uses env var over YAML."""
-        config_content = """
-handsoff:
-  max_continuations: 20
-"""
-        config_file = tmp_path / ".agentize.local.yaml"
-        config_file.write_text(config_content)
-
-        # Set env var to override
-        monkeypatch.setenv("HANDSOFF_MAX_CONTINUATIONS", "50")
-        monkeypatch.chdir(tmp_path)
-
-        result = get_local_value("handsoff.max_continuations", "HANDSOFF_MAX_CONTINUATIONS", 10, coerce_int)
-        assert result == 50
-
     def test_get_local_value_uses_default_when_missing(self, tmp_path, monkeypatch):
-        """Test get_local_value uses default when both env and YAML missing."""
+        """Test get_local_value uses default when YAML value missing."""
         config_content = """
 handsoff:
   enabled: true
@@ -178,10 +159,9 @@ handsoff:
         config_file = tmp_path / ".agentize.local.yaml"
         config_file.write_text(config_content)
 
-        monkeypatch.delenv("HANDSOFF_MAX_CONTINUATIONS", raising=False)
         monkeypatch.chdir(tmp_path)
 
-        result = get_local_value("handsoff.max_continuations", "HANDSOFF_MAX_CONTINUATIONS", 10, coerce_int)
+        result = get_local_value("handsoff.max_continuations", 10, coerce_int)
         assert result == 10
 
     def test_get_local_value_no_coercion(self, tmp_path, monkeypatch):
@@ -193,10 +173,9 @@ telegram:
         config_file = tmp_path / ".agentize.local.yaml"
         config_file.write_text(config_content)
 
-        monkeypatch.delenv("TG_API_TOKEN", raising=False)
         monkeypatch.chdir(tmp_path)
 
-        result = get_local_value("telegram.token", "TG_API_TOKEN", "")
+        result = get_local_value("telegram.token", "")
         assert result == "test-token"
 
 
@@ -352,11 +331,11 @@ permissions:
         assert deny[0] == "^rm -rf"
 
 
-class TestEnvOverridePrecedence:
-    """Tests for environment variable override precedence."""
+class TestYamlOnlyConfig:
+    """Tests for YAML-only configuration (no env overrides)."""
 
-    def test_env_override_for_handsoff_enabled(self, tmp_path, monkeypatch):
-        """Test HANDSOFF_MODE env overrides handsoff.enabled YAML."""
+    def test_handsoff_enabled_from_yaml(self, tmp_path, monkeypatch):
+        """Test handsoff.enabled reads from YAML only."""
         config_content = """
 handsoff:
   enabled: false
@@ -364,14 +343,13 @@ handsoff:
         config_file = tmp_path / ".agentize.local.yaml"
         config_file.write_text(config_content)
 
-        monkeypatch.setenv("HANDSOFF_MODE", "1")
         monkeypatch.chdir(tmp_path)
 
-        result = get_local_value("handsoff.enabled", "HANDSOFF_MODE", True, coerce_bool)
-        assert result is True
+        result = get_local_value("handsoff.enabled", True, coerce_bool)
+        assert result is False
 
-    def test_env_override_for_telegram_token(self, tmp_path, monkeypatch):
-        """Test TG_API_TOKEN env overrides telegram.token YAML."""
+    def test_telegram_token_from_yaml(self, tmp_path, monkeypatch):
+        """Test telegram.token reads from YAML only."""
         config_content = """
 telegram:
   token: "yaml-token"
@@ -379,23 +357,70 @@ telegram:
         config_file = tmp_path / ".agentize.local.yaml"
         config_file.write_text(config_content)
 
-        monkeypatch.setenv("TG_API_TOKEN", "env-token")
         monkeypatch.chdir(tmp_path)
 
-        result = get_local_value("telegram.token", "TG_API_TOKEN", "")
-        assert result == "env-token"
-
-    def test_yaml_used_when_env_not_set(self, tmp_path, monkeypatch):
-        """Test YAML value used when env var not set."""
-        config_content = """
-telegram:
-  token: "yaml-token"
-"""
-        config_file = tmp_path / ".agentize.local.yaml"
-        config_file.write_text(config_content)
-
-        monkeypatch.delenv("TG_API_TOKEN", raising=False)
-        monkeypatch.chdir(tmp_path)
-
-        result = get_local_value("telegram.token", "TG_API_TOKEN", "default")
+        result = get_local_value("telegram.token", "default")
         assert result == "yaml-token"
+
+    def test_default_when_yaml_missing(self, tmp_path, monkeypatch):
+        """Test default value used when YAML key missing."""
+        config_content = """
+handsoff:
+  enabled: true
+"""
+        config_file = tmp_path / ".agentize.local.yaml"
+        config_file.write_text(config_content)
+
+        monkeypatch.chdir(tmp_path)
+
+        result = get_local_value("telegram.token", "default-token")
+        assert result == "default-token"
+
+
+class TestYamlSearchOrder:
+    """Tests for YAML file search order: project root → AGENTIZE_HOME → HOME."""
+
+    def test_project_root_takes_priority(self, tmp_path, monkeypatch):
+        """Test project root .agentize.local.yaml takes priority."""
+        # Create project root config
+        project_config = tmp_path / ".agentize.local.yaml"
+        project_config.write_text("""
+telegram:
+  token: "project-token"
+""")
+
+        # Create AGENTIZE_HOME config
+        home_dir = tmp_path / "home"
+        home_dir.mkdir()
+        home_config = home_dir / ".agentize.local.yaml"
+        home_config.write_text("""
+telegram:
+  token: "home-token"
+""")
+
+        monkeypatch.setenv("AGENTIZE_HOME", str(home_dir))
+        monkeypatch.chdir(tmp_path)
+
+        result = get_local_value("telegram.token", "default")
+        assert result == "project-token"
+
+    def test_agentize_home_fallback(self, tmp_path, monkeypatch):
+        """Test AGENTIZE_HOME used when project root has no config."""
+        # Create AGENTIZE_HOME config only
+        home_dir = tmp_path / "home"
+        home_dir.mkdir()
+        home_config = home_dir / ".agentize.local.yaml"
+        home_config.write_text("""
+telegram:
+  token: "home-token"
+""")
+
+        # Create empty project dir (no config)
+        project_dir = tmp_path / "project"
+        project_dir.mkdir()
+
+        monkeypatch.setenv("AGENTIZE_HOME", str(home_dir))
+        monkeypatch.chdir(project_dir)
+
+        result = get_local_value("telegram.token", "default")
+        assert result == "home-token"

@@ -4,7 +4,7 @@ Handsoff mode enables automatic continuation of `/ultra-planner`, `/issue-to-imp
 
 ## Overview
 
-When `HANDSOFF_MODE` is enabled, specific workflows automatically resume after each Claude Code stop until completion or a continuation limit is reached. This allows long-running planning and implementation workflows to proceed autonomously.
+When handsoff mode is enabled (via `handsoff.enabled: true` in `.agentize.local.yaml`), specific workflows automatically resume after each Claude Code stop until completion or a continuation limit is reached. This allows long-running planning and implementation workflows to proceed autonomously.
 
 **Supported workflows:**
 - `/ultra-planner` - Multi-agent debate-based planning (see [ultra-planner.md](ultra-planner.md))
@@ -83,8 +83,6 @@ Claude Code automatically resumes with continuation prompt
 
 ## Configuration
 
-### YAML Configuration (Recommended)
-
 Configure handsoff mode in `.agentize.local.yaml`:
 
 ```yaml
@@ -99,63 +97,38 @@ handsoff:
     flags: ""                      # Extra flags for acw
 ```
 
-**Precedence:** Environment variables override YAML settings.
+**YAML search order:**
+1. Project root `.agentize.local.yaml`
+2. `$AGENTIZE_HOME/.agentize.local.yaml`
+3. `$HOME/.agentize.local.yaml` (user-wide, created by installer)
 
-### Environment Variables
+### Settings Reference
 
-Environment variables can override YAML settings. Set in shell environment or `.claude/settings.json`:
+| YAML Path | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `handsoff.enabled` | bool | `true` | Enable handsoff auto-continuation |
+| `handsoff.max_continuations` | int | `10` | Maximum auto-continuations per workflow |
+| `handsoff.auto_permission` | bool | `true` | Enable Haiku LLM-based auto-permission |
+| `handsoff.debug` | bool | `false` | Enable debug logging |
+| `handsoff.supervisor.provider` | string | `none` | AI provider (none, claude, codex, cursor, opencode) |
+| `handsoff.supervisor.model` | string | provider-specific | Model for supervisor |
+| `handsoff.supervisor.flags` | string | `""` | Extra flags for acw |
 
-**`HANDSOFF_MODE`**
-- **Purpose:** Enable/disable handsoff auto-continuation
-- **YAML path:** `handsoff.enabled`
-- **Values:** `1` (enabled, default), `0` (disabled)
-- **Example:** `export HANDSOFF_MODE=1`
-
-**`HANDSOFF_MAX_CONTINUATIONS`**
-- **Purpose:** Maximum number of auto-continuations per workflow
-- **YAML path:** `handsoff.max_continuations`
-- **Values:** Integer (default: `10`)
-- **Example:** `export HANDSOFF_MAX_CONTINUATIONS=20`
-
-**`HANDSOFF_DEBUG`**
-- **Purpose:** Enable detailed debug logging and tool usage tracking
-- **YAML path:** `handsoff.debug`
-- **Values:** `1` (enabled), `0` (disabled, default)
-- **Log file:** `${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/permission.txt` (unified permission log)
-- **Additional output:** Server issue-filter logs (see [server.md](../server.md#issue-filtering-debug-logs))
-- **Example:** `export HANDSOFF_DEBUG=1`
+**Debug log file:** `${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/permission.txt` (unified permission log)
 
 ### Telegram Approval (Optional)
 
 When configured, enables remote approval of tool usage via Telegram. When a PreToolUse decision is `ask`, the hook sends a Telegram message allowing you to approve or deny from your phone.
 
-**`AGENTIZE_USE_TG`**
-- **Purpose:** Enable Telegram approval integration
-- **Values:** `1|true|on` (enabled), `0` (disabled, default)
-- **Example:** `export AGENTIZE_USE_TG=1`
-
-**`TG_API_TOKEN`**
-- **Purpose:** Telegram bot token from @BotFather
-- **Example:** `export TG_API_TOKEN=123456:ABC-DEF...`
-
-**`TG_CHAT_ID`**
-- **Purpose:** Telegram chat/channel ID for approval messages
-- **Example:** `export TG_CHAT_ID=12345678`
-
-**`TG_APPROVAL_TIMEOUT_SEC`**
-- **Purpose:** Maximum wait time for Telegram response
-- **Default:** `60` seconds
-- **Maximum:** `7200` seconds (2 hours) - limited by hook timeout in `.claude/settings.json`
-- **Example:** `export TG_APPROVAL_TIMEOUT_SEC=1800` (30 minutes)
-
-**`TG_POLL_INTERVAL_SEC`**
-- **Purpose:** Interval between Telegram API polls
-- **Default:** `5` seconds
-- **Example:** `export TG_POLL_INTERVAL_SEC=3`
-
-**`TG_ALLOWED_USER_IDS`** (optional)
-- **Purpose:** Comma-separated list of Telegram user IDs allowed to approve
-- **Example:** `export TG_ALLOWED_USER_IDS=123456,789012`
+```yaml
+telegram:
+  enabled: true
+  token: "123456:ABC-DEF..."       # Bot token from @BotFather
+  chat_id: "12345678"              # Chat/channel ID
+  timeout_sec: 60                  # Approval timeout (max: 7200)
+  poll_interval_sec: 5             # Poll interval
+  allowed_user_ids: "123,456"      # Allowed user IDs (CSV, optional)
+```
 
 **Behavior:**
 - When Telegram is enabled and configured, `ask` decisions are sent to Telegram
@@ -164,18 +137,6 @@ When configured, enables remote approval of tool usage via Telegram. When a PreT
 - On timeout, the original message is edited to show "⏰ Timed Out" status with buttons removed
 - On API error, falls back to `ask` (prompts local user)
 - Missing configuration logs a warning and falls back to `ask`
-
-### Settings.json Configuration
-
-```json
-{
-  "environment": {
-    "HANDSOFF_MODE": "1",
-    "HANDSOFF_MAX_CONTINUATIONS": "10",
-    "HANDSOFF_DEBUG": "0"
-  }
-}
-```
 
 ## Workflow-Specific Behavior
 
@@ -291,10 +252,9 @@ The `issue_no` field is only present when the workflow was invoked with an issue
 
 ### View Debug Logs
 
-Enable debug logging and view logs:
+Enable debug logging by setting `handsoff.debug: true` in `.agentize.local.yaml`, then view logs:
 
 ```bash
-export HANDSOFF_DEBUG=1
 tail -f ${AGENTIZE_HOME:-.}/.tmp/hook-debug.log
 ```
 
@@ -346,7 +306,7 @@ Handsoff mode is implemented via three Claude Code hooks (see [.claude/hooks/REA
 - Rules are sourced from `.claude-plugin/lib/permission/rules.py` (canonical location)
 - Evaluation order: Global rules → Workflow auto-allow → Haiku LLM → Telegram (single final escalation)
 - Returns `allow/deny/ask` decision to Claude Code
-- Logs tool usage when `HANDSOFF_DEBUG=1`
+- Logs tool usage when `handsoff.debug: true` is set in `.agentize.local.yaml`
 - Falls back to `ask` on any import/execution errors
 
 **Architecture notes:**
@@ -429,13 +389,13 @@ The hooks will automatically pick up the new workflow—no changes needed to `.c
 
 - **Non-workflow prompts:** Regular Claude Code usage (not `/ultra-planner`, `/issue-to-impl`, `/plan-to-issue`, or `/setup-viewboard`) is unaffected
 - **Session isolation:** Each session has independent state; switching sessions resets continuation tracking
-- **Max continuations:** Workflows stop after reaching `HANDSOFF_MAX_CONTINUATIONS` (default: 10)
+- **Max continuations:** Workflows stop after reaching `handsoff.max_continuations` (default: 10)
 - **Error recovery:** If Claude Code encounters critical errors, manual intervention may be required
 - **No cross-session state:** Session state is not preserved across Claude Code restarts
 
 ## Best Practices
 
-1. **Set appropriate limits:** Adjust `HANDSOFF_MAX_CONTINUATIONS` based on workflow complexity
+1. **Set appropriate limits:** Adjust `handsoff.max_continuations` based on workflow complexity
    - `/ultra-planner`: 5-10 continuations typically sufficient
    - `/issue-to-impl`: 10-20 continuations for complex features
 
@@ -448,7 +408,7 @@ The hooks will automatically pick up the new workflow—no changes needed to `.c
    rm ${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/*.json
    ```
 
-5. **Enable debug logging:** Use `HANDSOFF_DEBUG=1` during initial handsoff setup to understand behavior
+5. **Enable debug logging:** Set `handsoff.debug: true` during initial handsoff setup to understand behavior
 
 ## See Also
 

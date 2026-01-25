@@ -17,21 +17,22 @@ Load runtime configuration from `.agentize.local.yaml`.
 
 **Returns:** Tuple of (config_dict, config_path). config_path is None if file not found.
 
-**Search behavior:** Walks up from `start_dir` to parent directories until `.agentize.local.yaml` is found or root is reached.
+**Search behavior:**
+1. Walk up from `start_dir` to parent directories until `.agentize.local.yaml` is found
+2. If not found, try `$AGENTIZE_HOME/.agentize.local.yaml`
+3. If not found, try `$HOME/.agentize.local.yaml`
 
 **Raises:** `ValueError` for unknown top-level keys or invalid structure.
 
-### `resolve_precedence(cli_value, env_value, config_value, default) -> Any`
+### `resolve_precedence(config_value, default) -> Any`
 
-Return first non-None value in precedence order: CLI > env > config > default.
+Return first non-None value in precedence order: config > default.
 
 **Parameters:**
-- `cli_value`: Value from CLI argument
-- `env_value`: Value from environment variable
 - `config_value`: Value from `.agentize.local.yaml`
 - `default`: Default value
 
-**Returns:** First non-None value, or default if all are None.
+**Returns:** First non-None value, or default if config_value is None.
 
 ### `extract_workflow_models(config: dict) -> dict[str, str]`
 
@@ -58,26 +59,26 @@ This minimal parser avoids external dependencies, consistent with the project's 
 # .agentize.local.yaml - Developer-specific local configuration
 
 handsoff:
-  enabled: true                    # HANDSOFF_MODE (default: true)
-  max_continuations: 10            # HANDSOFF_MAX_CONTINUATIONS (default: 10)
-  auto_permission: true            # HANDSOFF_AUTO_PERMISSION (default: true)
-  debug: false                     # HANDSOFF_DEBUG (default: false)
+  enabled: true                    # Enable handsoff auto-continuation (default: true)
+  max_continuations: 10            # Max auto-continuations per workflow (default: 10)
+  auto_permission: true            # Enable Haiku LLM-based auto-permission (default: true)
+  debug: false                     # Enable debug logging (default: false)
   supervisor:
-    provider: claude               # HANDSOFF_SUPERVISOR (default: none)
-    model: opus                    # HANDSOFF_SUPERVISOR_MODEL
-    flags: ""                      # HANDSOFF_SUPERVISOR_FLAGS
+    provider: claude               # AI provider (default: none)
+    model: opus                    # Model for supervisor
+    flags: ""                      # Extra flags for acw
 
 server:
   period: 5m                       # Polling period
   num_workers: 5                   # Worker pool size
 
 telegram:
-  enabled: false                   # AGENTIZE_USE_TG (default: false)
-  token: "..."                     # TG_API_TOKEN
-  chat_id: "..."                   # TG_CHAT_ID
-  timeout_sec: 60                  # TG_APPROVAL_TIMEOUT_SEC
-  poll_interval_sec: 5             # TG_POLL_INTERVAL_SEC
-  allowed_user_ids: "123,456"      # TG_ALLOWED_USER_IDS (CSV string)
+  enabled: false                   # Enable Telegram approval (default: false)
+  token: "..."                     # Bot API token from @BotFather
+  chat_id: "..."                   # Chat/channel ID
+  timeout_sec: 60                  # Approval timeout (default: 60)
+  poll_interval_sec: 5             # Poll interval (default: 5)
+  allowed_user_ids: "123,456"      # Allowed user IDs (CSV string)
 
 workflows:
   impl:
@@ -94,13 +95,16 @@ workflows:
 
 ## Design Rationale
 
-**Precedence order:** CLI > env > config > default ensures:
-1. Operators can override config via CLI for ad-hoc runs
-2. Environment variables provide deployment flexibility (esp. for Telegram credentials)
-3. Config file provides persistent defaults
-4. Sensible defaults when nothing is configured
+**Precedence order:** config > default ensures:
+1. YAML file provides persistent defaults
+2. Sensible defaults when nothing is configured
 
-**Parent directory search:** Allows running server from any subdirectory while finding config at project root.
+**YAML search order:**
+1. Project root `.agentize.local.yaml`
+2. `$AGENTIZE_HOME/.agentize.local.yaml`
+3. `$HOME/.agentize.local.yaml` (user-wide, created by installer)
+
+This enables user-wide configuration (e.g., Telegram credentials) while allowing project-specific overrides.
 
 **Strict validation:** Raises `ValueError` for unknown keys to catch typos early rather than silently ignoring misconfiguration.
 

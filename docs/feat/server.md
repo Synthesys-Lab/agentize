@@ -15,13 +15,13 @@ A long-running server that monitors your GitHub Projects kanban board and automa
 
 ```bash
 # Via lol CLI (recommended)
-lol serve [--tg-token=<token>] [--tg-chat-id=<id>] [--period=5m] [--num-workers=5]
+lol serve [--period=5m] [--num-workers=5]
 
 # Direct Python invocation
-python -m agentize.server [--tg-token=<token>] [--tg-chat-id=<id>] --period=5m --num-workers=5
+python -m agentize.server --period=5m --num-workers=5
 ```
 
-Telegram credentials are optional. When not provided via CLI, they are resolved from environment variables (`TG_API_TOKEN`, `TG_CHAT_ID`) or `.agentize.local.yaml`. The server runs in notification-less mode when no credentials are configured.
+Telegram credentials are loaded from `.agentize.local.yaml`. The server searches for this file in: project root → `$AGENTIZE_HOME` → `$HOME`. The server runs in notification-less mode when no credentials are configured.
 
 ## Worker Pool
 
@@ -124,7 +124,7 @@ If rebase fails due to conflicts:
 
 ### Debug Logging
 
-When `HANDSOFF_DEBUG=1` is set, the server logs PR discovery and filtering decisions:
+When `handsoff.debug: true` is set in `.agentize.local.yaml`, the server logs PR discovery and filtering decisions:
 
 ```
   - PR #123: { mergeable: CONFLICTING, status: Backlog }, decision: QUEUE, reason: needs rebase
@@ -164,7 +164,7 @@ When a feature request candidate is found:
 
 ### Debug Logging (Feature Request)
 
-When `HANDSOFF_DEBUG=1` is set:
+When `handsoff.debug: true` is set in `.agentize.local.yaml`:
 
 ```
   - Issue #42: { labels: [agentize:dev-req], status: Backlog }, decision: READY, reason: matches criteria
@@ -231,7 +231,7 @@ This lifecycle uses existing Status options without requiring new statuses like 
 
 ### Debug Logging (Review Resolution)
 
-When `HANDSOFF_DEBUG=1` is set:
+When `handsoff.debug: true` is set in `.agentize.local.yaml`:
 
 ```
   - PR #123: { issue: 42, status: Proposed, threads: 3 unresolved }, decision: READY, reason: matches criteria
@@ -285,7 +285,7 @@ When a refinement candidate is found:
 
 ### Debug Logging (Refinement)
 
-When `HANDSOFF_DEBUG=1` is set:
+When `handsoff.debug: true` is set in `.agentize.local.yaml`:
 
 ```
   - Issue #42: { labels: [agentize:plan, agentize:refine], status: Proposed }, decision: READY, reason: matches criteria
@@ -364,7 +364,7 @@ workflows:
     model: haiku
 ```
 
-**Configuration precedence:** CLI args > environment variables > `.agentize.local.yaml` > defaults
+**Configuration precedence:** `.agentize.local.yaml` > defaults
 
 **Sections:**
 - `handsoff`: Handsoff mode settings for auto-continuation (see [Handsoff Mode](core/handsoff.md))
@@ -372,7 +372,10 @@ workflows:
 - `telegram`: Bot token, chat ID, and approval settings (see [Telegram Approval](permissions/telegram.md))
 - `workflows`: Per-workflow Claude model selection (opus, sonnet, haiku)
 
-**File location:** The server searches for `.agentize.local.yaml` starting from the current directory and walking up to parent directories.
+**YAML search order:**
+1. Project root `.agentize.local.yaml`
+2. `$AGENTIZE_HOME/.agentize.local.yaml`
+3. `$HOME/.agentize.local.yaml` (user-wide, created by installer)
 
 For the complete configuration schema, see [Configuration Reference](../envvar.md).
 
@@ -405,21 +408,18 @@ Error messages include source location (file:line:function) for quick debugging:
 [26-01-09-12:30:47] [ERROR] [__main__.py:163:query_issue_project_status] GraphQL query failed: ...
 ```
 
-For additional context (query and variables), set `HANDSOFF_DEBUG=1`:
+For additional context (query and variables), set `handsoff.debug: true` in `.agentize.local.yaml`:
 
-```bash
-HANDSOFF_DEBUG=1 lol serve --tg-token=<token> --tg-chat-id=<id>
+```yaml
+handsoff:
+  debug: true
 ```
 
 This logs the GraphQL query and variables on failures, helping diagnose variable type mismatches or query syntax issues.
 
 ### Issue Filtering Debug Logs
 
-When issues aren't being picked up by the server, enable debug logging to see filtering decisions:
-
-```bash
-HANDSOFF_DEBUG=1 lol serve
-```
+When issues aren't being picked up by the server, enable debug logging to see filtering decisions by setting `handsoff.debug: true` in `.agentize.local.yaml`.
 
 Debug output shows per-issue inspection with status, labels, and rejection reasons:
 
@@ -438,7 +438,7 @@ Each individual scan line includes:
 
 ## Telegram Notifications
 
-When Telegram credentials are configured (via CLI flags, environment variables `TG_API_TOKEN`/`TG_CHAT_ID`, or `.agentize.local.yaml`), the server sends notifications:
+When Telegram credentials are configured in `.agentize.local.yaml`, the server sends notifications:
 
 ### Startup Notification
 

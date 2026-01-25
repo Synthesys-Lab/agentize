@@ -15,8 +15,6 @@ Telegram escalation occurs **once at the end**, not at multiple points. This pre
 
 ## Configuration
 
-### YAML Configuration (Recommended)
-
 Configure Telegram approval in `.agentize.local.yaml`:
 
 ```yaml
@@ -29,20 +27,21 @@ telegram:
   allowed_user_ids: "123,456,789"  # Allowed user IDs (CSV, optional)
 ```
 
-**Precedence:** Environment variables override YAML settings.
+**YAML search order:**
+1. Project root `.agentize.local.yaml`
+2. `$AGENTIZE_HOME/.agentize.local.yaml`
+3. `$HOME/.agentize.local.yaml` (user-wide, created by installer)
 
-### Environment Variables
+### Settings Reference
 
-Environment variables can override YAML settings:
-
-| Variable | YAML Path | Required | Description |
-|----------|-----------|----------|-------------|
-| `AGENTIZE_USE_TG` | `telegram.enabled` | Yes | Set to `1`, `true`, or `on` to enable |
-| `TG_API_TOKEN` | `telegram.token` | Yes | Telegram Bot API token |
-| `TG_CHAT_ID` | `telegram.chat_id` | Yes | Chat ID to send approval requests to |
-| `TG_APPROVAL_TIMEOUT_SEC` | `telegram.timeout_sec` | No | Timeout in seconds (default: 60) |
-| `TG_POLL_INTERVAL_SEC` | `telegram.poll_interval_sec` | No | Poll interval in seconds (default: 5) |
-| `TG_ALLOWED_USER_IDS` | `telegram.allowed_user_ids` | No | Comma-separated list of allowed user IDs |
+| YAML Path | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `telegram.enabled` | bool | Yes | `false` | Set to `true` to enable |
+| `telegram.token` | string | Yes | - | Telegram Bot API token |
+| `telegram.chat_id` | string | Yes | - | Chat ID to send approval requests to |
+| `telegram.timeout_sec` | int | No | `60` | Timeout in seconds (max: 7200) |
+| `telegram.poll_interval_sec` | int | No | `5` | Poll interval in seconds |
+| `telegram.allowed_user_ids` | CSV | No | - | Comma-separated list of allowed user IDs |
 
 ## Approval Flow
 

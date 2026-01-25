@@ -61,17 +61,13 @@ Leaf module `log.py` has no internal dependencies to avoid import cycles.
 
 ```bash
 # Via lol CLI (recommended)
-lol serve --tg-token=<token> --tg-chat-id=<id> --period=5m
+lol serve --period=5m --num-workers=5
 
 # Direct Python invocation
-python -m agentize.server --period=5m --tg-token=<token> --tg-chat-id=<id>
+python -m agentize.server --period=5m --num-workers=5
 ```
 
-Telegram credentials can also be provided via environment variables:
-- `TG_API_TOKEN` - Telegram Bot API token
-- `TG_CHAT_ID` - Telegram chat ID
-
-CLI arguments take precedence over environment variables.
+Telegram credentials are loaded from `.agentize.local.yaml`. The server searches for this file in: project root → `$AGENTIZE_HOME` → `$HOME`.
 
 ## Configuration
 
@@ -106,10 +102,15 @@ workflows:
     model: haiku
 ```
 
-**Precedence:** CLI args > env vars (TG only) > `.agentize.local.yaml` > defaults
+**Precedence:** `.agentize.local.yaml` > defaults
+
+**YAML search order:**
+1. Project root `.agentize.local.yaml`
+2. `$AGENTIZE_HOME/.agentize.local.yaml`
+3. `$HOME/.agentize.local.yaml` (user-wide, created by installer)
 
 See [Server Runtime Configuration](../../../docs/feat/server.md#runtime-configuration) for details.
 
 ## Debug Logging
 
-Set `HANDSOFF_DEBUG=1` to enable detailed logging of issue filtering decisions. Debug messages use prefixes like `[pr-rebase]` for PR conflict handling. See [docs/feat/server.md](../../../docs/feat/server.md#issue-filtering-debug-logs) for output format and examples.
+Set `handsoff.debug: true` in `.agentize.local.yaml` to enable detailed logging of issue filtering decisions. Debug messages use prefixes like `[pr-rebase]` for PR conflict handling. See [docs/feat/server.md](../../../docs/feat/server.md#issue-filtering-debug-logs) for output format and examples.

@@ -1,6 +1,6 @@
 # Configuration Reference
 
-This document provides the unified configuration reference for Agentize, using YAML-first guidance with environment variable overrides.
+This document provides the unified configuration reference for Agentize. Telegram and handsoff settings use YAML-only configuration.
 
 ## Configuration Files
 
@@ -10,12 +10,15 @@ This document provides the unified configuration reference for Agentize, using Y
 | `.agentize.local.yaml` | Developer settings (credentials, handsoff, Telegram) | No |
 
 **Precedence order (highest to lowest):**
-1. CLI arguments (e.g., `--tg-token`)
-2. Environment variables (e.g., `TG_API_TOKEN`)
-3. `.agentize.local.yaml`
-4. Default values
+1. `.agentize.local.yaml`
+2. Default values
 
-Copy `.agentize.local.example.yaml` to `.agentize.local.yaml` and customize for your setup.
+**YAML search order:**
+1. Project root `.agentize.local.yaml`
+2. `$AGENTIZE_HOME/.agentize.local.yaml`
+3. `$HOME/.agentize.local.yaml` (user-wide, created by installer)
+
+Copy `.agentize.local.example.yaml` to `.agentize.local.yaml` and customize for your setup, or configure your credentials in `$HOME/.agentize.local.yaml` for use across all projects.
 
 ## YAML Configuration Schema
 
@@ -59,52 +62,52 @@ workflows:
     model: haiku                   # PR rebase
 ```
 
-## Environment Variable Mapping
+## YAML Settings Reference
 
-Environment variables provide overrides for YAML settings. Use them for CI/CD, ad-hoc runs, or when YAML is impractical.
+All Telegram and handsoff settings are configured via YAML only.
 
 ### Handsoff Mode
 
-| YAML Path | Environment Variable | Type | Default |
-|-----------|---------------------|------|---------|
-| `handsoff.enabled` | `HANDSOFF_MODE` | bool | `true` |
-| `handsoff.max_continuations` | `HANDSOFF_MAX_CONTINUATIONS` | int | `10` |
-| `handsoff.auto_permission` | `HANDSOFF_AUTO_PERMISSION` | bool | `true` |
-| `handsoff.debug` | `HANDSOFF_DEBUG` | bool | `false` |
-| `handsoff.supervisor.provider` | `HANDSOFF_SUPERVISOR` | string | `none` |
-| `handsoff.supervisor.model` | `HANDSOFF_SUPERVISOR_MODEL` | string | provider-specific |
-| `handsoff.supervisor.flags` | `HANDSOFF_SUPERVISOR_FLAGS` | string | `""` |
+| YAML Path | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `handsoff.enabled` | bool | `true` | Enable handsoff auto-continuation |
+| `handsoff.max_continuations` | int | `10` | Maximum auto-continuations per workflow |
+| `handsoff.auto_permission` | bool | `true` | Enable Haiku LLM-based auto-permission |
+| `handsoff.debug` | bool | `false` | Enable debug logging |
+| `handsoff.supervisor.provider` | string | `none` | AI provider (none, claude, codex, cursor, opencode) |
+| `handsoff.supervisor.model` | string | provider-specific | Model for supervisor |
+| `handsoff.supervisor.flags` | string | `""` | Extra flags for acw |
 
 See [Handsoff Mode](feat/core/handsoff.md) for detailed documentation.
 
 ### Telegram Approval
 
-| YAML Path | Environment Variable | Type | Default |
-|-----------|---------------------|------|---------|
-| `telegram.enabled` | `AGENTIZE_USE_TG` | bool | `false` |
-| `telegram.token` | `TG_API_TOKEN` | string | - |
-| `telegram.chat_id` | `TG_CHAT_ID` | string | - |
-| `telegram.timeout_sec` | `TG_APPROVAL_TIMEOUT_SEC` | int | `60` |
-| `telegram.poll_interval_sec` | `TG_POLL_INTERVAL_SEC` | int | `5` |
-| `telegram.allowed_user_ids` | `TG_ALLOWED_USER_IDS` | CSV | - |
+| YAML Path | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `telegram.enabled` | bool | `false` | Enable Telegram approval |
+| `telegram.token` | string | - | Bot API token from @BotFather |
+| `telegram.chat_id` | string | - | Chat/channel ID |
+| `telegram.timeout_sec` | int | `60` | Approval timeout (max: 7200) |
+| `telegram.poll_interval_sec` | int | `5` | Poll interval |
+| `telegram.allowed_user_ids` | CSV | - | Allowed user IDs (comma-separated) |
 
 See [Telegram Approval](feat/permissions/telegram.md) for detailed documentation.
 
 ### Server Runtime
 
-| YAML Path | Environment Variable | Type | Default |
-|-----------|---------------------|------|---------|
-| `server.period` | (CLI only) | string | `5m` |
-| `server.num_workers` | (CLI only) | int | `5` |
+| YAML Path | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `server.period` | string | `5m` | Polling interval (format: Nm or Ns) |
+| `server.num_workers` | int | `5` | Worker pool size |
 
 ### Workflow Models
 
-| YAML Path | Environment Variable | Type | Default |
-|-----------|---------------------|------|---------|
-| `workflows.impl.model` | (YAML only) | string | - |
-| `workflows.refine.model` | (YAML only) | string | - |
-| `workflows.dev_req.model` | (YAML only) | string | - |
-| `workflows.rebase.model` | (YAML only) | string | - |
+| YAML Path | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `workflows.impl.model` | string | - | Model for implementation workflows |
+| `workflows.refine.model` | string | - | Model for refinement workflows |
+| `workflows.dev_req.model` | string | - | Model for dev-req planning |
+| `workflows.rebase.model` | string | - | Model for PR rebase |
 
 ## Environment-Only Variables
 
@@ -135,7 +138,7 @@ These variables are set by shell scripts or the runtime and do not have YAML equ
 ### Handsoff with Telegram Approval
 
 ```yaml
-# .agentize.local.yaml
+# .agentize.local.yaml (or $HOME/.agentize.local.yaml for user-wide config)
 handsoff:
   enabled: true
   max_continuations: 20
@@ -145,17 +148,6 @@ telegram:
   token: "your-bot-token"
   chat_id: "your-chat-id"
   timeout_sec: 300
-```
-
-Or via environment (for CI/CD):
-
-```bash
-export HANDSOFF_MODE=1
-export HANDSOFF_MAX_CONTINUATIONS=20
-export AGENTIZE_USE_TG=1
-export TG_API_TOKEN="your-bot-token"
-export TG_CHAT_ID="your-chat-id"
-export TG_APPROVAL_TIMEOUT_SEC=300
 ```
 
 ### Minimal Handsoff Setup
@@ -177,13 +169,6 @@ handsoff:
   debug: true
 ```
 
-Or:
-
-```bash
-source setup.sh  # Sets AGENTIZE_HOME and PYTHONPATH
-export HANDSOFF_DEBUG=1
-```
-
 ### Supervisor Configuration
 
 ```yaml
@@ -193,14 +178,6 @@ handsoff:
     provider: claude
     model: opus
     flags: "--timeout 1800"
-```
-
-Or:
-
-```bash
-export HANDSOFF_SUPERVISOR=claude
-export HANDSOFF_SUPERVISOR_MODEL=opus
-export HANDSOFF_SUPERVISOR_FLAGS="--timeout 1800"
 ```
 
 **Provider defaults:**

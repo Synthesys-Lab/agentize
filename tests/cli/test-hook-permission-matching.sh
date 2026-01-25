@@ -111,33 +111,44 @@ test_info "Test 16: AskUserQuestion tool → allow"
 decision=$(run_hook_with_fixture "askuserquestion_allowed")
 [ "$decision" = "allow" ] || test_fail "Expected 'allow' for AskUserQuestion tool, got '$decision'"
 
-# Test 17: Telegram config gating - disabled when AGENTIZE_USE_TG is not set
-test_info "Test 17: Telegram disabled by default (no env)"
-# Unset all Telegram-related vars and verify ask decision still works
+# Test 17: Telegram config gating - disabled when YAML has no telegram.enabled
+test_info "Test 17: Telegram disabled by default (no YAML config)"
+# Create tmp dir with no .agentize.local.yaml
+TMP_TG_DIR=$(make_temp_dir "telegram-disabled-test")
 (
-    unset AGENTIZE_USE_TG TG_API_TOKEN TG_CHAT_ID
+    export AGENTIZE_HOME="$TMP_TG_DIR"
     decision=$(run_hook_with_fixture "bash_ask_python")
     [ "$decision" = "ask" ] || test_fail "Expected 'ask' when Telegram disabled, got '$decision'"
 )
+cleanup_dir "$TMP_TG_DIR"
 
-# Test 18: Telegram config gating - missing TG_API_TOKEN returns ask
+# Test 18: Telegram config gating - enabled but missing token in YAML returns ask
 test_info "Test 18: Telegram with missing token returns ask"
+TMP_TG_DIR=$(make_temp_dir "telegram-no-token-test")
+mkdir -p "$TMP_TG_DIR"
+echo 'telegram:
+  enabled: true
+  chat_id: "123"' > "$TMP_TG_DIR/.agentize.local.yaml"
 (
-    export AGENTIZE_USE_TG=1
-    unset TG_API_TOKEN TG_CHAT_ID
+    export AGENTIZE_HOME="$TMP_TG_DIR"
     decision=$(run_hook_with_fixture "bash_ask_python")
-    [ "$decision" = "ask" ] || test_fail "Expected 'ask' with missing TG_API_TOKEN, got '$decision'"
+    [ "$decision" = "ask" ] || test_fail "Expected 'ask' with missing telegram.token, got '$decision'"
 )
+cleanup_dir "$TMP_TG_DIR"
 
-# Test 19: Telegram config gating - missing TG_CHAT_ID returns ask
+# Test 19: Telegram config gating - enabled but missing chat_id in YAML returns ask
 test_info "Test 19: Telegram with missing chat ID returns ask"
+TMP_TG_DIR=$(make_temp_dir "telegram-no-chat-test")
+mkdir -p "$TMP_TG_DIR"
+echo 'telegram:
+  enabled: true
+  token: "test-token"' > "$TMP_TG_DIR/.agentize.local.yaml"
 (
-    export AGENTIZE_USE_TG=1
-    export TG_API_TOKEN="test_token"
-    unset TG_CHAT_ID
+    export AGENTIZE_HOME="$TMP_TG_DIR"
     decision=$(run_hook_with_fixture "bash_ask_python")
-    [ "$decision" = "ask" ] || test_fail "Expected 'ask' with missing TG_CHAT_ID, got '$decision'"
+    [ "$decision" = "ask" ] || test_fail "Expected 'ask' with missing telegram.chat_id, got '$decision'"
 )
+cleanup_dir "$TMP_TG_DIR"
 
 # Test 20: HTML escape function handles special characters correctly
 test_info "Test 20: HTML escape handles <, >, & correctly"

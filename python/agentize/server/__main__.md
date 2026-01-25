@@ -4,28 +4,30 @@
 
 Functions exported via `__init__.py`:
 
-### `run_server(period: int, tg_token: str | None = None, tg_chat_id: str | None = None, num_workers: int = 5, workflow_models: dict[str, str] | None = None) -> None`
+### `run_server(period: int, num_workers: int = 5, workflow_models: dict[str, str] | None = None) -> None`
 
 Main polling loop that monitors GitHub Projects for ready issues.
 
 **Parameters:**
 - `period`: Polling interval in seconds
-- `tg_token`: Telegram Bot API token (optional)
-- `tg_chat_id`: Telegram chat ID (optional)
 - `num_workers`: Maximum concurrent workers (default: 5, 0 = unlimited)
 - `workflow_models`: Per-workflow Claude model mapping (optional)
   - Keys: `impl`, `refine`, `dev_req`, `rebase`
   - Values: `opus`, `sonnet`, `haiku`
 
-**Telegram credential resolution (precedence):**
-1. CLI args (`tg_token`, `tg_chat_id` parameters)
-2. Environment variables (`TG_API_TOKEN`, `TG_CHAT_ID`)
-3. `.agentize.local.yaml` (`telegram.token`, `telegram.chat_id`)
-4. Defaults to empty string (notification-less mode)
+**Telegram credential resolution:**
+Telegram credentials are loaded from `.agentize.local.yaml` (no CLI or environment variable overrides).
+
+**YAML search order:**
+1. Project root `.agentize.local.yaml`
+2. `$AGENTIZE_HOME/.agentize.local.yaml`
+3. `$HOME/.agentize.local.yaml`
+
+If no credentials are configured, the server runs in notification-less mode.
 
 **Behavior:**
 - Loads config from `.agentize.yaml` and `.agentize.local.yaml`
-- Resolves Telegram credentials from YAML + env + CLI with proper precedence
+- Resolves Telegram credentials from YAML only
 - Sends startup notification if Telegram configured
 - Polls project items at `period` intervals
 - Spawns worktrees for issues with "Plan Accepted" status and `agentize:plan` label
@@ -126,12 +128,12 @@ Query GitHub Projects v2 for items. Uses label-first discovery via `gh issue lis
 ### `filter_ready_issues(items: list[dict]) -> list[int]`
 
 Filter items to issues with "Plan Accepted" status and `agentize:plan` label.
-When `HANDSOFF_DEBUG=1`, logs per-issue inspection with status, labels, and rejection reasons.
+When `handsoff.debug: true` is set in `.agentize.local.yaml`, logs per-issue inspection with status, labels, and rejection reasons.
 
 ### `filter_ready_refinements(items: list[dict]) -> list[int]`
 
 Filter items to issues eligible for refinement: Status "Proposed" + labels include both `agentize:plan` and `agentize:refine`.
-When `HANDSOFF_DEBUG=1`, logs per-issue inspection with `[refine-filter]` prefix.
+When `handsoff.debug: true` is set in `.agentize.local.yaml`, logs per-issue inspection with `[refine-filter]` prefix.
 
 ### `query_refinement_items(org: str, project_number: int, owner: str, repo: str) -> list[dict]`
 
@@ -190,7 +192,7 @@ Filter items to issues eligible for feat-request planning:
 - Does NOT have `agentize:plan` label (not already planned)
 - Status is NOT "Done" or "In Progress" (terminal statuses)
 
-When `HANDSOFF_DEBUG=1`, logs per-issue inspection with `[dev-req-filter]` prefix.
+When `handsoff.debug: true` is set in `.agentize.local.yaml`, logs per-issue inspection with `[dev-req-filter]` prefix.
 
 ### `spawn_feat_request(issue_no: int, model: str | None = None) -> tuple[bool, int | None]`
 
@@ -268,7 +270,7 @@ Filter PRs to those eligible for review resolution.
 - Requires linked issue Status == `Proposed`
 - Requires at least one unresolved, non-outdated review thread
 
-When `HANDSOFF_DEBUG=1`, logs per-PR inspection with `[review-resolution-filter]` prefix.
+When `handsoff.debug: true` is set in `.agentize.local.yaml`, logs per-PR inspection with `[review-resolution-filter]` prefix.
 
 **Returns:** List of `(pr_no, issue_no)` tuples for PRs ready for review resolution.
 
@@ -315,7 +317,7 @@ Filter PRs to those with merge conflicts and not already being rebased.
 - Skips if resolved issue has `Status == "Rebasing"` (already being processed)
 - Queues unresolvable PRs (best-effort - cannot check status without issue number)
 
-When `HANDSOFF_DEBUG=1`, logs per-PR inspection with `[pr-rebase-filter]` prefix.
+When `handsoff.debug: true` is set in `.agentize.local.yaml`, logs per-PR inspection with `[pr-rebase-filter]` prefix.
 
 **Returns:** List of PR numbers that need rebasing.
 

@@ -97,7 +97,7 @@ These patterns are defined per-workflow and only active during that workflow's s
 
 ### Stage 3: Haiku LLM
 
-When enabled via `HANDSOFF_AUTO_PERMISSION=1`, Haiku evaluates tool requests using conversation context. This provides intelligent permission decisions for operations not covered by explicit rules.
+When enabled via `handsoff.auto_permission: true` in `.agentize.local.yaml`, Haiku evaluates tool requests using conversation context. This provides intelligent permission decisions for operations not covered by explicit rules.
 
 **Decision behavior:**
 - `deny` → Request is denied. No further evaluation.
@@ -106,7 +106,7 @@ When enabled via `HANDSOFF_AUTO_PERMISSION=1`, Haiku evaluates tool requests usi
 
 ### Stage 4: Telegram Escalation
 
-Telegram approval is the **single final escalation point** for all `ask` outcomes. When enabled via `AGENTIZE_USE_TG=1`, the system sends approval requests to Telegram.
+Telegram approval is the **single final escalation point** for all `ask` outcomes. When enabled via `telegram.enabled: true` in `.agentize.local.yaml`, the system sends approval requests to Telegram.
 
 **Decision behavior:**
 - `deny` → Request is denied.
@@ -184,11 +184,11 @@ Rules are evaluated in order: deny → ask → allow. The first match wins.
 
 Workflow-specific patterns are defined in `.claude-plugin/lib/permission/determine.py` under workflow-specific pattern lists (e.g., `_SETUP_VIEWBOARD_ALLOW_PATTERNS`).
 
-### Environment Variables
+### YAML Configuration
 
-| Variable | Purpose |
-|----------|---------|
-| `HANDSOFF_AUTO_PERMISSION` | Enable Haiku LLM evaluation (`1` to enable) |
-| `AGENTIZE_USE_TG` | Enable Telegram escalation (`1` to enable) |
+| YAML Path | Purpose |
+|-----------|---------|
+| `handsoff.auto_permission` | Enable Haiku LLM evaluation (`true` to enable) |
+| `telegram.enabled` | Enable Telegram escalation (`true` to enable) |
 
 See [telegram.md](telegram.md) and [handsoff.md](../core/handsoff.md) for full configuration options.

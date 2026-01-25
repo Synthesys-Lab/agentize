@@ -26,10 +26,19 @@ by following these steps:
 2. Find your Telegram user ID:
    - Search for `@idbot` on Telegram.
    - Use `/getid` command to get your user ID, which should be 8 digits. Save this ID securely. `YOUR_USER_ID`
-3. Start our local polling server using `lol serve` subcommand
+3. Configure Telegram credentials in `.agentize.local.yaml` (or `$HOME/.agentize.local.yaml` for user-wide config):
+
+```yaml
+telegram:
+  enabled: true
+  token: "YOUR_BOT_TOKEN"
+  chat_id: "YOUR_USER_ID"
+```
+
+4. Start our local polling server using `lol serve` subcommand
 
 ```bash
-lol serve --tg-token="YOUR_BOT_TOKEN" --tg-chat-id="YOUR_USER_ID" --period=2m --num-workers=5
+lol serve --period=2m --num-workers=5
 ```
 
 This command will start a local server that polls your issue board every 2 minutes and sends updates

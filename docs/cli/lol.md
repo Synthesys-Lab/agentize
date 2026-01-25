@@ -118,19 +118,17 @@ lol usage --week
 Long-running server that polls GitHub Projects for "Plan Accepted" issues and automatically invokes `wt spawn` to start implementation.
 
 ```bash
-lol serve [--tg-token=<token>] [--tg-chat-id=<chat_id>] [--period=5m] [--num-workers=5]
+lol serve [--period=5m] [--num-workers=5]
 ```
 
 #### Options
 
 | Option | Required | Default | Description |
 |--------|----------|---------|-------------|
-| `--tg-token` | No | - | Telegram bot token for remote approval |
-| `--tg-chat-id` | No | - | Telegram chat ID for approval messages |
 | `--period` | No | 5m | Polling interval (format: Nm or Ns) |
 | `--num-workers` | No | 5 | Maximum concurrent headless workers (0 = unlimited) |
 
-Telegram credentials are resolved with precedence: CLI args > environment variables (`TG_API_TOKEN`, `TG_CHAT_ID`) > `.agentize.local.yaml`. If no credentials are configured anywhere, the server runs in notification-less mode.
+Telegram credentials are loaded from `.agentize.local.yaml`. The server searches for this file in: project root → `$AGENTIZE_HOME` → `$HOME`. If no credentials are configured, the server runs in notification-less mode.
 
 #### Requirements
 
@@ -147,7 +145,7 @@ Telegram credentials are resolved with precedence: CLI args > environment variab
    - Project Status field = "Plan Accepted" (approval gate)
    - Label = `agentize:plan` (discovery filter)
 4. For each matching issue without an existing worktree:
-   - Invokes `wt spawn <issue-number>` with TG credentials
+   - Invokes `wt spawn <issue-number>`
 
 **Refinement Discovery:**
 1. Discovers refinement candidates with both `agentize:plan` and `agentize:refine` labels
@@ -162,9 +160,15 @@ Telegram credentials are resolved with precedence: CLI args > environment variab
 **Polling Loop:**
 - Continues polling until interrupted (Ctrl+C)
 
-#### Environment Variables
+#### Configuration
 
-The following environment variables are passed to spawned Claude sessions:
-- `AGENTIZE_USE_TG=1`
-- `TG_API_TOKEN=<tg-token>`
-- `TG_CHAT_ID=<tg-chat-id>`
+Telegram and handsoff settings are loaded from `.agentize.local.yaml`:
+
+```yaml
+telegram:
+  enabled: true
+  token: "your-bot-token"
+  chat_id: "your-chat-id"
+```
+
+See [Configuration Reference](../envvar.md) for the complete schema.

@@ -4,14 +4,15 @@ Handsoff mode aims at minimizing user intervention during the development proces
 By default, the agent will automatically proceed the task without asking user,
 including the next steps and permissions.
 
-To disable handsoff mode:
+To disable handsoff mode, set in `.agentize.local.yaml`:
 
-```bash
-export HANDSOFF_MODE=0
-export HANDSOFF_AUTO_PERMISSION=0
+```yaml
+handsoff:
+  enabled: false
+  auto_permission: false
 ```
 
-`HANDSOFF_MODE` enables automatic continuation of the workflow.
+`handsoff.enabled` enables automatic continuation of the workflow.
 Upon Claude `stop.py`, it feeds back a prompt to ask the agent
 automatically determine the status of the current workflow.
 If finished, stop the workflow. If not, continue to the next step.
@@ -37,5 +38,4 @@ if not is_handsoff_enabled():
     sys.exit(0)  # Skip hook when handsoff disabled
 ```
 
-The helper returns `False` only when `HANDSOFF_MODE` is set to `0`, `false`, `off`, or `disable`
-(case-insensitive). All other values (including unset) default to enabled.
+The helper reads `handsoff.enabled` from `.agentize.local.yaml` (searching project root → `$AGENTIZE_HOME` → `$HOME`). Returns `True` by default when not configured.

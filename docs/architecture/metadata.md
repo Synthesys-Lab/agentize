@@ -21,7 +21,12 @@ Agentize uses two configuration files with distinct purposes:
 - Server runtime settings (`server.*`)
 - Workflow model assignments (`workflows.*`)
 
-**Precedence order:** CLI args > environment variables > `.agentize.local.yaml` > defaults
+**Precedence order:** `.agentize.local.yaml` > defaults
+
+**YAML search order for `.agentize.local.yaml`:**
+1. Project root `.agentize.local.yaml`
+2. `$AGENTIZE_HOME/.agentize.local.yaml`
+3. `$HOME/.agentize.local.yaml` (user-wide, created by installer)
 
 For the complete configuration schema and environment variable mapping, see [Configuration Reference](../envvar.md).
 

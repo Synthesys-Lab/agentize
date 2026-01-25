@@ -1,23 +1,21 @@
 #!/usr/bin/env bash
-# Test: lol serve handles optional TG arguments correctly
+# Test: lol serve handles CLI arguments correctly (YAML-only for TG credentials)
 
 source "$(dirname "$0")/../common.sh"
 
 LOL_CLI="$PROJECT_ROOT/src/cli/lol.sh"
 
-test_info "lol serve handles optional TG arguments"
+test_info "lol serve handles CLI arguments correctly"
 
 export AGENTIZE_HOME="$PROJECT_ROOT"
 source "$LOL_CLI"
 
-# Test 1: Missing TG args no longer produces "required" error
+# Test 1: Server starts without TG args (YAML-only for credentials)
 # (Server will fail later at bare repo check, which is expected)
 output=$(lol serve 2>&1) || true
-if echo "$output" | grep -q "Error: --tg-token is required"; then
-  test_fail "Should NOT require --tg-token argument (now optional)"
-fi
-if echo "$output" | grep -q "Error: --tg-chat-id is required"; then
-  test_fail "Should NOT require --tg-chat-id argument (now optional)"
+# Should NOT have TG-related CLI errors
+if echo "$output" | grep -q "Error: --tg-token"; then
+  test_fail "Should not mention --tg-token (removed from CLI)"
 fi
 
 # Test 2: Unknown option rejected
@@ -26,10 +24,15 @@ if ! echo "$output" | grep -q "Error: Unknown option"; then
   test_fail "Should reject unknown options"
 fi
 
-# Test 3: Completion outputs serve-flags
+# Test 3: Completion outputs serve-flags (only --period and --num-workers)
 output=$(lol --complete serve-flags 2>/dev/null)
-echo "$output" | grep -q "^--tg-token$" || test_fail "Missing flag: --tg-token"
-echo "$output" | grep -q "^--tg-chat-id$" || test_fail "Missing flag: --tg-chat-id"
+# TG flags should NOT be in completion anymore
+if echo "$output" | grep -q "^--tg-token$"; then
+  test_fail "Should NOT have --tg-token flag (moved to YAML-only)"
+fi
+if echo "$output" | grep -q "^--tg-chat-id$"; then
+  test_fail "Should NOT have --tg-chat-id flag (moved to YAML-only)"
+fi
 echo "$output" | grep -q "^--period$" || test_fail "Missing flag: --period"
 echo "$output" | grep -q "^--num-workers$" || test_fail "Missing flag: --num-workers"
 
@@ -43,10 +46,10 @@ fi
 output=$(lol --complete commands 2>/dev/null)
 echo "$output" | grep -q "^serve$" || test_fail "Missing command: serve"
 
-# Test 6: TG args are still accepted when provided
-output=$(lol serve --tg-token=xxx --tg-chat-id=yyy 2>&1) || true
+# Test 6: --period is accepted
+output=$(lol serve --period=5m 2>&1) || true
 if echo "$output" | grep -q "Error: Unknown option"; then
-  test_fail "Should accept --tg-token and --tg-chat-id options"
+  test_fail "Should accept --period option"
 fi
 
-test_pass "lol serve handles optional TG arguments correctly"
+test_pass "lol serve handles CLI arguments correctly"
