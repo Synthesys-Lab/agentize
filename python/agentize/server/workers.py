@@ -209,6 +209,9 @@ def spawn_feat_request(issue_no: int, model: str | None = None) -> tuple[bool, i
 
     Runs planning on main branch worktree, and spawns claude with /ultra-planner --from-issue headlessly.
 
+    Sets status to "In Progress" before spawning to prevent duplicate assignments.
+    After completion, _cleanup_feat_request() resets status to "Proposed".
+
     Args:
         issue_no: GitHub issue number
         model: Claude model to use (opus, sonnet, haiku); uses default if not specified
@@ -222,6 +225,12 @@ def spawn_feat_request(issue_no: int, model: str | None = None) -> tuple[bool, i
         _log(f"Failed to get main worktree path for feat-request of issue #{issue_no}", level="ERROR")
         return False, None
     worktree_path = result.stdout.strip()
+
+    # Set status to "In Progress" (concurrency control)
+    run_shell_function(
+        f'wt_claim_issue_status {issue_no} "{worktree_path}" "In Progress"',
+        capture_output=True
+    )
 
     # Create log directory and file
     log_dir = Path(os.getenv('AGENTIZE_HOME', '.')) / '.tmp' / 'logs'

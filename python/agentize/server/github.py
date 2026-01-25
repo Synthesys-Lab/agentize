@@ -614,14 +614,16 @@ def filter_ready_feat_requests(items: list[dict]) -> list[int]:
     Requirements:
     - Has 'agentize:dev-req' label
     - Does NOT have 'agentize:plan' label (not already planned)
-    - Status is NOT 'Done' or 'In Progress' (terminal statuses)
+    - Status == 'Proposed' (concurrency control)
+
+    The 'Proposed' status requirement prevents duplicate worker assignments:
+    spawn_feat_request() sets status to 'In Progress' before spawning,
+    and _cleanup_feat_request() resets to 'Proposed' after completion.
     """
     debug = os.getenv('HANDSOFF_DEBUG')
     ready = []
     skip_has_plan = 0
-    skip_terminal = 0
-
-    terminal_statuses = {'Done', 'In Progress'}
+    skip_wrong_status = 0
 
     for item in items:
         content = item.get('content')
@@ -645,11 +647,11 @@ def filter_ready_feat_requests(items: list[dict]) -> list[int]:
             skip_has_plan += 1
             continue
 
-        # Check for terminal status
-        if status_name in terminal_statuses:
+        # Check status (must be 'Proposed' for concurrency control)
+        if status_name != 'Proposed':
             if debug:
-                print(f"  - Issue #{issue_no}: {{ labels: {label_names}, status: {status_name} }}, decision: SKIP, reason: terminal status", file=sys.stderr)
-            skip_terminal += 1
+                print(f"  - Issue #{issue_no}: {{ labels: {label_names}, status: {status_name} }}, decision: SKIP, reason: status != Proposed", file=sys.stderr)
+            skip_wrong_status += 1
             continue
 
         if debug:
@@ -657,9 +659,9 @@ def filter_ready_feat_requests(items: list[dict]) -> list[int]:
         ready.append(issue_no)
 
     if debug:
-        total_skip = skip_has_plan + skip_terminal
+        total_skip = skip_has_plan + skip_wrong_status
         timestamp = datetime.now().strftime("%y-%m-%d-%H:%M:%S")
-        print(f"[{timestamp}] [INFO] [github.py:657:filter_ready_feat_requests] Summary: {len(ready)} ready, {total_skip} skipped ({skip_has_plan} already planned, {skip_terminal} terminal status)", file=sys.stderr)
+        print(f"[{timestamp}] [INFO] [github.py:657:filter_ready_feat_requests] Summary: {len(ready)} ready, {total_skip} skipped ({skip_has_plan} already planned, {skip_wrong_status} wrong status)", file=sys.stderr)
 
     return ready
 
