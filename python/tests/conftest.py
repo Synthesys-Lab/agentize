@@ -17,10 +17,15 @@ def _find_project_root() -> Path:
 # Set up paths before any imports
 PROJECT_ROOT = _find_project_root()
 PYTHON_PATH = PROJECT_ROOT / "python"
+CLAUDE_PLUGIN_PATH = PROJECT_ROOT / ".claude-plugin"
 
 # Add python/ to sys.path for imports
 if str(PYTHON_PATH) not in sys.path:
     sys.path.insert(0, str(PYTHON_PATH))
+
+# Add .claude-plugin to sys.path for lib.workflow and lib.session_utils imports
+if str(CLAUDE_PLUGIN_PATH) not in sys.path:
+    sys.path.insert(0, str(CLAUDE_PLUGIN_PATH))
 
 
 @pytest.fixture
