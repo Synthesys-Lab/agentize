@@ -63,7 +63,7 @@ leveraging LLM recency bias to prioritize the current request.
 | Section | Description |
 |---------|-------------|
 | Agent Perspectives Summary | 5-agent position table |
-| Consensus Assessment | 3-condition evaluation with PASS/FAIL verdict |
+| Consensus Status | 3-condition evaluation with CONSENSUS/DISAGREEMENT verdict |
 | Goal / Codebase Analysis | Problem statement and file changes |
 | Implementation Steps | Agreed changes with code drafts |
 | Disagreement N (if any) | Per-disagreement options with A/B/C choices |

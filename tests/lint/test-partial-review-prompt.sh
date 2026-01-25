@@ -21,7 +21,7 @@ echo "PASS: TOC section exists"
 # Test 2: TOC contains core anchors
 REQUIRED_ANCHORS=(
     "#agent-perspectives-summary"
-    "#consensus-assessment"
+    "#consensus-status"
     "#goal"
     "#implementation-steps"
 )

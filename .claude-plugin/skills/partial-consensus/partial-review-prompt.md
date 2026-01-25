@@ -53,7 +53,7 @@ If the combined report contains a `## Part 7: Selection & Refine History` sectio
   - Use standard format: Goal, Codebase Analysis, Implementation Steps
   - Include code drafts from the selected options
   - **Skip Disagreement Summary section** (already resolved)
-  - **Skip Consensus Assessment section** (consensus already determined in previous iteration)
+  - **Skip Consensus Status section** (consensus already determined in previous iteration)
   - Include Validation section at the end (see output format below)
 - Skip the "if consensus IS possible / IS NOT possible" logic below
 
@@ -87,16 +87,8 @@ Each option MUST specify its source (which agent(s) it derives from).
 
 ### Rule 1: Cite Both Sides
 
-When proposals disagree, document both positions before deciding:
-
-```
-### Disagreement: [Topic]
-
-**Bold claims**: [Quote from bold proposal]
-**Paranoia claims**: [Quote from paranoia proposal]
-**Critique says**: [What critique agent found]
-**Resolution**: [Which side is adopted and why, with evidence]
-```
+When proposals disagree, document both positions in the **Agent Perspectives** table
+under each Disagreement section (see output format template below for table structure).
 
 ### Rule 2: No Automatic Dropping
 
@@ -151,7 +143,7 @@ When history exists, produce a single unified plan applying the latest selection
 
 ### Unified Output Format
 
-Use this format for ALL outputs (consensus or partial consensus):
+Use this format for ALL outputs (consensus or disagreement):
 
 ```markdown
 # Implementation Plan: {{FEATURE_NAME}}
