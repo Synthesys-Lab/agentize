@@ -159,7 +159,7 @@ Use this format for ALL outputs (consensus or partial consensus):
 ## Table of Contents
 
 - [Agent Perspectives Summary](#agent-perspectives-summary)
-- [Consensus Assessment](#consensus-assessment)
+- [Consensus Status](#consensus-status)
 - [Goal](#goal)
 - [Codebase Analysis](#codebase-analysis)
 - [Implementation Steps](#implementation-steps)
@@ -182,15 +182,9 @@ Use this format for ALL outputs (consensus or partial consensus):
 | **Proposal Reducer** | [Simplification direction] | [What complexity was removed] |
 | **Code Reducer** | [Code impact assessment] | [LOC delta summary] |
 
-## Consensus Assessment
+## Consensus Status
 
-| # | Condition | Result | Evidence |
-|---|-----------|--------|----------|
-| 1 | Approach alignment | PASS/FAIL | [Brief evidence] |
-| 2 | No critical blockers | PASS/FAIL | [Brief evidence] |
-| 3 | Minimal modifications | PASS/FAIL | [Brief evidence] |
-
-**Verdict**: CONSENSUS / DISAGREEMENT
+[One paragraph explaining the consensus determination, citing key evidence from agents' positions]
 
 ## Goal
 
