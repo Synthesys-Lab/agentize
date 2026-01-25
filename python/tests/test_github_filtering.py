@@ -238,18 +238,63 @@ class TestFilterReadyRefinements:
 
 
 class TestFilterReadyFeatRequests:
-    """Tests for filter_ready_feat_requests function."""
+    """Tests for filter_ready_feat_requests function.
 
-    def test_filter_ready_feat_requests_returns_expected(self):
-        """Test filter_ready_feat_requests returns issues with dev-req but not plan."""
+    Feat-request issues are eligible for planning when:
+    - Has 'agentize:dev-req' label
+    - Does NOT have 'agentize:plan' label
+    - Status == 'Proposed' (concurrency control)
+    """
+
+    def test_filter_ready_feat_requests_accepts_proposed_status(self):
+        """Test filter_ready_feat_requests accepts issues with Status == 'Proposed'."""
         items = [
             {
                 "content": {
                     "number": 42,
                     "labels": {"nodes": [{"name": "agentize:dev-req"}]},
                 },
-                "fieldValueByName": {"name": "Backlog"},
+                "fieldValueByName": {"name": "Proposed"},
             },
+        ]
+
+        ready = filter_ready_feat_requests(items)
+
+        assert ready == [42]
+
+    def test_filter_ready_feat_requests_rejects_non_proposed_status(self):
+        """Test filter_ready_feat_requests rejects issues with non-Proposed status."""
+        items = [
+            {
+                "content": {
+                    "number": 42,
+                    "labels": {"nodes": [{"name": "agentize:dev-req"}]},
+                },
+                "fieldValueByName": {"name": "Backlog"},  # Not "Proposed"
+            },
+            {
+                "content": {
+                    "number": 43,
+                    "labels": {"nodes": [{"name": "agentize:dev-req"}]},
+                },
+                "fieldValueByName": {"name": "Done"},
+            },
+            {
+                "content": {
+                    "number": 44,
+                    "labels": {"nodes": [{"name": "agentize:dev-req"}]},
+                },
+                "fieldValueByName": {"name": "In Progress"},
+            },
+        ]
+
+        ready = filter_ready_feat_requests(items)
+
+        assert ready == []
+
+    def test_filter_ready_feat_requests_rejects_already_planned(self):
+        """Test filter_ready_feat_requests rejects issues that already have agentize:plan."""
+        items = [
             {
                 "content": {
                     "number": 43,
@@ -259,25 +304,11 @@ class TestFilterReadyFeatRequests:
                 },
                 "fieldValueByName": {"name": "Proposed"},
             },
-            {
-                "content": {
-                    "number": 44,
-                    "labels": {"nodes": [{"name": "agentize:dev-req"}]},
-                },
-                "fieldValueByName": {"name": "Done"},
-            },
-            {
-                "content": {
-                    "number": 45,
-                    "labels": {"nodes": [{"name": "agentize:dev-req"}]},
-                },
-                "fieldValueByName": {"name": "In Progress"},
-            },
         ]
 
         ready = filter_ready_feat_requests(items)
 
-        assert ready == [42]
+        assert ready == []
 
     def test_filter_ready_feat_requests_debug_output(self, monkeypatch, capsys):
         """Test filter_ready_feat_requests debug output contains expected messages."""
@@ -289,7 +320,7 @@ class TestFilterReadyFeatRequests:
                     "number": 42,
                     "labels": {"nodes": [{"name": "agentize:dev-req"}]},
                 },
-                "fieldValueByName": {"name": "Backlog"},
+                "fieldValueByName": {"name": "Proposed"},
             },
             {
                 "content": {
@@ -305,7 +336,7 @@ class TestFilterReadyFeatRequests:
                     "number": 44,
                     "labels": {"nodes": [{"name": "agentize:dev-req"}]},
                 },
-                "fieldValueByName": {"name": "Done"},
+                "fieldValueByName": {"name": "Backlog"},
             },
         ]
 
@@ -316,4 +347,4 @@ class TestFilterReadyFeatRequests:
 
         assert "filter_ready_feat_requests" in debug_output
         assert "already has agentize:plan" in debug_output
-        assert "terminal status" in debug_output
+        assert "status != Proposed" in debug_output
