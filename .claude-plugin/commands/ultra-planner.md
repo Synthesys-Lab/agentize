@@ -1,7 +1,7 @@
 ---
 name: ultra-planner
 description: Multi-agent debate-based planning using /ultra-planner command
-argument-hint: [feature-description] or --force-full [feature-description] or --refine [issue-no] [refine-comments] or --from-issue [issue-no]
+argument-hint: [feature-description] [--dry-run] or --force-full [feature-description] [--dry-run] or --refine [issue-no] [refine-comments] [--dry-run] or --from-issue [issue-no] [--dry-run]
 ---
 
 # Ultra Planner Command
@@ -99,6 +99,14 @@ This command orchestrates a multi-agent debate system to generate high-quality i
 
 Accept the $ARGUMENTS.
 
+**Dry-run mode:** If we have `--dry-run` anywhere in the arguments, set `DRY_RUN=true` and remove `--dry-run` from the arguments. In dry-run mode:
+- All agents run normally (understander, bold-proposer, critique, reducer, consensus)
+- Plan files are saved to `.tmp/` as usual
+- **Skip** placeholder issue creation (Step 3)
+- **Skip** issue update (Step 8)
+- **Skip** label changes (Step 9)
+- Print a dry-run summary at the end instead
+
 **Force-full mode:** If we have `--force-full` at the beginning, skip complexity-based routing and always use the full multi-agent debate path. Remove `--force-full` from the arguments and proceed with the remaining feature description.
 
 **Refinement mode:** If we have `--refine` at the beginning, the next number is the issue number to be refined,
@@ -141,6 +149,13 @@ Please provide more details:
 Ask user for clarification.
 
 ### Step 3: Create Placeholder Issue (or use existing issue for --from-issue mode)
+
+**For `--dry-run` mode:**
+Skip placeholder creation entirely. Use a timestamp-based identifier for artifact filenames:
+```bash
+ISSUE_NUMBER="dry-run-$(date +%Y%m%d-%H%M%S)"
+```
+Proceed to Step 4 with this identifier.
 
 **For `--from-issue` mode:**
 Skip placeholder creation. Use the issue number from Step 1 as `ISSUE_NUMBER` for all artifact filenames.
@@ -376,6 +391,33 @@ Consensus plan saved to: {CONSENSUS_PLAN_FILE}
 - Save the consensus plan file path as `CONSENSUS_PLAN_FILE`
 
 ### Step 8: Update Placeholder Issue with Consensus Plan
+
+**For `--dry-run` mode:**
+Skip issue update. Instead, print a dry-run summary:
+```
+=== DRY-RUN SUMMARY ===
+
+Plan generated successfully (no GitHub changes made).
+
+Planned issue title: [plan][{tag}] {feature name}
+Estimated LOC: ~{N}
+Complexity: {lite|full} path
+
+Plan files saved to:
+- .tmp/issue-{ISSUE_NUMBER}-context.md
+- .tmp/issue-{ISSUE_NUMBER}-bold-proposal.md
+- .tmp/issue-{ISSUE_NUMBER}-critique.md
+- .tmp/issue-{ISSUE_NUMBER}-reducer.md
+- .tmp/issue-{ISSUE_NUMBER}-consensus.md
+
+To create the actual issue, run:
+/ultra-planner {original feature description}
+
+=== END DRY-RUN ===
+```
+Skip to the end of the workflow (do not proceed to Step 9).
+
+**For normal mode:**
 
 **REQUIRED SKILL CALL:**
 

@@ -471,6 +471,8 @@ def extract_issue_no(prompt):
 
     Patterns:
     - /issue-to-impl <number>
+    - /issue-to-impl <number> --dry-run
+    - /issue-to-impl --dry-run <number>
     - /ultra-planner --refine <number>
     - /ultra-planner --from-issue <number>
 
@@ -480,8 +482,9 @@ def extract_issue_no(prompt):
     Returns:
         Issue number as int, or None if not found
     """
-    # Pattern for /issue-to-impl <number>
-    match = re.match(r'^/issue-to-impl\s+(\d+)', prompt)
+    # Pattern for /issue-to-impl <number> (with optional --dry-run before or after)
+    # Match: /issue-to-impl 42, /issue-to-impl 42 --dry-run, /issue-to-impl --dry-run 42
+    match = re.match(r'^/issue-to-impl\s+(?:--dry-run\s+)?(\d+)', prompt)
     if match:
         return int(match.group(1))
 

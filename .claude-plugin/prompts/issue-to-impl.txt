@@ -1,5 +1,6 @@
 This is an auto-continuation prompt for handsoff mode, it is currently {#continuations#}/{#max_continuations#} continuations.
 The ultimate goal of this workflow is to deliver a PR on GitHub that implements the corresponding issue. Did you have this delivered?
+(Note: If running in dry-run mode, completion = printing the dry-run preview, not creating a PR)
 
 0. Use `git branch --show-current` to see what issue you are working on, it is in the branch name!
    - Use `gh issue view` to view the original plan of the workflow.
@@ -17,6 +18,7 @@ The ultimate goal of this workflow is to deliver a PR on GitHub that implements 
 3. Prepare and create the PR. Do not ask user "Should I create the PR?" - just go ahead and create it!
    - Creating the PR should use the `/open-pr` skill with appropriate titles.
 4. If the PR is successfully created, manually stop further continuations.
+   - In dry-run mode: If you have printed the dry-run preview showing what would be done, stop here.
 5. If you do not know what to do next, or you reached the max continuations limit without delivering the PR,
    manually stop further continuations and look at the current branch name to see what issue you are working on.
    Then, leave a comment on the GitHub Issue for human collaborators to take over.

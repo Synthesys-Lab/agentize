@@ -1,7 +1,9 @@
 This is an auto-continuation prompt for handsoff mode, it is currently {#continuations#}/{#max_continuations#} continuations.
 The ultimate goal of this workflow is to create a comprehensive plan and post it on GitHub Issue. Have you delivered this?
+(Note: If running in dry-run mode, completion = printing the dry-run summary, not creating an Issue)
 1. If not, please continue! Try to be as hands-off as possible, avoid asking user design decision questions, and choose the option you recommend most.
 2. If you have already delivered the plan, manually stop further continuations.
+   - In dry-run mode: If you have printed the dry-run summary showing what would be created, stop here.
 3. If you do not know what to do next, or you reached the max continuations limit without delivering the plan,
    look at the current branch name to see what issue you are working on. Then stop manually
    and leave a comment on the GitHub Issue for human collaborators to take over.

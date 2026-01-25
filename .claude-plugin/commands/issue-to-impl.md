@@ -1,7 +1,7 @@
 ---
 name: issue-to-impl
 description: Orchestrate full implementation workflow from issue to completion (creates branch, docs, tests, and first milestone)
-argument-hint: [issue-number]
+argument-hint: [issue-number] [--dry-run]
 ---
 
 # Issue-to-Impl Command
@@ -55,9 +55,25 @@ Orchestrate the complete implementation workflow from a GitHub issue with an imp
 
 ## Skill Integration
 
-### Step 1: Extract Issue Number
+### Step 1: Extract Issue Number and Parse Flags
 
-If `$ARGUMENTS` provided, use as issue number. Otherwise:
+If `$ARGUMENTS` provided, parse it for:
+- Issue number (required)
+- `--dry-run` flag (optional): If present, set `DRY_RUN=true` and remove from arguments
+
+In dry-run mode:
+- Read the issue plan and validate it has a "Proposed Solution" section
+- Print a preview of intended actions (branch, files, LOC, test strategy)
+- **Skip** branch creation (Step 3)
+- **Skip** syncing (Step 3.5)
+- **Skip** documentation updates (Step 5)
+- **Skip** test creation (Step 6)
+- **Skip** milestone creation (Step 7)
+- **Skip** implementation loop (Step 8)
+- **Skip** PR creation (Step 9)
+- Print a dry-run summary and exit
+
+If no issue number in arguments:
 - Search conversation context for patterns: "issue #42", "implement #15", etc.
 - If unclear, ask user: "Which issue number should I implement?"
 
@@ -202,6 +218,42 @@ This cached plan is read by the stop hook and included in continuation prompts t
   - Test strategy
   ```
   Stop execution.
+
+### Step 4.5: Dry-Run Preview (for --dry-run mode only)
+
+**For `--dry-run` mode:**
+After reading the implementation plan, print a dry-run preview and exit:
+
+```
+=== DRY-RUN PREVIEW ===
+
+Issue: #{N} - {issue title}
+
+Actions that would be taken:
+1. Create branch: issue-{N}
+2. Sync with origin/{default_branch}
+
+Documentation files to update:
+{list from Documentation Planning section}
+
+Test files to create/update:
+{list from Test Strategy section}
+
+Implementation steps:
+{numbered list from plan with LOC estimates}
+
+Total estimated LOC: ~{sum}
+
+Test strategy:
+{summary from Test Strategy section}
+
+To run the actual implementation:
+/issue-to-impl {N}
+
+=== END DRY-RUN ===
+```
+
+After printing this preview, the workflow is complete. Do not proceed to Step 5 or any subsequent steps.
 
 ### Step 5: Update Documentation and Create Commit
 
