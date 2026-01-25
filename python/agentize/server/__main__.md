@@ -10,15 +10,22 @@ Main polling loop that monitors GitHub Projects for ready issues.
 
 **Parameters:**
 - `period`: Polling interval in seconds
-- `tg_token`: Telegram Bot API token (optional, falls back to `TG_API_TOKEN` env)
-- `tg_chat_id`: Telegram chat ID (optional, falls back to `TG_CHAT_ID` env)
+- `tg_token`: Telegram Bot API token (optional)
+- `tg_chat_id`: Telegram chat ID (optional)
 - `num_workers`: Maximum concurrent workers (default: 5, 0 = unlimited)
 - `workflow_models`: Per-workflow Claude model mapping (optional)
   - Keys: `impl`, `refine`, `dev_req`, `rebase`
   - Values: `opus`, `sonnet`, `haiku`
 
+**Telegram credential resolution (precedence):**
+1. CLI args (`tg_token`, `tg_chat_id` parameters)
+2. Environment variables (`TG_API_TOKEN`, `TG_CHAT_ID`)
+3. `.agentize.local.yaml` (`telegram.token`, `telegram.chat_id`)
+4. Defaults to empty string (notification-less mode)
+
 **Behavior:**
 - Loads config from `.agentize.yaml` and `.agentize.local.yaml`
+- Resolves Telegram credentials from YAML + env + CLI with proper precedence
 - Sends startup notification if Telegram configured
 - Polls project items at `period` intervals
 - Spawns worktrees for issues with "Plan Accepted" status and `agentize:plan` label
