@@ -15,11 +15,13 @@ A long-running server that monitors your GitHub Projects kanban board and automa
 
 ```bash
 # Via lol CLI (recommended)
-lol serve --tg-token=<token> --tg-chat-id=<id> --period=5m --num-workers=5
+lol serve [--tg-token=<token>] [--tg-chat-id=<id>] [--period=5m] [--num-workers=5]
 
 # Direct Python invocation
-python -m agentize.server --period=5m --num-workers=5
+python -m agentize.server [--tg-token=<token>] [--tg-chat-id=<id>] --period=5m --num-workers=5
 ```
+
+Telegram credentials are optional. When not provided via CLI, they are resolved from environment variables (`TG_API_TOKEN`, `TG_CHAT_ID`) or `.agentize.local.yaml`. The server runs in notification-less mode when no credentials are configured.
 
 ## Worker Pool
 
@@ -416,7 +418,7 @@ This logs the GraphQL query and variables on failures, helping diagnose variable
 When issues aren't being picked up by the server, enable debug logging to see filtering decisions:
 
 ```bash
-HANDSOFF_DEBUG=1 lol serve --tg-token=<token> --tg-chat-id=<id>
+HANDSOFF_DEBUG=1 lol serve
 ```
 
 Debug output shows per-issue inspection with status, labels, and rejection reasons:
@@ -436,7 +438,7 @@ Each individual scan line includes:
 
 ## Telegram Notifications
 
-When Telegram credentials are configured (`TG_API_TOKEN` and `TG_CHAT_ID` via environment variables or CLI flags), the server sends notifications:
+When Telegram credentials are configured (via CLI flags, environment variables `TG_API_TOKEN`/`TG_CHAT_ID`, or `.agentize.local.yaml`), the server sends notifications:
 
 ### Startup Notification
 

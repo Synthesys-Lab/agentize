@@ -118,17 +118,19 @@ lol usage --week
 Long-running server that polls GitHub Projects for "Plan Accepted" issues and automatically invokes `wt spawn` to start implementation.
 
 ```bash
-lol serve --tg-token=<token> --tg-chat-id=<chat_id> [--period=5m] [--num-workers=5]
+lol serve [--tg-token=<token>] [--tg-chat-id=<chat_id>] [--period=5m] [--num-workers=5]
 ```
 
 #### Options
 
 | Option | Required | Default | Description |
 |--------|----------|---------|-------------|
-| `--tg-token` | Yes | - | Telegram bot token for remote approval |
-| `--tg-chat-id` | Yes | - | Telegram chat ID for approval messages |
+| `--tg-token` | No | - | Telegram bot token for remote approval |
+| `--tg-chat-id` | No | - | Telegram chat ID for approval messages |
 | `--period` | No | 5m | Polling interval (format: Nm or Ns) |
 | `--num-workers` | No | 5 | Maximum concurrent headless workers (0 = unlimited) |
+
+Telegram credentials are resolved with precedence: CLI args > environment variables (`TG_API_TOKEN`, `TG_CHAT_ID`) > `.agentize.local.yaml`. If no credentials are configured anywhere, the server runs in notification-less mode.
 
 #### Requirements
 
