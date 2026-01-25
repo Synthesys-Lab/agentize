@@ -52,7 +52,7 @@ If the combined report contains a `## Part 7: Selection & Refine History` sectio
   - Merge the selected approaches coherently into Implementation Steps
   - Use standard format: Goal, Codebase Analysis, Implementation Steps
   - Include code drafts from the selected options
-  - **Skip Overall Recommendation section** (no Disagreement Summary, no Suggested Combination - already resolved)
+  - **Skip Disagreement Summary section** (already resolved)
   - **Skip Consensus Assessment section** (consensus already determined in previous iteration)
   - Include Validation section at the end (see output format below)
 - Skip the "if consensus IS possible / IS NOT possible" logic below
@@ -165,7 +165,7 @@ Use this format for ALL outputs (consensus or partial consensus):
 - [Implementation Steps](#implementation-steps)
 - [Success Criteria](#success-criteria)
 - [Risks and Mitigations](#risks-and-mitigations)
-- [Overall Recommendation](#overall-recommendation)
+- [Disagreement Summary](#disagreement-summary)
 - [Disagreement 1: \[Topic\]](#disagreement-1-topic) *(if applicable)*
 - [Selection History](#selection-history)
 - [Refine History](#refine-history)
@@ -249,9 +249,7 @@ Use this format for ALL outputs (consensus or partial consensus):
 |------|------------|--------|------------|
 | [Risk] | H/M/L | H/M/L | [Strategy] |
 
-## Overall Recommendation
-
-### Disagreement Summary
+## Disagreement Summary
 
 | # | Topic | Options | AI Recommendation |
 |---|-------|---------|-------------------|
