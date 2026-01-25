@@ -27,7 +27,7 @@ Each workflow has a dedicated filter function that checks specific criteria:
 |----------|----------------|-----------------|-----------------|
 | Implementation | `filter_ready_issues` | Plan Accepted | `agentize:plan` |
 | Refinement | `filter_ready_refinements` | Proposed | `agentize:plan` + `agentize:refine` |
-| Feat-Request | `filter_ready_feat_requests` | NOT Done/In Progress | `agentize:dev-req`, NO `agentize:plan` |
+| Feat-Request | `filter_ready_feat_requests` | Proposed | `agentize:dev-req`, NO `agentize:plan` |
 | Rebase | `filter_conflicting_prs` | NOT Rebasing | `agentize:pr` (via PR discovery) |
 | Review Resolution | `filter_ready_review_prs` | Proposed | `agentize:pr` (via PR discovery) |
 
@@ -79,7 +79,11 @@ The filter functions implement **status-based concurrency control** to prevent d
 - **Rebasing**: PR is being rebased
 - **Plan Accepted**: Plan approved, ready for implementation
 
-Example: `filter_ready_review_prs` only accepts PRs whose linked issue has `Status == 'Proposed'`. When `spawn_review_resolution` starts, it sets status to "In Progress", preventing other workers from picking up the same PR.
+#### Concurrency Control Examples
+
+**Review Resolution**: `filter_ready_review_prs` only accepts PRs whose linked issue has `Status == 'Proposed'`. When `spawn_review_resolution` starts, it sets status to "In Progress", preventing other workers from picking up the same PR.
+
+**Feat-Request Planning**: `filter_ready_feat_requests` requires `Status == 'Proposed'` for issues with `agentize:dev-req` label. When `spawn_feat_request` starts, it sets status to "In Progress" before spawning the planning session. After completion, `_cleanup_feat_request` resets the status to "Proposed". This prevents duplicate planning sessions from spawning during each polling cycle.
 
 ### Debug Output
 
