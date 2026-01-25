@@ -133,25 +133,13 @@ _lol_parse_serve() {
                 ;;
             *)
                 echo "Error: Unknown option '$1'"
-                echo "Usage: lol serve --tg-token=<token> --tg-chat-id=<id> [--period=5m] [--num-workers=5]"
+                echo "Usage: lol serve [--tg-token=<token>] [--tg-chat-id=<id>] [--period=5m] [--num-workers=5]"
                 return 1
                 ;;
         esac
     done
 
-    # Validate required arguments
-    if [ -z "$tg_token" ]; then
-        echo "Error: --tg-token is required"
-        echo "Usage: lol serve --tg-token=<token> --tg-chat-id=<id> [--period=5m] [--num-workers=5]"
-        return 1
-    fi
-
-    if [ -z "$tg_chat_id" ]; then
-        echo "Error: --tg-chat-id is required"
-        echo "Usage: lol serve --tg-token=<token> --tg-chat-id=<id> [--period=5m] [--num-workers=5]"
-        return 1
-    fi
-
+    # TG credentials are now optional - resolved from CLI > env > YAML in Python
     lol_cmd_serve "$period" "$tg_token" "$tg_chat_id" "$num_workers"
 }
 
