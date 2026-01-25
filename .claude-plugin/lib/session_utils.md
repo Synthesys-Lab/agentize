@@ -57,14 +57,17 @@ path = session_dir(makedirs=True)
 
 ### `is_handsoff_enabled() -> bool`
 
-Check if handsoff mode is enabled via environment variable.
+Check if handsoff mode is enabled via YAML config with environment variable override.
 
 **Returns:** `True` if handsoff mode is enabled (default), `False` if disabled.
 
 **Behavior:**
-- Reads `HANDSOFF_MODE` environment variable
+- First checks `HANDSOFF_MODE` environment variable (takes precedence)
+- Falls back to `handsoff.enabled` in `.agentize.local.yaml`
 - Returns `False` only when value is `0`, `false`, `off`, or `disable` (case-insensitive)
 - Returns `True` for all other values including unset
+
+**Precedence:** `HANDSOFF_MODE` env > `handsoff.enabled` YAML > `true` (default)
 
 **Usage:**
 

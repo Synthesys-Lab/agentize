@@ -1,18 +1,24 @@
 """Runtime configuration loader for .agentize.local.yaml files.
 
 This module handles loading server-specific settings that shouldn't be committed:
+- Handsoff mode settings (enabled, max_continuations, auto_permission, debug, supervisor)
 - Server settings (period, num_workers)
-- Telegram credentials (token, chat_id)
+- Telegram credentials (enabled, token, chat_id, timeout_sec, poll_interval_sec, allowed_user_ids)
 - Workflow model assignments (impl, refine, dev_req, rebase)
 
-Configuration precedence: CLI args > env vars (TG only) > .agentize.local.yaml > defaults
+Configuration precedence: CLI args > env vars > .agentize.local.yaml > defaults
 """
 
 from pathlib import Path
 from typing import Any
 
 # Valid top-level keys in .agentize.local.yaml
-VALID_TOP_LEVEL_KEYS = {"server", "telegram", "workflows"}
+# Extended to include handsoff and metadata keys for unified local configuration
+VALID_TOP_LEVEL_KEYS = {
+    "server", "telegram", "workflows",  # Original keys
+    "handsoff",  # Handsoff mode settings
+    "project", "git", "agentize", "worktree", "pre_commit",  # Metadata keys (shared with .agentize.yaml)
+}
 
 # Valid workflow names
 VALID_WORKFLOW_NAMES = {"impl", "refine", "dev_req", "rebase"}

@@ -83,22 +83,43 @@ Claude Code automatically resumes with continuation prompt
 
 ## Configuration
 
+### YAML Configuration (Recommended)
+
+Configure handsoff mode in `.agentize.local.yaml`:
+
+```yaml
+handsoff:
+  enabled: true                    # Enable handsoff auto-continuation
+  max_continuations: 10            # Maximum auto-continuations per workflow
+  auto_permission: true            # Enable Haiku LLM-based auto-permission
+  debug: false                     # Enable debug logging
+  supervisor:
+    provider: claude               # AI provider (none, claude, codex, cursor, opencode)
+    model: opus                    # Model for supervisor
+    flags: ""                      # Extra flags for acw
+```
+
+**Precedence:** Environment variables override YAML settings.
+
 ### Environment Variables
 
-Set in shell environment or `.claude/settings.json`:
+Environment variables can override YAML settings. Set in shell environment or `.claude/settings.json`:
 
 **`HANDSOFF_MODE`**
 - **Purpose:** Enable/disable handsoff auto-continuation
-- **Values:** `1` (enabled), `0` (disabled, default)
+- **YAML path:** `handsoff.enabled`
+- **Values:** `1` (enabled, default), `0` (disabled)
 - **Example:** `export HANDSOFF_MODE=1`
 
 **`HANDSOFF_MAX_CONTINUATIONS`**
 - **Purpose:** Maximum number of auto-continuations per workflow
+- **YAML path:** `handsoff.max_continuations`
 - **Values:** Integer (default: `10`)
 - **Example:** `export HANDSOFF_MAX_CONTINUATIONS=20`
 
 **`HANDSOFF_DEBUG`**
 - **Purpose:** Enable detailed debug logging and tool usage tracking
+- **YAML path:** `handsoff.debug`
 - **Values:** `1` (enabled), `0` (disabled, default)
 - **Log file:** `${AGENTIZE_HOME:-.}/.tmp/hooked-sessions/permission.txt` (unified permission log)
 - **Additional output:** Server issue-filter logs (see [server.md](../server.md#issue-filtering-debug-logs))

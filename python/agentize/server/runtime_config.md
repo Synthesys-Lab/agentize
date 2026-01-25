@@ -55,24 +55,42 @@ This minimal parser avoids external dependencies, consistent with the project's 
 ## Configuration Schema
 
 ```yaml
+# .agentize.local.yaml - Developer-specific local configuration
+
+handsoff:
+  enabled: true                    # HANDSOFF_MODE (default: true)
+  max_continuations: 10            # HANDSOFF_MAX_CONTINUATIONS (default: 10)
+  auto_permission: true            # HANDSOFF_AUTO_PERMISSION (default: true)
+  debug: false                     # HANDSOFF_DEBUG (default: false)
+  supervisor:
+    provider: claude               # HANDSOFF_SUPERVISOR (default: none)
+    model: opus                    # HANDSOFF_SUPERVISOR_MODEL
+    flags: ""                      # HANDSOFF_SUPERVISOR_FLAGS
+
 server:
-  period: 5m         # Polling period
-  num_workers: 5     # Worker pool size
+  period: 5m                       # Polling period
+  num_workers: 5                   # Worker pool size
 
 telegram:
-  token: "..."       # Bot API token
-  chat_id: "..."     # Chat ID
+  enabled: false                   # AGENTIZE_USE_TG (default: false)
+  token: "..."                     # TG_API_TOKEN
+  chat_id: "..."                   # TG_CHAT_ID
+  timeout_sec: 60                  # TG_APPROVAL_TIMEOUT_SEC
+  poll_interval_sec: 5             # TG_POLL_INTERVAL_SEC
+  allowed_user_ids: "123,456"      # TG_ALLOWED_USER_IDS (CSV string)
 
 workflows:
   impl:
-    model: opus      # Model for implementation
+    model: opus                    # Model for implementation
   refine:
-    model: sonnet    # Model for refinement
+    model: sonnet                  # Model for refinement
   dev_req:
-    model: sonnet    # Model for dev-req planning
+    model: sonnet                  # Model for dev-req planning
   rebase:
-    model: haiku     # Model for PR rebase
+    model: haiku                   # Model for PR rebase
 ```
+
+**Note:** The `allowed_user_ids` field uses a CSV string format since the minimal YAML parser does not support native arrays.
 
 ## Design Rationale
 

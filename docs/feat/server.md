@@ -331,13 +331,25 @@ For server-specific settings that shouldn't be committed (credentials, worker po
 
 ```yaml
 # .agentize.local.yaml - Runtime configuration (git-ignored)
+handsoff:
+  enabled: true
+  max_continuations: 10
+  auto_permission: true
+  debug: false
+  supervisor:
+    provider: claude
+    model: opus
+
 server:
   period: 5m
   num_workers: 5
 
 telegram:
+  enabled: true
   token: "your-bot-token"
   chat_id: "your-chat-id"
+  timeout_sec: 60
+  poll_interval_sec: 5
 
 workflows:
   impl:
@@ -350,14 +362,17 @@ workflows:
     model: haiku
 ```
 
-**Configuration precedence:** CLI args > environment variables (TG only) > `.agentize.local.yaml` > defaults
+**Configuration precedence:** CLI args > environment variables > `.agentize.local.yaml` > defaults
 
 **Sections:**
+- `handsoff`: Handsoff mode settings for auto-continuation (see [Handsoff Mode](core/handsoff.md))
 - `server`: Polling period and worker pool size
-- `telegram`: Bot token and chat ID (environment variables `TG_API_TOKEN` and `TG_CHAT_ID` take precedence)
+- `telegram`: Bot token, chat ID, and approval settings (see [Telegram Approval](permissions/telegram.md))
 - `workflows`: Per-workflow Claude model selection (opus, sonnet, haiku)
 
 **File location:** The server searches for `.agentize.local.yaml` starting from the current directory and walking up to parent directories.
+
+For the complete configuration schema, see [Configuration Reference](../envvar.md).
 
 **Note:** This file should NOT be committed. It is automatically git-ignored.
 

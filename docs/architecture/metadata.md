@@ -9,13 +9,21 @@ Agentize uses two configuration files with distinct purposes:
 | File | Purpose | Committed? |
 |------|---------|------------|
 | `.agentize.yaml` | Project metadata (org, project ID, language) | Yes |
-| `.agentize.local.yaml` | Runtime settings (credentials, worker config, models) | No |
+| `.agentize.local.yaml` | Developer settings (handsoff, Telegram, server, workflows) | No |
 
 **Separation rationale:**
 - `.agentize.yaml` contains project-level configuration that should be shared across all developers
 - `.agentize.local.yaml` contains deployment-specific settings (secrets, machine-specific tuning) that vary per environment
 
-For runtime configuration details, see [Server Runtime Configuration](../feat/server.md#runtime-configuration).
+**`.agentize.local.yaml` scope:**
+- Handsoff mode settings (`handsoff.*`)
+- Telegram approval settings (`telegram.*`)
+- Server runtime settings (`server.*`)
+- Workflow model assignments (`workflows.*`)
+
+**Precedence order:** CLI args > environment variables > `.agentize.local.yaml` > defaults
+
+For the complete configuration schema and environment variable mapping, see [Configuration Reference](../envvar.md).
 
 ## Location
 

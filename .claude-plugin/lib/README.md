@@ -15,6 +15,8 @@ This directory contains all reusable libraries for the Claude Code plugin system
 │   │   ├── rules.py               # Rule matching logic
 │   │   ├── parser.py              # Hook input parsing
 │   │   └── strips.py              # Command normalization
+│   ├── local_config.py            # YAML config loader with env override
+│   ├── local_config.md            # Local config documentation
 │   ├── workflow.py                # Handsoff workflow definitions
 │   ├── logger.py                  # Debug logging utilities
 │   ├── session_utils.py           # Session directory path resolution
@@ -44,6 +46,23 @@ Tool permission evaluation for the PreToolUse hook. Provides rule-based matching
 
 **Entry point:** `from lib.permission import determine`
 
+### local_config.py
+
+Local configuration loader for `.agentize.local.yaml` with environment variable override support. Used by hooks to read handsoff, Telegram, and other developer-specific settings.
+
+**Usage:**
+```python
+from lib.local_config import get_local_value, coerce_bool, coerce_int
+
+# Get handsoff enabled with env override
+enabled = get_local_value('handsoff.enabled', 'HANDSOFF_MODE', True, coerce_bool)
+
+# Get Telegram token
+token = get_local_value('telegram.token', 'TG_API_TOKEN', '')
+```
+
+See [local_config.md](local_config.md) for details.
+
 ### workflow.py
 
 Unified workflow definitions for handsoff mode. Centralizes workflow detection, issue extraction, and continuation prompts.
@@ -57,7 +76,7 @@ from lib.workflow import detect_workflow, get_continuation_prompt
 
 ### logger.py
 
-Debug logging utilities for hooks. Logs permission decisions to `.tmp/hooked-sessions/permission.txt` with unified format when `HANDSOFF_DEBUG` is enabled.
+Debug logging utilities for hooks. Logs permission decisions to `.tmp/hooked-sessions/permission.txt` with unified format when `HANDSOFF_DEBUG` or `handsoff.debug` is enabled.
 
 **Usage:**
 ```python
@@ -76,7 +95,7 @@ from lib.session_utils import session_dir, is_handsoff_enabled, write_issue_inde
 path = session_dir()              # Get path without creating
 path = session_dir(makedirs=True) # Get path and create directories
 
-# Handsoff mode check
+# Handsoff mode check (reads from YAML with env override)
 if not is_handsoff_enabled():
     sys.exit(0)  # Skip hook when handsoff disabled
 

@@ -43,7 +43,8 @@ Tests are also run automatically via `make test` and `make test-fast`.
 | `test_workers.py` | Worker status operations, dead PID cleanup |
 | `test_github_filtering.py` | Issue/PR filtering, ready state checks |
 | `test_github_discovery.py` | Candidate discovery, status queries |
-| `test_runtime_config.py` | Config loading, precedence resolution |
+| `test_runtime_config.py` | Config loading, precedence resolution, handsoff section |
+| `test_local_config.py` | YAML config lookup, env override, type coercion |
 | `test_notify.py` | Telegram message formatting |
 | `test_session.py` | Session lookup and state retrieval |
 | `test_module_exports.py` | Module imports and re-exports |

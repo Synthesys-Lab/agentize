@@ -177,3 +177,107 @@ server:
         models = extract_workflow_models(config)
 
         assert len(models) == 0
+
+
+class TestHandsoffSection:
+    """Tests for handsoff section parsing in .agentize.local.yaml."""
+
+    def test_load_runtime_config_parses_handsoff_section(self, tmp_path):
+        """Test load_runtime_config parses handsoff section with all nested keys."""
+        config_content = """
+handsoff:
+  enabled: true
+  max_continuations: 20
+  auto_permission: true
+  debug: false
+  supervisor:
+    provider: claude
+    model: opus
+    flags: "--timeout 1800"
+"""
+        config_file = tmp_path / ".agentize.local.yaml"
+        config_file.write_text(config_content)
+
+        config, path = load_runtime_config(tmp_path)
+
+        assert path is not None
+        assert config.get("handsoff", {}).get("enabled") == "true"
+        assert config.get("handsoff", {}).get("max_continuations") == 20
+        assert config.get("handsoff", {}).get("auto_permission") == "true"
+        assert config.get("handsoff", {}).get("debug") == "false"
+        assert config.get("handsoff", {}).get("supervisor", {}).get("provider") == "claude"
+        assert config.get("handsoff", {}).get("supervisor", {}).get("model") == "opus"
+        assert config.get("handsoff", {}).get("supervisor", {}).get("flags") == "--timeout 1800"
+
+    def test_load_runtime_config_parses_telegram_extended_section(self, tmp_path):
+        """Test load_runtime_config parses extended telegram section."""
+        config_content = """
+telegram:
+  enabled: true
+  token: "test-token"
+  chat_id: "-1001234567890"
+  timeout_sec: 120
+  poll_interval_sec: 10
+  allowed_user_ids: "123,456,789"
+"""
+        config_file = tmp_path / ".agentize.local.yaml"
+        config_file.write_text(config_content)
+
+        config, path = load_runtime_config(tmp_path)
+
+        assert path is not None
+        assert config.get("telegram", {}).get("enabled") == "true"
+        assert config.get("telegram", {}).get("token") == "test-token"
+        # Note: YAML parser converts numeric strings to int (negative numbers work)
+        assert config.get("telegram", {}).get("chat_id") == -1001234567890
+        assert config.get("telegram", {}).get("timeout_sec") == 120
+        assert config.get("telegram", {}).get("poll_interval_sec") == 10
+        assert config.get("telegram", {}).get("allowed_user_ids") == "123,456,789"
+
+    def test_load_runtime_config_accepts_all_valid_top_level_keys(self, tmp_path):
+        """Test load_runtime_config accepts all extended top-level keys."""
+        config_content = """
+handsoff:
+  enabled: true
+
+server:
+  period: 5m
+
+telegram:
+  token: "test"
+
+workflows:
+  impl:
+    model: opus
+
+project:
+  name: test
+
+git:
+  default_branch: main
+
+agentize:
+  commit: abc123
+
+worktree:
+  trees_dir: trees
+
+pre_commit:
+  enabled: true
+"""
+        config_file = tmp_path / ".agentize.local.yaml"
+        config_file.write_text(config_content)
+
+        # Should not raise ValueError
+        config, path = load_runtime_config(tmp_path)
+
+        assert path is not None
+        assert "handsoff" in config
+        assert "server" in config
+        assert "telegram" in config
+        assert "workflows" in config
+        assert "project" in config
+        assert "git" in config
+        assert "agentize" in config
+        assert "worktree" in config
+        assert "pre_commit" in config

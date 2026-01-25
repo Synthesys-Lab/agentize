@@ -40,7 +40,8 @@ Hooks enable automated behaviors and integrations at key points in the Claude Co
 - Delegates to `lib.permission.determine()` for permission decisions
 - Rules are sourced from `lib/permission/rules.py`
 - Returns `allow/deny/ask` decision based on pattern matching
-- Logs tool usage when `HANDSOFF_DEBUG=1`
+- Reads Telegram and auto-permission config from `.agentize.local.yaml` with env override
+- Logs tool usage when `HANDSOFF_DEBUG=1` or `handsoff.debug: true`
 - Falls back to `ask` on import/execution errors
 - See [pre-tool-use.md](pre-tool-use.md) for interface details
 

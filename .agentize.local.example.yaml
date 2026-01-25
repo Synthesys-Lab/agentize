@@ -1,0 +1,50 @@
+# =============================================================================
+# .agentize.local.yaml - Developer-specific local configuration
+# =============================================================================
+# This file is gitignored and contains secrets/personal preferences.
+# Environment variables can override any setting (higher precedence).
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Handsoff Mode - Automatic workflow continuation
+# -----------------------------------------------------------------------------
+handsoff:
+  enabled: true                    # HANDSOFF_MODE (default: true)
+  max_continuations: 10            # HANDSOFF_MAX_CONTINUATIONS (default: 10)
+  auto_permission: true            # HANDSOFF_AUTO_PERMISSION (default: true)
+  debug: false                     # HANDSOFF_DEBUG (default: false)
+  supervisor:
+    provider: claude               # HANDSOFF_SUPERVISOR (default: none)
+    model: opus                    # HANDSOFF_SUPERVISOR_MODEL (default: provider-specific)
+    flags: ""                      # HANDSOFF_SUPERVISOR_FLAGS (default: "")
+
+# -----------------------------------------------------------------------------
+# Telegram Approval - Remote approval via Telegram bot
+# -----------------------------------------------------------------------------
+telegram:
+  enabled: false                   # AGENTIZE_USE_TG (default: false)
+  token: "123456:ABC-DEF..."       # TG_API_TOKEN (required when enabled)
+  chat_id: "-1001234567890"        # TG_CHAT_ID (required when enabled)
+  timeout_sec: 60                  # TG_APPROVAL_TIMEOUT_SEC (default: 60, max: 7200)
+  poll_interval_sec: 5             # TG_POLL_INTERVAL_SEC (default: 5)
+  allowed_user_ids: "123,456,789"  # TG_ALLOWED_USER_IDS (CSV string, optional)
+
+# -----------------------------------------------------------------------------
+# Server Runtime - lol serve configuration
+# -----------------------------------------------------------------------------
+server:
+  period: 5m                       # Polling interval (default: 5m)
+  num_workers: 5                   # Worker pool size (default: 5)
+
+# -----------------------------------------------------------------------------
+# Workflow Model Assignments - Model selection per workflow type
+# -----------------------------------------------------------------------------
+workflows:
+  impl:
+    model: opus                    # Model for implementation workflows
+  refine:
+    model: sonnet                  # Model for refinement workflows
+  dev_req:
+    model: sonnet                  # Model for dev-req planning
+  rebase:
+    model: haiku                   # Model for PR rebase

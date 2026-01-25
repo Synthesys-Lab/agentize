@@ -123,18 +123,32 @@ When `HANDSOFF_DEBUG=1`:
 
 ## Telegram Approval Integration
 
-When `AGENTIZE_USE_TG=1|true|on` is set with valid `TG_API_TOKEN` and `TG_CHAT_ID`, the hook can request remote approval via Telegram for `ask` decisions.
+When Telegram is enabled via `.agentize.local.yaml` or environment variables, the hook can request remote approval via Telegram for `ask` decisions.
 
 ### Configuration
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `AGENTIZE_USE_TG` | Yes | Enable Telegram (`1\|true\|on`) |
-| `TG_API_TOKEN` | Yes | Bot token from @BotFather |
-| `TG_CHAT_ID` | Yes | Chat ID for approval messages |
-| `TG_APPROVAL_TIMEOUT_SEC` | No | Max wait time (default: 60) |
-| `TG_POLL_INTERVAL_SEC` | No | Poll interval (default: 5) |
-| `TG_ALLOWED_USER_IDS` | No | Comma-separated allowed user IDs |
+Configure in `.agentize.local.yaml` (recommended):
+
+```yaml
+telegram:
+  enabled: true
+  token: "123456:ABC-DEF..."
+  chat_id: "-1001234567890"
+  timeout_sec: 60
+  poll_interval_sec: 5
+  allowed_user_ids: "123,456"
+```
+
+Or via environment variables (override YAML settings):
+
+| Variable | YAML Path | Required | Description |
+|----------|-----------|----------|-------------|
+| `AGENTIZE_USE_TG` | `telegram.enabled` | Yes | Enable Telegram (`1\|true\|on`) |
+| `TG_API_TOKEN` | `telegram.token` | Yes | Bot token from @BotFather |
+| `TG_CHAT_ID` | `telegram.chat_id` | Yes | Chat ID for approval messages |
+| `TG_APPROVAL_TIMEOUT_SEC` | `telegram.timeout_sec` | No | Max wait time (default: 60) |
+| `TG_POLL_INTERVAL_SEC` | `telegram.poll_interval_sec` | No | Poll interval (default: 5) |
+| `TG_ALLOWED_USER_IDS` | `telegram.allowed_user_ids` | No | Comma-separated allowed user IDs |
 
 ### Decision Flow
 
