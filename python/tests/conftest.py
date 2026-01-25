@@ -39,3 +39,12 @@ def set_agentize_home(tmp_path, monkeypatch):
     """Set AGENTIZE_HOME to a temporary directory."""
     monkeypatch.setenv("AGENTIZE_HOME", str(tmp_path))
     return tmp_path
+
+
+@pytest.fixture
+def clear_local_config_cache():
+    """Clear local_config cache before and after test to ensure fresh YAML loading."""
+    from lib.local_config import clear_cache
+    clear_cache()
+    yield
+    clear_cache()

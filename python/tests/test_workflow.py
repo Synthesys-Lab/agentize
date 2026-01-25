@@ -261,57 +261,111 @@ class TestWorkflowConstants:
 
 
 # ============================================================
-# Test HANDSOFF_SUPERVISOR provider enum behavior
+# Test HANDSOFF_SUPERVISOR provider enum behavior (YAML-only config)
 # ============================================================
 
 class TestSupervisorProvider:
-    """Tests for supervisor provider configuration."""
+    """Tests for supervisor provider configuration (YAML-only)."""
 
-    def test_none_disables_supervisor(self, monkeypatch):
-        """HANDSOFF_SUPERVISOR=none disables supervisor (returns None)"""
-        monkeypatch.setenv('HANDSOFF_SUPERVISOR', 'none')
+    def test_none_disables_supervisor(self, tmp_path, monkeypatch, clear_local_config_cache):
+        """handsoff.supervisor.provider=none disables supervisor (returns None)"""
+        config_content = """
+handsoff:
+  supervisor:
+    provider: none
+"""
+        config_file = tmp_path / ".agentize.local.yaml"
+        config_file.write_text(config_content)
+        monkeypatch.chdir(tmp_path)
+
         result = _ask_supervisor_for_guidance(
             'test-session', '/tmp/test.json', 'ultra-planner', 1, 10, '/tmp/dummy-transcript.jsonl'
         )
         assert result is None
 
-    def test_claude_enables_supervisor(self, monkeypatch):
-        """HANDSOFF_SUPERVISOR=claude enables supervisor path"""
-        monkeypatch.setenv('HANDSOFF_SUPERVISOR', 'claude')
+    def test_claude_enables_supervisor(self, tmp_path, monkeypatch, clear_local_config_cache):
+        """handsoff.supervisor.provider=claude enables supervisor path"""
+        config_content = """
+handsoff:
+  supervisor:
+    provider: claude
+"""
+        config_file = tmp_path / ".agentize.local.yaml"
+        config_file.write_text(config_content)
+        monkeypatch.chdir(tmp_path)
+
         provider = _get_supervisor_provider()
         assert provider == 'claude'
 
-    def test_codex_sets_provider(self, monkeypatch):
-        """HANDSOFF_SUPERVISOR=codex sets codex as provider"""
-        monkeypatch.setenv('HANDSOFF_SUPERVISOR', 'codex')
+    def test_codex_sets_provider(self, tmp_path, monkeypatch, clear_local_config_cache):
+        """handsoff.supervisor.provider=codex sets codex as provider"""
+        config_content = """
+handsoff:
+  supervisor:
+    provider: codex
+"""
+        config_file = tmp_path / ".agentize.local.yaml"
+        config_file.write_text(config_content)
+        monkeypatch.chdir(tmp_path)
+
         provider = _get_supervisor_provider()
         assert provider == 'codex'
 
-    def test_model_reads_correctly(self, monkeypatch):
-        """HANDSOFF_SUPERVISOR_MODEL reads model correctly"""
-        monkeypatch.setenv('HANDSOFF_SUPERVISOR', 'claude')
-        monkeypatch.setenv('HANDSOFF_SUPERVISOR_MODEL', 'opus')
+    def test_model_reads_correctly(self, tmp_path, monkeypatch, clear_local_config_cache):
+        """handsoff.supervisor.model reads model correctly from YAML"""
+        config_content = """
+handsoff:
+  supervisor:
+    provider: claude
+    model: opus
+"""
+        config_file = tmp_path / ".agentize.local.yaml"
+        config_file.write_text(config_content)
+        monkeypatch.chdir(tmp_path)
+
         model = _get_supervisor_model('claude')
         assert model == 'opus'
 
-    def test_model_uses_default(self, monkeypatch):
-        """HANDSOFF_SUPERVISOR_MODEL uses provider default when not set"""
-        monkeypatch.setenv('HANDSOFF_SUPERVISOR', 'claude')
-        monkeypatch.delenv('HANDSOFF_SUPERVISOR_MODEL', raising=False)
+    def test_model_uses_default(self, tmp_path, monkeypatch, clear_local_config_cache):
+        """handsoff.supervisor.model uses provider default when not set in YAML"""
+        config_content = """
+handsoff:
+  supervisor:
+    provider: claude
+"""
+        config_file = tmp_path / ".agentize.local.yaml"
+        config_file.write_text(config_content)
+        monkeypatch.chdir(tmp_path)
+
         model = _get_supervisor_model('claude')
         assert model == 'opus'
 
-    def test_flags_reads_correctly(self, monkeypatch):
-        """HANDSOFF_SUPERVISOR_FLAGS is read correctly"""
-        monkeypatch.setenv('HANDSOFF_SUPERVISOR', 'claude')
-        monkeypatch.setenv('HANDSOFF_SUPERVISOR_FLAGS', '--timeout 1800')
+    def test_flags_reads_correctly(self, tmp_path, monkeypatch, clear_local_config_cache):
+        """handsoff.supervisor.flags is read correctly from YAML"""
+        config_content = """
+handsoff:
+  supervisor:
+    provider: claude
+    flags: "--timeout 1800"
+"""
+        config_file = tmp_path / ".agentize.local.yaml"
+        config_file.write_text(config_content)
+        monkeypatch.chdir(tmp_path)
+
         flags = _get_supervisor_flags()
         assert flags == '--timeout 1800'
 
-    def test_flags_defaults_to_empty(self, monkeypatch):
-        """HANDSOFF_SUPERVISOR_FLAGS defaults to empty string"""
-        monkeypatch.setenv('HANDSOFF_SUPERVISOR', 'claude')
-        monkeypatch.delenv('HANDSOFF_SUPERVISOR_FLAGS', raising=False)
+    def test_flags_defaults_to_empty(self, tmp_path, monkeypatch, clear_local_config_cache):
+        """handsoff.supervisor.flags defaults to empty string when not set in YAML"""
+        config_content = """
+handsoff:
+  supervisor:
+    provider: claude
+"""
+        config_file = tmp_path / ".agentize.local.yaml"
+        config_file.write_text(config_content)
+        monkeypatch.chdir(tmp_path)
+
         flags = _get_supervisor_flags()
         assert flags == ''
 
