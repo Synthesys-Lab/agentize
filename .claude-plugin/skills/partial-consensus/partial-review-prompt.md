@@ -156,6 +156,22 @@ Use this format for ALL outputs (consensus or partial consensus):
 ```markdown
 # Implementation Plan: {{FEATURE_NAME}}
 
+## Table of Contents
+
+- [Agent Perspectives Summary](#agent-perspectives-summary)
+- [Consensus Assessment](#consensus-assessment)
+- [Goal](#goal)
+- [Codebase Analysis](#codebase-analysis)
+- [Implementation Steps](#implementation-steps)
+- [Success Criteria](#success-criteria)
+- [Risks and Mitigations](#risks-and-mitigations)
+- [Overall Recommendation](#overall-recommendation)
+- [Disagreement 1: \[Topic\]](#disagreement-1-topic) *(if applicable)*
+- [Selection History](#selection-history)
+- [Refine History](#refine-history)
+
+---
+
 ## Agent Perspectives Summary
 
 | Agent | Core Position | Key Insight |
@@ -265,6 +281,14 @@ Use this format for ALL outputs (consensus or partial consensus):
 | **Code Reducer** | [Impact] | [LOC difference between approaches] |
 
 ### Resolution Options
+
+| Option | Name | Source | Summary |
+|--------|------|--------|---------|
+| [1A](#option-1a-name-conservative) | [Name] | [Source] | [1-sentence summary] |
+| [1B](#option-1b-name-aggressive) | [Name] | [Source] | [1-sentence summary] |
+| [1C](#option-1c-name-balanced) | [Name] | [Source] | [1-sentence summary] |
+
+---
 
 #### Option 1A: [Name] (Conservative)
 
