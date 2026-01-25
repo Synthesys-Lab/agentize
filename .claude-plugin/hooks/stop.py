@@ -49,8 +49,9 @@ def main():
                 logger(session_id, "State is 'done', stopping continuation")
                 sys.exit(0)
 
-            max_continuations = os.getenv('HANDSOFF_MAX_CONTINUATIONS', '10')
-            max_continuations = int(max_continuations)
+            # Get max_continuations from YAML config with env override
+            from lib.local_config import get_local_value, coerce_int
+            max_continuations = get_local_value('handsoff.max_continuations', 'HANDSOFF_MAX_CONTINUATIONS', 10, coerce_int)
 
             continuation_count = state.get('continuation_count', 0)
             if continuation_count >= max_continuations:

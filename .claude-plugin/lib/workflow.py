@@ -97,15 +97,18 @@ _DEFAULT_MODELS = {
 }
 
 def _get_supervisor_provider() -> Optional[str]:
-    """Get the supervisor provider from environment.
+    """Get the supervisor provider from YAML config with env override.
 
-    Supports both new provider names and legacy boolean values for
-    backward compatibility.
+    Precedence: HANDSOFF_SUPERVISOR env > handsoff.supervisor.provider YAML > None
 
     Returns:
         Provider name ('claude', 'codex', 'cursor', 'opencode') or None if disabled
     """
-    value = os.getenv('HANDSOFF_SUPERVISOR', 'none').lower().strip()
+    from lib.local_config import get_local_value
+
+    value = get_local_value('handsoff.supervisor.provider', 'HANDSOFF_SUPERVISOR', 'none')
+    if isinstance(value, str):
+        value = value.lower().strip()
 
     # Check for explicit 'none' or empty
     if value in ('none', ''):
@@ -115,29 +118,38 @@ def _get_supervisor_provider() -> Optional[str]:
     if value in _VALID_PROVIDERS:
         return value
 
-    # Unknown value - treat as disabled and log warning
+    # Unknown value - treat as disabled
     return None
 
 
 def _get_supervisor_model(provider: str) -> str:
-    """Get the model name for the supervisor provider.
+    """Get the model name for the supervisor provider from YAML with env override.
+
+    Precedence: HANDSOFF_SUPERVISOR_MODEL env > handsoff.supervisor.model YAML > provider default
 
     Args:
         provider: Provider name ('claude', 'codex', 'cursor', 'opencode')
 
     Returns:
-        Model name from HANDSOFF_SUPERVISOR_MODEL or provider default
+        Model name from config or provider default
     """
-    return os.getenv('HANDSOFF_SUPERVISOR_MODEL', _DEFAULT_MODELS.get(provider, 'sonnet'))
+    from lib.local_config import get_local_value
+
+    default_model = _DEFAULT_MODELS.get(provider, 'sonnet')
+    return get_local_value('handsoff.supervisor.model', 'HANDSOFF_SUPERVISOR_MODEL', default_model)
 
 
 def _get_supervisor_flags() -> str:
-    """Get extra flags to pass to acw.
+    """Get extra flags to pass to acw from YAML with env override.
+
+    Precedence: HANDSOFF_SUPERVISOR_FLAGS env > handsoff.supervisor.flags YAML > ""
 
     Returns:
-        Value of HANDSOFF_SUPERVISOR_FLAGS or empty string
+        Value of flags or empty string
     """
-    return os.getenv('HANDSOFF_SUPERVISOR_FLAGS', '')
+    from lib.local_config import get_local_value
+
+    return get_local_value('handsoff.supervisor.flags', 'HANDSOFF_SUPERVISOR_FLAGS', '')
 
 
 # ============================================================

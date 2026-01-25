@@ -53,7 +53,11 @@ def _ask_haiku_first(tool: str, target: str, workflow: str = 'unknown', session_
     """
     global _hook_input
 
-    if os.getenv('HANDSOFF_AUTO_PERMISSION', '1').lower() not in ['1', 'true', 'on', 'enable']:
+    # Import local_config for YAML-first configuration
+    from lib.local_config import get_local_value, coerce_bool
+    auto_permission = get_local_value('handsoff.auto_permission', 'HANDSOFF_AUTO_PERMISSION', True, coerce_bool)
+
+    if not auto_permission:
         log_tool_decision(session_id, '', tool, target, 'SKIP', workflow, 'haiku')
         return 'ask'
 
@@ -119,32 +123,42 @@ Reply with allow, deny, or ask as the first word. Brief reasoning is optional.''
 
 
 def _is_telegram_enabled() -> bool:
-    """Check if Telegram approval is enabled and configured."""
-    use_tg = os.getenv('AGENTIZE_USE_TG', '0').lower()
-    return use_tg in ['1', 'true', 'on']
+    """Check if Telegram approval is enabled and configured.
+
+    Reads from YAML config with environment variable override.
+    Precedence: AGENTIZE_USE_TG env > telegram.enabled YAML > False (default)
+    """
+    from lib.local_config import get_local_value, coerce_bool
+    return get_local_value('telegram.enabled', 'AGENTIZE_USE_TG', False, coerce_bool)
 
 
 def _get_telegram_config() -> Optional[Dict[str, Any]]:
-    """Get Telegram configuration from environment.
+    """Get Telegram configuration from YAML with environment override.
+
+    Precedence: env vars > YAML values > defaults
 
     Returns:
         dict with keys: token, chat_id, timeout, poll_interval, allowed_user_ids
         or None if required config is missing
     """
-    token = os.getenv('TG_API_TOKEN', '')
-    chat_id = os.getenv('TG_CHAT_ID', '')
+    from lib.local_config import get_local_value, coerce_int, coerce_csv_ints
+
+    token = get_local_value('telegram.token', 'TG_API_TOKEN', '')
+    chat_id = get_local_value('telegram.chat_id', 'TG_CHAT_ID', '')
 
     if not token or not chat_id:
         return None
 
-    timeout = int(os.getenv('TG_APPROVAL_TIMEOUT_SEC', '60'))
-    poll_interval = int(os.getenv('TG_POLL_INTERVAL_SEC', '5'))
+    # Convert chat_id to string if it's an int (YAML parser may convert numeric strings)
+    if isinstance(chat_id, int):
+        chat_id = str(chat_id)
 
-    # Parse allowed user IDs (optional)
-    allowed_ids_str = os.getenv('TG_ALLOWED_USER_IDS', '')
-    allowed_user_ids: List[int] = []
-    if allowed_ids_str:
-        allowed_user_ids = [int(uid.strip()) for uid in allowed_ids_str.split(',') if uid.strip()]
+    timeout = get_local_value('telegram.timeout_sec', 'TG_APPROVAL_TIMEOUT_SEC', 60, coerce_int)
+    poll_interval = get_local_value('telegram.poll_interval_sec', 'TG_POLL_INTERVAL_SEC', 5, coerce_int)
+
+    # Parse allowed user IDs (CSV string -> list of ints)
+    allowed_ids_str = get_local_value('telegram.allowed_user_ids', 'TG_ALLOWED_USER_IDS', '')
+    allowed_user_ids = coerce_csv_ints(allowed_ids_str) if allowed_ids_str else []
 
     return {
         'token': token,
