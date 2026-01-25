@@ -144,6 +144,42 @@ The system never crashes on errors—it degrades gracefully to user prompts.
 
 Edit `.claude-plugin/lib/permission/rules.py` to modify global rules. Rules are evaluated in order; first match wins.
 
+### YAML-Configured Rules
+
+Permission rules can also be configured via YAML in `.agentize.yaml` (project-level) and `.agentize.local.yaml` (local overrides).
+
+**YAML Schema:**
+
+```yaml
+permissions:
+  allow:
+    - "^npm run (build|test|lint)"    # Simple string (Bash tool implied)
+    - "^make test"
+    - pattern: "^cat .*\\.md$"        # Extended format with explicit tool
+      tool: Read
+  deny:
+    - "^npm run deploy:prod"
+    - pattern: "^rm -rf"
+      tool: Bash
+```
+
+**Item formats:**
+- **String**: `"^pattern"` - Matches against Bash tool by default
+- **Dict**: `{pattern: "^pattern", tool: "ToolName"}` - Explicit tool specification (defaults to `Bash` if omitted)
+
+**Merge order and precedence:**
+
+1. **Hardcoded deny rules always win** - Cannot be overridden by YAML
+2. **Project rules** (`.agentize.yaml`) - Shared across team
+3. **Local rules** (`.agentize.local.yaml`) - Developer-specific overrides
+
+Rules are evaluated in order: deny → ask → allow. The first match wins.
+
+**Source tracking:** When a rule matches, the source is included in debug logs:
+- `rules:hardcoded` - Built-in rule from `rules.py`
+- `rules:project` - From `.agentize.yaml`
+- `rules:local` - From `.agentize.local.yaml`
+
 ### Workflow Auto-Allow
 
 Workflow-specific patterns are defined in `.claude-plugin/lib/permission/determine.py` under workflow-specific pattern lists (e.g., `_SETUP_VIEWBOARD_ALLOW_PATTERNS`).

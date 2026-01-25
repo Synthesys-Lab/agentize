@@ -48,3 +48,18 @@ workflows:
     model: sonnet                  # Model for dev-req planning
   rebase:
     model: haiku                   # Model for PR rebase
+
+# -----------------------------------------------------------------------------
+# Permission Rules - User-configurable allow/deny patterns
+# -----------------------------------------------------------------------------
+permissions:
+  allow:
+    - "^npm run (build|test|lint)"    # Simple string (Bash tool implied)
+    - "^yarn (build|test)"
+    - "^make test"
+    - pattern: "^cat .*\\.md$"        # Extended format with explicit tool
+      tool: Read
+  deny:
+    - "^npm run deploy:prod"          # Block production deployments
+    - pattern: "^rm -rf /important"
+      tool: Bash

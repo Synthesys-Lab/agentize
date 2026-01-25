@@ -273,6 +273,85 @@ class TestCoerceCsvInts:
         assert 456 in result
 
 
+class TestArrayParsing:
+    """Tests for YAML array parsing support."""
+
+    def test_parse_simple_string_array(self, tmp_path):
+        """Test parsing simple string arrays under permissions."""
+        config_content = """
+permissions:
+  allow:
+    - "^npm run build"
+    - "^make test"
+"""
+        config_file = tmp_path / ".agentize.local.yaml"
+        config_file.write_text(config_content)
+
+        config, path = load_local_config(tmp_path)
+
+        assert path is not None
+        permissions = config.get("permissions", {})
+        allow = permissions.get("allow", [])
+        assert isinstance(allow, list)
+        assert len(allow) == 2
+        assert allow[0] == "^npm run build"
+        assert allow[1] == "^make test"
+
+    def test_parse_dict_array_with_pattern_and_tool(self, tmp_path):
+        """Test parsing dict arrays with pattern and tool keys."""
+        config_content = """
+permissions:
+  allow:
+    - pattern: "^cat .*\\.md$"
+      tool: Read
+    - pattern: "^npm run build"
+      tool: Bash
+"""
+        config_file = tmp_path / ".agentize.local.yaml"
+        config_file.write_text(config_content)
+
+        config, path = load_local_config(tmp_path)
+
+        assert path is not None
+        permissions = config.get("permissions", {})
+        allow = permissions.get("allow", [])
+        assert isinstance(allow, list)
+        assert len(allow) == 2
+        assert allow[0].get("pattern") == "^cat .*\\.md$"
+        assert allow[0].get("tool") == "Read"
+        assert allow[1].get("pattern") == "^npm run build"
+        assert allow[1].get("tool") == "Bash"
+
+    def test_parse_mixed_string_and_dict_array(self, tmp_path):
+        """Test parsing arrays with mixed string and dict items."""
+        config_content = """
+permissions:
+  allow:
+    - "^npm run build"
+    - pattern: "^cat .*\\.md$"
+      tool: Read
+  deny:
+    - "^rm -rf"
+"""
+        config_file = tmp_path / ".agentize.local.yaml"
+        config_file.write_text(config_content)
+
+        config, path = load_local_config(tmp_path)
+
+        assert path is not None
+        permissions = config.get("permissions", {})
+        allow = permissions.get("allow", [])
+        deny = permissions.get("deny", [])
+
+        assert len(allow) == 2
+        assert allow[0] == "^npm run build"
+        assert isinstance(allow[1], dict)
+        assert allow[1].get("pattern") == "^cat .*\\.md$"
+
+        assert len(deny) == 1
+        assert deny[0] == "^rm -rf"
+
+
 class TestEnvOverridePrecedence:
     """Tests for environment variable override precedence."""
 

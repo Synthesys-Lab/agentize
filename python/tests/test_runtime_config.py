@@ -281,3 +281,50 @@ pre_commit:
         assert "agentize" in config
         assert "worktree" in config
         assert "pre_commit" in config
+
+    def test_load_runtime_config_accepts_permissions_key(self, tmp_path):
+        """Test load_runtime_config accepts permissions key with array values."""
+        config_content = """
+permissions:
+  allow:
+    - "^npm run build"
+    - pattern: "^cat .*\\.md$"
+      tool: Read
+  deny:
+    - "^rm -rf"
+"""
+        config_file = tmp_path / ".agentize.local.yaml"
+        config_file.write_text(config_content)
+
+        # Should not raise ValueError
+        config, path = load_runtime_config(tmp_path)
+
+        assert path is not None
+        assert "permissions" in config
+        permissions = config.get("permissions", {})
+        assert "allow" in permissions
+        assert "deny" in permissions
+
+    def test_load_runtime_config_parses_permission_arrays(self, tmp_path):
+        """Test runtime_config parses permission arrays correctly."""
+        config_content = """
+permissions:
+  allow:
+    - "^npm run build"
+    - "^make test"
+    - pattern: "^cat .*\\.md$"
+      tool: Read
+"""
+        config_file = tmp_path / ".agentize.local.yaml"
+        config_file.write_text(config_content)
+
+        config, path = load_runtime_config(tmp_path)
+
+        allow = config.get("permissions", {}).get("allow", [])
+        assert isinstance(allow, list)
+        assert len(allow) == 3
+        assert allow[0] == "^npm run build"
+        assert allow[1] == "^make test"
+        assert isinstance(allow[2], dict)
+        assert allow[2].get("pattern") == "^cat .*\\.md$"
+        assert allow[2].get("tool") == "Read"

@@ -379,8 +379,9 @@ determine_module._hook_input = {'session_id': 'test-ordering'}
 
 # Test: rm -rf should be denied by global rules, not workflow
 decision, source = _check_permission('Bash', 'rm -rf /tmp', 'rm -rf /tmp')
-if decision != 'deny' or source != 'rules':
-    print(f'FAIL: Expected deny/rules for rm -rf, got {decision}/{source}')
+# Source can be 'rules', 'rules:hardcoded', 'rules:project', or 'rules:local'
+if decision != 'deny' or not source.startswith('rules'):
+    print(f'FAIL: Expected deny/rules* for rm -rf, got {decision}/{source}')
     sys.exit(1)
 
 print('PASS')

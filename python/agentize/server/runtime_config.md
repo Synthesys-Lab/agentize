@@ -103,3 +103,22 @@ workflows:
 **Parent directory search:** Allows running server from any subdirectory while finding config at project root.
 
 **Strict validation:** Raises `ValueError` for unknown keys to catch typos early rather than silently ignoring misconfiguration.
+
+## Parser Capabilities
+
+The minimal YAML parser supports:
+- Nested dicts (key-value pairs with indentation)
+- Simple scalar values (strings, integers)
+- Arrays of scalars: `- "value"` or `- value`
+- Arrays of dicts: `- key: value`
+
+The `permissions` top-level key is allowed for user-configurable permission rules:
+```yaml
+permissions:
+  allow:
+    - "^npm run build"
+    - pattern: "^cat .*\\.md$"
+      tool: Read
+  deny:
+    - "^rm -rf"
+```
