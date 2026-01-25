@@ -48,17 +48,34 @@ JSON to stdout:
 
 ## Permission Rule Syntax
 
-Rules are defined in `lib/permission/rules.py` as Python tuples in the `PERMISSION_RULES` dict. See that file for the canonical rule definitions.
+Rules are defined in multiple locations:
 
-**Rule structure:**
+1. **Hardcoded rules** (`lib/permission/rules.py`) - Python tuples in `PERMISSION_RULES` dict
+2. **Project rules** (`.agentize.yaml`) - Under `permissions.allow` and `permissions.deny`
+3. **Local rules** (`.agentize.local.yaml`) - Under `permissions.allow` and `permissions.deny`
+
+**Hardcoded rule structure (Python):**
 - First element: Tool name (exact match)
 - Second element: Regex pattern (matched against tool target)
 
+**YAML rule structure:**
+```yaml
+permissions:
+  allow:
+    - "^npm run build"              # String: Bash tool implied
+    - pattern: "^cat .*\\.md$"      # Dict: explicit tool
+      tool: Read
+  deny:
+    - "^rm -rf"
+```
+
 **Rule priority (first match wins):**
-1. Deny rules checked first
-2. Ask rules checked second
-3. Allow rules checked last
-4. No match defaults to `ask` (via Haiku LLM fallback)
+1. Hardcoded deny rules checked first (always win)
+2. YAML deny rules (project then local)
+3. Ask rules checked
+4. Hardcoded allow rules
+5. YAML allow rules (project then local)
+6. No match defaults to `ask` (via Haiku LLM fallback)
 
 ## Tool Target Extraction
 

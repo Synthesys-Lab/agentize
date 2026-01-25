@@ -55,6 +55,14 @@ worktree:
 
 pre_commit:
   enabled: true               # Enable pre-commit hook installation (optional, defaults to true)
+
+permissions:                  # User-configurable permission rules (optional)
+  allow:
+    - "^npm run build"        # Simple string (Bash tool implied)
+    - pattern: "^cat .*\\.md$"
+      tool: Read              # Extended format with explicit tool
+  deny:
+    - "^rm -rf /tmp"
 ```
 
 ## Fields
@@ -142,6 +150,26 @@ Controls automatic installation of the pre-commit hook during SDK and worktree i
 **Usage:** Set to `false` to prevent automatic hook installation. When `true` or unset, `wt init` and `wt spawn` will install `scripts/pre-commit` into `.git/hooks/pre-commit` if the hook script exists and no custom hook is already present.
 
 **Note:** Hook installation is also skipped when Git hooks are globally disabled via `core.hooksPath` (e.g., `core.hooksPath=/dev/null`). This ensures the commands respect user intent to disable hooks system-wide.
+
+### permissions (optional)
+User-configurable permission rules for tool access control.
+
+**Example:**
+```yaml
+permissions:
+  allow:
+    - "^npm run (build|test|lint)"
+    - pattern: "^cat .*\\.md$"
+      tool: Read
+  deny:
+    - "^rm -rf /tmp"
+```
+
+**Format:** Arrays of strings or dicts. String items default to `Bash` tool. Dict items require `pattern` field and optional `tool` field (defaults to `Bash`).
+
+**Merge order:** Project rules (`.agentize.yaml`) are evaluated first, then local rules (`.agentize.local.yaml`) can add additional patterns. Hardcoded deny rules in `rules.py` always take precedence over YAML allows.
+
+**Usage:** Enables per-project and per-developer customization of permission rules without modifying core code.
 
 ## Creation
 

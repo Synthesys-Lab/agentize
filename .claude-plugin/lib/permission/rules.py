@@ -2,11 +2,24 @@
 
 This module defines PERMISSION_RULES and provides rule matching logic.
 Priority: deny -> ask -> allow (first match wins)
+
+Rule sources:
+1. Hardcoded rules in PERMISSION_RULES (this file)
+2. Project rules from .agentize.yaml
+3. Local rules from .agentize.local.yaml
+
+Hardcoded deny rules always take precedence over YAML allows.
 """
 
+import os
 import re
 import subprocess
-from typing import Optional
+from pathlib import Path
+from typing import Any, Optional
+
+# Module-level cache for YAML rules
+_yaml_rules_cache: Optional[dict] = None
+_yaml_mtimes: dict[str, float] = {}
 
 # Permission rules: (tool_name, regex_pattern)
 PERMISSION_RULES = {
@@ -166,15 +179,337 @@ def verify_force_push_to_own_branch(command: str) -> Optional[str]:
         return None  # Can't verify, let other rules handle it
 
 
+def _find_config_paths(start_dir: Optional[Path] = None) -> tuple[Optional[Path], Optional[Path]]:
+    """Locate .agentize.yaml and .agentize.local.yaml config files.
+
+    Searches from start_dir up to parent directories.
+
+    Args:
+        start_dir: Directory to start searching from (default: current directory)
+
+    Returns:
+        Tuple of (project_path, local_path). Either may be None if not found.
+    """
+    if start_dir is None:
+        start_dir = Path.cwd()
+
+    start_dir = Path(start_dir).resolve()
+    current = start_dir
+
+    project_path = None
+    local_path = None
+
+    while True:
+        project_candidate = current / ".agentize.yaml"
+        local_candidate = current / ".agentize.local.yaml"
+
+        if project_path is None and project_candidate.is_file():
+            project_path = project_candidate
+        if local_path is None and local_candidate.is_file():
+            local_path = local_candidate
+
+        # Stop if we found both or reached root
+        if (project_path and local_path) or current.parent == current:
+            break
+        current = current.parent
+
+    return project_path, local_path
+
+
+def _parse_yaml_file(path: Path) -> dict:
+    """Parse a simple YAML file into a nested dict with array support.
+
+    This is a minimal parser that supports:
+    - Nested dicts
+    - Arrays of scalars and dicts
+
+    Args:
+        path: Path to the YAML file
+
+    Returns:
+        Parsed configuration as nested dict
+    """
+    lines: list[tuple[int, str]] = []
+
+    with open(path, "r") as f:
+        for line in f:
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#"):
+                continue
+            indent = len(line) - len(line.lstrip())
+            lines.append((indent, stripped))
+
+    return _parse_lines(lines, 0, len(lines), -1)
+
+
+def _parse_lines(lines: list[tuple[int, str]], start: int, end: int, parent_indent: int) -> dict:
+    """Parse a range of lines into a dict, handling nested structures."""
+    result: dict[str, Any] = {}
+    i = start
+
+    while i < end:
+        indent, stripped = lines[i]
+
+        if indent <= parent_indent and i > start:
+            break
+
+        if stripped.startswith("- "):
+            i += 1
+            continue
+
+        if ":" not in stripped:
+            i += 1
+            continue
+
+        key, _, value = stripped.partition(":")
+        key = key.strip()
+        value = value.strip()
+
+        if value and value[0] in ('"', "'") and value[-1] == value[0]:
+            value = value[1:-1]
+
+        if value:
+            try:
+                result[key] = int(value)
+            except ValueError:
+                result[key] = value
+            i += 1
+        else:
+            i += 1
+            if i < end:
+                next_indent, next_stripped = lines[i]
+                if next_indent > indent:
+                    if next_stripped.startswith("- "):
+                        result[key], i = _parse_list(lines, i, end, indent)
+                    else:
+                        child_end = _find_block_end(lines, i, end, indent)
+                        result[key] = _parse_lines(lines, i, child_end, indent)
+                        i = child_end
+                else:
+                    result[key] = {}
+            else:
+                result[key] = {}
+
+    return result
+
+
+def _parse_list(lines: list[tuple[int, str]], start: int, end: int, parent_indent: int) -> tuple[list, int]:
+    """Parse a list starting at the given position."""
+    result: list[Any] = []
+    i = start
+
+    while i < end:
+        indent, stripped = lines[i]
+
+        if indent <= parent_indent:
+            break
+
+        if not stripped.startswith("- "):
+            i += 1
+            continue
+
+        item_content = stripped[2:].strip()
+
+        # First check if the entire item is a quoted string (may contain colons)
+        if item_content and item_content[0] in ('"', "'") and item_content[-1] == item_content[0]:
+            # Scalar item: quoted string
+            item_value = item_content[1:-1]
+            result.append(item_value)
+            i += 1
+        elif ":" in item_content:
+            # Dict item: "- key: value"
+            key, _, value = item_content.partition(":")
+            key = key.strip()
+            value = value.strip()
+
+            if value and value[0] in ('"', "'") and value[-1] == value[0]:
+                value = value[1:-1]
+
+            item_dict: dict[str, Any] = {}
+            if value:
+                try:
+                    item_dict[key] = int(value)
+                except ValueError:
+                    item_dict[key] = value
+            else:
+                item_dict[key] = {}
+
+            i += 1
+
+            while i < end:
+                next_indent, next_stripped = lines[i]
+                if next_indent <= indent:
+                    break
+                if next_stripped.startswith("- "):
+                    break
+                if ":" in next_stripped:
+                    k, _, v = next_stripped.partition(":")
+                    k = k.strip()
+                    v = v.strip()
+                    if v and v[0] in ('"', "'") and v[-1] == v[0]:
+                        v = v[1:-1]
+                    if v:
+                        try:
+                            item_dict[k] = int(v)
+                        except ValueError:
+                            item_dict[k] = v
+                    else:
+                        item_dict[k] = {}
+                i += 1
+
+            result.append(item_dict)
+        else:
+            # Scalar item: unquoted value
+            item_value: Any = item_content
+            try:
+                item_value = int(item_value)
+            except ValueError:
+                pass
+            result.append(item_value)
+            i += 1
+
+    return result, i
+
+
+def _find_block_end(lines: list[tuple[int, str]], start: int, end: int, parent_indent: int) -> int:
+    """Find where a block ends."""
+    i = start
+    while i < end:
+        indent, _ = lines[i]
+        if indent <= parent_indent:
+            break
+        i += 1
+    return i
+
+
+def _extract_yaml_rules(config: dict, source: str) -> dict[str, list[tuple[str, str, str]]]:
+    """Extract permission rules from a parsed config dict.
+
+    Normalizes YAML rules to (tool, pattern, source) tuples.
+
+    Args:
+        config: Parsed config dict
+        source: Source identifier ('project' or 'local')
+
+    Returns:
+        Dict with 'allow' and 'deny' lists of (tool, pattern, source) tuples
+    """
+    result: dict[str, list[tuple[str, str, str]]] = {'allow': [], 'deny': []}
+
+    permissions = config.get('permissions', {})
+    if not isinstance(permissions, dict):
+        return result
+
+    for decision in ['allow', 'deny']:
+        items = permissions.get(decision, [])
+        if not isinstance(items, list):
+            continue
+
+        for item in items:
+            if isinstance(item, str):
+                # String item: pattern only, tool defaults to Bash
+                result[decision].append(('Bash', item, source))
+            elif isinstance(item, dict):
+                # Dict item: {pattern: "...", tool: "..."}
+                pattern = item.get('pattern', '')
+                tool = item.get('tool', 'Bash')
+                if pattern:
+                    result[decision].append((tool, pattern, source))
+
+    return result
+
+
+def _get_merged_rules(start_dir: Optional[Path] = None) -> dict[str, list[tuple[str, str, str]]]:
+    """Get merged YAML rules from project and local configs.
+
+    Uses mtime-based caching to avoid re-parsing unchanged files.
+
+    Args:
+        start_dir: Directory to start searching from
+
+    Returns:
+        Dict with 'allow' and 'deny' lists of (tool, pattern, source) tuples
+    """
+    global _yaml_rules_cache, _yaml_mtimes
+
+    project_path, local_path = _find_config_paths(start_dir)
+
+    # Check if cache is valid
+    cache_valid = _yaml_rules_cache is not None
+    paths_to_check = [(project_path, 'project'), (local_path, 'local')]
+
+    for path, key in paths_to_check:
+        if path is not None:
+            try:
+                current_mtime = path.stat().st_mtime
+                cached_mtime = _yaml_mtimes.get(key, 0)
+                if current_mtime != cached_mtime:
+                    cache_valid = False
+                    break
+            except OSError:
+                cache_valid = False
+                break
+        elif key in _yaml_mtimes:
+            # File was removed
+            cache_valid = False
+            break
+
+    if cache_valid and _yaml_rules_cache is not None:
+        return _yaml_rules_cache
+
+    # Rebuild cache
+    result: dict[str, list[tuple[str, str, str]]] = {'allow': [], 'deny': []}
+    _yaml_mtimes.clear()
+
+    # Load project rules first
+    if project_path is not None:
+        try:
+            config = _parse_yaml_file(project_path)
+            rules = _extract_yaml_rules(config, 'project')
+            result['allow'].extend(rules['allow'])
+            result['deny'].extend(rules['deny'])
+            _yaml_mtimes['project'] = project_path.stat().st_mtime
+        except (OSError, ValueError):
+            pass
+
+    # Then local rules (appended after project rules)
+    if local_path is not None:
+        try:
+            config = _parse_yaml_file(local_path)
+            rules = _extract_yaml_rules(config, 'local')
+            result['allow'].extend(rules['allow'])
+            result['deny'].extend(rules['deny'])
+            _yaml_mtimes['local'] = local_path.stat().st_mtime
+        except (OSError, ValueError):
+            pass
+
+    _yaml_rules_cache = result
+    return result
+
+
+def clear_yaml_cache() -> None:
+    """Clear the YAML rules cache.
+
+    Used for testing to ensure fresh config loading.
+    """
+    global _yaml_rules_cache, _yaml_mtimes
+    _yaml_rules_cache = None
+    _yaml_mtimes.clear()
+
+
 def match_rule(tool: str, target: str) -> Optional[tuple]:
-    """Match tool and target against PERMISSION_RULES.
+    """Match tool and target against permission rules.
+
+    Checks hardcoded rules first, then YAML-configured rules.
+    Hardcoded deny rules always take precedence over YAML allows.
 
     Args:
         tool: Tool name (e.g., 'Bash', 'Read')
         target: Normalized target string
 
     Returns:
-        (decision, 'rules') if matched, None if no match
+        (decision, source) if matched, None if no match.
+        Source is 'rules:hardcoded', 'rules:project', 'rules:local', or 'force-push-verify'.
     """
     # Special check: force push to issue branches requires current branch verification
     if tool == 'Bash':
@@ -182,15 +517,53 @@ def match_rule(tool: str, target: str) -> Optional[tuple]:
         if force_push_result is not None:
             return (force_push_result, 'force-push-verify')
 
+    # Load YAML rules
+    yaml_rules = _get_merged_rules()
+
     # Check rules in priority order: deny -> ask -> allow
-    for decision in ['deny', 'ask', 'allow']:
-        for rule_tool, pattern in PERMISSION_RULES.get(decision, []):
-            if rule_tool == tool:
-                try:
-                    if re.search(pattern, target):
-                        return (decision, 'rules')
-                except re.error:
-                    # Malformed pattern, skip
-                    continue
+    # 1. Hardcoded deny rules (always win)
+    for rule_tool, pattern in PERMISSION_RULES.get('deny', []):
+        if rule_tool == tool:
+            try:
+                if re.search(pattern, target):
+                    return ('deny', 'rules:hardcoded')
+            except re.error:
+                continue
+
+    # 2. YAML deny rules
+    for rule_tool, pattern, source in yaml_rules.get('deny', []):
+        if rule_tool == tool:
+            try:
+                if re.search(pattern, target):
+                    return ('deny', f'rules:{source}')
+            except re.error:
+                continue
+
+    # 3. Hardcoded ask rules
+    for rule_tool, pattern in PERMISSION_RULES.get('ask', []):
+        if rule_tool == tool:
+            try:
+                if re.search(pattern, target):
+                    return ('ask', 'rules:hardcoded')
+            except re.error:
+                continue
+
+    # 4. Hardcoded allow rules
+    for rule_tool, pattern in PERMISSION_RULES.get('allow', []):
+        if rule_tool == tool:
+            try:
+                if re.search(pattern, target):
+                    return ('allow', 'rules:hardcoded')
+            except re.error:
+                continue
+
+    # 5. YAML allow rules
+    for rule_tool, pattern, source in yaml_rules.get('allow', []):
+        if rule_tool == tool:
+            try:
+                if re.search(pattern, target):
+                    return ('allow', f'rules:{source}')
+            except re.error:
+                continue
 
     return None

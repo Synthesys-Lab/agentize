@@ -107,6 +107,20 @@ workflows:
 
 **Minimal parser:** Uses the same minimal YAML parser as `runtime_config.py` to avoid external dependencies.
 
+## Parser Limitations
+
+The minimal YAML parser supports:
+- Nested dicts (key-value pairs with indentation)
+- Simple scalar values (strings, integers)
+- Arrays of scalars: `- "value"` or `- value`
+- Arrays of dicts: `- key: value`
+
+Not supported:
+- YAML anchors and aliases
+- Flow-style syntax (`[a, b]` or `{a: b}`)
+- Multi-line literals (`|` or `>`)
+- Complex nested arrays
+
 ## Internal Usage
 
 - `.claude-plugin/lib/session_utils.py`: `is_handsoff_enabled()` reads `handsoff.enabled`

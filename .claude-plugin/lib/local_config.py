@@ -72,8 +72,12 @@ def load_local_config(start_dir: Optional[Path] = None) -> tuple[dict, Optional[
 def _parse_yaml_file(path: Path) -> dict:
     """Parse a simple YAML file into a nested dict.
 
-    Supports basic YAML structure with nested dicts. Does not support
-    arrays, anchors, or complex YAML features.
+    Supports basic YAML structure with nested dicts and arrays.
+    Arrays are supported as:
+      - "- value"  (scalar items)
+      - "- key: value" (dict items with subsequent indented key-values)
+
+    Does not support anchors, flow-style syntax, or multi-line literals.
 
     Args:
         path: Path to the YAML file
@@ -81,50 +85,169 @@ def _parse_yaml_file(path: Path) -> dict:
     Returns:
         Parsed configuration as nested dict
     """
-    config: dict[str, Any] = {}
-    stack: list[tuple[dict, int]] = [(config, -1)]  # (dict, indent_level)
+    lines: list[tuple[int, str]] = []
 
     with open(path, "r") as f:
         for line in f:
-            # Skip empty lines and comments
             stripped = line.strip()
             if not stripped or stripped.startswith("#"):
                 continue
-
-            # Calculate indentation
             indent = len(line) - len(line.lstrip())
+            lines.append((indent, stripped))
 
-            # Parse key-value pair
-            if ":" not in stripped:
-                continue
+    return _parse_lines(lines, 0, len(lines), -1)
 
-            key, _, value = stripped.partition(":")
+
+def _parse_lines(lines: list[tuple[int, str]], start: int, end: int, parent_indent: int) -> dict:
+    """Parse a range of lines into a dict, handling nested structures."""
+    result: dict[str, Any] = {}
+    i = start
+
+    while i < end:
+        indent, stripped = lines[i]
+
+        # Skip lines that are less indented than our scope
+        if indent <= parent_indent and i > start:
+            break
+
+        if stripped.startswith("- "):
+            # This shouldn't happen at dict level - skip
+            i += 1
+            continue
+
+        if ":" not in stripped:
+            i += 1
+            continue
+
+        key, _, value = stripped.partition(":")
+        key = key.strip()
+        value = value.strip()
+
+        # Remove quotes from value if present
+        if value and value[0] in ('"', "'") and value[-1] == value[0]:
+            value = value[1:-1]
+
+        if value:
+            # Simple key: value
+            try:
+                result[key] = int(value)
+            except ValueError:
+                result[key] = value
+            i += 1
+        else:
+            # Key with no value - check what follows
+            i += 1
+            if i < end:
+                next_indent, next_stripped = lines[i]
+                if next_indent > indent:
+                    if next_stripped.startswith("- "):
+                        # It's a list
+                        result[key], i = _parse_list(lines, i, end, indent)
+                    else:
+                        # It's a nested dict
+                        child_end = _find_block_end(lines, i, end, indent)
+                        result[key] = _parse_lines(lines, i, child_end, indent)
+                        i = child_end
+                else:
+                    # Empty value
+                    result[key] = {}
+            else:
+                result[key] = {}
+
+    return result
+
+
+def _parse_list(lines: list[tuple[int, str]], start: int, end: int, parent_indent: int) -> tuple[list, int]:
+    """Parse a list starting at the given position."""
+    result: list[Any] = []
+    i = start
+
+    while i < end:
+        indent, stripped = lines[i]
+
+        # Stop if we've de-indented past the list level
+        if indent <= parent_indent:
+            break
+
+        if not stripped.startswith("- "):
+            # Not a list item - might be continuation of previous dict item
+            i += 1
+            continue
+
+        item_content = stripped[2:].strip()
+
+        # First check if the entire item is a quoted string (may contain colons)
+        if item_content and item_content[0] in ('"', "'") and item_content[-1] == item_content[0]:
+            # Scalar item: quoted string
+            item_value = item_content[1:-1]
+            result.append(item_value)
+            i += 1
+        elif ":" in item_content:
+            # Dict item: "- key: value"
+            key, _, value = item_content.partition(":")
             key = key.strip()
             value = value.strip()
 
-            # Remove quotes from value if present
+            # Remove quotes if present
             if value and value[0] in ('"', "'") and value[-1] == value[0]:
                 value = value[1:-1]
 
-            # Pop stack to find the right parent level
-            while stack and stack[-1][1] >= indent:
-                stack.pop()
-
-            current_dict = stack[-1][0] if stack else config
-
+            item_dict: dict[str, Any] = {}
             if value:
-                # Simple key: value
-                # Try to convert to int if possible
                 try:
-                    current_dict[key] = int(value)
+                    item_dict[key] = int(value)
                 except ValueError:
-                    current_dict[key] = value
+                    item_dict[key] = value
             else:
-                # Nested dict (key with no value)
-                current_dict[key] = {}
-                stack.append((current_dict[key], indent))
+                item_dict[key] = {}
 
-    return config
+            i += 1
+
+            # Check for additional keys at deeper indentation
+            while i < end:
+                next_indent, next_stripped = lines[i]
+                if next_indent <= indent:
+                    break
+                if next_stripped.startswith("- "):
+                    break
+                if ":" in next_stripped:
+                    k, _, v = next_stripped.partition(":")
+                    k = k.strip()
+                    v = v.strip()
+                    if v and v[0] in ('"', "'") and v[-1] == v[0]:
+                        v = v[1:-1]
+                    if v:
+                        try:
+                            item_dict[k] = int(v)
+                        except ValueError:
+                            item_dict[k] = v
+                    else:
+                        item_dict[k] = {}
+                i += 1
+
+            result.append(item_dict)
+        else:
+            # Scalar item: unquoted value
+            item_value: Any = item_content
+            try:
+                item_value = int(item_value)
+            except ValueError:
+                pass
+            result.append(item_value)
+            i += 1
+
+    return result, i
+
+
+def _find_block_end(lines: list[tuple[int, str]], start: int, end: int, parent_indent: int) -> int:
+    """Find where a block ends (where indentation returns to parent level)."""
+    i = start
+    while i < end:
+        indent, _ = lines[i]
+        if indent <= parent_indent:
+            break
+        i += 1
+    return i
 
 
 def _get_nested_value(config: dict, path: str) -> Any:
