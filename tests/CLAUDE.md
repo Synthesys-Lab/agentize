@@ -21,12 +21,13 @@ When adding a new shell test:
 
 ## Python Tests (pytest)
 
-Python unit tests for server modules live in `python/tests/`:
+Python unit tests for server modules and `.claude-plugin/lib` modules live in `python/tests/`:
 
 1. Create test files: `python/tests/test_<module>.py`
 2. Tests are automatically discovered by pytest (files matching `test_*.py`)
-3. Use `conftest.py` fixtures for path setup (`PROJECT_ROOT`, `PYTHONPATH`)
+3. Use `conftest.py` fixtures for path setup (`PROJECT_ROOT`, `PYTHONPATH`, `.claude-plugin` in `sys.path`)
 4. Run with: `pytest python/tests` or via `make test`/`make test-fast`
+5. For `.claude-plugin/lib` tests, import modules as `from lib.workflow import ...` (`.claude-plugin` is in `sys.path`)
 
 Both `tests/sdk/` and `tests/cli/` are emulating how users would interact with the SDK and CLI.
 DO NOT try to modify `setup.sh` or `session-init.sh` to accomodate the test cases.

@@ -1,16 +1,18 @@
 # Python Tests
 
-This directory contains pytest tests for the `agentize.server` Python modules.
+This directory contains pytest tests for `agentize.server` modules and `.claude-plugin/lib` modules.
 
 ## Purpose
 
-These tests validate server-side functionality including:
+These tests validate server-side functionality and plugin library modules including:
 - Worker status file operations
 - GitHub API filtering and discovery functions
 - Runtime configuration loading
 - Telegram notification formatting
 - Session lookup utilities
 - Module exports and imports
+- Workflow detection and continuation prompts (`.claude-plugin/lib/workflow.py`)
+- Session utilities (`.claude-plugin/lib/session_utils.py`)
 
 ## Running Tests
 
@@ -48,12 +50,14 @@ Tests are also run automatically via `make test` and `make test-fast`.
 | `test_notify.py` | Telegram message formatting |
 | `test_session.py` | Session lookup and state retrieval |
 | `test_module_exports.py` | Module imports and re-exports |
+| `test_workflow.py` | Workflow detection, issue extraction, continuation prompts, supervisor config |
 
 ## Fixtures
 
 The `conftest.py` file provides:
 - `project_root`: Path to the repository root
-- Automatic `PYTHONPATH` setup for imports
+- `set_agentize_home`: Set `AGENTIZE_HOME` to a temporary directory for isolated tests
+- Automatic `PYTHONPATH` setup for `python/` and `.claude-plugin` imports
 
 ## Writing Tests
 

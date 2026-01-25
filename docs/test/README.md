@@ -45,12 +45,13 @@ This enables early detection of shell-specific issues (e.g., bashisms) before us
 
 ### Pytest Runner
 
-Python tests for server modules live in `python/tests/` and run via pytest:
+Python tests for server modules and `.claude-plugin/lib` modules live in `python/tests/` and run via pytest:
 
 - Tests are automatically discovered by pytest (files matching `test_*.py`)
 - Both `make test` and `make test-fast` run pytest after shell tests
 - To run pytest only: `pytest python/tests`
 - Install dev dependencies: `python -m pip install -r python/requirements-dev.txt`
+- The `.claude-plugin` directory is added to `sys.path` via `conftest.py` to enable testing plugin modules
 
 ## Test Structure
 
