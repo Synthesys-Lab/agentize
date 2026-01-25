@@ -67,7 +67,7 @@ leveraging LLM recency bias to prioritize the current request.
 | Goal / Codebase Analysis | Problem statement and file changes |
 | Implementation Steps | Agreed changes with code drafts |
 | Disagreement N (if any) | Per-disagreement options with A/B/C choices |
-| Overall Recommendation | Suggested combination and rationale |
+| Disagreement Summary | Summary table and suggested combination |
 | Validation (resolve mode) | Selection history and compatibility check |
 
 *See `partial-review-prompt.md` for complete output format specification.*
