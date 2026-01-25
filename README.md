@@ -15,6 +15,7 @@
   - Used by: `/setup-viewboard`, `/open-issue`, `/open-pr`, GitHub workflow automation
 - **Python 3.10+** - Required for permission automation module, otherwise you can have infinite `yes` to prompt!
   - Use Python `venv` or `anaconda` to manage a good Python release!
+  - Requires **PyYAML** (`pip install pyyaml`) for YAML configuration parsing
 
 ### Recommended Libraries
 

@@ -110,21 +110,7 @@ workflows:
 
 **No environment overrides:** YAML is the sole configuration source, providing a single, predictable place to manage settings.
 
-**Minimal parser:** Uses the same minimal YAML parser as `runtime_config.py` to avoid external dependencies.
-
-## Parser Limitations
-
-The minimal YAML parser supports:
-- Nested dicts (key-value pairs with indentation)
-- Simple scalar values (strings, integers)
-- Arrays of scalars: `- "value"` or `- value`
-- Arrays of dicts: `- key: value`
-
-Not supported:
-- YAML anchors and aliases
-- Flow-style syntax (`[a, b]` or `{a: b}`)
-- Multi-line literals (`|` or `>`)
-- Complex nested arrays
+**PyYAML library:** Uses `yaml.safe_load()` for full YAML 1.2 compliance, providing robust parsing with support for all standard YAML features.
 
 ## Internal Usage
 

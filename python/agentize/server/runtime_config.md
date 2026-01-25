@@ -49,9 +49,7 @@ Extract workflow -> model mapping from config.
 
 ### `_parse_yaml_file(path: Path) -> dict`
 
-Parse a simple YAML file into a nested dict. Supports basic YAML structure with nested dicts. Does not support arrays, anchors, or complex YAML features.
-
-This minimal parser avoids external dependencies, consistent with the project's approach for `.agentize.yaml` parsing.
+Parse a YAML file into a nested dict using PyYAML's `yaml.safe_load()`. Provides full YAML 1.2 compliance with support for all standard YAML features.
 
 ## Configuration Schema
 
@@ -110,11 +108,12 @@ This enables user-wide configuration (e.g., Telegram credentials) while allowing
 
 ## Parser Capabilities
 
-The minimal YAML parser supports:
-- Nested dicts (key-value pairs with indentation)
-- Simple scalar values (strings, integers)
-- Arrays of scalars: `- "value"` or `- value`
-- Arrays of dicts: `- key: value`
+The PyYAML library provides full YAML 1.2 support including:
+- Nested dicts and arrays
+- All scalar types (strings, integers, booleans, floats)
+- Multi-line literals (`|` and `>`)
+- Anchors and aliases
+- Flow-style syntax (`[a, b]` and `{a: b}`)
 
 The `permissions` top-level key is allowed for user-configurable permission rules:
 ```yaml

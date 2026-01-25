@@ -17,6 +17,8 @@ import subprocess
 from pathlib import Path
 from typing import Any, Optional
 
+import yaml
+
 # Module-level cache for YAML rules
 _yaml_rules_cache: Optional[dict] = None
 _yaml_mtimes: dict[str, float] = {}
@@ -217,11 +219,7 @@ def _find_config_paths(start_dir: Optional[Path] = None) -> tuple[Optional[Path]
 
 
 def _parse_yaml_file(path: Path) -> dict:
-    """Parse a simple YAML file into a nested dict with array support.
-
-    This is a minimal parser that supports:
-    - Nested dicts
-    - Arrays of scalars and dicts
+    """Parse YAML file using PyYAML's safe_load.
 
     Args:
         path: Path to the YAML file
@@ -229,157 +227,8 @@ def _parse_yaml_file(path: Path) -> dict:
     Returns:
         Parsed configuration as nested dict
     """
-    lines: list[tuple[int, str]] = []
-
     with open(path, "r") as f:
-        for line in f:
-            stripped = line.strip()
-            if not stripped or stripped.startswith("#"):
-                continue
-            indent = len(line) - len(line.lstrip())
-            lines.append((indent, stripped))
-
-    return _parse_lines(lines, 0, len(lines), -1)
-
-
-def _parse_lines(lines: list[tuple[int, str]], start: int, end: int, parent_indent: int) -> dict:
-    """Parse a range of lines into a dict, handling nested structures."""
-    result: dict[str, Any] = {}
-    i = start
-
-    while i < end:
-        indent, stripped = lines[i]
-
-        if indent <= parent_indent and i > start:
-            break
-
-        if stripped.startswith("- "):
-            i += 1
-            continue
-
-        if ":" not in stripped:
-            i += 1
-            continue
-
-        key, _, value = stripped.partition(":")
-        key = key.strip()
-        value = value.strip()
-
-        if value and value[0] in ('"', "'") and value[-1] == value[0]:
-            value = value[1:-1]
-
-        if value:
-            try:
-                result[key] = int(value)
-            except ValueError:
-                result[key] = value
-            i += 1
-        else:
-            i += 1
-            if i < end:
-                next_indent, next_stripped = lines[i]
-                if next_indent > indent:
-                    if next_stripped.startswith("- "):
-                        result[key], i = _parse_list(lines, i, end, indent)
-                    else:
-                        child_end = _find_block_end(lines, i, end, indent)
-                        result[key] = _parse_lines(lines, i, child_end, indent)
-                        i = child_end
-                else:
-                    result[key] = {}
-            else:
-                result[key] = {}
-
-    return result
-
-
-def _parse_list(lines: list[tuple[int, str]], start: int, end: int, parent_indent: int) -> tuple[list, int]:
-    """Parse a list starting at the given position."""
-    result: list[Any] = []
-    i = start
-
-    while i < end:
-        indent, stripped = lines[i]
-
-        if indent <= parent_indent:
-            break
-
-        if not stripped.startswith("- "):
-            i += 1
-            continue
-
-        item_content = stripped[2:].strip()
-
-        # First check if the entire item is a quoted string (may contain colons)
-        if item_content and item_content[0] in ('"', "'") and item_content[-1] == item_content[0]:
-            # Scalar item: quoted string
-            item_value = item_content[1:-1]
-            result.append(item_value)
-            i += 1
-        elif ":" in item_content:
-            # Dict item: "- key: value"
-            key, _, value = item_content.partition(":")
-            key = key.strip()
-            value = value.strip()
-
-            if value and value[0] in ('"', "'") and value[-1] == value[0]:
-                value = value[1:-1]
-
-            item_dict: dict[str, Any] = {}
-            if value:
-                try:
-                    item_dict[key] = int(value)
-                except ValueError:
-                    item_dict[key] = value
-            else:
-                item_dict[key] = {}
-
-            i += 1
-
-            while i < end:
-                next_indent, next_stripped = lines[i]
-                if next_indent <= indent:
-                    break
-                if next_stripped.startswith("- "):
-                    break
-                if ":" in next_stripped:
-                    k, _, v = next_stripped.partition(":")
-                    k = k.strip()
-                    v = v.strip()
-                    if v and v[0] in ('"', "'") and v[-1] == v[0]:
-                        v = v[1:-1]
-                    if v:
-                        try:
-                            item_dict[k] = int(v)
-                        except ValueError:
-                            item_dict[k] = v
-                    else:
-                        item_dict[k] = {}
-                i += 1
-
-            result.append(item_dict)
-        else:
-            # Scalar item: unquoted value
-            item_value: Any = item_content
-            try:
-                item_value = int(item_value)
-            except ValueError:
-                pass
-            result.append(item_value)
-            i += 1
-
-    return result, i
-
-
-def _find_block_end(lines: list[tuple[int, str]], start: int, end: int, parent_indent: int) -> int:
-    """Find where a block ends."""
-    i = start
-    while i < end:
-        indent, _ = lines[i]
-        if indent <= parent_indent:
-            break
-        i += 1
-    return i
+        return yaml.safe_load(f) or {}
 
 
 def _extract_yaml_rules(config: dict, source: str) -> dict[str, list[tuple[str, str, str]]]:

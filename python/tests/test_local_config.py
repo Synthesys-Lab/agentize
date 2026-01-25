@@ -59,7 +59,7 @@ handsoff:
         config, path = load_local_config(tmp_path)
 
         assert path is not None
-        assert config.get("handsoff", {}).get("enabled") == "true"
+        assert config.get("handsoff", {}).get("enabled") is True
         assert config.get("handsoff", {}).get("max_continuations") == 15
         assert config.get("handsoff", {}).get("supervisor", {}).get("provider") == "claude"
 
@@ -80,7 +80,7 @@ telegram:
         config, path = load_local_config(tmp_path)
 
         assert path is not None
-        assert config.get("telegram", {}).get("enabled") == "true"
+        assert config.get("telegram", {}).get("enabled") is True
         assert config.get("telegram", {}).get("token") == "123456:ABC-DEF"
         assert config.get("telegram", {}).get("allowed_user_ids") == "123,456,789"
 
@@ -101,7 +101,7 @@ handsoff:
         config, path = load_local_config(nested_dir)
 
         assert path is not None
-        assert config.get("handsoff", {}).get("enabled") == "true"
+        assert config.get("handsoff", {}).get("enabled") is True
 
 
 class TestGetNestedValue:
@@ -281,9 +281,9 @@ permissions:
         config_content = """
 permissions:
   allow:
-    - pattern: "^cat .*\\.md$"
+    - pattern: '^cat .*\\.md$'
       tool: Read
-    - pattern: "^npm run build"
+    - pattern: '^npm run build'
       tool: Bash
 """
         config_file = tmp_path / ".agentize.local.yaml"
@@ -306,11 +306,11 @@ permissions:
         config_content = """
 permissions:
   allow:
-    - "^npm run build"
-    - pattern: "^cat .*\\.md$"
+    - '^npm run build'
+    - pattern: '^cat .*\\.md$'
       tool: Read
   deny:
-    - "^rm -rf"
+    - '^rm -rf'
 """
         config_file = tmp_path / ".agentize.local.yaml"
         config_file.write_text(config_content)

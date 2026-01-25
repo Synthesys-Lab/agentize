@@ -29,7 +29,7 @@ server:
 
 telegram:
   token: "test-token"
-  chat_id: "12345"
+  chat_id: 12345
 
 workflows:
   impl:
@@ -201,10 +201,10 @@ handsoff:
         config, path = load_runtime_config(tmp_path)
 
         assert path is not None
-        assert config.get("handsoff", {}).get("enabled") == "true"
+        assert config.get("handsoff", {}).get("enabled") is True
         assert config.get("handsoff", {}).get("max_continuations") == 20
-        assert config.get("handsoff", {}).get("auto_permission") == "true"
-        assert config.get("handsoff", {}).get("debug") == "false"
+        assert config.get("handsoff", {}).get("auto_permission") is True
+        assert config.get("handsoff", {}).get("debug") is False
         assert config.get("handsoff", {}).get("supervisor", {}).get("provider") == "claude"
         assert config.get("handsoff", {}).get("supervisor", {}).get("model") == "opus"
         assert config.get("handsoff", {}).get("supervisor", {}).get("flags") == "--timeout 1800"
@@ -215,7 +215,7 @@ handsoff:
 telegram:
   enabled: true
   token: "test-token"
-  chat_id: "-1001234567890"
+  chat_id: -1001234567890
   timeout_sec: 120
   poll_interval_sec: 10
   allowed_user_ids: "123,456,789"
@@ -226,7 +226,7 @@ telegram:
         config, path = load_runtime_config(tmp_path)
 
         assert path is not None
-        assert config.get("telegram", {}).get("enabled") == "true"
+        assert config.get("telegram", {}).get("enabled") is True
         assert config.get("telegram", {}).get("token") == "test-token"
         # Note: YAML parser converts numeric strings to int (negative numbers work)
         assert config.get("telegram", {}).get("chat_id") == -1001234567890
@@ -287,11 +287,11 @@ pre_commit:
         config_content = """
 permissions:
   allow:
-    - "^npm run build"
-    - pattern: "^cat .*\\.md$"
+    - '^npm run build'
+    - pattern: '^cat .*\\.md$'
       tool: Read
   deny:
-    - "^rm -rf"
+    - '^rm -rf'
 """
         config_file = tmp_path / ".agentize.local.yaml"
         config_file.write_text(config_content)
@@ -310,9 +310,9 @@ permissions:
         config_content = """
 permissions:
   allow:
-    - "^npm run build"
-    - "^make test"
-    - pattern: "^cat .*\\.md$"
+    - '^npm run build'
+    - '^make test'
+    - pattern: '^cat .*\\.md$'
       tool: Read
 """
         config_file = tmp_path / ".agentize.local.yaml"
