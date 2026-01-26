@@ -1,17 +1,17 @@
 ---
-name: partial-consensus
-description: Determine consensus/disagreement from 5-agent debate - exposes disagreements as developer decisions
+name: external-synthesize
+description: Synthesize implementation plan(s) from 5-agent debate using external AI - exposes disagreements as developer decisions
 allowed-tools:
-  - Bash(.claude-plugin/skills/partial-consensus/scripts/partial-consensus.sh:*)
+  - Bash(.claude-plugin/skills/external-synthesize/scripts/external-synthesize.sh:*)
   - Bash(cat:*)
   - Bash(test:*)
   - Bash(wc:*)
   - Bash(grep:*)
 ---
 
-# Partial Consensus Skill
+# External Synthesize Skill
 
-This skill determines consensus and exposes disagreements from a multi-agent debate with dual proposers.
+This skill synthesizes implementation plan(s) and exposes disagreements from a multi-agent debate with dual proposers using external AI review.
 
 ## Modes
 
@@ -70,14 +70,14 @@ leveraging LLM recency bias to prioritize the current request.
 | Disagreement Summary | Summary table and suggested combination |
 | Validation (resolve mode) | Selection history and compatibility check |
 
-*See `partial-review-prompt.md` for complete output format specification.*
+*See `external-synthesize-prompt.md` for complete output format specification.*
 
 ## Implementation Workflow
 
-### Step 1: Invoke Partial Consensus Script
+### Step 1: Invoke External Synthesize Script
 
 ```bash
-.claude-plugin/skills/partial-consensus/scripts/partial-consensus.sh \
+.claude-plugin/skills/external-synthesize/scripts/external-synthesize.sh \
     .tmp/issue-42-bold.md \
     .tmp/issue-42-paranoia.md \
     .tmp/issue-42-critique.md \
@@ -112,7 +112,7 @@ leveraging LLM recency bias to prioritize the current request.
 
 ```bash
 # Standard mode
-.claude-plugin/skills/partial-consensus/scripts/partial-consensus.sh \
+.claude-plugin/skills/external-synthesize/scripts/external-synthesize.sh \
     .tmp/issue-42-bold.md \
     .tmp/issue-42-paranoia.md \
     .tmp/issue-42-critique.md \

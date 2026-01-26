@@ -43,7 +43,7 @@ This command orchestrates a multi-agent debate system to generate high-quality i
 2. **Dual proposer debate**: Launch bold-proposer and paranoia-proposer in parallel
 3. **Three-agent analysis**: Critique and two reducers analyze BOTH proposals
 4. **Combine reports**: Merge all perspectives into single document
-5. **Partial consensus**: Invoke partial-consensus skill to synthesize balanced plan (or options)
+5. **External synthesize**: Invoke external-synthesize skill to synthesize balanced plan (or options)
 6. **Issue update**: Update GitHub issue with consensus plan via `gh issue edit`
 
 ## Inputs
@@ -77,7 +77,7 @@ This command orchestrates a multi-agent debate system to generate high-quality i
 - Resolves disagreements in an existing plan without re-running the 5-agent debate
 - `<selections>`: Option codes like `1B` or `1C,2A` (can also use natural language: "Option 1B for architecture")
 - Reads existing 5 agent report files from `.tmp/`
-- Invokes `partial-consensus` skill with appended user selections
+- Invokes `external-synthesize` skill with appended user selections
 - Skips Steps 2-6 (5-agent debate phase)
 - Updates the existing issue with the resolved plan
 
@@ -420,11 +420,11 @@ REFINE_SUMMARY=$(echo "${REFINE_COMMENTS}" | head -c 80 | tr '\n' ' ')
 echo "| ${TIMESTAMP} | refine | ${REFINE_SUMMARY} |" >> "$HISTORY_FILE"
 ```
 
-Then invoke partial-consensus with consensus.md as 6th argument and history as 7th:
+Then invoke external-synthesize with consensus.md as 6th argument and history as 7th:
 
 ```
 Skill tool parameters:
-  skill: "partial-consensus"
+  skill: "external-synthesize"
   args: ".tmp/${FILE_PREFIX}-bold.md .tmp/${FILE_PREFIX}-paranoia.md .tmp/${FILE_PREFIX}-critique.md .tmp/${FILE_PREFIX}-proposal-reducer.md .tmp/${FILE_PREFIX}-code-reducer.md .tmp/${FILE_PREFIX}-consensus.md .tmp/${FILE_PREFIX}-history.md"
 ```
 
@@ -438,7 +438,7 @@ Continue to Step 8.
 
 ```
 Skill tool parameters:
-  skill: "partial-consensus"
+  skill: "external-synthesize"
   args: "{BOLD_FILE} {PARANOIA_FILE} {CRITIQUE_FILE} {PROPOSAL_REDUCER_FILE} {CODE_REDUCER_FILE}"
 ```
 

@@ -100,4 +100,4 @@ subagent_type: "agentize:mega-code-reducer"
 
 - `/ultra-planner` command: `.claude-plugin/commands/ultra-planner.md`
 - `/mega-planner` command: `.claude-plugin/commands/mega-planner.md`
-- `partial-consensus` skill: `.claude-plugin/skills/partial-consensus/`
+- `external-synthesize` skill: `.claude-plugin/skills/external-synthesize/`

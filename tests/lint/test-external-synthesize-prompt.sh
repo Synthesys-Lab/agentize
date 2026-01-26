@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 #
-# Lint test for partial-review-prompt.md structure
+# Lint test for external-synthesize-prompt.md structure
 #
 
 set -euo pipefail
 
 source "$(dirname "$0")/../common.sh"
 
-PROMPT_FILE="$PROJECT_ROOT/.claude-plugin/skills/partial-consensus/partial-review-prompt.md"
+PROMPT_FILE="$PROJECT_ROOT/.claude-plugin/skills/external-synthesize/external-synthesize-prompt.md"
 
-echo "Testing partial-review-prompt.md structure..."
+echo "Testing external-synthesize-prompt.md structure..."
 
 # Test 1: TOC section exists
 if ! grep -q "## Table of Contents" "$PROMPT_FILE"; then
@@ -68,4 +68,4 @@ if ! grep -qE "\| Option \| Name \| Source \| Summary \|" "$PROMPT_FILE"; then
 fi
 echo "PASS: Resolution Options Summary table present"
 
-echo "All partial-review-prompt.md structure tests passed!"
+echo "All external-synthesize-prompt.md structure tests passed!"
