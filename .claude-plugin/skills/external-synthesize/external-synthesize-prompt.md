@@ -69,7 +69,7 @@ Generate resolution options for each disagreement point:
 
 **Option Requirements:**
 - **Minimum 2 options required**: Conservative (lower risk) and Aggressive (higher risk)
-- **Recommended 3 options**: Conservative, Balanced, and Aggressive
+- **Encouraged 3 options**: Conservative, Balanced, and Aggressive
 - **No upper limit**: Generate as many distinct options as the agent positions support
 
 **Source Attribution (MANDATORY):**
@@ -247,8 +247,8 @@ Use this format for ALL outputs (consensus or disagreement):
 
 | # | Topic | Options | AI Recommendation |
 |---|-------|---------|-------------------|
-| 1 | [Topic Name] | A (Paranoia): suffix; B (Bold): prefix | Option 1X |
-| 2 | [Topic Name] | A (Code Reducer): suffix; B (Paranoia): prefix | Option 2X |
+| 1 | [[Topic Name]](#disagreement-1-topic) | A (Paranoia, **Recommended**): suffix; B (Bold): prefix | Option 1X |
+| 2 | [[Topic Name]](#disagreement-2-topic) | A (Code Reducer): suffix; B (Paranoia, **Recommended**): prefix | Option 2X |
 
 ### Suggested Combination
 
@@ -433,7 +433,7 @@ Use this format for ALL outputs (consensus or disagreement):
 | Timestamp | Disagreement | Options Summary | Selected Option | User Comments |
 |-----------|--------------|-----------------|-----------------|---------------|
 | [Previous rows from history file] |
-| 2026-01-22 19:30 | 1: Agent Naming | 1A (Paranoia): suffix; 1B (Bold): prefix | 1B (Bold) | Prefix matches existing |
+| 2026-01-22 19:30 | 1: Agent Naming | 1A (Paranoia, **Recommended**): suffix; 1B (Bold): prefix | 1B (Bold) | Prefix matches existing |
 
 <a name="refine-history"></a>
 ## Refine History
@@ -471,7 +471,7 @@ All selected options are architecturally compatible. No conflicting file modific
 Each disagreement MUST have at least 2 options:
 - Option [N]A (Conservative): Lower risk, smaller change scope
 - Option [N]B (Aggressive): Higher risk, larger change scope
-- Option [N]C (Balanced): Synthesized approach (recommended but optional)
+- Option [N]C (Balanced): Synthesized approach (encouraged but optional)
 - Additional options as supported by agent positions
 
 Each option MUST include:
