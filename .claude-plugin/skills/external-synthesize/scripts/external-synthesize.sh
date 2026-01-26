@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
-# Partial Consensus Review Script
+# External Synthesize Script
 #
-# This script synthesizes consensus plan(s) from a 5-agent debate.
-# Unlike external-consensus, it can produce multiple options when no agreement.
+# This script synthesizes implementation plan(s) from a 5-agent debate using external AI review.
+# Can produce multiple options when no agreement exists.
 #
 # Usage:
-#   ./partial-consensus.sh <bold> <paranoia> <critique> <proposal-reducer> <code-reducer> [consensus] [history]
+#   ./external-synthesize.sh <bold> <paranoia> <critique> <proposal-reducer> <code-reducer> [consensus] [history]
 #
 # Arguments:
 #   1-5: Required agent report files
@@ -29,7 +29,7 @@ SKILL_DIR="$(dirname "$SCRIPT_DIR")"
 # Validate input arguments
 if [ $# -lt 5 ] || [ $# -gt 7 ]; then
     echo "Error: 5 to 7 arguments required" >&2
-    echo "Usage: $0 <bold> <paranoia> <critique> <proposal-reducer> <code-reducer> [consensus] [history]" >&2
+    echo "Usage: external-synthesize.sh <bold> <paranoia> <critique> <proposal-reducer> <code-reducer> [consensus] [history]" >&2
     exit 1
 fi
 
@@ -127,7 +127,7 @@ fi
 mkdir -p .tmp
 
 # Load prompt template
-PROMPT_TEMPLATE_PATH="${SKILL_DIR}/partial-review-prompt.md"
+PROMPT_TEMPLATE_PATH="${SKILL_DIR}/external-synthesize-prompt.md"
 if [ ! -f "$PROMPT_TEMPLATE_PATH" ]; then
     echo "Error: Prompt template not found: $PROMPT_TEMPLATE_PATH" >&2
     exit 1
