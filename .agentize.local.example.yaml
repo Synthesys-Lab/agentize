@@ -12,7 +12,7 @@ handsoff:
   enabled: true                    # HANDSOFF_MODE (default: true)
   max_continuations: 10            # HANDSOFF_MAX_CONTINUATIONS (default: 10)
   auto_permission: true            # HANDSOFF_AUTO_PERMISSION (default: true)
-  debug: false                     # HANDSOFF_DEBUG (default: false)
+  debug: false                     # Enable debug logging (default: false)
   supervisor:
     provider: claude               # HANDSOFF_SUPERVISOR (default: none)
     model: opus                    # HANDSOFF_SUPERVISOR_MODEL (default: provider-specific)
