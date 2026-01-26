@@ -7,13 +7,23 @@ This module handles loading server-specific settings that shouldn't be committed
 - Workflow model assignments (impl, refine, dev_req, rebase)
 
 Configuration precedence: CLI args > env vars > .agentize.local.yaml > defaults
+
+Note: This module intentionally does NOT cache config. Server needs fresh config
+on each poll cycle to pick up file changes without restart. For hooks that need
+caching, use local_config.py instead.
 """
 
-import os
+import sys
 from pathlib import Path
 from typing import Any
 
-import yaml
+# Add .claude-plugin to path for shared helper import
+_repo_root = Path(__file__).resolve().parents[3]
+_plugin_dir = _repo_root / ".claude-plugin"
+if str(_plugin_dir) not in sys.path:
+    sys.path.insert(0, str(_plugin_dir))
+
+from lib.local_config_io import find_local_config_file, parse_yaml_file
 
 # Valid top-level keys in .agentize.local.yaml
 # Extended to include handsoff and metadata keys for unified local configuration
@@ -35,6 +45,10 @@ def load_runtime_config(start_dir: Path | None = None) -> tuple[dict, Path | Non
     """Load runtime configuration from .agentize.local.yaml.
 
     Searches from start_dir up to parent directories until the config file is found.
+    Uses shared helper from lib.local_config_io for file discovery and parsing.
+
+    Note: This function intentionally does NOT cache results. Server needs fresh
+    config on each poll cycle to pick up file changes without restart.
 
     Args:
         start_dir: Directory to start searching from (default: current directory)
@@ -45,50 +59,16 @@ def load_runtime_config(start_dir: Path | None = None) -> tuple[dict, Path | Non
     Raises:
         ValueError: If the config file contains unknown top-level keys or invalid structure.
     """
-    if start_dir is None:
-        start_dir = Path.cwd()
-
-    start_dir = Path(start_dir).resolve()
-
-    # Search from start_dir up to parent directories
-    current = start_dir
-    config_path = None
-
-    while True:
-        candidate = current / ".agentize.local.yaml"
-        if candidate.is_file():
-            config_path = candidate
-            break
-
-        parent = current.parent
-        if parent == current:
-            # Reached root
-            break
-        current = parent
-
-    # Fallback 1: Try $AGENTIZE_HOME
-    if config_path is None:
-        agentize_home = os.getenv("AGENTIZE_HOME")
-        if agentize_home:
-            candidate = Path(agentize_home) / ".agentize.local.yaml"
-            if candidate.is_file():
-                config_path = candidate
-
-    # Fallback 2: Try $HOME (user-wide config)
-    if config_path is None:
-        home = os.getenv("HOME")
-        if home:
-            candidate = Path(home) / ".agentize.local.yaml"
-            if candidate.is_file():
-                config_path = candidate
+    # Use shared helper to find config file (no caching)
+    config_path = find_local_config_file(start_dir)
 
     if config_path is None:
         return {}, None
 
-    # Parse the YAML file (minimal parser, no external dependencies)
-    config = _parse_yaml_file(config_path)
+    # Use shared helper to parse YAML
+    config = parse_yaml_file(config_path)
 
-    # Validate top-level keys
+    # Validate top-level keys (server-specific validation)
     for key in config:
         if key not in VALID_TOP_LEVEL_KEYS:
             raise ValueError(
@@ -97,19 +77,6 @@ def load_runtime_config(start_dir: Path | None = None) -> tuple[dict, Path | Non
             )
 
     return config, config_path
-
-
-def _parse_yaml_file(path: Path) -> dict:
-    """Parse YAML file using PyYAML's safe_load.
-
-    Args:
-        path: Path to the YAML file
-
-    Returns:
-        Parsed configuration as nested dict
-    """
-    with open(path, "r") as f:
-        return yaml.safe_load(f) or {}
 
 
 def resolve_precedence(

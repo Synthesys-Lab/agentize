@@ -486,3 +486,67 @@ class TestServerParameterPrecedence:
         )
         assert result_period == "5m"
         assert result_workers == 5
+
+
+class TestRuntimeConfigNoCaching:
+    """Tests for runtime config non-caching behavior.
+
+    Runtime config intentionally does NOT cache results. Server needs fresh
+    config on each poll cycle to pick up config file changes without restart.
+    """
+
+    def test_runtime_config_reloads_fresh_on_each_call(self, tmp_path, monkeypatch):
+        """Test load_runtime_config reloads fresh data on successive calls.
+
+        Regression test: Write config A → load → overwrite with B → load → assert B.
+        This would fail if runtime_config used caching like local_config.
+        """
+        # Clear fallback paths to isolate test
+        monkeypatch.delenv("AGENTIZE_HOME", raising=False)
+        monkeypatch.delenv("HOME", raising=False)
+
+        config_file = tmp_path / ".agentize.local.yaml"
+
+        # Write initial config with value A
+        config_file.write_text("""
+server:
+  period: "1m"
+""")
+
+        config1, path1 = load_runtime_config(tmp_path)
+        assert config1.get("server", {}).get("period") == "1m"
+        assert path1 is not None
+
+        # Overwrite config with value B
+        config_file.write_text("""
+server:
+  period: "10m"
+""")
+
+        # Load again - should get fresh B, not cached A
+        config2, path2 = load_runtime_config(tmp_path)
+        assert config2.get("server", {}).get("period") == "10m"
+        assert path2 is not None
+
+    def test_runtime_config_detects_new_file(self, tmp_path, monkeypatch):
+        """Test load_runtime_config detects config file that appears between calls."""
+        # Clear fallback paths
+        monkeypatch.delenv("AGENTIZE_HOME", raising=False)
+        monkeypatch.delenv("HOME", raising=False)
+
+        # First call: no config file exists
+        config1, path1 = load_runtime_config(tmp_path)
+        assert config1 == {}
+        assert path1 is None
+
+        # Create config file
+        config_file = tmp_path / ".agentize.local.yaml"
+        config_file.write_text("""
+server:
+  num_workers: 8
+""")
+
+        # Second call: should detect newly created file
+        config2, path2 = load_runtime_config(tmp_path)
+        assert config2.get("server", {}).get("num_workers") == 8
+        assert path2 is not None

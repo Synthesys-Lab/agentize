@@ -33,8 +33,12 @@ def clear_config_cache():
 class TestLoadLocalConfig:
     """Tests for load_local_config function."""
 
-    def test_load_local_config_returns_empty_when_not_found(self, tmp_path):
+    def test_load_local_config_returns_empty_when_not_found(self, tmp_path, monkeypatch):
         """Test load_local_config returns empty dict when file not found."""
+        # Clear environment variables to prevent fallback to real home config
+        monkeypatch.delenv("AGENTIZE_HOME", raising=False)
+        monkeypatch.delenv("HOME", raising=False)
+
         config, path = load_local_config(tmp_path)
 
         assert config == {}

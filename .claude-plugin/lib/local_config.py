@@ -9,13 +9,15 @@ YAML search order:
 3. $HOME/.agentize.local.yaml (user-wide, created by installer)
 
 Configuration precedence: .agentize.local.yaml > defaults
+
+Note: This module caches config for hooks. Server runtime_config intentionally
+bypasses cache to ensure fresh config on each poll cycle.
 """
 
-import os
 from pathlib import Path
 from typing import Any, Callable, Optional
 
-import yaml
+from lib.local_config_io import find_local_config_file, parse_yaml_file
 
 # Module-level cache for loaded config
 _cached_config: Optional[dict] = None
@@ -30,7 +32,8 @@ def load_local_config(start_dir: Optional[Path] = None) -> tuple[dict, Optional[
     2. Try $AGENTIZE_HOME/.agentize.local.yaml
     3. Try $HOME/.agentize.local.yaml
 
-    Results are cached for subsequent calls.
+    Results are cached for subsequent calls when start_dir is None (default).
+    This avoids repeated file I/O during permission checks in hooks.
 
     Args:
         start_dir: Directory to start searching from (default: current directory)
@@ -44,68 +47,21 @@ def load_local_config(start_dir: Optional[Path] = None) -> tuple[dict, Optional[
     if _cached_config is not None and start_dir is None:
         return _cached_config, _cached_path
 
-    if start_dir is None:
-        start_dir = Path.cwd()
-
-    start_dir = Path(start_dir).resolve()
-
-    # Search from start_dir up to parent directories
-    current = start_dir
-    config_path = None
-
-    while True:
-        candidate = current / ".agentize.local.yaml"
-        if candidate.is_file():
-            config_path = candidate
-            break
-
-        parent = current.parent
-        if parent == current:
-            # Reached root
-            break
-        current = parent
-
-    # Fallback 1: Try $AGENTIZE_HOME
-    if config_path is None:
-        agentize_home = os.getenv("AGENTIZE_HOME")
-        if agentize_home:
-            candidate = Path(agentize_home) / ".agentize.local.yaml"
-            if candidate.is_file():
-                config_path = candidate
-
-    # Fallback 2: Try $HOME (user-wide config)
-    if config_path is None:
-        home = os.getenv("HOME")
-        if home:
-            candidate = Path(home) / ".agentize.local.yaml"
-            if candidate.is_file():
-                config_path = candidate
+    # Use shared helper to find config file
+    config_path = find_local_config_file(start_dir)
 
     if config_path is None:
         return {}, None
 
-    # Parse the YAML file (minimal parser, no external dependencies)
-    config = _parse_yaml_file(config_path)
+    # Use shared helper to parse YAML
+    config = parse_yaml_file(config_path)
 
-    # Cache for subsequent calls
-    if start_dir == Path.cwd():
+    # Cache for subsequent calls (only when using default start_dir)
+    if start_dir is None:
         _cached_config = config
         _cached_path = config_path
 
     return config, config_path
-
-
-def _parse_yaml_file(path: Path) -> dict:
-    """Parse YAML file using PyYAML's safe_load.
-
-    Args:
-        path: Path to the YAML file
-
-    Returns:
-        Parsed configuration as nested dict
-    """
-    with open(path, "r") as f:
-        return yaml.safe_load(f) or {}
 
 
 def _get_nested_value(config: dict, path: str) -> Any:
