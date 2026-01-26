@@ -15,8 +15,10 @@ This directory contains all reusable libraries for the Claude Code plugin system
 │   │   ├── rules.py               # Rule matching logic
 │   │   ├── parser.py              # Hook input parsing
 │   │   └── strips.py              # Command normalization
-│   ├── local_config.py            # YAML config loader with env override
+│   ├── local_config.py            # YAML config loader with caching
 │   ├── local_config.md            # Local config documentation
+│   ├── local_config_io.py         # Shared YAML file discovery/parsing
+│   ├── local_config_io.md         # Shared I/O documentation
 │   ├── workflow.py                # Handsoff workflow definitions
 │   ├── logger.py                  # Debug logging utilities
 │   ├── session_utils.py           # Session directory path resolution
@@ -67,6 +69,27 @@ token = get_local_value('telegram.token', '')
 ```
 
 See [local_config.md](local_config.md) for details.
+
+### local_config_io.py
+
+Shared YAML file discovery and parsing helpers for `.agentize.local.yaml`. Used by both `local_config.py` (hooks) and server `runtime_config.py` to ensure consistent file lookup behavior.
+
+**Note:** This module does NOT cache results. Caching is handled by callers:
+- `local_config.py` caches for hooks (avoid repeated I/O)
+- `runtime_config.py` does not cache (server needs fresh config each poll)
+
+**Usage:**
+```python
+from lib.local_config_io import find_local_config_file, parse_yaml_file
+
+# Find config file using standard search order
+config_path = find_local_config_file(start_dir)
+
+# Parse YAML file
+config = parse_yaml_file(config_path)
+```
+
+See [local_config_io.md](local_config_io.md) for details.
 
 ### workflow.py
 
