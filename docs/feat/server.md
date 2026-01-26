@@ -364,7 +364,12 @@ workflows:
     model: haiku
 ```
 
-**Configuration precedence:** `.agentize.local.yaml` > defaults
+**Configuration precedence:** CLI args > `.agentize.local.yaml` > defaults
+
+For example:
+- `lol serve --period=10m` uses `10m` regardless of YAML config
+- `lol serve` without args uses YAML `server.period: 2m` if configured
+- If neither CLI nor YAML specifies a value, defaults are used (`5m` for period, `5` for workers)
 
 **Sections:**
 - `handsoff`: Handsoff mode settings for auto-continuation (see [Handsoff Mode](core/handsoff.md))
