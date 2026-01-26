@@ -54,7 +54,7 @@ Unlike ultra-planner which auto-resolves disagreements, mega-planner forces all 
 **CONSENSUS** is reached when ALL conditions are true:
 1. Bold and Paranoia propose the same general approach
 2. Critique finds no critical blockers
-3. Both Reducers recommend changes <30 lines AND <30% of total LOC
+3. Both Reducers recommend implementing BOTH proposals, and for each proposal their recommended changes are <30 lines AND <30% of total LOC
 
 **DISAGREEMENT** = NOT CONSENSUS. Any condition failure triggers disagreement.
 
