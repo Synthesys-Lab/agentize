@@ -104,7 +104,9 @@ workflows:
 
 ## Design Rationale
 
-**Caching:** Config is loaded once per process and cached. This avoids repeated file I/O during permission checks.
+**Caching:** Config is loaded once per process and cached for hooks. This avoids repeated file I/O during permission checks. Note: Server runtime config intentionally bypasses cache to ensure fresh config on each poll cycle.
+
+**Shared file discovery:** YAML lookup and parsing is centralized in `lib/local_config_io.py` to keep behavior consistent across hooks and server modules. Both `load_local_config()` and `load_runtime_config()` use this shared helper.
 
 **YAML search order:** Enables running hooks from any subdirectory while finding config at project root, with fallback to user-wide settings at `$HOME`.
 

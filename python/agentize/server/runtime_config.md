@@ -45,11 +45,17 @@ Extract workflow -> model mapping from config.
 
 **Example:** `{"impl": "opus", "refine": "sonnet"}`
 
-## Internal Helpers
+## Shared Helpers (from `lib.local_config_io`)
 
-### `_parse_yaml_file(path: Path) -> dict`
+### `find_local_config_file(start_dir: Path | None) -> Path | None`
 
-Parse a YAML file into a nested dict using PyYAML's `yaml.safe_load()`. Provides full YAML 1.2 compliance with support for all standard YAML features.
+Shared YAML file discovery helper used by both server and hooks. Searches for `.agentize.local.yaml` using the standard search order (walk up from start_dir, then `$AGENTIZE_HOME`, then `$HOME`).
+
+**Note:** This function does not cache results. `runtime_config` calls it directly each time to ensure fresh config, while `local_config` wraps it with caching for hooks.
+
+### `parse_yaml_file(path: Path) -> dict`
+
+Shared YAML parsing helper that wraps `yaml.safe_load()`. Returns `{}` on empty content.
 
 ## Configuration Schema
 
