@@ -1,18 +1,51 @@
 """GitHub issue/PR discovery and GraphQL helpers for the server module."""
 
 import json
-import os
 import re
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 from agentize.server.log import _log
+from agentize.server.runtime_config import load_runtime_config
 
 
 # Cache for project GraphQL ID (org/project_number -> GraphQL ID)
 _project_id_cache: dict[tuple[str, int], str] = {}
+
+
+def _coerce_bool(value: Any, default: bool) -> bool:
+    """Coerce a value to boolean.
+
+    Accepts: true, false, 1, 0, on, off, enable, disable (case-insensitive)
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        lower = value.lower().strip()
+        if lower in ('true', '1', 'on', 'enable'):
+            return True
+        if lower in ('false', '0', 'off', 'disable'):
+            return False
+    return default
+
+
+def _is_debug_enabled() -> bool:
+    """Check if debug mode is enabled via .agentize.local.yaml.
+
+    Reads handsoff.debug from the YAML config file. Returns False if not found.
+    This function intentionally re-reads config on each call to pick up changes.
+    """
+    config, _ = load_runtime_config()
+    handsoff = config.get('handsoff', {})
+    if not isinstance(handsoff, dict):
+        return False
+    debug_value = handsoff.get('debug')
+    return _coerce_bool(debug_value, False)
 
 
 def load_config() -> tuple[str, int, str | None]:
@@ -218,7 +251,7 @@ def query_issue_project_status(owner: str, repo: str, issue_no: int, project_id:
 
     if result.returncode != 0:
         _log(f"Failed to query issue #{issue_no} status: {result.stderr}", level="ERROR")
-        if os.getenv('HANDSOFF_DEBUG'):
+        if _is_debug_enabled():
             _log(f"Variables: owner={owner}, repo={repo}, number={issue_no}", level="ERROR")
         return ''
 
@@ -265,11 +298,11 @@ def query_project_items(org: str, project_number: int) -> list[dict]:
     # Discover candidates via label-first query
     candidate_issues = discover_candidate_issues(owner, repo)
     if not candidate_issues:
-        if os.getenv('HANDSOFF_DEBUG'):
+        if _is_debug_enabled():
             _log("No candidate issues found with agentize:plan label")
         return []
 
-    if os.getenv('HANDSOFF_DEBUG'):
+    if _is_debug_enabled():
         _log(f"Found {len(candidate_issues)} candidate issues: {candidate_issues}")
 
     # Build items list with per-issue status lookups
@@ -292,7 +325,7 @@ def query_project_items(org: str, project_number: int) -> list[dict]:
 
 def filter_ready_issues(items: list[dict]) -> list[int]:
     """Filter items to issues with 'Plan Accepted' status and 'agentize:plan' label."""
-    debug = os.getenv('HANDSOFF_DEBUG')
+    debug = _is_debug_enabled()
     ready = []
     skip_status = 0
     skip_label = 0
@@ -341,7 +374,7 @@ def filter_ready_refinements(items: list[dict]) -> list[int]:
     - Status = 'Proposed'
     - Labels include both 'agentize:plan' and 'agentize:refine'
     """
-    debug = os.getenv('HANDSOFF_DEBUG')
+    debug = _is_debug_enabled()
     ready = []
     skip_status = 0
     skip_plan_label = 0
@@ -417,11 +450,11 @@ def discover_candidate_prs(owner: str, repo: str) -> list[dict]:
         return []
 
     if not prs:
-        if os.getenv('HANDSOFF_DEBUG'):
+        if _is_debug_enabled():
             _log("No candidate PRs found with agentize:pr label")
         return []
 
-    if os.getenv('HANDSOFF_DEBUG'):
+    if _is_debug_enabled():
         pr_numbers = [pr.get('number') for pr in prs]
         _log(f"Found {len(prs)} candidate PRs: {pr_numbers}")
 
@@ -440,7 +473,7 @@ def filter_conflicting_prs(prs: list[dict], owner: str, repo: str, project_id: s
     - Status == "Rebasing" (already being processed)
     - Cannot resolve issue number (still queued - best effort)
     """
-    debug = os.getenv('HANDSOFF_DEBUG')
+    debug = _is_debug_enabled()
     conflicting = []
     skip_healthy = 0
     skip_unknown = 0
@@ -567,11 +600,11 @@ def query_feat_request_items(org: str, project_number: int) -> list[dict]:
     # Discover candidates via dev-req label query
     candidate_issues = discover_candidate_feat_requests(owner, repo)
     if not candidate_issues:
-        if os.getenv('HANDSOFF_DEBUG'):
+        if _is_debug_enabled():
             _log("No candidate issues found with agentize:dev-req label")
         return []
 
-    if os.getenv('HANDSOFF_DEBUG'):
+    if _is_debug_enabled():
         _log(f"Found {len(candidate_issues)} feat-request candidates: {candidate_issues}")
 
     # Build items list with per-issue status and label lookups
@@ -620,7 +653,7 @@ def filter_ready_feat_requests(items: list[dict]) -> list[int]:
     spawn_feat_request() sets status to 'In Progress' before spawning,
     and _cleanup_feat_request() resets to 'Proposed' after completion.
     """
-    debug = os.getenv('HANDSOFF_DEBUG')
+    debug = _is_debug_enabled()
     ready = []
     skip_has_plan = 0
     skip_wrong_status = 0
@@ -723,7 +756,7 @@ def filter_ready_review_prs(prs: list[dict], owner: str, repo: str, project_id: 
     Returns:
         List of (pr_no, issue_no) tuples for PRs ready for review resolution.
     """
-    debug = os.getenv('HANDSOFF_DEBUG')
+    debug = _is_debug_enabled()
     ready = []
     skip_no_issue = 0
     skip_wrong_status = 0
