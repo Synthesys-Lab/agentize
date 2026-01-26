@@ -9,6 +9,7 @@ This module handles loading server-specific settings that shouldn't be committed
 Configuration precedence: CLI args > env vars > .agentize.local.yaml > defaults
 """
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -64,6 +65,22 @@ def load_runtime_config(start_dir: Path | None = None) -> tuple[dict, Path | Non
             # Reached root
             break
         current = parent
+
+    # Fallback 1: Try $AGENTIZE_HOME
+    if config_path is None:
+        agentize_home = os.getenv("AGENTIZE_HOME")
+        if agentize_home:
+            candidate = Path(agentize_home) / ".agentize.local.yaml"
+            if candidate.is_file():
+                config_path = candidate
+
+    # Fallback 2: Try $HOME (user-wide config)
+    if config_path is None:
+        home = os.getenv("HOME")
+        if home:
+            candidate = Path(home) / ".agentize.local.yaml"
+            if candidate.is_file():
+                config_path = candidate
 
     if config_path is None:
         return {}, None

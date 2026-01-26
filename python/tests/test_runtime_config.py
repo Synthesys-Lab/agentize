@@ -13,8 +13,12 @@ from agentize.server.runtime_config import (
 class TestLoadRuntimeConfig:
     """Tests for load_runtime_config function."""
 
-    def test_load_runtime_config_returns_empty_when_not_found(self, tmp_path):
+    def test_load_runtime_config_returns_empty_when_not_found(self, tmp_path, monkeypatch):
         """Test load_runtime_config returns empty dict when file not found."""
+        # Clear environment variables to prevent fallback to real home config
+        monkeypatch.delenv("AGENTIZE_HOME", raising=False)
+        monkeypatch.delenv("HOME", raising=False)
+
         config, path = load_runtime_config(Path("/nonexistent/path"))
 
         assert config == {}
@@ -328,6 +332,127 @@ permissions:
         assert isinstance(allow[2], dict)
         assert allow[2].get("pattern") == "^cat .*\\.md$"
         assert allow[2].get("tool") == "Read"
+
+
+class TestHomeDirectoryFallback:
+    """Tests for home directory fallback: project root → AGENTIZE_HOME → HOME."""
+
+    def test_agentize_home_fallback_when_no_project_config(self, tmp_path, monkeypatch):
+        """Test AGENTIZE_HOME used when project root has no config."""
+        # Create AGENTIZE_HOME config only
+        agentize_home = tmp_path / "agentize_home"
+        agentize_home.mkdir()
+        home_config = agentize_home / ".agentize.local.yaml"
+        home_config.write_text("""
+telegram:
+  token: "agentize-home-token"
+""")
+
+        # Create empty project dir (no config)
+        project_dir = tmp_path / "project"
+        project_dir.mkdir()
+
+        monkeypatch.setenv("AGENTIZE_HOME", str(agentize_home))
+        # Clear HOME to ensure we're testing AGENTIZE_HOME specifically
+        monkeypatch.delenv("HOME", raising=False)
+
+        config, path = load_runtime_config(project_dir)
+
+        assert path is not None
+        assert config.get("telegram", {}).get("token") == "agentize-home-token"
+
+    def test_home_fallback_when_no_agentize_home(self, tmp_path, monkeypatch):
+        """Test HOME used when neither project nor AGENTIZE_HOME has config."""
+        # Create HOME config only
+        home_dir = tmp_path / "home"
+        home_dir.mkdir()
+        home_config = home_dir / ".agentize.local.yaml"
+        home_config.write_text("""
+telegram:
+  token: "home-token"
+""")
+
+        # Create empty project dir (no config)
+        project_dir = tmp_path / "project"
+        project_dir.mkdir()
+
+        # Clear AGENTIZE_HOME, set HOME
+        monkeypatch.delenv("AGENTIZE_HOME", raising=False)
+        monkeypatch.setenv("HOME", str(home_dir))
+
+        config, path = load_runtime_config(project_dir)
+
+        assert path is not None
+        assert config.get("telegram", {}).get("token") == "home-token"
+
+    def test_project_config_takes_priority_over_home(self, tmp_path, monkeypatch):
+        """Test project root config takes priority over AGENTIZE_HOME and HOME."""
+        # Create project root config
+        project_dir = tmp_path / "project"
+        project_dir.mkdir()
+        project_config = project_dir / ".agentize.local.yaml"
+        project_config.write_text("""
+telegram:
+  token: "project-token"
+""")
+
+        # Create AGENTIZE_HOME config
+        agentize_home = tmp_path / "agentize_home"
+        agentize_home.mkdir()
+        agentize_config = agentize_home / ".agentize.local.yaml"
+        agentize_config.write_text("""
+telegram:
+  token: "agentize-home-token"
+""")
+
+        # Create HOME config
+        home_dir = tmp_path / "home"
+        home_dir.mkdir()
+        home_config = home_dir / ".agentize.local.yaml"
+        home_config.write_text("""
+telegram:
+  token: "home-token"
+""")
+
+        monkeypatch.setenv("AGENTIZE_HOME", str(agentize_home))
+        monkeypatch.setenv("HOME", str(home_dir))
+
+        config, path = load_runtime_config(project_dir)
+
+        assert path is not None
+        assert config.get("telegram", {}).get("token") == "project-token"
+
+    def test_agentize_home_priority_over_home(self, tmp_path, monkeypatch):
+        """Test AGENTIZE_HOME takes priority over HOME when project has no config."""
+        # Create empty project dir (no config)
+        project_dir = tmp_path / "project"
+        project_dir.mkdir()
+
+        # Create AGENTIZE_HOME config
+        agentize_home = tmp_path / "agentize_home"
+        agentize_home.mkdir()
+        agentize_config = agentize_home / ".agentize.local.yaml"
+        agentize_config.write_text("""
+telegram:
+  token: "agentize-home-token"
+""")
+
+        # Create HOME config
+        home_dir = tmp_path / "home"
+        home_dir.mkdir()
+        home_config = home_dir / ".agentize.local.yaml"
+        home_config.write_text("""
+telegram:
+  token: "home-token"
+""")
+
+        monkeypatch.setenv("AGENTIZE_HOME", str(agentize_home))
+        monkeypatch.setenv("HOME", str(home_dir))
+
+        config, path = load_runtime_config(project_dir)
+
+        assert path is not None
+        assert config.get("telegram", {}).get("token") == "agentize-home-token"
 
 
 class TestServerParameterPrecedence:
