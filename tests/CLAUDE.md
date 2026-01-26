@@ -38,6 +38,14 @@ Keep in mind that `AGENTIZE_HOME` is set to point to the current work tree you a
 develop! **NO TEST** shall modify these two variables using `export`. Just use them as they are.
 `PROJECT_ROOT` should be computed using the wrapper in `common.sh`.
 
+If a shell test executes hooks or config discovery that may read `$HOME/.agentize.local.yaml`,
+isolate the user home by setting `HOME` to a temp directory inside the test:
+```bash
+TEST_HOME=$(make_temp_dir "test-home-$$")
+export HOME="$TEST_HOME"
+trap 'cleanup_dir "$TEST_HOME"' EXIT
+```
+
 # Helper Scripts
 
 Helper scripts (`tests/common.sh`, `tests/helpers-*.sh`) are not tests themselves and should NOT be
