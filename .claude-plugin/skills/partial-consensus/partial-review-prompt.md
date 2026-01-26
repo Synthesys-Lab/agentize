@@ -283,6 +283,7 @@ Use this format for ALL outputs (consensus or disagreement):
 
 ---
 
+<a id="option-1a-name-conservative"></a>
 #### Option 1A: [Name] (Conservative)
 
 **Summary**: [1-2 sentence description]
@@ -326,6 +327,7 @@ Use this format for ALL outputs (consensus or disagreement):
 |------|------------|--------|------------|
 | [Risk] | H/M/L | H/M/L | [Strategy] |
 
+<a id="option-1b-name-aggressive"></a>
 #### Option 1B: [Name] (Aggressive)
 
 **Summary**: [1-2 sentence description]
@@ -369,6 +371,7 @@ Use this format for ALL outputs (consensus or disagreement):
 |------|------------|--------|------------|
 | [Risk] | H/M/L | H/M/L | [Strategy] |
 
+<a id="option-1c-name-balanced"></a>
 #### Option 1C: [Name] (Balanced)
 
 **Summary**: [1-2 sentence description]

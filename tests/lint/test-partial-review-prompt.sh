@@ -46,6 +46,9 @@ REQUIRED_HTML_ANCHORS=(
     '<a id="risks-and-mitigations"></a>'
     '<a id="disagreement-summary"></a>'
     '<a id="disagreement-1-topic"></a>'
+    '<a id="option-1a-name-conservative"></a>'
+    '<a id="option-1b-name-aggressive"></a>'
+    '<a id="option-1c-name-balanced"></a>'
     '<a id="selection-history"></a>'
     '<a id="refine-history"></a>'
 )
