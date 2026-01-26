@@ -164,7 +164,7 @@ Use this format for ALL outputs (consensus or disagreement):
 
 ---
 
-<a id="agent-perspectives-summary"></a>
+<a name="agent-perspectives-summary"></a>
 ## Agent Perspectives Summary
 
 | Agent | Core Position | Key Insight |
@@ -175,12 +175,12 @@ Use this format for ALL outputs (consensus or disagreement):
 | **Proposal Reducer** | [Simplification direction] | [What complexity was removed] |
 | **Code Reducer** | [Code impact assessment] | [LOC delta summary] |
 
-<a id="consensus-status"></a>
+<a name="consensus-status"></a>
 ## Consensus Status
 
 [One paragraph explaining the consensus determination, citing key evidence from agents' positions]
 
-<a id="goal"></a>
+<a name="goal"></a>
 ## Goal
 
 [Problem statement synthesized from proposals]
@@ -188,7 +188,7 @@ Use this format for ALL outputs (consensus or disagreement):
 **Out of scope:**
 - [What we're not doing]
 
-<a id="codebase-analysis"></a>
+<a name="codebase-analysis"></a>
 ## Codebase Analysis
 
 **File changes:**
@@ -197,7 +197,7 @@ Use this format for ALL outputs (consensus or disagreement):
 |------|-------|---------|
 | `path/to/file` | major/medium/minor | Description |
 
-<a id="implementation-steps"></a>
+<a name="implementation-steps"></a>
 ## Implementation Steps
 
 > **Note**: Include only consensus steps here—steps that ALL agents agree on. Disputed approaches belong in their respective `## Disagreement N` sections below.
@@ -230,19 +230,19 @@ Use this format for ALL outputs (consensus or disagreement):
 
 </details>
 
-<a id="success-criteria"></a>
+<a name="success-criteria"></a>
 ## Success Criteria
 
 - [ ] [Criterion 1]
 
-<a id="risks-and-mitigations"></a>
+<a name="risks-and-mitigations"></a>
 ## Risks and Mitigations
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|------------|--------|------------|
 | [Risk] | H/M/L | H/M/L | [Strategy] |
 
-<a id="disagreement-summary"></a>
+<a name="disagreement-summary"></a>
 ## Disagreement Summary
 
 | # | Topic | Options | AI Recommendation |
@@ -260,7 +260,7 @@ Use this format for ALL outputs (consensus or disagreement):
 
 ---
 
-<a id="disagreement-1-topic"></a>
+<a name="disagreement-1-topic"></a>
 ## Disagreement 1: [Topic Name]
 
 ### Agent Perspectives
@@ -283,7 +283,7 @@ Use this format for ALL outputs (consensus or disagreement):
 
 ---
 
-<a id="option-1a-name-conservative"></a>
+<a name="option-1a-name-conservative"></a>
 #### Option 1A: [Name] (Conservative)
 
 **Summary**: [1-2 sentence description]
@@ -327,7 +327,7 @@ Use this format for ALL outputs (consensus or disagreement):
 |------|------------|--------|------------|
 | [Risk] | H/M/L | H/M/L | [Strategy] |
 
-<a id="option-1b-name-aggressive"></a>
+<a name="option-1b-name-aggressive"></a>
 #### Option 1B: [Name] (Aggressive)
 
 **Summary**: [1-2 sentence description]
@@ -371,7 +371,7 @@ Use this format for ALL outputs (consensus or disagreement):
 |------|------------|--------|------------|
 | [Risk] | H/M/L | H/M/L | [Strategy] |
 
-<a id="option-1c-name-balanced"></a>
+<a name="option-1c-name-balanced"></a>
 #### Option 1C: [Name] (Balanced)
 
 **Summary**: [1-2 sentence description]
@@ -425,7 +425,7 @@ Use this format for ALL outputs (consensus or disagreement):
 
 ---
 
-<a id="selection-history"></a>
+<a name="selection-history"></a>
 ## Selection History
 
 **Row Granularity**: Each row represents ONE disagreement point, not one resolve command.
@@ -435,7 +435,7 @@ Use this format for ALL outputs (consensus or disagreement):
 | [Previous rows from history file] |
 | 2026-01-22 19:30 | 1: Agent Naming | 1A (Paranoia): suffix; 1B (Bold): prefix | 1B (Bold) | Prefix matches existing |
 
-<a id="refine-history"></a>
+<a name="refine-history"></a>
 ## Refine History
 
 **Row Granularity**: Each row represents one `--refine` operation.

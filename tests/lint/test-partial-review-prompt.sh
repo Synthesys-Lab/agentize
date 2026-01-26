@@ -37,20 +37,20 @@ echo "PASS: Required TOC anchors present"
 # Test 3: Explicit HTML anchors exist for TOC links
 # GitHub Issue bodies do NOT auto-generate heading IDs, so explicit anchors are required
 REQUIRED_HTML_ANCHORS=(
-    '<a id="agent-perspectives-summary"></a>'
-    '<a id="consensus-status"></a>'
-    '<a id="goal"></a>'
-    '<a id="codebase-analysis"></a>'
-    '<a id="implementation-steps"></a>'
-    '<a id="success-criteria"></a>'
-    '<a id="risks-and-mitigations"></a>'
-    '<a id="disagreement-summary"></a>'
-    '<a id="disagreement-1-topic"></a>'
-    '<a id="option-1a-name-conservative"></a>'
-    '<a id="option-1b-name-aggressive"></a>'
-    '<a id="option-1c-name-balanced"></a>'
-    '<a id="selection-history"></a>'
-    '<a id="refine-history"></a>'
+    '<a name="agent-perspectives-summary"></a>'
+    '<a name="consensus-status"></a>'
+    '<a name="goal"></a>'
+    '<a name="codebase-analysis"></a>'
+    '<a name="implementation-steps"></a>'
+    '<a name="success-criteria"></a>'
+    '<a name="risks-and-mitigations"></a>'
+    '<a name="disagreement-summary"></a>'
+    '<a name="disagreement-1-topic"></a>'
+    '<a name="option-1a-name-conservative"></a>'
+    '<a name="option-1b-name-aggressive"></a>'
+    '<a name="option-1c-name-balanced"></a>'
+    '<a name="selection-history"></a>'
+    '<a name="refine-history"></a>'
 )
 
 for anchor in "${REQUIRED_HTML_ANCHORS[@]}"; do
