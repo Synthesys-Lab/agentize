@@ -61,8 +61,11 @@ If you encounter any issue during the usage. For example:
 1. It asks you for permission on a really simple operation.
 2. It fails to automatically continue on a session.
 
-```bash
-export HANDSOFF_DEBUG=1
+Enable debug mode in your `.agentize.local.yaml`:
+
+```yaml
+handsoff:
+  debug: true
 ```
 
 Then re-run the command. This will give you a detailed log in either

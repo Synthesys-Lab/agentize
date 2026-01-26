@@ -87,10 +87,11 @@ The filter functions implement **status-based concurrency control** to prevent d
 
 ### Debug Output
 
-All filter functions support `HANDSOFF_DEBUG` environment variable for detailed decision logging:
+All filter functions support debug logging for detailed decision tracking. Enable debug mode in your `.agentize.local.yaml`:
 
-```bash
-HANDSOFF_DEBUG=1 python -m agentize.server ...
+```yaml
+handsoff:
+  debug: true
 ```
 
 Output includes per-item decisions with reasons and summary statistics.
