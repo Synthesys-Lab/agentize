@@ -3,10 +3,25 @@
 
 source "$(dirname "$0")/../common.sh"
 
+# Isolate environment to prevent reading user's config during tests
+# The config loader walks UP from cwd, so we must run from /tmp to avoid finding user config
+# This prevents accidental Telegram messages when developer has Telegram configured
+TEST_ISOLATED_HOME=$(mktemp -d /tmp/hook-test-home.XXXXXX)
+TEST_ISOLATED_CWD=$(mktemp -d /tmp/hook-test-cwd.XXXXXX)
+export HOME="$TEST_ISOLATED_HOME"
+export AGENTIZE_HOME="$TEST_ISOLATED_CWD"
+export PROJECT_ROOT  # Export for Python subprocesses
+trap 'rm -rf "$TEST_ISOLATED_HOME" "$TEST_ISOLATED_CWD"' EXIT
+cd "$TEST_ISOLATED_CWD"
+
 HOOK_SCRIPT="$PROJECT_ROOT/.claude-plugin/hooks/pre-tool-use.py"
 FIXTURE_FILE="$PROJECT_ROOT/tests/fixtures/test-pre-tool-use-input.json"
 
 test_info "PreToolUse hook permission matching"
+
+# Test 0: Sanity check - environment is isolated (cwd outside user home tree)
+test_info "Test 0: Isolated cwd=$TEST_ISOLATED_CWD, HOME=$TEST_ISOLATED_HOME"
+[[ "$PWD" == /tmp/* ]] || test_fail "Expected cwd in /tmp, got '$PWD'"
 
 # Helper: Run hook with fixture and extract permission decision
 # Note: Unsets AGENTIZE_USE_TG and HANDSOFF_AUTO_PERMISSION for test isolation
@@ -211,14 +226,14 @@ print(f'{action}:{msg_id}')
 
 # Test 23: _tg_api_request guard - returns None when Telegram is disabled
 test_info "Test 23: _tg_api_request returns None when Telegram disabled"
+# Note: Global isolation at top of file ensures we're in /tmp with no user config
 guard_result=$(python3 -c "
-import os
 import sys
 sys.path.insert(0, '$PROJECT_ROOT/.claude-plugin')
-# Ensure Telegram is disabled
-os.environ.pop('AGENTIZE_USE_TG', None)
+from lib.local_config import clear_cache
+clear_cache()
 from lib.permission.determine import _tg_api_request, _is_telegram_enabled
-# Verify Telegram is disabled
+# Verify Telegram is disabled (no config in isolated environment)
 assert not _is_telegram_enabled(), 'Telegram should be disabled'
 # Call _tg_api_request - should return None without making any HTTP request
 result = _tg_api_request('fake_token', 'sendMessage', {'chat_id': '123', 'text': 'test'})
