@@ -34,7 +34,31 @@ for anchor in "${REQUIRED_ANCHORS[@]}"; do
 done
 echo "PASS: Required TOC anchors present"
 
-# Test 3: Resolution Options Summary table header exists
+# Test 3: Explicit HTML anchors exist for TOC links
+# GitHub Issue bodies do NOT auto-generate heading IDs, so explicit anchors are required
+REQUIRED_HTML_ANCHORS=(
+    '<a id="agent-perspectives-summary"></a>'
+    '<a id="consensus-status"></a>'
+    '<a id="goal"></a>'
+    '<a id="codebase-analysis"></a>'
+    '<a id="implementation-steps"></a>'
+    '<a id="success-criteria"></a>'
+    '<a id="risks-and-mitigations"></a>'
+    '<a id="disagreement-summary"></a>'
+    '<a id="disagreement-1-topic"></a>'
+    '<a id="selection-history"></a>'
+    '<a id="refine-history"></a>'
+)
+
+for anchor in "${REQUIRED_HTML_ANCHORS[@]}"; do
+    if ! grep -qF "$anchor" "$PROMPT_FILE"; then
+        echo "FAIL: Missing explicit HTML anchor: $anchor"
+        exit 1
+    fi
+done
+echo "PASS: Explicit HTML anchors present"
+
+# Test 4: Resolution Options Summary table header exists
 if ! grep -qE "\| Option \| Name \| Source \| Summary \|" "$PROMPT_FILE"; then
     echo "FAIL: Missing Resolution Options Summary table"
     exit 1
