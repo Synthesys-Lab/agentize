@@ -2,14 +2,11 @@
 
 # lol_cmd_serve: Run polling server for GitHub Projects automation
 # Runs in subshell to preserve set -e semantics
-# Usage: lol_cmd_serve [period] [num_workers]
-# Period and num_workers are optional; when empty, Python uses YAML config or defaults
-# TG credentials are YAML-only (loaded from .agentize.local.yaml in Python)
+# Usage: lol_cmd_serve
+# Configuration is YAML-only: server.period and server.num_workers in .agentize.local.yaml
+# TG credentials are also YAML-only (loaded from .agentize.local.yaml in Python)
 lol_cmd_serve() (
     set -e
-
-    local period="$1"
-    local num_workers="$2"
 
     # Check if in a bare repo with wt initialized
     if ! wt_is_bare_repo 2>/dev/null; then
@@ -27,18 +24,9 @@ lol_cmd_serve() (
         exit 1
     fi
 
-    # TG credentials are YAML-only - loaded from .agentize.local.yaml in Python
-    # No environment variable exports needed
+    # All configuration is YAML-only - loaded from .agentize.local.yaml in Python
+    # No CLI args needed
 
-    # Build CLI args conditionally (only pass when user explicitly provided)
-    local args=()
-    if [ -n "$period" ]; then
-        args+=("--period=$period")
-    fi
-    if [ -n "$num_workers" ]; then
-        args+=("--num-workers=$num_workers")
-    fi
-
-    # Invoke Python server module
-    exec python -m agentize.server "${args[@]}"
+    # Invoke Python server module directly
+    exec python -m agentize.server
 )

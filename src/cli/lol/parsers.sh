@@ -106,32 +106,21 @@ _lol_parse_project() {
 }
 
 # Parse serve command arguments and call lol_cmd_serve
+# Note: lol serve no longer accepts CLI flags; configure .agentize.local.yaml instead
 _lol_parse_serve() {
-    local period=""
-    local num_workers=""
+    # Reject any CLI arguments - configuration is YAML-only
+    if [ $# -gt 0 ]; then
+        echo "Error: lol serve no longer accepts CLI flags."
+        echo ""
+        echo "Configure server.period and server.num_workers in .agentize.local.yaml:"
+        echo ""
+        echo "  server:"
+        echo "    period: 5m"
+        echo "    num_workers: 5"
+        return 1
+    fi
 
-    # Parse arguments
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            --period=*)
-                period="${1#*=}"
-                shift
-                ;;
-            --num-workers=*)
-                num_workers="${1#*=}"
-                shift
-                ;;
-            *)
-                echo "Error: Unknown option '$1'"
-                echo "Usage: lol serve [--period=5m] [--num-workers=5]"
-                return 1
-                ;;
-        esac
-    done
-
-    # TG credentials are YAML-only - loaded from .agentize.local.yaml in Python
-    # Pass empty strings to lol_cmd_serve; it will only pass args to Python when non-empty
-    lol_cmd_serve "$period" "$num_workers"
+    lol_cmd_serve
 }
 
 # Parse claude-clean command arguments and call lol_cmd_claude_clean

@@ -5,7 +5,6 @@ Polls GitHub Projects v2 for issues with "Plan Accepted" status and
 `agentize:plan` label, then spawns worktrees for implementation.
 """
 
-import argparse
 import os
 import signal
 import sys
@@ -367,27 +366,29 @@ def run_server(
 
 
 def main() -> None:
-    """Entry point."""
-    parser = argparse.ArgumentParser(
-        description='Poll GitHub Projects for Plan Accepted issues'
-    )
-    parser.add_argument(
-        '--period', default=None,
-        help='Polling interval (e.g., 5m, 300s). Default: 5m'
-    )
-    parser.add_argument(
-        '--num-workers', type=int, default=None,
-        help='Maximum concurrent workers (0 = unlimited). Default: 5'
-    )
-    args = parser.parse_args()
+    """Entry point.
+
+    Configuration is YAML-only: server.period and server.num_workers
+    are read from .agentize.local.yaml. CLI flags are no longer accepted.
+    """
+    # Reject any CLI arguments - configuration is YAML-only
+    if len(sys.argv) > 1:
+        print("Error: python -m agentize.server no longer accepts CLI flags.", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("Configure server.period and server.num_workers in .agentize.local.yaml:", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("  server:", file=sys.stderr)
+        print("    period: 5m", file=sys.stderr)
+        print("    num_workers: 5", file=sys.stderr)
+        sys.exit(1)
 
     # Load YAML config for server parameters
     config, _ = load_runtime_config()
     server_config = config.get("server", {}) if isinstance(config.get("server"), dict) else {}
 
-    # Apply precedence: CLI > YAML > default
-    period = resolve_precedence(args.period, None, server_config.get("period"), "5m")
-    num_workers = resolve_precedence(args.num_workers, None, server_config.get("num_workers"), 5)
+    # Apply precedence: YAML > default (no CLI)
+    period = resolve_precedence(None, None, server_config.get("period"), "5m")
+    num_workers = resolve_precedence(None, None, server_config.get("num_workers"), 5)
 
     try:
         period_seconds = parse_period(period)

@@ -29,8 +29,7 @@ lol_complete() {
             echo "--write"
             ;;
         serve-flags)
-            echo "--period"
-            echo "--num-workers"
+            # No CLI flags - configuration is YAML-only (.agentize.local.yaml)
             ;;
         claude-clean-flags)
             echo "--dry-run"

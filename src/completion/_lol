@@ -157,43 +157,11 @@ _lol_claude_clean() {
 }
 
 # Completion for 'lol serve' subcommand
+# Note: lol serve no longer accepts CLI flags
+# Configuration is YAML-only: server.period and server.num_workers in .agentize.local.yaml
 _lol_serve() {
-    local -a serve_flags
-    local -a option_specs
-
-    # Try dynamic fetch first
-    if (( $+commands[lol] )); then
-        serve_flags=( ${(f)"$(lol --complete serve-flags 2>/dev/null)"} )
-    fi
-
-    # Fallback to static flags
-    if (( ${#serve_flags} == 0 )); then
-        serve_flags=( '--tg-token' '--tg-chat-id' '--period' '--num-workers' )
-    fi
-
-    # Build option specs from flags
-    for flag in $serve_flags; do
-        case $flag in
-            --tg-token)
-                option_specs+=('--tg-token[Telegram bot API token]:token:')
-                ;;
-            --tg-chat-id)
-                option_specs+=('--tg-chat-id[Telegram chat ID for notifications]:chat_id:')
-                ;;
-            --period)
-                option_specs+=('--period[Polling interval in seconds]:seconds:')
-                ;;
-            --num-workers)
-                option_specs+=('--num-workers[Number of parallel workers]:count:')
-                ;;
-            *)
-                # Unknown flag, pass through without description
-                option_specs+=("$flag")
-                ;;
-        esac
-    done
-
-    _arguments $option_specs
+    # No CLI flags - show message about YAML configuration
+    _message "Configure server.period and server.num_workers in .agentize.local.yaml"
 }
 
 _lol "$@"
