@@ -15,11 +15,13 @@ A long-running server that monitors your GitHub Projects kanban board and automa
 
 ```bash
 # Via lol CLI (recommended)
-lol serve [--period=5m] [--num-workers=5]
+lol serve
 
 # Direct Python invocation
-python -m agentize.server --period=5m --num-workers=5
+python -m agentize.server
 ```
+
+Configure `server.period` and `server.num_workers` in `.agentize.local.yaml` (see [Runtime Configuration](#runtime-configuration) below).
 
 Telegram credentials are loaded from `.agentize.local.yaml`. The server searches for this file in: project root → `$AGENTIZE_HOME` → `$HOME`. The server runs in notification-less mode when no credentials are configured.
 
@@ -29,8 +31,10 @@ The server manages a pool of concurrent workers to process multiple issues simul
 
 ### Concurrency Control
 
-- `--num-workers=N`: Maximum concurrent headless Claude sessions (default: 5)
-- `--num-workers=0`: No limit (preserves prior behavior)
+- `server.num_workers`: Maximum concurrent headless Claude sessions (default: 5)
+- `server.num_workers: 0`: No limit (preserves prior behavior)
+
+Configure in `.agentize.local.yaml`.
 
 ### Worker Status Files
 
@@ -364,12 +368,11 @@ workflows:
     model: haiku
 ```
 
-**Configuration precedence:** CLI args > `.agentize.local.yaml` > defaults
+**Configuration precedence:** `.agentize.local.yaml` > defaults
 
 For example:
-- `lol serve --period=10m` uses `10m` regardless of YAML config
-- `lol serve` without args uses YAML `server.period: 2m` if configured
-- If neither CLI nor YAML specifies a value, defaults are used (`5m` for period, `5` for workers)
+- `server.period: 2m` in YAML uses `2m`
+- If YAML doesn't specify a value, defaults are used (`5m` for period, `5` for workers)
 
 **Sections:**
 - `handsoff`: Handsoff mode settings for auto-continuation (see [Handsoff Mode](core/handsoff.md))

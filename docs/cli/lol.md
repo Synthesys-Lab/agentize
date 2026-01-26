@@ -118,17 +118,18 @@ lol usage --week
 Long-running server that polls GitHub Projects for "Plan Accepted" issues and automatically invokes `wt spawn` to start implementation.
 
 ```bash
-lol serve [--period=5m] [--num-workers=5]
+lol serve
 ```
 
-#### Options
+Configure `server.period` and `server.num_workers` in `.agentize.local.yaml`:
 
-| Option | Required | Default | Description |
-|--------|----------|---------|-------------|
-| `--period` | No | 5m | Polling interval (format: Nm or Ns) |
-| `--num-workers` | No | 5 | Maximum concurrent headless workers (0 = unlimited) |
+```yaml
+server:
+  period: 5m       # Polling interval (format: Nm or Ns)
+  num_workers: 5   # Maximum concurrent headless workers (0 = unlimited)
+```
 
-Telegram credentials are loaded from `.agentize.local.yaml`. The server searches for this file in: project root → `$AGENTIZE_HOME` → `$HOME`. If no credentials are configured, the server runs in notification-less mode.
+Telegram credentials are also loaded from `.agentize.local.yaml`. The server searches for this file in: project root → `$AGENTIZE_HOME` → `$HOME`. If no credentials are configured, the server runs in notification-less mode.
 
 #### Requirements
 
