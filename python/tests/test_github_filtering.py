@@ -1,7 +1,6 @@
 """Tests for agentize.server GitHub filtering functions."""
 
 import json
-import os
 import pytest
 from unittest.mock import patch, MagicMock
 
@@ -49,10 +48,8 @@ class TestFilterReadyIssues:
 
         assert ready == [42]
 
-    def test_filter_ready_issues_debug_output(self, monkeypatch, capsys):
+    def test_filter_ready_issues_debug_output(self, capsys):
         """Test filter_ready_issues debug output contains expected tokens."""
-        monkeypatch.setenv("HANDSOFF_DEBUG", "1")
-
         items = [
             {
                 "content": {
@@ -70,7 +67,8 @@ class TestFilterReadyIssues:
             },
         ]
 
-        filter_ready_issues(items)
+        with patch("agentize.server.github._is_debug_enabled", return_value=True):
+            filter_ready_issues(items)
 
         captured = capsys.readouterr()
         debug_output = captured.err
@@ -80,10 +78,8 @@ class TestFilterReadyIssues:
         assert "SKIP" in debug_output
         assert "Summary:" in debug_output
 
-    def test_filter_ready_issues_debug_does_not_alter_result(self, monkeypatch):
+    def test_filter_ready_issues_debug_does_not_alter_result(self):
         """Test that debug mode doesn't alter the returned list."""
-        monkeypatch.setenv("HANDSOFF_DEBUG", "1")
-
         items = [
             {
                 "content": {
@@ -94,7 +90,8 @@ class TestFilterReadyIssues:
             },
         ]
 
-        ready = filter_ready_issues(items)
+        with patch("agentize.server.github._is_debug_enabled", return_value=True):
+            ready = filter_ready_issues(items)
 
         assert ready == [42]
 
@@ -179,10 +176,8 @@ class TestFilterReadyRefinements:
 
         assert ready == [42]
 
-    def test_filter_ready_refinements_debug_output(self, monkeypatch, capsys):
+    def test_filter_ready_refinements_debug_output(self, capsys):
         """Test filter_ready_refinements debug output contains expected messages."""
-        monkeypatch.setenv("HANDSOFF_DEBUG", "1")
-
         items = [
             {
                 "content": {
@@ -211,7 +206,8 @@ class TestFilterReadyRefinements:
             },
         ]
 
-        filter_ready_refinements(items)
+        with patch("agentize.server.github._is_debug_enabled", return_value=True):
+            filter_ready_refinements(items)
 
         captured = capsys.readouterr()
         debug_output = captured.err
@@ -310,10 +306,8 @@ class TestFilterReadyFeatRequests:
 
         assert ready == []
 
-    def test_filter_ready_feat_requests_debug_output(self, monkeypatch, capsys):
+    def test_filter_ready_feat_requests_debug_output(self, capsys):
         """Test filter_ready_feat_requests debug output contains expected messages."""
-        monkeypatch.setenv("HANDSOFF_DEBUG", "1")
-
         items = [
             {
                 "content": {
@@ -340,7 +334,8 @@ class TestFilterReadyFeatRequests:
             },
         ]
 
-        filter_ready_feat_requests(items)
+        with patch("agentize.server.github._is_debug_enabled", return_value=True):
+            filter_ready_feat_requests(items)
 
         captured = capsys.readouterr()
         debug_output = captured.err

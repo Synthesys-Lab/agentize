@@ -1,7 +1,6 @@
 """Tests for agentize.server PR review resolution workflow."""
 
 import json
-import os
 import pytest
 from unittest.mock import patch, MagicMock
 import inspect
@@ -280,10 +279,8 @@ class TestFullWorkflowSimulation:
         pr_numbers = [pr_no for pr_no, issue_no in ready]
         assert pr_numbers == [500]
 
-    def test_debug_logging(self, monkeypatch, capsys):
-        """Test debug logs are output when HANDSOFF_DEBUG=1."""
-        monkeypatch.setenv("HANDSOFF_DEBUG", "1")
-
+    def test_debug_logging(self, capsys):
+        """Test debug logs are output when debug is enabled via YAML config."""
         prs = [
             {
                 "number": 600,
@@ -294,6 +291,8 @@ class TestFullWorkflowSimulation:
         ]
 
         with patch(
+            "agentize.server.github._is_debug_enabled", return_value=True
+        ), patch(
             "agentize.server.github.query_issue_project_status", return_value="Proposed"
         ), patch(
             "agentize.server.github.has_unresolved_review_threads", return_value=True
