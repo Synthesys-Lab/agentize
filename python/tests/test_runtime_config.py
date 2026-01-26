@@ -328,3 +328,46 @@ permissions:
         assert isinstance(allow[2], dict)
         assert allow[2].get("pattern") == "^cat .*\\.md$"
         assert allow[2].get("tool") == "Read"
+
+
+class TestServerParameterPrecedence:
+    """Tests for server parameter (period, num_workers) precedence resolution."""
+
+    def test_resolve_precedence_period_cli_overrides_yaml(self):
+        """Test CLI --period=10m overrides YAML server.period: 2m."""
+        result = resolve_precedence(
+            cli_value="10m", env_value=None, config_value="2m", default="5m"
+        )
+        assert result == "10m"
+
+    def test_resolve_precedence_period_yaml_overrides_default(self):
+        """Test YAML server.period: 2m overrides default 5m."""
+        result = resolve_precedence(
+            cli_value=None, env_value=None, config_value="2m", default="5m"
+        )
+        assert result == "2m"
+
+    def test_resolve_precedence_num_workers_cli_overrides_yaml(self):
+        """Test CLI --num-workers=10 overrides YAML server.num_workers: 3."""
+        result = resolve_precedence(
+            cli_value=10, env_value=None, config_value=3, default=5
+        )
+        assert result == 10
+
+    def test_resolve_precedence_num_workers_yaml_overrides_default(self):
+        """Test YAML server.num_workers: 3 overrides default 5."""
+        result = resolve_precedence(
+            cli_value=None, env_value=None, config_value=3, default=5
+        )
+        assert result == 3
+
+    def test_resolve_precedence_uses_defaults_when_no_yaml(self):
+        """Test defaults are used when YAML file absent."""
+        result_period = resolve_precedence(
+            cli_value=None, env_value=None, config_value=None, default="5m"
+        )
+        result_workers = resolve_precedence(
+            cli_value=None, env_value=None, config_value=None, default=5
+        )
+        assert result_period == "5m"
+        assert result_workers == 5
