@@ -17,6 +17,8 @@ from agentize.server.__main__ import (
 )
 from agentize.server.github import (
     discover_candidate_feat_requests,
+    lookup_project_graphql_id,
+    _project_id_cache,
 )
 
 
@@ -473,3 +475,78 @@ class TestWorkflowIntegration:
 
         expected_resolved = [(300, 300), (302, 302)]
         assert resolved == expected_resolved
+
+
+class TestLookupProjectGraphQLId:
+    """Tests for lookup_project_graphql_id function."""
+
+    def test_lookup_project_uses_correct_arg_types(self):
+        """Test lookup_project_graphql_id passes -f for strings and -F for ints.
+
+        This ensures GraphQL variables are typed correctly:
+        - -f owner=TestOrg (string variable)
+        - -F projectNumber=42 (integer variable)
+        """
+        # Clear cache to ensure fresh lookup
+        _project_id_cache.clear()
+
+        captured_args = []
+
+        def capture_subprocess_run(args, **kwargs):
+            captured_args.extend(args)
+            mock_result = MagicMock()
+            mock_result.returncode = 0
+            mock_result.stdout = json.dumps(
+                {"data": {"repositoryOwner": {"projectV2": {"id": "PVT_xxx"}}}}
+            )
+            return mock_result
+
+        with patch("subprocess.run", side_effect=capture_subprocess_run):
+            lookup_project_graphql_id("TestOrg", 42)
+
+        # Verify -f owner=TestOrg (string variable for repositoryOwner query)
+        assert "-f" in captured_args
+        owner_idx = captured_args.index("-f") + 1
+        # Check that the next arg after -f for owner starts with owner=
+        owner_args = [
+            captured_args[i + 1]
+            for i, arg in enumerate(captured_args)
+            if arg == "-f" and "owner=" in captured_args[i + 1]
+        ]
+        assert any("owner=TestOrg" in arg for arg in owner_args)
+
+        # Verify -F projectNumber=42 (integer variable)
+        assert "-F" in captured_args
+        project_args = [
+            captured_args[i + 1]
+            for i, arg in enumerate(captured_args)
+            if arg == "-F"
+        ]
+        assert any("projectNumber=42" in arg for arg in project_args)
+
+    def test_lookup_project_no_variables_pattern(self):
+        """Test lookup_project_graphql_id does not use -f variables= pattern.
+
+        The old broken pattern was -f variables={"owner":..., "projectNumber":...}
+        The correct pattern uses typed args: -f owner=... -F projectNumber=...
+        """
+        # Clear cache to ensure fresh lookup
+        _project_id_cache.clear()
+
+        captured_args = []
+
+        def capture_subprocess_run(args, **kwargs):
+            captured_args.extend(args)
+            mock_result = MagicMock()
+            mock_result.returncode = 0
+            mock_result.stdout = json.dumps(
+                {"data": {"repositoryOwner": {"projectV2": {"id": "PVT_xxx"}}}}
+            )
+            return mock_result
+
+        with patch("subprocess.run", side_effect=capture_subprocess_run):
+            lookup_project_graphql_id("TestOrg", 42)
+
+        # Should NOT have -f variables= (old broken pattern)
+        args_str = " ".join(str(arg) for arg in captured_args)
+        assert "variables=" not in args_str

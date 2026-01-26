@@ -51,6 +51,7 @@ Tests are also run automatically via `make test` and `make test-fast`.
 | `test_session.py` | Session lookup and state retrieval |
 | `test_module_exports.py` | Module imports and re-exports |
 | `test_workflow.py` | Workflow detection, issue extraction, continuation prompts, supervisor config |
+| `test_permission_determine.py` | Permission helper functions (_escape_html, inline keyboard, callback parsing, Telegram guard) |
 
 ## Fixtures
 

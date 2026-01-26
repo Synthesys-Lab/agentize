@@ -55,3 +55,29 @@ added to `test-all.sh` or executed directly. They provide shared functionality f
 - `helpers-worktree.sh` - Worktree test setup/cleanup
 - `helpers-gh-mock.sh` - GitHub API mock helpers
 - `helpers-makefile-validation.sh` - Makefile validation test helpers
+
+## Avoiding Embedded Python Blocks
+
+When writing shell tests, avoid embedding `python3 -c` blocks for testing Python logic. Instead:
+
+1. **Test Python logic in pytest**: Add test cases to `python/tests/test_*.py` files
+2. **Shell tests for CLI/integration**: Keep shell tests focused on CLI invocation, environment handling, and end-to-end workflows
+3. **Benefits**: IDE support, better error messages, reusable fixtures, clearer test organization
+
+**Example - Avoid this in shell tests:**
+```bash
+# BAD: Embedded Python block
+result=$(python3 -c "
+def some_function():
+    return 'result'
+print(some_function())
+")
+```
+
+**Instead, create a pytest test in `python/tests/`:**
+```python
+# GOOD: Proper pytest test
+def test_some_function():
+    from module import some_function
+    assert some_function() == 'result'
+```

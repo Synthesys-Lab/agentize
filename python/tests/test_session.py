@@ -10,6 +10,7 @@ from agentize.server.__main__ import (
     _load_session_state,
     _get_session_state_for_issue,
     _remove_issue_index,
+    set_pr_number_for_issue,
 )
 
 
@@ -137,3 +138,94 @@ class TestRemoveIssueIndex:
 
         # Should not raise an error (missing_ok=True)
         _remove_issue_index(42, session_dir)
+
+
+class TestSetPrNumberForIssue:
+    """Tests for set_pr_number_for_issue function."""
+
+    def test_set_pr_number_writes_to_session_state(self, set_agentize_home):
+        """Test set_pr_number_for_issue writes pr_number to session state."""
+        tmp_path = set_agentize_home
+        session_dir = tmp_path / ".tmp" / "hooked-sessions"
+        index_dir = session_dir / "by-issue"
+        index_dir.mkdir(parents=True)
+
+        # Create index file
+        index_data = {"session_id": "sess123", "workflow": "issue-to-impl"}
+        (index_dir / "42.json").write_text(json.dumps(index_data))
+
+        # Create session state file
+        state_data = {"workflow": "issue-to-impl", "state": "done", "issue_no": 42}
+        (session_dir / "sess123.json").write_text(json.dumps(state_data))
+
+        result = set_pr_number_for_issue(42, 123, session_dir)
+
+        assert result is True
+
+        # Verify pr_number was written
+        with open(session_dir / "sess123.json") as f:
+            state = json.load(f)
+            assert state.get("pr_number") == 123
+
+    def test_set_pr_number_returns_false_when_issue_index_missing(
+        self, set_agentize_home
+    ):
+        """Test set_pr_number_for_issue returns False when issue index is missing."""
+        tmp_path = set_agentize_home
+        session_dir = tmp_path / ".tmp" / "hooked-sessions"
+        index_dir = session_dir / "by-issue"
+        index_dir.mkdir(parents=True)
+
+        # No index file for issue 999
+        result = set_pr_number_for_issue(999, 123, session_dir)
+
+        assert result is False
+
+    def test_set_pr_number_returns_false_when_session_file_missing(
+        self, set_agentize_home
+    ):
+        """Test set_pr_number_for_issue returns False when session file is missing."""
+        tmp_path = set_agentize_home
+        session_dir = tmp_path / ".tmp" / "hooked-sessions"
+        index_dir = session_dir / "by-issue"
+        index_dir.mkdir(parents=True)
+
+        # Create index file pointing to non-existent session
+        index_data = {"session_id": "nonexistent", "workflow": "issue-to-impl"}
+        (index_dir / "888.json").write_text(json.dumps(index_data))
+
+        result = set_pr_number_for_issue(888, 123, session_dir)
+
+        assert result is False
+
+    def test_set_pr_number_preserves_existing_fields(self, set_agentize_home):
+        """Test set_pr_number_for_issue preserves existing state fields."""
+        tmp_path = set_agentize_home
+        session_dir = tmp_path / ".tmp" / "hooked-sessions"
+        index_dir = session_dir / "by-issue"
+        index_dir.mkdir(parents=True)
+
+        # Create index file
+        index_data = {"session_id": "sess456", "workflow": "issue-to-impl"}
+        (index_dir / "100.json").write_text(json.dumps(index_data))
+
+        # Create session state file with multiple fields
+        state_data = {
+            "workflow": "issue-to-impl",
+            "state": "in_progress",
+            "issue_no": 100,
+            "continuation_count": 3,
+        }
+        (session_dir / "sess456.json").write_text(json.dumps(state_data))
+
+        result = set_pr_number_for_issue(100, 456, session_dir)
+
+        assert result is True
+
+        # Verify all fields preserved
+        with open(session_dir / "sess456.json") as f:
+            state = json.load(f)
+            assert state.get("pr_number") == 456
+            assert state.get("continuation_count") == 3
+            assert state.get("state") == "in_progress"
+            assert state.get("workflow") == "issue-to-impl"
