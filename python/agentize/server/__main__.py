@@ -70,7 +70,7 @@ from agentize.server.workers import (
     _cleanup_review_resolution,
     DEFAULT_WORKERS_DIR,
 )
-from agentize.server.runtime_config import load_runtime_config
+from agentize.server.runtime_config import load_runtime_config, resolve_precedence
 
 
 def _resolve_tg_credentials() -> tuple[str, str]:
@@ -372,22 +372,30 @@ def main() -> None:
         description='Poll GitHub Projects for Plan Accepted issues'
     )
     parser.add_argument(
-        '--period', default='5m',
+        '--period', default=None,
         help='Polling interval (e.g., 5m, 300s). Default: 5m'
     )
     parser.add_argument(
-        '--num-workers', type=int, default=5,
+        '--num-workers', type=int, default=None,
         help='Maximum concurrent workers (0 = unlimited). Default: 5'
     )
     args = parser.parse_args()
 
+    # Load YAML config for server parameters
+    config, _ = load_runtime_config()
+    server_config = config.get("server", {}) if isinstance(config.get("server"), dict) else {}
+
+    # Apply precedence: CLI > YAML > default
+    period = resolve_precedence(args.period, None, server_config.get("period"), "5m")
+    num_workers = resolve_precedence(args.num_workers, None, server_config.get("num_workers"), 5)
+
     try:
-        period_seconds = parse_period(args.period)
+        period_seconds = parse_period(period)
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
-    run_server(period_seconds, args.num_workers)
+    run_server(period_seconds, num_workers)
 
 
 if __name__ == '__main__':

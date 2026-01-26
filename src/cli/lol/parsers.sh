@@ -107,8 +107,8 @@ _lol_parse_project() {
 
 # Parse serve command arguments and call lol_cmd_serve
 _lol_parse_serve() {
-    local period="5m"
-    local num_workers="5"
+    local period=""
+    local num_workers=""
 
     # Parse arguments
     while [ $# -gt 0 ]; do
@@ -130,6 +130,7 @@ _lol_parse_serve() {
     done
 
     # TG credentials are YAML-only - loaded from .agentize.local.yaml in Python
+    # Pass empty strings to lol_cmd_serve; it will only pass args to Python when non-empty
     lol_cmd_serve "$period" "$num_workers"
 }
 
