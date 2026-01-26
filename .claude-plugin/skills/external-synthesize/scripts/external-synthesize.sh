@@ -232,7 +232,7 @@ if [ ! -f "$INPUT_FILE" ] || [ ! -s "$INPUT_FILE" ]; then
     exit 1
 fi
 
-echo "Using external AI reviewer for partial consensus synthesis..." >&2
+echo "Using external AI reviewer for plan synthesis..." >&2
 echo "" >&2
 echo "Configuration:" >&2
 echo "- Input: $INPUT_FILE ($(wc -l < "$INPUT_FILE") lines)" >&2

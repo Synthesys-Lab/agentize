@@ -1,6 +1,6 @@
 ---
 name: mega-planner
-description: Multi-agent debate-based planning with dual proposers (bold + paranoia) and partial consensus
+description: Multi-agent debate-based planning with dual proposers (bold + paranoia) and external AI synthesis
 argument-hint: [feature-description] or --refine [issue-no] [refine-comments] or --from-issue [issue-no] or --resolve [issue-no] [selections]
 ---
 
@@ -384,7 +384,7 @@ Focus on reducing total code footprint while allowing large changes."
 - Generate filename: `CODE_REDUCER_FILE=".tmp/${FILE_PREFIX}-code-reducer.md"`
 - Save code reducer's response to `$CODE_REDUCER_FILE`
 
-### Step 7: Invoke Partial Consensus Skill
+### Step 7: Invoke External Synthesize Skill
 
 **History file management (for resolve and refine modes):**
 

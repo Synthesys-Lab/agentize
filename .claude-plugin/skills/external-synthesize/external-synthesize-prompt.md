@@ -1,4 +1,4 @@
-# Partial Consensus Review Task
+# External Synthesize Review Task
 
 You are an expert software architect tasked with synthesizing implementation plan(s) from a **dual-proposer debate** with five different perspectives.
 

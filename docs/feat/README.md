@@ -4,7 +4,7 @@ This folder describes the major features of Agentize, including:
 
 - `core/`: AI agent development workflows, including planning and implementation.
   - `ultra-planner.md`: The Ultra Planner agent that creates detailed plans from high-level goals.
-  - `mega-planner.md`: The Mega Planner with 5-agent dual-proposer debate and partial consensus.
+  - `mega-planner.md`: The Mega Planner with 5-agent dual-proposer debate and external AI synthesis.
   - `issue-to-impl.md`: The Issue to Implementation agent that converts plan items into code.
   - `milestone.md`: The milestone workflow for implementing large features incrementally with progress tracking.
   - `handsoff.md`: The stop hook that feeds back the progress to continue on both workflows above automatically.

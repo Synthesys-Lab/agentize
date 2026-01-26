@@ -1,6 +1,6 @@
 # Mega Planner Workflow
 
-Multi-agent debate-based planning with dual proposers (bold + paranoia) and partial consensus for complex features requiring developer arbitration.
+Multi-agent debate-based planning with dual proposers (bold + paranoia) and external AI synthesis for complex features requiring developer arbitration.
 
 ## Overview
 
