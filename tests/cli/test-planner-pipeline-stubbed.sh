@@ -68,6 +68,9 @@ chmod +x "$STUB_CONSENSUS"
 # Override the consensus script path used by pipeline
 export _PLANNER_CONSENSUS_SCRIPT="$STUB_CONSENSUS"
 
+# Disable animation for stable test output
+export PLANNER_NO_ANIM=1
+
 # ── Test 1: --dry-run mode (skips issue creation, uses timestamp artifacts) ──
 output=$(planner plan --dry-run "Add a test feature for validation" 2>&1) || {
     echo "Pipeline output: $output" >&2
@@ -93,6 +96,12 @@ fi
 echo "$output" | grep -q "consensus\|Consensus" || {
     echo "Pipeline output: $output" >&2
     test_fail "Pipeline output should reference consensus plan"
+}
+
+# Verify per-agent timing logs are present (e.g., "understander agent runs 0s")
+echo "$output" | grep -qE "agent runs [0-9]+s" || {
+    echo "Pipeline output: $output" >&2
+    test_fail "Pipeline output should contain per-agent timing logs (e.g., 'agent runs Ns')"
 }
 
 # ── Test 2: --verbose mode outputs detailed stage info ──
