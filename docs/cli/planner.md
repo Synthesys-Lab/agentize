@@ -5,7 +5,7 @@ Standalone shell function that runs the multi-agent debate pipeline with file-ba
 ## Usage
 
 ```bash
-planner plan "<feature-description>"
+planner plan [--issue] "<feature-description>"
 planner --help
 ```
 
@@ -23,6 +23,12 @@ Runs the full multi-agent debate pipeline for a feature description:
 
 Both critique and reducer append plan-guideline content and run in parallel via background processes.
 
+### `--issue` (optional flag)
+
+When passed to `plan`, creates a placeholder GitHub issue before the pipeline runs and uses `issue-{N}` artifact naming instead of timestamp-based naming. After the consensus stage completes, the issue body is updated with the final plan and the `agentize:plan` label is applied.
+
+Requires `gh` CLI to be installed and authenticated. If `gh` is unavailable or issue creation fails, logs a warning and falls back to timestamp-based artifact naming.
+
 ### `--help`
 
 Displays usage information and available subcommands.
@@ -39,11 +45,17 @@ Each stage uses `acw` for file-based CLI invocation. Prompts are rendered at run
 All intermediate and final artifacts are written to `.tmp/`:
 
 ```
-.tmp/{timestamp}-understander.txt       # Codebase context
-.tmp/{timestamp}-bold.txt               # Bold proposal
-.tmp/{timestamp}-critique.txt           # Critique report
-.tmp/{timestamp}-reducer.txt            # Simplified proposal
+.tmp/{timestamp}-understander.txt       # Default (no --issue)
+.tmp/{timestamp}-bold.txt
+.tmp/{timestamp}-critique.txt
+.tmp/{timestamp}-reducer.txt
 .tmp/{timestamp}-consensus.md           # Final consensus plan
+
+.tmp/issue-{N}-understander.txt         # When --issue succeeds
+.tmp/issue-{N}-bold.txt
+.tmp/issue-{N}-critique.txt
+.tmp/issue-{N}-reducer.txt
+.tmp/issue-{N}-consensus.md             # Final consensus plan (also published to issue)
 ```
 
 ## Relationship to /ultra-planner

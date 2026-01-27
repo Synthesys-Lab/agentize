@@ -22,4 +22,10 @@ echo "$output" | grep -q "plan" || test_fail "Help text missing 'plan' subcomman
 # Verify feature-description is mentioned
 echo "$output" | grep -q "feature" || test_fail "Help text missing feature description reference"
 
+# Verify --issue flag is documented
+echo "$output" | grep -q "\-\-issue" || test_fail "Help text missing '--issue' flag"
+
+# Verify --issue appears in usage line
+echo "$output" | grep -q "\[--issue\]" || test_fail "Help text missing '--issue' in usage line"
+
 test_pass "planner --help output contains usage and plan subcommand"
