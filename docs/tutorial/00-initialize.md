@@ -12,27 +12,29 @@ After installing Agentize (see README.md), you can start using its features in y
 
 ## Installing Agentize
 
-Agentize is currently managed by Claude Code Plugin Marketplace. To install it:
+Agentize uses a single installer that handles both the CLI tools and the Claude Code plugin:
 
-1. Open Claude Code in your project from command line:
 ```bash
-claude
+curl -fsSL https://raw.githubusercontent.com/SyntheSys-Lab/agentize/main/scripts/install | bash
 ```
-2. Open the Plugin Marketplace:
-![alt text](./images/plugin.png)
 
-Then,
+Then add to your shell RC file (`~/.bashrc`, `~/.zshrc`, etc.):
 
-![alt text](./images/market-place.png)
+```bash
+source $HOME/.agentize/setup.sh
+```
 
-3. Add `Synthesys-Lab/agentize` (case insensitive) to your marketplace:
+The installer automatically:
+1. Clones the repository and runs setup
+2. Registers the local Claude Code plugin marketplace (if `claude` CLI is available)
+3. Installs the `agentize` plugin into Claude Code
 
-![alt text](./images/agentize.png)
+If `claude` is not installed at the time of setup, you can register the plugin later by re-running the installer or manually:
 
-4. Install the plugin.
-
-![alt text](./images/install.png)
-
+```bash
+claude plugin marketplace add "$HOME/.agentize"
+claude plugin install agentize@agentize
+```
 
 ## Verify Installation
 

@@ -36,7 +36,12 @@ The installer performs the following steps:
 2. **Clone repository** - Clones (or copies from local path) to install directory
 3. **Initialize worktree** - Runs `wt init` to create `trees/main` worktree
 4. **Run setup** - Executes `make setup` in `trees/main` to generate `setup.sh`
-5. **Print instructions** - Shows shell RC integration commands
+5. **Register Claude plugin** (optional) - If `claude` CLI is available:
+   - Removes any stale marketplace/plugin entries
+   - Registers the install directory as a local plugin marketplace
+   - Installs `agentize@agentize` plugin
+   - All Claude steps are non-fatal; failures are logged but do not block installation
+6. **Print instructions** - Shows shell RC integration commands
 
 ## Post-Install
 
@@ -108,4 +113,26 @@ Ensure the cloned repository is a valid git repository and `wt init` can run suc
 - Reuses existing `wt init` behavior for worktree initialization
 - Reuses `make setup` for environment setup
 - Does not implement rollback, uninstall, or update flows
-- Designed for simplicity (~120 LOC)
+- Plugin registration is optional and non-fatal; `claude` CLI absence is handled gracefully
+
+## Plugin Registration Troubleshooting
+
+**Plugin not appearing after install**
+
+The local marketplace registration may not persist across Claude restarts. Re-register manually:
+
+```bash
+claude plugin marketplace add "$HOME/.agentize"
+claude plugin install agentize@agentize
+```
+
+**Stale plugin entries**
+
+If a previous installation left stale entries, the installer cleans them automatically. To do this manually:
+
+```bash
+claude plugin uninstall agentize@agentize
+claude plugin marketplace remove agentize
+claude plugin marketplace add "$HOME/.agentize"
+claude plugin install agentize@agentize
+```

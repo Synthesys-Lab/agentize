@@ -16,14 +16,14 @@ This directory contains utility scripts, git hooks, and wrapper entrypoints for 
   - Behavior:
     - Validates dependencies (`git`, `make`, `bash`)
     - Clones repository to install directory (or copies from local path)
-    - Runs `wt init` to create `trees/main` worktree
-    - Executes `make setup` in `trees/main` to generate `setup.sh`
+    - Runs `make setup` to generate `setup.sh`
+    - Registers local Claude Code plugin marketplace and installs plugin (if `claude` is available)
     - Prints shell RC integration instructions
   - Safety features:
     - No automatic RC file modification
     - Fails if install directory exists (prevents overwrites)
   - Exit codes: 0 (success), 1 (error)
-  - See [docs/cli/install.md](../docs/cli/install.md) for detailed documentation
+  - See [docs/feat/cli/install.md](../docs/feat/cli/install.md) for detailed documentation
 
 ### Pre-commit Hook
 - `pre-commit` - Git pre-commit hook script

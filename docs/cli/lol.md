@@ -27,11 +27,12 @@ Upgrade the agentize installation.
 lol upgrade
 ```
 
-The upgrade process has two phases:
+The upgrade process has three phases:
 1. **Pull updates**: Runs `git pull --rebase` to fetch latest changes
 2. **Rebuild environment**: Runs `make setup` to regenerate `setup.sh` with any build process changes
+3. **Update Claude plugin** (optional): If `claude` CLI is available, updates the local marketplace and plugin registration. This step is non-fatal; failures do not block the upgrade.
 
-This mirrors the installation process in `scripts/install`, ensuring updates to the build configuration are applied.
+This mirrors the installation process in `scripts/install`, ensuring updates to the build configuration and plugin are applied.
 
 ### lol project
 

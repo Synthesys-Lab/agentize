@@ -58,12 +58,12 @@ curl -fsSL https://raw.githubusercontent.com/SyntheSys-Lab/agentize/main/scripts
 ```
 
 The installer:
-1. Clones the bare repository to `$HOME/.agentize` (or custom `--dir`)
-2. Runs `wt init` to create `trees/main` worktree
-3. Executes `make setup` in `trees/main` to generate `setup.sh`
+1. Clones the repository to `$HOME/.agentize` (or custom `--dir`)
+2. Runs `make setup` to generate `setup.sh`
+3. Registers the local Claude Code plugin marketplace and installs the plugin (if `claude` is available)
 4. Prints shell RC integration instructions
 
-See [docs/cli/install.md](../cli/install.md) for options and troubleshooting.
+See [docs/feat/cli/install.md](../feat/cli/install.md) for options and troubleshooting.
 
 **Manual setup:**
 

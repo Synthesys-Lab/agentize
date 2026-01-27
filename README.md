@@ -36,8 +36,8 @@ gh auth status
 Agentize is an AI-powered SDK that helps you build your software projects
 using Claude Code powerfully. It is splitted into two main components:
 
-1. **Claude Code Plugin**: Refer to [Tutorial 00: Initialize Your Project](./docs/tutorial/00-initialize.md)
-   to set up the Agentize plugin for Claude Code.
+1. **Claude Code Plugin**: Automatically registered during installation when `claude` CLI is available.
+   See [Tutorial 00: Initialize Your Project](./docs/tutorial/00-initialize.md) for details.
 2. **CLI Tool**: A source-first CLI tool to help you manage your projects using Agentize.
    See the commands below to install.
 
@@ -51,7 +51,7 @@ Then add to your shell RC file (`~/.bashrc`, `~/.zshrc`, etc.):
 source $HOME/.agentize/setup.sh
 ```
 
-See [docs/cli/install.md](./docs/cli/install.md) for installation options and troubleshooting.
+See [docs/feat/cli/install.md](./docs/feat/cli/install.md) for installation options and troubleshooting.
 
 **Upgrade:** Run `lol upgrade` to pull the latest changes.
 
