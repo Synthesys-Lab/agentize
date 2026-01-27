@@ -41,6 +41,9 @@ _planner_issue_create() {
         return 1
     fi
 
+    # Store URL for pipeline rendering
+    _PLANNER_ISSUE_URL="$issue_url"
+
     echo "$issue_number"
     return 0
 }
