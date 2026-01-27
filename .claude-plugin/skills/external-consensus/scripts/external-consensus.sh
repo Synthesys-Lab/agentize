@@ -26,11 +26,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="$(dirname "$SCRIPT_DIR")"
 
-# Source acw wrapper for CLI invocation functions
-if [ -z "$AGENTIZE_HOME" ]; then
-    AGENTIZE_HOME="$(cd "$SKILL_DIR/../../../../.." && pwd)"
-fi
-source "$AGENTIZE_HOME/src/cli/acw.sh"
+# Source acw wrapper for CLI invocation functions (via local symlink)
+source "$SCRIPT_DIR/acw.sh"
 
 # Validate input arguments
 if [ $# -ne 3 ]; then

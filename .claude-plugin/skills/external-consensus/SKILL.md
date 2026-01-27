@@ -25,7 +25,7 @@ The skill uses the `acw` (Agent CLI Wrapper) abstraction for CLI invocations:
 
 ```bash
 # Source acw wrapper
-source "$AGENTIZE_HOME/src/cli/acw.sh"
+source "$SCRIPT_DIR/acw.sh"  # Local symlink → src/cli/acw.sh
 
 # Create temporary files for input/output
 INPUT_FILE=".tmp/issue-${ISSUE_NUMBER}-external-review-input.md"
@@ -59,7 +59,7 @@ When Codex is unavailable, the skill falls back to Claude Code with Opus via acw
 
 ```bash
 # Source acw wrapper
-source "$AGENTIZE_HOME/src/cli/acw.sh"
+source "$SCRIPT_DIR/acw.sh"  # Local symlink → src/cli/acw.sh
 
 # Create temporary files
 INPUT_FILE=".tmp/issue-${ISSUE_NUMBER}-external-review-input.md"
