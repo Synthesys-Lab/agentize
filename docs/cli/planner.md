@@ -34,7 +34,7 @@ Prints detailed stage logs. By default, the pipeline runs in quiet mode, printin
 
 ### Default Issue Creation
 
-By default, `plan` creates a placeholder GitHub issue before the pipeline runs and uses `issue-{N}` artifact naming. After the consensus stage completes, the issue body is updated with the final plan and the `agentize:plan` label is applied.
+By default, `plan` creates a placeholder GitHub issue before the pipeline runs using a truncated placeholder title (`[plan] placeholder: <first 50 chars>...`), and uses `issue-{N}` artifact naming. After the consensus stage completes, the issue body is updated with the final plan, the title is set from the first `Implementation Plan:` or `Consensus Plan:` header in the consensus file (fallback: truncated feature description), and the `agentize:plan` label is applied.
 
 Requires `gh` CLI to be installed and authenticated. If `gh` is unavailable or issue creation fails, logs a warning and falls back to timestamp-based artifact naming.
 

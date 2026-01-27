@@ -9,7 +9,7 @@ Optional GitHub issue helpers for default issue creation; `--dry-run` skips issu
 | Function | Purpose |
 |----------|---------|
 | `_planner_gh_available` | Check if `gh` CLI is installed and authenticated |
-| `_planner_issue_create` | Create a placeholder GitHub issue with `[plan]` title prefix |
+| `_planner_issue_create` | Create a placeholder GitHub issue with `[plan] placeholder:` and a truncated feature title |
 | `_planner_issue_publish` | Update issue body with consensus plan and add `agentize:plan` label |
 
 ## Design Rationale

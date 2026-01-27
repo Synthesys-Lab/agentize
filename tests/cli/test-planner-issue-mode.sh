@@ -79,7 +79,11 @@ INPUT_BASE=$(basename "$1")
 PREFIX="${INPUT_BASE%-*}"
 CONSENSUS_FILE=".tmp/${PREFIX}-consensus.md"
 mkdir -p .tmp
-echo "# Consensus Plan: Test Feature" > "$CONSENSUS_FILE"
+# Include preamble before the plan header (real consensus files have this)
+echo "Using external-consensus skill to synthesize a balanced plan." > "$CONSENSUS_FILE"
+echo "" >> "$CONSENSUS_FILE"
+echo "# Implementation Plan: Improved Test Feature" >> "$CONSENSUS_FILE"
+echo "" >> "$CONSENSUS_FILE"
 echo "Stub consensus output" >> "$CONSENSUS_FILE"
 echo "$CONSENSUS_FILE"
 exit 0
@@ -99,11 +103,18 @@ echo "$output" | grep -q "issue-42" || {
     test_fail "Expected issue-42 artifact prefix in output"
 }
 
-# Verify gh issue create was called
+# Verify gh issue create was called with placeholder title format
 grep -q "gh issue create" "$GH_CALL_LOG" || {
     echo "GH call log:" >&2
     cat "$GH_CALL_LOG" >&2
     test_fail "Expected gh issue create to be called"
+}
+
+# Verify placeholder title uses "[plan] placeholder:" format
+grep -q '\[plan\] placeholder:' "$GH_CALL_LOG" || {
+    echo "GH call log:" >&2
+    cat "$GH_CALL_LOG" >&2
+    test_fail "Expected placeholder title with '[plan] placeholder:' prefix"
 }
 
 # Verify gh issue edit --add-label was called for publishing
@@ -111,6 +122,13 @@ grep -q "add-label.*agentize:plan" "$GH_CALL_LOG" || {
     echo "GH call log:" >&2
     cat "$GH_CALL_LOG" >&2
     test_fail "Expected gh issue edit --add-label agentize:plan to be called"
+}
+
+# Verify final title was extracted from consensus header (not the raw feature description)
+grep -q '\[plan\] Improved Test Feature' "$GH_CALL_LOG" || {
+    echo "GH call log:" >&2
+    cat "$GH_CALL_LOG" >&2
+    test_fail "Expected final title extracted from consensus 'Implementation Plan:' header"
 }
 
 # ── Test 2: --dry-run skips issue creation ──
