@@ -79,4 +79,58 @@ if ! echo "$output" | grep -q "reload\|exec"; then
     test_fail "Output should include shell reload instructions"
 fi
 
-test_pass "lol upgrade correctly runs make setup after git pull"
+# Test 4: Verify claude plugin update is called when claude is available
+test_info "Test 4: claude plugin update is called when claude is available"
+
+# Create a mock claude binary that logs its arguments
+MOCK_BIN_DIR="$TMP_DIR/mock-bin"
+mkdir -p "$MOCK_BIN_DIR"
+CLAUDE_LOG="$TMP_DIR/claude-calls.log"
+cat > "$MOCK_BIN_DIR/claude" << 'MOCKEOF'
+#!/usr/bin/env bash
+echo "$@" >> "$(dirname "$0")/../claude-calls.log"
+exit 0
+MOCKEOF
+chmod +x "$MOCK_BIN_DIR/claude"
+
+# Prepend mock bin to PATH so `command -v claude` finds our mock
+export PATH="$MOCK_BIN_DIR:$PATH"
+
+# Remove stale marker and re-run upgrade
+rm -f "$MOCK_AGENTIZE_HOME/setup-was-called.marker"
+rm -f "$CLAUDE_LOG"
+
+output=$(lol_cmd_upgrade 2>&1) || true
+
+# Check that claude was called with plugin update arguments
+if [ ! -f "$CLAUDE_LOG" ]; then
+    echo "Output:"
+    echo "$output"
+    test_fail "claude was not called at all during upgrade"
+fi
+
+if ! grep -q "plugin.*update\|plugin.*marketplace" "$CLAUDE_LOG"; then
+    echo "Claude calls:"
+    cat "$CLAUDE_LOG"
+    test_fail "claude was not called with plugin update arguments"
+fi
+
+# Test 5: Verify upgrade succeeds when claude is NOT available
+test_info "Test 5: upgrade succeeds when claude is not available"
+
+# Remove mock claude from PATH
+export PATH="${PATH#$MOCK_BIN_DIR:}"
+
+# Remove stale marker
+rm -f "$MOCK_AGENTIZE_HOME/setup-was-called.marker"
+
+output=$(lol_cmd_upgrade 2>&1) || true
+
+# Upgrade should still succeed (make setup marker should exist)
+if [ ! -f "$MOCK_AGENTIZE_HOME/setup-was-called.marker" ]; then
+    echo "Output:"
+    echo "$output"
+    test_fail "upgrade failed when claude is not available"
+fi
+
+test_pass "lol upgrade correctly runs make setup and optional plugin update"
