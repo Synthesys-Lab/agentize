@@ -95,7 +95,7 @@ See [local_config_io.md](local_config_io.md) for details.
 
 Unified workflow definitions for handsoff mode. Centralizes workflow detection, issue extraction, and continuation prompts.
 
-**Self-contained design:** This module uses `get_agentize_home()` from `session_utils.py` for AGENTIZE_HOME resolution and includes its own `_run_acw()` helper to invoke the `acw` shell function without importing from `agentize.shell` or depending on `setup.sh`. This maintains plugin standalone capability.
+**Self-contained design:** This module includes its own `_run_acw()` helper to invoke the `acw` shell function via a local symlink (`lib/acw.sh` → `src/cli/acw.sh`), without importing from `agentize.shell` or depending on `setup.sh`. The symlink is resolved during plugin cache copy per [Claude Code plugin docs](https://code.claude.com/docs/en/plugins-reference#working-with-external-dependencies), making the plugin self-contained at install time.
 
 **Usage:**
 ```python

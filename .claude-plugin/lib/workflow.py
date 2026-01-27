@@ -171,8 +171,10 @@ def _run_acw(provider: str, model: str, input_file: str, output_file: str,
     Returns:
         subprocess.CompletedProcess result
     """
+    # Use local symlink (resolved during plugin cache copy) instead of
+    # traversing outside the plugin boundary via AGENTIZE_HOME.
+    acw_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'acw.sh')
     agentize_home = get_agentize_home()
-    acw_script = os.path.join(agentize_home, 'src', 'cli', 'acw.sh')
 
     # Build the bash command to source acw.sh and invoke acw function
     # Quote paths to handle spaces

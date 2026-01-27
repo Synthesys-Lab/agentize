@@ -415,14 +415,15 @@ class TestRunAcw:
         assert params == expected
 
     def test_sources_acw_correctly(self, tmp_path, monkeypatch):
-        """_run_acw() sources acw.sh correctly (mock test)"""
-        # Create mock AGENTIZE_HOME structure
-        mock_home = tmp_path / "mock_agentize"
-        cli_dir = mock_home / "src" / "cli"
-        cli_dir.mkdir(parents=True)
+        """_run_acw() sources acw.sh from local symlink (mock test)"""
+        import lib.workflow as wf_module
+
+        # Create mock lib directory with acw.sh
+        mock_lib = tmp_path / "mock_lib"
+        mock_lib.mkdir()
 
         # Create mock acw.sh that writes to output file
-        acw_sh = cli_dir / "acw.sh"
+        acw_sh = mock_lib / "acw.sh"
         acw_sh.write_text('''acw() {
     # Real acw writes to 4th argument (output_file)
     local output_file="$4"
@@ -430,12 +431,18 @@ class TestRunAcw:
 }
 ''')
 
+        # Create mock AGENTIZE_HOME (still needed for env setup)
+        mock_home = tmp_path / "mock_agentize"
+        mock_home.mkdir()
+        monkeypatch.setenv('AGENTIZE_HOME', str(mock_home))
+
+        # Patch __file__ in the workflow module so _run_acw() finds mock acw.sh
+        monkeypatch.setattr(wf_module, '__file__', str(mock_lib / 'workflow.py'))
+
         # Create input file
         input_file = tmp_path / "input.txt"
         input_file.write_text("test input")
         output_file = tmp_path / "output.txt"
-
-        monkeypatch.setenv('AGENTIZE_HOME', str(mock_home))
 
         result = _run_acw('claude', 'opus', str(input_file), str(output_file), [])
         assert result.returncode == 0
