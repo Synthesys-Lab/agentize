@@ -10,16 +10,20 @@ planner: Multi-agent debate pipeline CLI
 Runs the ultra-planner multi-agent debate pipeline using independent CLI
 sessions with file-based I/O and parallel critique and reducer stages.
 
+Note: The preferred entrypoint is `lol plan`. The `planner` command is
+retained as a legacy alias.
+
 Usage:
-  planner plan [--issue] "<feature-description>"
+  planner plan [--dry-run] [--verbose] "<feature-description>"
   planner --help
 
 Subcommands:
   plan          Run the full multi-agent debate pipeline for a feature
 
 Options:
-  --issue       Create a placeholder GitHub issue and publish the consensus
-                plan with the agentize:plan label (requires gh CLI)
+  --dry-run     Skip GitHub issue creation; use timestamp-based artifacts
+                (default creates a GitHub issue when gh is available)
+  --verbose     Print detailed stage logs (quiet by default)
   --help        Show this help message
 
 Pipeline Stages:
@@ -29,11 +33,13 @@ Pipeline Stages:
   4. Reducer        (opus)    - Simplify proposal (parallel)
   5. Consensus      (external) - Synthesize final plan
 
-Artifacts are written to .tmp/ with timestamp-based naming (or issue-{N} with --issue).
+Artifacts are written to .tmp/ with issue-{N} naming (default) or
+timestamp-based naming (with --dry-run).
 
 Examples:
   planner plan "Add user authentication with JWT tokens"
-  planner plan --issue "Refactor database layer for connection pooling"
+  planner plan --dry-run "Refactor database layer for connection pooling"
+  planner plan --verbose "Add real-time notifications"
 EOF
 }
 
@@ -56,23 +62,42 @@ planner() {
 
     case "$subcommand" in
         plan)
-            # Parse --issue flag
-            local issue_mode="false"
-            if [ "$1" = "--issue" ]; then
-                issue_mode="true"
-                shift
-            fi
+            # Parse flags
+            local issue_mode="true"
+            local verbose="false"
+
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --dry-run)
+                        issue_mode="false"
+                        shift
+                        ;;
+                    --verbose)
+                        verbose="true"
+                        shift
+                        ;;
+                    -*)
+                        echo "Error: Unknown option '$1'" >&2
+                        echo "" >&2
+                        echo "Usage: planner plan [--dry-run] [--verbose] \"<feature-description>\"" >&2
+                        return 1
+                        ;;
+                    *)
+                        break
+                        ;;
+                esac
+            done
 
             # Validate feature description is provided
             if [ -z "$1" ]; then
                 echo "Error: Feature description is required." >&2
                 echo "" >&2
-                echo "Usage: planner plan [--issue] \"<feature-description>\"" >&2
+                echo "Usage: planner plan [--dry-run] [--verbose] \"<feature-description>\"" >&2
                 return 1
             fi
 
             local feature_desc="$1"
-            _planner_run_pipeline "$feature_desc" "$issue_mode"
+            _planner_run_pipeline "$feature_desc" "$issue_mode" "$verbose"
             ;;
         *)
             echo "Error: Unknown subcommand '$subcommand'" >&2

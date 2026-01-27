@@ -80,6 +80,9 @@ lol() {
         claude-clean)
             _lol_parse_claude_clean "$@"
             ;;
+        plan)
+            _lol_parse_plan "$@"
+            ;;
         usage)
             _lol_parse_usage "$@"
             ;;
@@ -98,6 +101,7 @@ lol() {
             echo "  lol project --associate <owner>/<id>"
             echo "  lol project --automation [--write <path>]"
             echo "  lol serve"
+            echo "  lol plan [--dry-run] [--verbose] \"<feature-description>\""
             echo "  lol usage [--today | --week] [--cache] [--cost]"
             echo "  lol claude-clean [--dry-run]"
             echo ""
@@ -109,7 +113,8 @@ lol() {
             echo "  --write <path>      Write automation template to file (project)"
             echo "  --org <owner>       GitHub owner: organization or user (project --create)"
             echo "  --title <title>     Project title (project --create)"
-            echo "  --dry-run           Preview changes without modifying (claude-clean)"
+            echo "  --dry-run           Skip issue creation (plan) or preview changes (claude-clean)"
+            echo "  --verbose           Print detailed stage logs (plan)"
             echo ""
             echo "Server configuration (.agentize.local.yaml):"
             echo "  server.period       Polling interval (default: 5m)"
@@ -125,6 +130,8 @@ lol() {
             echo "  lol serve                       # Start server (config in .agentize.local.yaml)"
             echo "  lol claude-clean --dry-run      # Preview stale entries"
             echo "  lol claude-clean                # Remove stale entries"
+            echo "  lol plan \"Add JWT auth\"        # Run planning pipeline"
+            echo "  lol plan --dry-run \"Refactor\"  # Plan without creating issue"
             return 1
             ;;
     esac

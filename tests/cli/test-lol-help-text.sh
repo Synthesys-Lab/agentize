@@ -26,4 +26,7 @@ echo "$output" | grep -q "claude-clean" || test_fail "Usage text missing 'claude
 # Verify usage text includes lol usage command
 echo "$output" | grep -q "lol usage" || test_fail "Usage text missing 'lol usage' command"
 
+# Verify usage text includes lol plan command
+echo "$output" | grep -q "lol plan" || test_fail "Usage text missing 'lol plan' command"
+
 test_pass "lol usage text includes documented commands"

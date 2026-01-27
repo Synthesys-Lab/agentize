@@ -2,7 +2,7 @@
 
 # Zsh completion for lol (AI-powered SDK CLI)
 # Provides interactive command-line hints for lol subcommands and flags
-# Supports: upgrade, project, usage, version, serve, claude-clean
+# Supports: upgrade, project, plan, usage, version, serve, claude-clean
 
 _lol() {
     local curcontext="$curcontext" state line
@@ -19,6 +19,7 @@ _lol() {
     if (( ${#commands} == 0 )); then
         commands=(
             'claude-clean:Remove stale Claude config entries'
+            'plan:Run multi-agent debate pipeline'
             'upgrade:Upgrade agentize installation'
             'project:Manage GitHub Projects v2 integration'
             'serve:Start polling server for GitHub Projects automation'
@@ -31,6 +32,7 @@ _lol() {
         for cmd in $commands; do
             case $cmd in
                 claude-clean) commands_with_desc+=('claude-clean:Remove stale Claude config entries') ;;
+                plan) commands_with_desc+=('plan:Run multi-agent debate pipeline') ;;
                 upgrade) commands_with_desc+=('upgrade:Upgrade agentize installation') ;;
                 project) commands_with_desc+=('project:Manage GitHub Projects v2 integration') ;;
                 serve) commands_with_desc+=('serve:Start polling server for GitHub Projects automation') ;;
@@ -54,6 +56,9 @@ _lol() {
                 claude-clean)
                     _lol_claude_clean
                     ;;
+                plan)
+                    _lol_plan
+                    ;;
                 upgrade)
                     _lol_upgrade
                     ;;
@@ -72,6 +77,14 @@ _lol() {
             esac
             ;;
     esac
+}
+
+# Completion for 'lol plan' subcommand
+_lol_plan() {
+    _arguments \
+        '--dry-run[Skip GitHub issue creation; use timestamp-based artifacts]' \
+        '--verbose[Print detailed stage logs]' \
+        ':feature description:'
 }
 
 # Completion for 'lol upgrade' subcommand

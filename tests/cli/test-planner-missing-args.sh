@@ -24,4 +24,12 @@ planner plan > /dev/null 2>&1 && test_fail "planner plan with no description sho
 # Verify it mentions the missing description
 echo "$output2" | grep -qi "description\|feature\|required" || test_fail "Missing description output should mention what's required"
 
+# Run lol plan with no feature description (lol plan entrypoint)
+source "$PROJECT_ROOT/src/cli/lol.sh"
+output3=$(lol plan 2>&1 || true)
+lol plan > /dev/null 2>&1 && test_fail "lol plan with no description should exit non-zero"
+
+# Verify lol plan error mentions what's required
+echo "$output3" | grep -qi "description\|feature\|required" || test_fail "lol plan missing description output should mention what's required"
+
 test_pass "planner with no args exits non-zero and prints usage"

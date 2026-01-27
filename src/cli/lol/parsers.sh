@@ -180,3 +180,68 @@ _lol_parse_usage() {
 
     lol_cmd_usage "$mode" "$cache" "$cost"
 }
+
+# Parse plan command arguments and call lol_cmd_plan
+_lol_parse_plan() {
+    local dry_run="false"
+    local verbose="false"
+    local feature_desc=""
+
+    # Handle --help
+    if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+        echo "lol plan: Run the multi-agent debate pipeline"
+        echo ""
+        echo "Usage: lol plan [--dry-run] [--verbose] \"<feature-description>\""
+        echo ""
+        echo "Options:"
+        echo "  --dry-run    Skip GitHub issue creation; use timestamp-based artifacts"
+        echo "  --verbose    Print detailed stage logs (quiet by default)"
+        echo "  --help       Show this help message"
+        return 0
+    fi
+
+    # Parse arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --dry-run)
+                dry_run="true"
+                shift
+                ;;
+            --verbose)
+                verbose="true"
+                shift
+                ;;
+            -*)
+                echo "Error: Unknown option '$1'" >&2
+                echo "Usage: lol plan [--dry-run] [--verbose] \"<feature-description>\"" >&2
+                return 1
+                ;;
+            *)
+                if [ -z "$feature_desc" ]; then
+                    feature_desc="$1"
+                else
+                    echo "Error: Unexpected argument '$1'" >&2
+                    echo "Usage: lol plan [--dry-run] [--verbose] \"<feature-description>\"" >&2
+                    return 1
+                fi
+                shift
+                ;;
+        esac
+    done
+
+    # Validate feature description
+    if [ -z "$feature_desc" ]; then
+        echo "Error: Feature description is required." >&2
+        echo "" >&2
+        echo "Usage: lol plan [--dry-run] [--verbose] \"<feature-description>\"" >&2
+        return 1
+    fi
+
+    # Convert --dry-run to issue_mode (inverse logic)
+    local issue_mode="true"
+    if [ "$dry_run" = "true" ]; then
+        issue_mode="false"
+    fi
+
+    lol_cmd_plan "$feature_desc" "$issue_mode" "$verbose"
+}

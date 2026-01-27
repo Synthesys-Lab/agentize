@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Test: Pipeline flow with stubbed acw and consensus script
+# Tests both default (quiet) mode and --verbose mode
 
 source "$(dirname "$0")/../common.sh"
 
@@ -67,10 +68,10 @@ chmod +x "$STUB_CONSENSUS"
 # Override the consensus script path used by pipeline
 export _PLANNER_CONSENSUS_SCRIPT="$STUB_CONSENSUS"
 
-# Run the pipeline with a test feature description
-output=$(planner plan "Add a test feature for validation" 2>&1) || {
+# ── Test 1: --dry-run mode (skips issue creation, uses timestamp artifacts) ──
+output=$(planner plan --dry-run "Add a test feature for validation" 2>&1) || {
     echo "Pipeline output: $output" >&2
-    test_fail "planner plan exited with non-zero status"
+    test_fail "planner plan --dry-run exited with non-zero status"
 }
 
 # Verify acw was called (at least for understander and bold stages)
@@ -92,6 +93,20 @@ fi
 echo "$output" | grep -q "consensus\|Consensus" || {
     echo "Pipeline output: $output" >&2
     test_fail "Pipeline output should reference consensus plan"
+}
+
+# ── Test 2: --verbose mode outputs detailed stage info ──
+> "$CALL_LOG"
+
+output_verbose=$(planner plan --dry-run --verbose "Add verbose test feature" 2>&1) || {
+    echo "Pipeline output: $output_verbose" >&2
+    test_fail "planner plan --dry-run --verbose exited with non-zero status"
+}
+
+# Verbose output should include stage progress details
+echo "$output_verbose" | grep -q "Stage" || {
+    echo "Pipeline output: $output_verbose" >&2
+    test_fail "Verbose output should include stage progress"
 }
 
 test_pass "Pipeline generates all stage artifacts with stubbed acw and consensus"

@@ -15,6 +15,7 @@ lol_complete() {
             echo "usage"
             echo "serve"
             echo "claude-clean"
+            echo "plan"
             ;;
         project-modes)
             echo "--create"
@@ -39,6 +40,10 @@ lol_complete() {
             echo "--week"
             echo "--cache"
             echo "--cost"
+            ;;
+        plan-flags)
+            echo "--dry-run"
+            echo "--verbose"
             ;;
         *)
             # Unknown topic, return empty

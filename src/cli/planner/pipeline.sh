@@ -48,11 +48,28 @@ _planner_render_prompt() {
     fi
 }
 
+# Log a message to stderr, respecting verbose mode
+# Usage: _planner_log <verbose> <message>
+_planner_log() {
+    local verbose="$1"
+    shift
+    if [ "$verbose" = "true" ]; then
+        echo "$@" >&2
+    fi
+}
+
+# Log a stage header (always printed regardless of verbose)
+# Usage: _planner_stage <stage-label>
+_planner_stage() {
+    echo "$@" >&2
+}
+
 # Run the full multi-agent debate pipeline
-# Usage: _planner_run_pipeline "<feature-description>" [issue-mode]
+# Usage: _planner_run_pipeline "<feature-description>" [issue-mode] [verbose]
 _planner_run_pipeline() {
     local feature_desc="$1"
-    local issue_mode="${2:-false}"
+    local issue_mode="${2:-true}"
+    local verbose="${3:-false}"
     local repo_root="${AGENTIZE_HOME:-$(git rev-parse --show-toplevel 2>/dev/null)}"
     local timestamp
     timestamp=$(date +%Y%m%d-%H%M%S)
@@ -68,7 +85,7 @@ _planner_run_pipeline() {
         issue_number=$(_planner_issue_create "$feature_desc")
         if [ -n "$issue_number" ]; then
             prefix_name="issue-${issue_number}"
-            echo "Created placeholder issue #${issue_number}" >&2
+            _planner_stage "Created placeholder issue #${issue_number}"
         else
             echo "Warning: Issue creation failed, falling back to timestamp artifacts" >&2
             prefix_name="${timestamp}"
@@ -89,13 +106,13 @@ _planner_run_pipeline() {
     local reducer_input="${prefix}-reducer-input.md"
     local reducer_output="${prefix}-reducer.txt"
 
-    echo "Starting multi-agent debate pipeline..." >&2
-    echo "Feature: $feature_desc" >&2
-    echo "Artifacts prefix: ${prefix_name}" >&2
-    echo "" >&2
+    _planner_stage "Starting multi-agent debate pipeline..."
+    _planner_log "$verbose" "Feature: $feature_desc"
+    _planner_log "$verbose" "Artifacts prefix: ${prefix_name}"
+    _planner_log "$verbose" ""
 
     # ── Stage 1: Understander ──
-    echo "Stage 1/5: Running understander (sonnet)..." >&2
+    _planner_stage "Stage 1/5: Running understander (sonnet)..."
     _planner_render_prompt "$understander_input" \
         ".claude-plugin/agents/understander.md" \
         "false" \
@@ -109,11 +126,11 @@ _planner_run_pipeline() {
         echo "Error: Understander stage failed (exit code: $understander_exit)" >&2
         return 2
     fi
-    echo "  Understander complete: $understander_output" >&2
-    echo "" >&2
+    _planner_log "$verbose" "  Understander complete: $understander_output"
+    _planner_log "$verbose" ""
 
     # ── Stage 2: Bold-proposer ──
-    echo "Stage 2/5: Running bold-proposer (opus)..." >&2
+    _planner_stage "Stage 2/5: Running bold-proposer (opus)..."
     _planner_render_prompt "$bold_input" \
         ".claude-plugin/agents/bold-proposer.md" \
         "true" \
@@ -129,11 +146,11 @@ _planner_run_pipeline() {
         echo "Error: Bold-proposer stage failed (exit code: $bold_exit)" >&2
         return 2
     fi
-    echo "  Bold-proposer complete: $bold_output" >&2
-    echo "" >&2
+    _planner_log "$verbose" "  Bold-proposer complete: $bold_output"
+    _planner_log "$verbose" ""
 
     # ── Stage 3 & 4: Critique and Reducer (parallel) ──
-    echo "Stage 3-4/5: Running critique and reducer in parallel (opus)..." >&2
+    _planner_stage "Stage 3-4/5: Running critique and reducer in parallel (opus)..."
 
     # Critique
     _planner_render_prompt "$critique_input" \
@@ -167,17 +184,17 @@ _planner_run_pipeline() {
         echo "Error: Critique stage failed (exit code: $critique_exit)" >&2
         return 2
     fi
-    echo "  Critique complete: $critique_output" >&2
+    _planner_log "$verbose" "  Critique complete: $critique_output"
 
     if [ $reducer_exit -ne 0 ] || [ ! -s "$reducer_output" ]; then
         echo "Error: Reducer stage failed (exit code: $reducer_exit)" >&2
         return 2
     fi
-    echo "  Reducer complete: $reducer_output" >&2
-    echo "" >&2
+    _planner_log "$verbose" "  Reducer complete: $reducer_output"
+    _planner_log "$verbose" ""
 
     # ── Stage 5: External Consensus ──
-    echo "Stage 5/5: Running external consensus synthesis..." >&2
+    _planner_stage "Stage 5/5: Running external consensus synthesis..."
 
     local consensus_script="${_PLANNER_CONSENSUS_SCRIPT:-$repo_root/.claude-plugin/skills/external-consensus/scripts/external-consensus.sh}"
 
@@ -195,14 +212,14 @@ _planner_run_pipeline() {
         return 2
     fi
 
-    echo "" >&2
-    echo "Pipeline complete!" >&2
-    echo "Consensus plan: $consensus_path" >&2
-    echo "" >&2
+    _planner_log "$verbose" ""
+    _planner_stage "Pipeline complete!"
+    _planner_log "$verbose" "Consensus plan: $consensus_path"
+    _planner_log "$verbose" ""
 
     # Publish to GitHub issue if in issue mode and issue was created
     if [ "$issue_mode" = "true" ] && [ -n "$issue_number" ]; then
-        echo "Publishing plan to issue #${issue_number}..." >&2
+        _planner_stage "Publishing plan to issue #${issue_number}..."
         _planner_issue_publish "$issue_number" "$feature_desc" "$consensus_path" || {
             echo "Warning: Failed to publish plan to issue #${issue_number}" >&2
         }

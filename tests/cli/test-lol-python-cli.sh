@@ -14,6 +14,7 @@ output=$(python3 -m agentize.cli --complete commands 2>&1)
 echo "$output" | grep -q "^upgrade$" || test_fail "--complete commands missing: upgrade"
 echo "$output" | grep -q "^project$" || test_fail "--complete commands missing: project"
 echo "$output" | grep -q "^claude-clean$" || test_fail "--complete commands missing: claude-clean"
+echo "$output" | grep -q "^plan$" || test_fail "--complete commands missing: plan"
 # Verify apply command is NOT in commands list (it has been removed)
 if echo "$output" | grep -q "^apply$"; then
   test_fail "apply command should have been removed"

@@ -62,6 +62,17 @@ def handle_serve(args: argparse.Namespace, agentize_home: str) -> int:
     return run_shell_command(cmd, agentize_home)
 
 
+def handle_plan(args: argparse.Namespace, agentize_home: str) -> int:
+    """Handle plan command."""
+    if not args.description:
+        print("Error: Feature description is required.", file=sys.stderr)
+        return 1
+    issue_mode = "false" if args.dry_run else "true"
+    verbose = "true" if args.verbose else "false"
+    cmd = f'lol_cmd_plan "{args.description}" "{issue_mode}" "{verbose}"'
+    return run_shell_command(cmd, agentize_home)
+
+
 def handle_claude_clean(args: argparse.Namespace, agentize_home: str) -> int:
     """Handle claude-clean command."""
     dry_run = "1" if args.dry_run else "0"
@@ -144,6 +155,26 @@ def main() -> int:
         "--cost", action="store_true", help="Show estimated USD cost column"
     )
 
+    # plan command
+    plan_parser = subparsers.add_parser(
+        "plan", help="Run multi-agent debate pipeline"
+    )
+    plan_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Skip GitHub issue creation; use timestamp-based artifacts",
+    )
+    plan_parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Print detailed stage logs (quiet by default)",
+    )
+    plan_parser.add_argument(
+        "description",
+        nargs="?",
+        help="Feature description for the planning pipeline",
+    )
+
     # claude-clean command
     claude_clean_parser = subparsers.add_parser(
         "claude-clean", help="Remove stale project entries from ~/.claude.json"
@@ -173,6 +204,8 @@ def main() -> int:
         return handle_serve(args, agentize_home)
     elif args.command == "usage":
         return handle_usage(args)
+    elif args.command == "plan":
+        return handle_plan(args, agentize_home)
     elif args.command == "claude-clean":
         return handle_claude_clean(args, agentize_home)
     elif args.command == "version":

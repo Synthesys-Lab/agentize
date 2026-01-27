@@ -19,6 +19,8 @@ fi
 PRIVATE_HELPERS=(
     "_planner_run_pipeline"
     "_planner_render_prompt"
+    "_planner_issue_create"
+    "_planner_issue_publish"
 )
 
 for func in "${PRIVATE_HELPERS[@]}"; do

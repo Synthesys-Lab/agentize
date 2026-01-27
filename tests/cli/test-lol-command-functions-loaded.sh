@@ -17,6 +17,7 @@ EXPECTED_FUNCTIONS=(
     "lol_cmd_project"
     "lol_cmd_serve"
     "lol_cmd_claude_clean"
+    "lol_cmd_plan"
 )
 
 # Check each function is defined (shell-agnostic approach)

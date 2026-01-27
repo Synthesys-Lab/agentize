@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Test: planner plan --issue uses issue-based artifact prefix and publishes plan
+# Test: planner default issue creation and --dry-run skip
+# Default behavior creates an issue; --dry-run skips issue creation
 
 source "$(dirname "$0")/../common.sh"
 
 PLANNER_CLI="$PROJECT_ROOT/src/cli/planner.sh"
 
-test_info "planner --issue creates issue-prefixed artifacts and publishes plan"
+test_info "planner default creates issue, --dry-run skips issue creation"
 
 export AGENTIZE_HOME="$PROJECT_ROOT"
 source "$PLANNER_CLI"
@@ -86,10 +87,10 @@ STUBEOF
 chmod +x "$STUB_CONSENSUS"
 export _PLANNER_CONSENSUS_SCRIPT="$STUB_CONSENSUS"
 
-# ── Test 1: --issue flag uses issue-N prefix ──
-output=$(planner plan --issue "Add a test feature for validation" 2>&1) || {
+# ── Test 1: Default behavior creates issue (no --dry-run) ──
+output=$(planner plan "Add a test feature for validation" 2>&1) || {
     echo "Pipeline output: $output" >&2
-    test_fail "planner plan --issue exited with non-zero status"
+    test_fail "planner plan (default issue mode) exited with non-zero status"
 }
 
 # Verify issue-based artifact naming was used (issue-42 prefix)
@@ -112,7 +113,30 @@ grep -q "add-label.*agentize:plan" "$GH_CALL_LOG" || {
     test_fail "Expected gh issue edit --add-label agentize:plan to be called"
 }
 
-# ── Test 2: Fallback when gh fails ──
+# ── Test 2: --dry-run skips issue creation ──
+# Reset logs
+> "$GH_CALL_LOG"
+> "$ACW_CALL_LOG"
+
+output=$(planner plan --dry-run "Add another test feature" 2>&1) || {
+    echo "Pipeline output: $output" >&2
+    test_fail "planner plan --dry-run exited with non-zero status"
+}
+
+# Verify NO gh issue create was called
+if grep -q "gh issue create" "$GH_CALL_LOG"; then
+    echo "GH call log:" >&2
+    cat "$GH_CALL_LOG" >&2
+    test_fail "--dry-run should NOT call gh issue create"
+fi
+
+# Verify pipeline still completed (consensus referenced)
+echo "$output" | grep -q "consensus\|Consensus" || {
+    echo "Output: $output" >&2
+    test_fail "Pipeline should still complete with --dry-run"
+}
+
+# ── Test 3: Fallback when gh fails (default mode) ──
 # Reset logs
 > "$GH_CALL_LOG"
 > "$ACW_CALL_LOG"
@@ -124,9 +148,9 @@ gh() {
 }
 export -f gh 2>/dev/null || true
 
-output=$(planner plan --issue "Add another test feature" 2>&1) || {
+output=$(planner plan "Add fallback test feature" 2>&1) || {
     echo "Pipeline output: $output" >&2
-    test_fail "planner plan --issue should not fail when gh fails (fallback to timestamp)"
+    test_fail "planner plan should not fail when gh fails (fallback to timestamp)"
 }
 
 # Verify fallback warning was emitted
@@ -141,4 +165,4 @@ echo "$output" | grep -q "consensus\|Consensus" || {
     test_fail "Pipeline should still complete with timestamp fallback"
 }
 
-test_pass "planner --issue creates issue-prefixed artifacts and publishes plan"
+test_pass "planner default creates issue, --dry-run skips issue creation"

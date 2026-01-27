@@ -20,6 +20,7 @@ echo "$output" | grep -q "^version$" || test_fail "Missing command: version"
 echo "$output" | grep -q "^project$" || test_fail "Missing command: project"
 echo "$output" | grep -q "^usage$" || test_fail "Missing command: usage"
 echo "$output" | grep -q "^claude-clean$" || test_fail "Missing command: claude-clean"
+echo "$output" | grep -q "^plan$" || test_fail "Missing command: plan"
 
 # Verify apply command is NOT in the commands list (it has been removed)
 if echo "$output" | grep -q "^apply$"; then

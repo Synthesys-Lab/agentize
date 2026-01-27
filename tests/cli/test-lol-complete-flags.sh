@@ -41,6 +41,12 @@ echo "$usage_output" | grep -q "^--week$" || test_fail "usage-flags missing: --w
 echo "$usage_output" | grep -q "^--cache$" || test_fail "usage-flags missing: --cache"
 echo "$usage_output" | grep -q "^--cost$" || test_fail "usage-flags missing: --cost"
 
+# Test plan-flags
+plan_output=$(lol --complete plan-flags 2>/dev/null)
+
+echo "$plan_output" | grep -q "^--dry-run$" || test_fail "plan-flags missing: --dry-run"
+echo "$plan_output" | grep -q "^--verbose$" || test_fail "plan-flags missing: --verbose"
+
 # Test unknown topic returns empty
 unknown_output=$(lol --complete unknown-topic 2>/dev/null)
 if [ -n "$unknown_output" ]; then
