@@ -2,6 +2,7 @@
 
 import os
 import sys
+import urllib.request
 from pathlib import Path
 
 import pytest
@@ -48,3 +49,19 @@ def clear_local_config_cache():
     clear_cache()
     yield
     clear_cache()
+
+
+@pytest.fixture(autouse=True)
+def block_telegram_requests(monkeypatch):
+    """Prevent Telegram API calls during tests."""
+    original_urlopen = urllib.request.urlopen
+
+    def guard_urlopen(request, *args, **kwargs):
+        url = request.full_url if hasattr(request, "full_url") else str(request)
+        if isinstance(url, bytes):
+            url = url.decode("utf-8", errors="ignore")
+        if url.startswith("https://api.telegram.org/"):
+            raise RuntimeError("Telegram API requests are disabled during tests.")
+        return original_urlopen(request, *args, **kwargs)
+
+    monkeypatch.setattr(urllib.request, "urlopen", guard_urlopen)

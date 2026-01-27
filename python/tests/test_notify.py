@@ -127,3 +127,14 @@ class TestFormatWorkerCompletionMessage:
         )
         assert 'href="https://github.com/org/repo/issues/42"' in msg
         assert "/pull/" not in msg
+
+
+class TestTelegramApiBlocked:
+    """Regression tests ensuring Telegram API calls are blocked during tests."""
+
+    def test_telegram_api_urlopen_blocked(self):
+        """Verify that urlopen to api.telegram.org raises RuntimeError."""
+        import urllib.request
+
+        with pytest.raises(RuntimeError, match="Telegram API requests are disabled"):
+            urllib.request.urlopen("https://api.telegram.org/bot123/sendMessage")
