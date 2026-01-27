@@ -25,3 +25,4 @@ _PLANNER_DIR="$(_planner_script_dir)"
 # Source all modules in dependency order
 source "$_PLANNER_DIR/planner/dispatch.sh"
 source "$_PLANNER_DIR/planner/pipeline.sh"
+source "$_PLANNER_DIR/planner/github.sh"

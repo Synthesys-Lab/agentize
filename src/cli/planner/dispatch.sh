@@ -11,13 +11,15 @@ Runs the ultra-planner multi-agent debate pipeline using independent CLI
 sessions with file-based I/O and parallel critique and reducer stages.
 
 Usage:
-  planner plan "<feature-description>"
+  planner plan [--issue] "<feature-description>"
   planner --help
 
 Subcommands:
   plan          Run the full multi-agent debate pipeline for a feature
 
 Options:
+  --issue       Create a placeholder GitHub issue and publish the consensus
+                plan with the agentize:plan label (requires gh CLI)
   --help        Show this help message
 
 Pipeline Stages:
@@ -27,11 +29,11 @@ Pipeline Stages:
   4. Reducer        (opus)    - Simplify proposal (parallel)
   5. Consensus      (external) - Synthesize final plan
 
-Artifacts are written to .tmp/ with timestamp-based naming.
+Artifacts are written to .tmp/ with timestamp-based naming (or issue-{N} with --issue).
 
 Examples:
   planner plan "Add user authentication with JWT tokens"
-  planner plan "Refactor database layer for connection pooling"
+  planner plan --issue "Refactor database layer for connection pooling"
 EOF
 }
 
@@ -54,16 +56,23 @@ planner() {
 
     case "$subcommand" in
         plan)
+            # Parse --issue flag
+            local issue_mode="false"
+            if [ "$1" = "--issue" ]; then
+                issue_mode="true"
+                shift
+            fi
+
             # Validate feature description is provided
             if [ -z "$1" ]; then
                 echo "Error: Feature description is required." >&2
                 echo "" >&2
-                echo "Usage: planner plan \"<feature-description>\"" >&2
+                echo "Usage: planner plan [--issue] \"<feature-description>\"" >&2
                 return 1
             fi
 
             local feature_desc="$1"
-            _planner_run_pipeline "$feature_desc"
+            _planner_run_pipeline "$feature_desc" "$issue_mode"
             ;;
         *)
             echo "Error: Unknown subcommand '$subcommand'" >&2

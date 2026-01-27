@@ -49,9 +49,10 @@ _planner_render_prompt() {
 }
 
 # Run the full multi-agent debate pipeline
-# Usage: _planner_run_pipeline "<feature-description>"
+# Usage: _planner_run_pipeline "<feature-description>" [issue-mode]
 _planner_run_pipeline() {
     local feature_desc="$1"
+    local issue_mode="${2:-false}"
     local repo_root="${AGENTIZE_HOME:-$(git rev-parse --show-toplevel 2>/dev/null)}"
     local timestamp
     timestamp=$(date +%Y%m%d-%H%M%S)
@@ -59,7 +60,24 @@ _planner_run_pipeline() {
     # Ensure .tmp directory exists
     mkdir -p "$repo_root/.tmp"
 
-    local prefix="$repo_root/.tmp/${timestamp}"
+    # Determine artifact prefix: issue-N or timestamp
+    local issue_number=""
+    local prefix_name=""
+
+    if [ "$issue_mode" = "true" ]; then
+        issue_number=$(_planner_issue_create "$feature_desc")
+        if [ -n "$issue_number" ]; then
+            prefix_name="issue-${issue_number}"
+            echo "Created placeholder issue #${issue_number}" >&2
+        else
+            echo "Warning: Issue creation failed, falling back to timestamp artifacts" >&2
+            prefix_name="${timestamp}"
+        fi
+    else
+        prefix_name="${timestamp}"
+    fi
+
+    local prefix="$repo_root/.tmp/${prefix_name}"
 
     # File paths for each stage
     local understander_input="${prefix}-understander-input.md"
@@ -73,7 +91,7 @@ _planner_run_pipeline() {
 
     echo "Starting multi-agent debate pipeline..." >&2
     echo "Feature: $feature_desc" >&2
-    echo "Artifacts prefix: ${timestamp}" >&2
+    echo "Artifacts prefix: ${prefix_name}" >&2
     echo "" >&2
 
     # ── Stage 1: Understander ──
@@ -181,6 +199,14 @@ _planner_run_pipeline() {
     echo "Pipeline complete!" >&2
     echo "Consensus plan: $consensus_path" >&2
     echo "" >&2
+
+    # Publish to GitHub issue if in issue mode and issue was created
+    if [ "$issue_mode" = "true" ] && [ -n "$issue_number" ]; then
+        echo "Publishing plan to issue #${issue_number}..." >&2
+        _planner_issue_publish "$issue_number" "$feature_desc" "$consensus_path" || {
+            echo "Warning: Failed to publish plan to issue #${issue_number}" >&2
+        }
+    fi
 
     # Output consensus path to stdout
     echo "$consensus_path"
