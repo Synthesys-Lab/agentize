@@ -46,6 +46,12 @@ lol_cmd_upgrade() (
             echo "Error: make setup failed after pull"
             exit 1
         fi
+        # Optional: update Claude plugin if claude is available
+        if command -v claude >/dev/null 2>&1; then
+            echo "Updating Claude plugin..."
+            claude plugin marketplace update agentize >/dev/null 2>&1 || true
+            claude plugin update agentize@agentize >/dev/null 2>&1 || true
+        fi
         echo ""
         echo "Upgrade successful! (pulled updates and rebuilt setup.sh)"
         echo ""

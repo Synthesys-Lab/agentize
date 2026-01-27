@@ -144,6 +144,20 @@ fi
 
 echo "Setup complete: $INSTALL_DIR/setup.sh"
 
+# Optional: register local Claude plugin marketplace if claude is available
+if command -v claude >/dev/null 2>&1; then
+    echo "Registering Claude Code plugin..."
+    claude plugin uninstall agentize@agentize >/dev/null 2>&1 || true
+    claude plugin marketplace remove agentize >/dev/null 2>&1 || true
+    claude plugin marketplace remove SyntheSys-Lab/agentize >/dev/null 2>&1 || true
+    claude plugin marketplace add "$INSTALL_DIR" || true
+    claude plugin install agentize@agentize || true
+    echo "Claude plugin registered"
+else
+    echo "Note: 'claude' CLI not found; skipping plugin registration."
+    echo "  To register later: claude plugin marketplace add $INSTALL_DIR"
+fi
+
 # Create user-wide .agentize.local.yaml if it doesn't exist
 LOCAL_CONFIG_FILE="$HOME/.agentize.local.yaml"
 if [ ! -f "$LOCAL_CONFIG_FILE" ]; then
