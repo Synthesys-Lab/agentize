@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Optional GitHub issue helpers for the planner CLI `--issue` mode. Encapsulates all `gh` CLI interactions so the pipeline module only needs to call `_planner_issue_create` and `_planner_issue_publish` without knowing the `gh` API details.
+Optional GitHub issue helpers for default issue creation; `--dry-run` skips issue creation. Encapsulates all `gh` CLI interactions so the pipeline module only needs to call `_planner_issue_create` and `_planner_issue_publish` without knowing the `gh` API details.
 
 ## Private Helpers
 

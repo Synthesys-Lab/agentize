@@ -19,7 +19,7 @@ The implementation is split into sourced modules in `lol/`:
 
 The `commands/` directory contains individual files for each command:
 - `upgrade.sh`, `version.sh`
-- `project.sh`, `serve.sh`, `claude-clean.sh`, `usage.sh`
+- `project.sh`, `serve.sh`, `claude-clean.sh`, `usage.sh`, `plan.sh`
 
 ## External Interface
 
@@ -35,7 +35,7 @@ lol <command> [options]
 ```
 
 **Parameters:**
-- `$1`: Command name (upgrade, project, usage, claude-clean, --version, --complete)
+- `$1`: Command name (upgrade, project, plan, usage, claude-clean, --version, --complete)
 - `$@`: Remaining arguments passed to command implementation
 
 **Return codes:**
@@ -50,6 +50,7 @@ lol <command> [options]
 **Commands:**
 - `upgrade`: Upgrade agentize installation
 - `project`: GitHub Projects v2 integration
+- `plan`: Run the multi-agent debate pipeline
 - `usage`: Report Claude Code token usage
 - `claude-clean`: Remove stale project entries from `~/.claude.json`
 - `--version`: Display version information
@@ -80,6 +81,7 @@ Shell-agnostic completion helper for completion systems.
 - `project-automation-flags`: List flags for `lol project --automation`
 - `claude-clean-flags`: List flags for `lol claude-clean`
 - `usage-flags`: List flags for `lol usage`
+- `plan-flags`: List flags for `lol plan`
 
 **Example:**
 ```bash
@@ -176,6 +178,29 @@ lol_cmd_project <mode> [arg1] [arg2] [arg3]
 **Return codes:**
 - `0`: Operation successful
 - `1`: Invalid mode, project not found, or API error
+
+### lol_cmd_plan()
+
+Run the multi-agent debate pipeline via `lol plan`.
+
+**Signature:**
+```bash
+lol_cmd_plan <feature_desc> <issue_mode> <verbose>
+```
+
+**Parameters:**
+- `feature_desc`: Feature description string (required)
+- `issue_mode`: `"true"` to create GitHub issue, `"false"` to skip (required)
+- `verbose`: `"true"` for detailed logs, `"false"` for quiet mode (required)
+
+**Operations:**
+1. Lazily load planner modules (sources `planner.sh` if not already loaded)
+2. Call `_planner_run_pipeline` with parsed flags
+
+**Return codes:**
+- `0`: Pipeline completed successfully
+- `1`: Missing or invalid arguments
+- `2`: Stage execution failure
 
 ### lol_cmd_claude_clean()
 

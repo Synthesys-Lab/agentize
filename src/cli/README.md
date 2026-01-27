@@ -14,7 +14,7 @@ Source-first libraries for Agentize CLI commands. These files are the canonical 
   - Handles providers: `claude`, `codex`, `opencode`, `cursor`
   - Interface documentation: `acw.md`
 
-- `planner.sh` - Ultra-planner CLI library (canonical source, thin loader)
+- `planner.sh` - Planner CLI library (legacy alias; prefer `lol plan`)
   - Sources modular files from `planner/` directory
   - Exports `planner` command for multi-agent debate pipeline
   - Handles subcommands: `plan`
@@ -42,7 +42,7 @@ Source-first libraries for Agentize CLI commands. These files are the canonical 
 - `lol.sh` - SDK CLI library (canonical source, thin loader)
   - Sources modular files from `lol/` directory
   - Exports `lol` command for SDK management
-  - Handles subcommands: `upgrade`, `project`, `serve`, `usage`, `claude-clean`, `version`
+  - Handles subcommands: `upgrade`, `project`, `plan`, `serve`, `usage`, `claude-clean`, `version`
   - Interface documentation: `lol.md`
 
 - `lol/` - SDK CLI modular implementation

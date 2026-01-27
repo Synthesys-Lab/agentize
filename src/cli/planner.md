@@ -2,16 +2,17 @@
 
 ## Purpose
 
-Thin loader for the planner CLI module. Sources modular implementation files from `planner/` directory following the same source-first pattern as `acw.sh`, `wt.sh`, and `lol.sh`.
+Thin loader for the planner CLI module. Sources modular implementation files from `planner/` directory following the same source-first pattern as `acw.sh`, `wt.sh`, and `lol.sh`. The preferred entrypoint is `lol plan`; `planner` is retained as a legacy alias.
 
 ## Public Entry Point
 
 ```bash
-planner plan [--issue] "<feature-description>"
+lol plan [--dry-run] [--verbose] "<feature-description>"
+planner plan [--dry-run] [--verbose] "<feature-description>"  # legacy alias
 planner --help
 ```
 
-`planner` is the only public function exported by this module.
+`planner` is the only public function exported by this module. `lol plan` delegates to the same `_planner_run_pipeline` function.
 
 ## Private Helpers
 

@@ -1,6 +1,6 @@
 # lol CLI
 
-The `lol` command provides SDK management utilities: upgrade, project management, usage reporting, and automation server capabilities.
+The `lol` command provides SDK management utilities: upgrade, project management, usage reporting, planning, and automation server capabilities.
 
 ## Entrypoints
 
@@ -113,6 +113,40 @@ lol usage
 # Show weekly usage by day
 lol usage --week
 ```
+
+### lol plan
+
+Run the multi-agent debate pipeline.
+
+```bash
+lol plan [--dry-run] [--verbose] "<feature-description>"
+```
+
+Runs the full multi-agent debate pipeline for a feature description, producing a consensus implementation plan. This is the preferred entrypoint for the planner pipeline.
+
+#### Options
+
+| Option | Required | Default | Description |
+|--------|----------|---------|-------------|
+| `--dry-run` | No | - | Skip GitHub issue creation; use timestamp-based artifacts |
+| `--verbose` | No | - | Print detailed stage logs (quiet by default) |
+
+By default, `lol plan` creates a GitHub issue when `gh` is available. Use `--dry-run` to skip issue creation and use timestamp-based artifact naming instead.
+
+#### Example
+
+```bash
+# Run pipeline with default issue creation
+lol plan "Add user authentication with JWT tokens"
+
+# Run pipeline without creating a GitHub issue
+lol plan --dry-run "Refactor database layer for connection pooling"
+
+# Run pipeline with detailed stage output
+lol plan --verbose "Add real-time notifications"
+```
+
+See [planner CLI](planner.md) for pipeline stage details and artifact naming.
 
 ### lol serve
 

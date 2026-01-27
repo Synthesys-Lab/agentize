@@ -1,11 +1,12 @@
 # planner CLI
 
-Standalone shell function that runs the multi-agent debate pipeline with file-based I/O, independent of Claude Code's `/ultra-planner` command.
+Standalone shell function that runs the multi-agent debate pipeline with file-based I/O, independent of Claude Code's `/ultra-planner` command. The preferred entrypoint is `lol plan`; the `planner` command is retained as a legacy alias.
 
 ## Usage
 
 ```bash
-planner plan [--issue] "<feature-description>"
+lol plan [--dry-run] [--verbose] "<feature-description>"
+planner plan [--dry-run] [--verbose] "<feature-description>"  # legacy alias
 planner --help
 ```
 
@@ -23,9 +24,17 @@ Runs the full multi-agent debate pipeline for a feature description:
 
 Both critique and reducer append plan-guideline content and run in parallel via background processes.
 
-### `--issue` (optional flag)
+### `--dry-run` (optional flag)
 
-When passed to `plan`, creates a placeholder GitHub issue before the pipeline runs and uses `issue-{N}` artifact naming instead of timestamp-based naming. After the consensus stage completes, the issue body is updated with the final plan and the `agentize:plan` label is applied.
+Skips GitHub issue creation and uses timestamp-based artifact naming. The pipeline still runs fully; only the issue creation/publish step is skipped.
+
+### `--verbose` (optional flag)
+
+Prints detailed stage logs. By default, the pipeline runs in quiet mode, printing only stage names and output paths.
+
+### Default Issue Creation
+
+By default, `plan` creates a placeholder GitHub issue before the pipeline runs and uses `issue-{N}` artifact naming. After the consensus stage completes, the issue body is updated with the final plan and the `agentize:plan` label is applied.
 
 Requires `gh` CLI to be installed and authenticated. If `gh` is unavailable or issue creation fails, logs a warning and falls back to timestamp-based artifact naming.
 

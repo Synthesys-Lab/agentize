@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Modular implementation of the `planner` CLI command for running the multi-agent debate pipeline from the shell.
+Modular implementation of the debate pipeline; `lol plan` is the preferred entrypoint (`planner` is a legacy alias).
 
 ## Contents
 

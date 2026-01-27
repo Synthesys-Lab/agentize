@@ -14,7 +14,7 @@ Modular implementation of the `lol` SDK CLI. These files are sourced by `lol.sh`
 | `commands.sh` | Thin loader that sources `commands/*.sh` | All `lol_cmd_*` functions |
 | `commands/` | Per-command implementation files | See below |
 | `dispatch.sh` | Main dispatcher and help text | `lol` |
-| `parsers.sh` | Argument parsing for each command | `lol_parse_project`, `lol_parse_serve`, `lol_parse_usage`, `lol_parse_claude_clean` |
+| `parsers.sh` | Argument parsing for each command | `lol_parse_project`, `lol_parse_serve`, `lol_parse_usage`, `lol_parse_claude_clean`, `lol_parse_plan` |
 
 ### commands/ Directory
 
@@ -26,6 +26,7 @@ Modular implementation of the `lol` SDK CLI. These files are sourced by `lol.sh`
 | `serve.sh` | `lol_cmd_serve` |
 | `claude-clean.sh` | `lol_cmd_claude_clean` |
 | `usage.sh` | `lol_cmd_usage` |
+| `plan.sh` | `lol_cmd_plan` |
 
 ## Load Order
 
