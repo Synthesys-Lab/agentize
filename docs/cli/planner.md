@@ -76,6 +76,25 @@ The `/ultra-planner` command remains the Claude Code interface for multi-agent p
 
 See `docs/feat/core/ultra-planner.md` and `docs/tutorial/01-ultra-planner.md` for the full `/ultra-planner` command documentation.
 
+## Visual Output
+
+When stderr is a TTY, `planner plan` emits visual feedback during pipeline execution:
+
+- **Colored "Feature:" label** — highlights the feature description at pipeline start.
+- **Animated stage dots** — expanding/contracting dot pattern (`.. ... .... ..... .... ...`) while each stage runs.
+- **Per-agent timing** — logs elapsed seconds after each stage completes (e.g., `understander agent runs 12s`).
+- **Styled issue line** — when `--issue` succeeds, prints `issue created: <url>` at pipeline end.
+
+### Environment Toggles
+
+| Variable | Effect |
+|----------|--------|
+| `NO_COLOR=1` | Disables all color output (respects [no-color.org](https://no-color.org) convention) |
+| `PLANNER_NO_COLOR=1` | Disables planner-specific color output |
+| `PLANNER_NO_ANIM=1` | Disables dot animation (useful for CI or piped output) |
+
+Animation and color are automatically disabled when stderr is not a TTY.
+
 ## Exit Codes
 
 | Code | Meaning |

@@ -9,7 +9,7 @@ Modular implementation of the debate pipeline; `lol plan` is the preferred entry
 ```
 planner.sh           - Loader: determines script dir, sources modules
 planner/dispatch.sh  - Main dispatcher and help text
-planner/pipeline.sh  - Multi-agent pipeline orchestration
+planner/pipeline.sh  - Multi-agent pipeline orchestration + status rendering (color, timing, animation)
 planner/github.sh    - GitHub issue creation/update helpers
 ```
 

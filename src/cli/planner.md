@@ -32,6 +32,10 @@ planner/pipeline.sh  # Multi-agent pipeline orchestration
 planner/github.sh    # GitHub issue creation/update helpers
 ```
 
+## Output Behavior
+
+When stderr is a TTY, `planner plan` prints a colored "Feature:" label, per-stage animated dots, and per-agent elapsed time logs. Set `NO_COLOR=1` to disable color and `PLANNER_NO_ANIM=1` to disable animation.
+
 ## Design Rationale
 
 The planner CLI separates dispatch from pipeline logic so that the public interface (`planner plan`) remains stable while pipeline internals (stage ordering, prompt rendering, parallelism) can evolve independently. The `_planner_render_prompt` helper centralizes prompt assembly to ensure consistent plan-guideline injection across all stages that require it.
