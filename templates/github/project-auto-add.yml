@@ -1,5 +1,15 @@
 name: Add issues and PRs to project
 
+# IMPORTANT: This workflow requires a Classic Personal Access Token (PAT)
+# stored as the repository secret ADD_TO_PROJECT_PAT with these scopes:
+#
+#   - repo: Read issue/PR data from the repository
+#   - project: Full read/write access to Projects v2 boards
+#   - read:org: Resolve organization-level project URLs
+#
+# Missing scopes cause misleading errors (e.g., "Could not resolve to a node").
+# See templates/github/project-auto-add.md for setup instructions.
+
 on:
   issues:
     types:

@@ -149,8 +149,12 @@ If not, put the following message to the summary in Step 7:
 ```
 To enable automation, add a GitHub Actions secret:
   Name: ADD_TO_PROJECT_PAT
-  Value: A personal access token with project scope
-This shall be found at `https://github.com/Synthesys-Lab/agentize/blob/main/docs/tutorial/04a-project.md`
+  Value: A Classic Personal Access Token with these scopes:
+    - repo (read issue/PR data from the repository)
+    - project (read/write access to Projects v2 boards)
+    - read:org (resolve org-level project URLs)
+  Note: Fine-grained PATs are not supported by actions/add-to-project@v1.0.2
+Setup guide: docs/tutorial/04a-project.md
 ```
 
 ### Step 5: Verify and Create Status Field Options

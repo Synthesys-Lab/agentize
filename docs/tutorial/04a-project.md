@@ -38,9 +38,15 @@ Give your token a descriptive name (e.g., `agentize-project-automation`).
 
 ![Give a Name to PAT](images/give-a-name-to-pat.png)
 
-## Step 6: Grant Project Permissions
+## Step 6: Grant Required Permissions
 
-Scroll down and check the **project** scope under permissions. This allows the workflow to add issues to your project board.
+Scroll down and check the following scopes under permissions:
+
+1. **`repo`** — allows reading issue and PR data from the repository
+2. **`project`** — allows full read/write access to Projects v2 boards
+3. **`read:org`** — allows resolving organization-level project URLs
+
+All three scopes are required for org-level Projects v2 boards.
 
 ![Give Project Permission](images/give-proj-permission.png)
 
@@ -73,6 +79,10 @@ Once configured, any new issue created in your repository will automatically be 
 3. Confirming the issue appears in your project board
 
 ## Troubleshooting
+
+**Workflow fails with "Could not resolve to a node with the global id"**
+- This is a misleading error caused by missing PAT scopes
+- Ensure the Classic PAT has all three scopes: `repo`, `project`, `read:org`
 
 **Workflow fails with "Resource not accessible by integration"**
 - Ensure the PAT has the `project` scope

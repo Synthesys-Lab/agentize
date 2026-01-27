@@ -82,19 +82,32 @@ env:
 
 ### Repository Secret
 
-You must create a Personal Access Token (PAT) and store it as a repository secret:
+You must create a **Classic** Personal Access Token (PAT) and store it as a repository secret.
+
+> **Important**: Fine-grained PATs are not supported by `actions/add-to-project@v1.0.2`. You must use a Classic PAT.
 
 **Secret name**: `ADD_TO_PROJECT_PAT`
 
-**Required permissions**:
-- `project`: Read and write (for adding items and updating fields)
-- `metadata`: Read-only (automatically granted)
+**Required Classic PAT scopes**:
+
+| Scope | Why |
+|-------|-----|
+| `repo` | Read issue and PR data from the repository |
+| `project` | Full read/write access to Projects v2 (adding items, updating fields) |
+| `read:org` | Resolve organization-level project URLs |
+
+All three scopes are required for org-level Projects v2 boards. Missing any scope causes misleading errors — for example, a missing `repo` or `read:org` scope produces `"Could not resolve to a node with the global id"` rather than a permissions error.
+
+**Common mistakes**:
+- Using `read:project` instead of `project` — read-only is insufficient since the action creates entries
+- Omitting `repo` — the action needs to read issue/PR data to add them to the project
+- Omitting `read:org` — required to resolve the org-level project URL
 
 **Creation**:
 ```bash
 # Create the secret using GitHub CLI
 gh secret set ADD_TO_PROJECT_PAT
-# Paste your PAT when prompted
+# Paste your Classic PAT when prompted
 ```
 
 Or use the GitHub web interface: **Settings** > **Secrets and variables** > **Actions** > **New repository secret**
@@ -227,6 +240,14 @@ To set a Status value for newly opened PRs:
 
 3. **Issue already closed**: The script will skip issues that are already closed (no error, just logged).
 
+### "Could not resolve to a node" errors
+
+**Symptom**: Workflow fails with `"Could not resolve to a node with the global id of '...'"`
+
+**Cause**: The Classic PAT is missing required scopes (`repo`, `project`, or `read:org`). This is a permissions issue disguised as a node resolution error.
+
+**Fix**: Verify your Classic PAT has all three required scopes: `repo`, `project`, and `read:org`. See [Repository Secret](#repository-secret) above.
+
 ### Permission denied errors
 
 **Symptom**: Workflow fails with 403 or permission denied
@@ -234,9 +255,10 @@ To set a Status value for newly opened PRs:
 **Causes**:
 - PAT expired
 - PAT doesn't have `project` write permission
+- PAT doesn't have all required scopes (`repo`, `project`, `read:org`)
 - PAT's organization access was revoked
 
-**Fix**: Create a new PAT with correct permissions and update the `ADD_TO_PROJECT_PAT` secret
+**Fix**: Create a new Classic PAT with all required scopes and update the `ADD_TO_PROJECT_PAT` secret
 
 ### Rate limiting
 
