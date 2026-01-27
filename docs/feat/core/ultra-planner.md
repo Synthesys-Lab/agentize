@@ -379,6 +379,16 @@ Implements plan issue.
 
 **Output:** Implementation progress and milestone commits
 
+## CLI Implementation
+
+The debate pipeline described above is also available as a standalone shell function:
+
+```bash
+planner plan "<feature-description>"
+```
+
+This does not change the `/ultra-planner` command interface documented above. See `docs/cli/planner.md` for the CLI reference.
+
 ## Comparison to Previous Workflow
 
 | Aspect | Previous (v1) | Current (v2) |

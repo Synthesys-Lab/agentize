@@ -31,6 +31,13 @@ Tests for the `lol` (agentize) command:
 - `test-lol-project-*.sh` - Tests for `lol project` command
 - `test-agentize-cli-*-agentize-home.sh` - Tests for AGENTIZE_HOME validation
 
+### Planner CLI Tests (`test-planner-*`)
+
+- `test-planner-command-functions-loaded.sh` - Public/private function exposure test
+- `test-planner-help-text.sh` - Help text validation
+- `test-planner-missing-args.sh` - Missing args error handling
+- `test-planner-pipeline-stubbed.sh` - Pipeline flow with stubbed `acw` and consensus
+
 ### Other CLI Tests
 
 - `test-install-script.sh` - Tests the one-command installer script

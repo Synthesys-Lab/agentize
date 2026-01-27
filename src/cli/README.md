@@ -14,6 +14,12 @@ Source-first libraries for Agentize CLI commands. These files are the canonical 
   - Handles providers: `claude`, `codex`, `opencode`, `cursor`
   - Interface documentation: `acw.md`
 
+- `planner.sh` - Ultra-planner CLI library (canonical source, thin loader)
+  - Sources modular files from `planner/` directory
+  - Exports `planner` command for multi-agent debate pipeline
+  - Handles subcommands: `plan`
+  - Interface documentation: `planner.md`
+
 - `acw/` - Agent CLI Wrapper modular implementation
   - `helpers.sh` - Validation and utility functions
   - `providers.sh` - Provider-specific invocation functions
