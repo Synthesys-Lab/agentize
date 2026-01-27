@@ -58,6 +58,7 @@ Tests are also run automatically via `make test` and `make test-fast`.
 The `conftest.py` file provides:
 - `project_root`: Path to the repository root
 - `set_agentize_home`: Set `AGENTIZE_HOME` to a temporary directory for isolated tests
+- `block_telegram_requests` (autouse): Blocks all `urllib.request.urlopen` calls to `https://api.telegram.org/` during tests, preventing accidental production API calls
 - Automatic `PYTHONPATH` setup for `python/` and `.claude-plugin` imports
 
 ## Writing Tests
