@@ -1,7 +1,7 @@
 ---
 name: mega-proposal-critique
 description: Validate assumptions and analyze technical feasibility of BOTH proposals (bold + paranoia)
-tools: WebSearch, WebFetch, Grep, Glob, Read, Bash
+tools: WebSearch, WebFetch, Grep, Glob, Read
 model: opus
 ---
 
