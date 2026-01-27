@@ -220,7 +220,11 @@ _planner_run_pipeline() {
     # Publish to GitHub issue if in issue mode and issue was created
     if [ "$issue_mode" = "true" ] && [ -n "$issue_number" ]; then
         _planner_stage "Publishing plan to issue #${issue_number}..."
-        _planner_issue_publish "$issue_number" "$feature_desc" "$consensus_path" || {
+        local plan_title
+        plan_title=$(grep -m1 -E '^#[[:space:]]*(Implementation|Consensus) Plan:' "$consensus_path" \
+            | sed -E 's/^#[[:space:]]*(Implementation|Consensus) Plan:[[:space:]]*//')
+        [ -z "$plan_title" ] && plan_title="${feature_desc:0:50}"
+        _planner_issue_publish "$issue_number" "$plan_title" "$consensus_path" || {
             echo "Warning: Failed to publish plan to issue #${issue_number}" >&2
         }
     fi
