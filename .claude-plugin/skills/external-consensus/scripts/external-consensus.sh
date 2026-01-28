@@ -265,13 +265,13 @@ echo "Consensus Plan Summary:" >&2
 echo "- Feature: $FEATURE_NAME" >&2
 
 # Extract total LOC estimate (look for "Total:" or similar patterns)
-TOTAL_LOC=$(grep -i "total.*LOC" "$CONSENSUS_FILE" | head -1 | grep -o '\~[0-9][0-9]*[–-][0-9][0-9]*\|\~[0-9][0-9]*' | head -1)
+TOTAL_LOC=$(grep -i "total.*LOC" "$CONSENSUS_FILE" | head -1 | grep -oE '~?[0-9]+([–-][0-9]+)?' | head -1 || true)
 if [ -z "$TOTAL_LOC" ]; then
     TOTAL_LOC="Not specified"
 fi
 
 # Extract complexity rating
-COMPLEXITY=$(grep -i "total.*LOC" "$CONSENSUS_FILE" | head -1 | grep -o '([A-Za-z]*' | tr -d '(' | head -1)
+COMPLEXITY=$(grep -i "total.*LOC" "$CONSENSUS_FILE" | head -1 | grep -o '([A-Za-z]*' | tr -d '(' | head -1 || true)
 if [ -z "$COMPLEXITY" ]; then
     COMPLEXITY="Unknown"
 fi
@@ -286,7 +286,7 @@ fi
 echo "- Implementation Steps: $STEP_COUNT" >&2
 
 # Count risks
-RISK_COUNT=$(grep "^|" "$CONSENSUS_FILE" 2>/dev/null | grep -v "^| Risk" | grep -v "^|---" | wc -l | tr -d ' ')
+RISK_COUNT=$(grep "^|" "$CONSENSUS_FILE" 2>/dev/null | grep -v "^| Risk" | grep -v "^|---" | wc -l | tr -d ' ' || true)
 if [ "$RISK_COUNT" -eq 0 ]; then
     RISK_COUNT="Not specified"
 fi
