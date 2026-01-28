@@ -75,20 +75,73 @@ extract_feature_name() {
         || true
 }
 
-# Try to extract feature name from reports in priority order
-FEATURE_NAME="$(extract_feature_name "$REPORT1_PATH")"
-if [ -z "$FEATURE_NAME" ]; then
-    FEATURE_NAME="$(extract_feature_name "$REPORT2_PATH")"
+# Try to extract a fuller feature description from report text
+extract_feature_description() {
+    local report_path="$1"
+    local line=""
+    line=$(grep -iE "feature request|original user request|request is" "$report_path" 2>/dev/null | head -1 || true)
+    if [ -n "$line" ]; then
+        if echo "$line" | grep -q '"'; then
+            echo "$line" | sed -E 's/.*"([^"]+)".*/\1/' | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//'
+            return 0
+        fi
+        echo "$line" | sed -E 's/^.*[:\-][[:space:]]*//; s/^[[:space:]]+//; s/[[:space:]]+$//'
+        return 0
+    fi
+
+    # Fallback: first quoted string if available
+    local quoted=""
+    quoted=$(grep -oE '"[^"]{8,}"' "$report_path" 2>/dev/null | head -1 | tr -d '"' || true)
+    if [ -n "$quoted" ]; then
+        echo "$quoted"
+    fi
+}
+
+# Build a short title from a longer description
+summarize_feature_title() {
+    local desc="$1"
+    desc=$(printf '%s' "$desc" | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g; s/^[[:space:]]+//; s/[[:space:]]+$//; s/\"//g')
+    local max_len=72
+    local title="${desc:0:$max_len}"
+    if [ ${#desc} -gt $max_len ]; then
+        title="${title}..."
+    fi
+    echo "$title"
+}
+
+# Prefer a fuller description from report text
+FEATURE_DESCRIPTION="$(extract_feature_description "$REPORT1_PATH")"
+if [ -z "$FEATURE_DESCRIPTION" ]; then
+    FEATURE_DESCRIPTION="$(extract_feature_description "$REPORT2_PATH")"
 fi
-if [ -z "$FEATURE_NAME" ]; then
-    FEATURE_NAME="$(extract_feature_name "$REPORT3_PATH")"
+if [ -z "$FEATURE_DESCRIPTION" ]; then
+    FEATURE_DESCRIPTION="$(extract_feature_description "$REPORT3_PATH")"
 fi
+
+# Fall back to explicit name extraction only if description is missing
+FEATURE_NAME=""
+if [ -z "$FEATURE_DESCRIPTION" ]; then
+    FEATURE_NAME="$(extract_feature_name "$REPORT1_PATH")"
+    if [ -z "$FEATURE_NAME" ]; then
+        FEATURE_NAME="$(extract_feature_name "$REPORT2_PATH")"
+    fi
+    if [ -z "$FEATURE_NAME" ]; then
+        FEATURE_NAME="$(extract_feature_name "$REPORT3_PATH")"
+    fi
+    FEATURE_DESCRIPTION="$FEATURE_NAME"
+fi
+
+# Always derive a short title from the description when available
+if [ -n "$FEATURE_DESCRIPTION" ]; then
+    FEATURE_NAME="$(summarize_feature_title "$FEATURE_DESCRIPTION")"
+fi
+
 if [ -z "$FEATURE_NAME" ]; then
     FEATURE_NAME="Unknown Feature"
 fi
-
-# Use feature name as description
-FEATURE_DESCRIPTION="$FEATURE_NAME"
+if [ -z "$FEATURE_DESCRIPTION" ]; then
+    FEATURE_DESCRIPTION="$FEATURE_NAME"
+fi
 
 # Prepare input prompt file and consensus file with issue-based naming if available
 if [ -n "$ISSUE_NUMBER" ]; then
