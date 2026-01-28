@@ -110,11 +110,11 @@ grep -q "gh issue create" "$GH_CALL_LOG" || {
     test_fail "Expected gh issue create to be called"
 }
 
-# Verify placeholder title uses "[plan] placeholder:" format
-grep -q '\[plan\] placeholder:' "$GH_CALL_LOG" || {
+# Verify placeholder title uses "[plan][placeholder]" format
+grep -q '\[plan\]\[placeholder\]' "$GH_CALL_LOG" || {
     echo "GH call log:" >&2
     cat "$GH_CALL_LOG" >&2
-    test_fail "Expected placeholder title with '[plan] placeholder:' prefix"
+    test_fail "Expected placeholder title with '[plan][placeholder]' prefix"
 }
 
 # Verify gh issue edit --add-label was called for publishing
