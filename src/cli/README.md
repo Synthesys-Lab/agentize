@@ -19,6 +19,11 @@ Source-first libraries for Agentize CLI commands. These files are the canonical 
   - Exports internal `_planner_*` helpers only
   - Interface documentation: `planner.md`
 
+- `term/colors.sh` - Shared terminal styling helpers (label output + cursor clear)
+  - `term_color_enabled()` - Check if colors are allowed
+  - `term_label <label> <text> [style]` - Print styled label output
+  - `term_clear_line()` - Emit cursor clear sequence for animation
+
 - `acw/` - Agent CLI Wrapper modular implementation
   - `helpers.sh` - Validation and utility functions
   - `providers.sh` - Provider-specific invocation functions

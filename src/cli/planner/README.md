@@ -8,7 +8,7 @@ Internal pipeline module used by `lol plan`; the standalone `planner` command ha
 
 ```
 planner.sh           - Loader: determines script dir, sources modules
-planner/pipeline.sh  - Multi-agent pipeline orchestration + status rendering (color, timing, animation)
+planner/pipeline.sh  - Multi-agent pipeline orchestration + status rendering (timing, animation; styling via term helpers)
 planner/github.sh    - GitHub issue creation/update helpers
 ```
 
