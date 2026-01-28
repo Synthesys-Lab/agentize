@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# planner: Multi-agent debate pipeline CLI
-# This file is sourced by setup.sh and provides all planner functionality
+# planner: Multi-agent debate pipeline library (internal)
+# This file provides pipeline functionality used by lol plan
 # Source-first implementation following the acw.sh/wt.sh/lol.sh pattern
 #
 # Module structure:
-#   planner/dispatch.sh  - Main dispatcher and help text
 #   planner/pipeline.sh  - Multi-agent pipeline orchestration
+#   planner/github.sh    - GitHub issue creation/update helpers
 
 # Determine script directory for sourcing modules
 # Works in both sourced and executed contexts
@@ -23,6 +23,5 @@ _planner_script_dir() {
 _PLANNER_DIR="$(_planner_script_dir)"
 
 # Source all modules in dependency order
-source "$_PLANNER_DIR/planner/dispatch.sh"
 source "$_PLANNER_DIR/planner/pipeline.sh"
 source "$_PLANNER_DIR/planner/github.sh"
