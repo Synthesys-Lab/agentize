@@ -44,9 +44,10 @@ Generate a final implementation plan that follows the plan-guideline structure a
 - **Include dependencies** for each step so ordering is enforced.
 - **For every step, list correspondence** to documentation and test cases (what it updates, depends on, or satisfies).
 - **If this is a bug fix**, include Bug Reproduction (or explicit skip reason).
+- **No preamble**: Do not include any lead-in or meta commentary. The first line must be the plan title header.
 
 ```markdown
-# Implementation Plan: {{FEATURE_NAME}}
+# Implementation Plan: <Generate a concise, specific title from the feature request>
 
 ## Consensus Summary
 
