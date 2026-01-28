@@ -34,4 +34,11 @@ echo "$output" | grep -q "\[--dry-run\]" || test_fail "Help text missing '--dry-
 # Verify --verbose appears in usage line
 echo "$output" | grep -q "\[--verbose\]" || test_fail "Help text missing '--verbose' in usage line"
 
+# Verify backend flags are documented
+echo "$output" | grep -q "\-\-backend" || test_fail "Help text missing '--backend' flag"
+echo "$output" | grep -q "\-\-understander" || test_fail "Help text missing '--understander' flag"
+echo "$output" | grep -q "\-\-bold" || test_fail "Help text missing '--bold' flag"
+echo "$output" | grep -q "\-\-critique" || test_fail "Help text missing '--critique' flag"
+echo "$output" | grep -q "\-\-reducer" || test_fail "Help text missing '--reducer' flag"
+
 test_pass "planner --help output contains usage and plan subcommand with --dry-run and --verbose"

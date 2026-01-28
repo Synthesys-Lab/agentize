@@ -36,6 +36,7 @@ Tests for the `lol` (agentize) command:
 - `test-planner-command-functions-loaded.sh` - Public/private function exposure test
 - `test-planner-help-text.sh` - Help text validation
 - `test-planner-missing-args.sh` - Missing args error handling
+- `test-planner-backend-flags.sh` - Backend flag format validation
 - `test-planner-pipeline-stubbed.sh` - Pipeline flow with stubbed `acw` and consensus
 
 ### Other CLI Tests

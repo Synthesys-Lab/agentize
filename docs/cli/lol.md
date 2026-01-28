@@ -119,7 +119,10 @@ lol usage --week
 Run the multi-agent debate pipeline.
 
 ```bash
-lol plan [--dry-run] [--verbose] "<feature-description>"
+lol plan [--dry-run] [--verbose] [--backend <provider:model>] \
+  [--understander <provider:model>] [--bold <provider:model>] \
+  [--critique <provider:model>] [--reducer <provider:model>] \
+  "<feature-description>"
 ```
 
 Runs the full multi-agent debate pipeline for a feature description, producing a consensus implementation plan. This is the preferred entrypoint for the planner pipeline.
@@ -130,6 +133,11 @@ Runs the full multi-agent debate pipeline for a feature description, producing a
 |--------|----------|---------|-------------|
 | `--dry-run` | No | - | Skip GitHub issue creation; use timestamp-based artifacts |
 | `--verbose` | No | - | Print detailed stage logs (quiet by default) |
+| `--backend` | No | - | Default backend for all stages (provider:model) |
+| `--understander` | No | - | Override backend for understander stage |
+| `--bold` | No | - | Override backend for bold-proposer stage |
+| `--critique` | No | - | Override backend for critique stage |
+| `--reducer` | No | - | Override backend for reducer stage |
 
 By default, `lol plan` creates a GitHub issue when `gh` is available. Use `--dry-run` to skip issue creation and use timestamp-based artifact naming instead.
 
@@ -144,6 +152,9 @@ lol plan --dry-run "Refactor database layer for connection pooling"
 
 # Run pipeline with detailed stage output
 lol plan --verbose "Add real-time notifications"
+
+# Use a different backend for the understander stage
+lol plan --understander cursor:gpt-5.2-codex "Plan with cursor understander"
 ```
 
 See [planner CLI](planner.md) for pipeline stage details and artifact naming.

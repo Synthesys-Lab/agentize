@@ -185,17 +185,27 @@ _lol_parse_usage() {
 _lol_parse_plan() {
     local dry_run="false"
     local verbose="false"
+    local backend_default=""
+    local backend_understander=""
+    local backend_bold=""
+    local backend_critique=""
+    local backend_reducer=""
     local feature_desc=""
 
     # Handle --help
     if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
         echo "lol plan: Run the multi-agent debate pipeline"
         echo ""
-        echo "Usage: lol plan [--dry-run] [--verbose] \"<feature-description>\""
+        echo "Usage: lol plan [options] \"<feature-description>\""
         echo ""
         echo "Options:"
         echo "  --dry-run    Skip GitHub issue creation; use timestamp-based artifacts"
         echo "  --verbose    Print detailed stage logs (quiet by default)"
+        echo "  --backend    Default backend for all stages (provider:model)"
+        echo "  --understander Override backend for understander stage"
+        echo "  --bold       Override backend for bold-proposer stage"
+        echo "  --critique   Override backend for critique stage"
+        echo "  --reducer    Override backend for reducer stage"
         echo "  --help       Show this help message"
         return 0
     fi
@@ -211,9 +221,59 @@ _lol_parse_plan() {
                 verbose="true"
                 shift
                 ;;
+            --backend)
+                shift
+                if [ -z "$1" ]; then
+                    echo "Error: --backend requires provider:model" >&2
+                    echo "Usage: lol plan [options] \"<feature-description>\"" >&2
+                    return 1
+                fi
+                backend_default="$1"
+                shift
+                ;;
+            --understander)
+                shift
+                if [ -z "$1" ]; then
+                    echo "Error: --understander requires provider:model" >&2
+                    echo "Usage: lol plan [options] \"<feature-description>\"" >&2
+                    return 1
+                fi
+                backend_understander="$1"
+                shift
+                ;;
+            --bold)
+                shift
+                if [ -z "$1" ]; then
+                    echo "Error: --bold requires provider:model" >&2
+                    echo "Usage: lol plan [options] \"<feature-description>\"" >&2
+                    return 1
+                fi
+                backend_bold="$1"
+                shift
+                ;;
+            --critique)
+                shift
+                if [ -z "$1" ]; then
+                    echo "Error: --critique requires provider:model" >&2
+                    echo "Usage: lol plan [options] \"<feature-description>\"" >&2
+                    return 1
+                fi
+                backend_critique="$1"
+                shift
+                ;;
+            --reducer)
+                shift
+                if [ -z "$1" ]; then
+                    echo "Error: --reducer requires provider:model" >&2
+                    echo "Usage: lol plan [options] \"<feature-description>\"" >&2
+                    return 1
+                fi
+                backend_reducer="$1"
+                shift
+                ;;
             -*)
                 echo "Error: Unknown option '$1'" >&2
-                echo "Usage: lol plan [--dry-run] [--verbose] \"<feature-description>\"" >&2
+                echo "Usage: lol plan [options] \"<feature-description>\"" >&2
                 return 1
                 ;;
             *)
@@ -221,7 +281,7 @@ _lol_parse_plan() {
                     feature_desc="$1"
                 else
                     echo "Error: Unexpected argument '$1'" >&2
-                    echo "Usage: lol plan [--dry-run] [--verbose] \"<feature-description>\"" >&2
+                    echo "Usage: lol plan [options] \"<feature-description>\"" >&2
                     return 1
                 fi
                 shift
@@ -233,7 +293,7 @@ _lol_parse_plan() {
     if [ -z "$feature_desc" ]; then
         echo "Error: Feature description is required." >&2
         echo "" >&2
-        echo "Usage: lol plan [--dry-run] [--verbose] \"<feature-description>\"" >&2
+        echo "Usage: lol plan [options] \"<feature-description>\"" >&2
         return 1
     fi
 
@@ -243,5 +303,7 @@ _lol_parse_plan() {
         issue_mode="false"
     fi
 
-    lol_cmd_plan "$feature_desc" "$issue_mode" "$verbose"
+    lol_cmd_plan "$feature_desc" "$issue_mode" "$verbose" \
+        "$backend_default" "$backend_understander" "$backend_bold" \
+        "$backend_critique" "$backend_reducer"
 }
