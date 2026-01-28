@@ -69,6 +69,7 @@ _planner_anim_start() {
         done
     ) &
     _PLANNER_ANIM_PID=$!
+    disown %+ 2>/dev/null || true  # prevent job-control termination output in interactive shells
 }
 
 # Stop animation and print a clean final line
