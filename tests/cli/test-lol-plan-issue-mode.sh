@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
-# Test: planner default issue creation and --dry-run skip
+# Test: lol plan default issue creation and --dry-run skip
 # Default behavior creates an issue; --dry-run skips issue creation
 
 source "$(dirname "$0")/../common.sh"
 
+LOL_CLI="$PROJECT_ROOT/src/cli/lol.sh"
 PLANNER_CLI="$PROJECT_ROOT/src/cli/planner.sh"
 
-test_info "planner default creates issue, --dry-run skips issue creation"
+test_info "lol plan default creates issue, --dry-run skips issue creation"
 
 export AGENTIZE_HOME="$PROJECT_ROOT"
 source "$PLANNER_CLI"
+source "$LOL_CLI"
 
 # Create temp directory for test artifacts
-TMP_DIR=$(make_temp_dir "test-planner-issue-mode-$$")
+TMP_DIR=$(make_temp_dir "test-lol-plan-issue-mode-$$")
 trap 'cleanup_dir "$TMP_DIR"' EXIT
 
 # ── gh stub setup ──
@@ -92,9 +94,9 @@ chmod +x "$STUB_CONSENSUS"
 export _PLANNER_CONSENSUS_SCRIPT="$STUB_CONSENSUS"
 
 # ── Test 1: Default behavior creates issue (no --dry-run) ──
-output=$(planner plan "Add a test feature for validation" 2>&1) || {
+output=$(lol plan "Add a test feature for validation" 2>&1) || {
     echo "Pipeline output: $output" >&2
-    test_fail "planner plan (default issue mode) exited with non-zero status"
+    test_fail "lol plan (default issue mode) exited with non-zero status"
 }
 
 # Verify issue-based artifact naming was used (issue-42 prefix)
@@ -136,9 +138,9 @@ grep -q '\[plan\] Improved Test Feature' "$GH_CALL_LOG" || {
 > "$GH_CALL_LOG"
 > "$ACW_CALL_LOG"
 
-output=$(planner plan --dry-run "Add another test feature" 2>&1) || {
+output=$(lol plan --dry-run "Add another test feature" 2>&1) || {
     echo "Pipeline output: $output" >&2
-    test_fail "planner plan --dry-run exited with non-zero status"
+    test_fail "lol plan --dry-run exited with non-zero status"
 }
 
 # Verify NO gh issue create was called
@@ -166,9 +168,9 @@ gh() {
 }
 export -f gh 2>/dev/null || true
 
-output=$(planner plan "Add fallback test feature" 2>&1) || {
+output=$(lol plan "Add fallback test feature" 2>&1) || {
     echo "Pipeline output: $output" >&2
-    test_fail "planner plan should not fail when gh fails (fallback to timestamp)"
+    test_fail "lol plan should not fail when gh fails (fallback to timestamp)"
 }
 
 # Verify fallback warning was emitted
@@ -183,4 +185,4 @@ echo "$output" | grep -q "consensus\|Consensus" || {
     test_fail "Pipeline should still complete with timestamp fallback"
 }
 
-test_pass "planner default creates issue, --dry-run skips issue creation"
+test_pass "lol plan default creates issue, --dry-run skips issue creation"
