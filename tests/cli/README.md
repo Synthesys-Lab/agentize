@@ -31,13 +31,12 @@ Tests for the `lol` (agentize) command:
 - `test-lol-project-*.sh` - Tests for `lol project` command
 - `test-agentize-cli-*-agentize-home.sh` - Tests for AGENTIZE_HOME validation
 
-### Planner CLI Tests (`test-planner-*`) (covers `lol plan`)
+### Plan Pipeline Tests (`test-lol-plan-*`)
 
-- `test-planner-command-functions-loaded.sh` - Public/private function exposure test
-- `test-planner-help-text.sh` - Help text validation
-- `test-planner-missing-args.sh` - Missing args error handling
-- `test-planner-backend-flags.sh` - Backend flag format validation
-- `test-planner-pipeline-stubbed.sh` - Pipeline flow with stubbed `acw` and consensus
+- `test-lol-plan-missing-args.sh` - Missing args error handling for `lol plan`
+- `test-lol-plan-backend-flags.sh` - Backend flag format validation
+- `test-lol-plan-issue-mode.sh` - Issue creation vs `--dry-run` behavior
+- `test-lol-plan-pipeline-stubbed.sh` - Pipeline flow with stubbed `acw` and consensus
 
 ### Other CLI Tests
 

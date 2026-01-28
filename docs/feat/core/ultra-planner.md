@@ -381,13 +381,13 @@ Implements plan issue.
 
 ## CLI Implementation
 
-The debate pipeline described above is also available as a standalone shell function:
+The debate pipeline described above is available through the `lol plan` command:
 
 ```bash
-planner plan "<feature-description>"
+lol plan "<feature-description>"
 ```
 
-This does not change the `/ultra-planner` command interface documented above. See `docs/cli/planner.md` for the CLI reference.
+This does not change the `/ultra-planner` command interface documented above. See `docs/cli/planner.md` for pipeline details used by `lol plan`.
 
 ## Comparison to Previous Workflow
 

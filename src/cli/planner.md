@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Thin loader for the planner CLI module. Sources modular implementation files from `planner/` directory following the same source-first pattern as `acw.sh`, `wt.sh`, and `lol.sh`. The preferred entrypoint is `lol plan`; `planner` is retained as a legacy alias.
+Internal loader for the planner pipeline module used by `lol plan`. Sources modular implementation files from `planner/` directory following the same source-first pattern as `acw.sh`, `wt.sh`, and `lol.sh`.
 
 ## Public Entry Point
 
@@ -11,14 +11,9 @@ lol plan [--dry-run] [--verbose] [--backend <provider:model>] \
   [--understander <provider:model>] [--bold <provider:model>] \
   [--critique <provider:model>] [--reducer <provider:model>] \
   "<feature-description>"
-planner plan [--dry-run] [--verbose] [--backend <provider:model>] \
-  [--understander <provider:model>] [--bold <provider:model>] \
-  [--critique <provider:model>] [--reducer <provider:model>] \
-  "<feature-description>"  # legacy alias
-planner --help
 ```
 
-`planner` is the only public function exported by this module. `lol plan` delegates to the same `_planner_run_pipeline` function.
+This module exports only internal `_planner_*` helpers; the public entrypoint is `lol plan`.
 
 ## Backend Overrides
 
@@ -45,15 +40,14 @@ Stage-specific flags override `--backend`. Defaults are `claude:sonnet` for unde
 
 ```
 planner.sh           # Loader: determines script dir, sources modules
-planner/dispatch.sh  # Main dispatcher and help text
 planner/pipeline.sh  # Multi-agent pipeline orchestration
 planner/github.sh    # GitHub issue creation/update helpers
 ```
 
 ## Output Behavior
 
-When stderr is a TTY, `planner plan` prints a colored "Feature:" label, per-stage animated dots, and per-agent elapsed time logs. Set `NO_COLOR=1` to disable color and `PLANNER_NO_ANIM=1` to disable animation.
+When stderr is a TTY, `lol plan` prints a colored "Feature:" label, per-stage animated dots, and per-agent elapsed time logs. Set `NO_COLOR=1` to disable color and `PLANNER_NO_ANIM=1` to disable animation.
 
 ## Design Rationale
 
-The planner CLI separates dispatch from pipeline logic so that the public interface (`planner plan`) remains stable while pipeline internals (stage ordering, prompt rendering, parallelism) can evolve independently. The `_planner_render_prompt` helper centralizes prompt assembly to ensure consistent plan-guideline injection across all stages that require it.
+The planner module separates pipeline logic from the `lol plan` entry point so that the pipeline internals (stage ordering, prompt rendering, parallelism) can evolve independently. The `_planner_render_prompt` helper centralizes prompt assembly to ensure consistent plan-guideline injection across all stages that require it.

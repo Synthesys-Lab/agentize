@@ -19,7 +19,7 @@ See [`tutorial/README.md`](tutorial/README.md) for the complete tutorial series:
 Command-line interface documentation for Agentize tools:
 - `cli/acw.md` - `acw` agent CLI wrapper interface
 - `cli/lol.md` - `lol` command interface and options
-- `cli/planner.md` - `planner` multi-agent planning CLI
+- `cli/planner.md` - Planner pipeline module used by `lol plan`
 - `cli/wt.md` - `wt` command interface and options
 
 ### Architecture Documentation

@@ -1,6 +1,6 @@
-# planner CLI
+# Planner Pipeline (Internal)
 
-Standalone shell function that runs the multi-agent debate pipeline with file-based I/O, independent of Claude Code's `/ultra-planner` command. The preferred entrypoint is `lol plan`; the `planner` command is retained as a legacy alias.
+Internal pipeline module used by `lol plan` to run the multi-agent debate workflow. The standalone `planner` command has been removed.
 
 ## Usage
 
@@ -9,18 +9,11 @@ lol plan [--dry-run] [--verbose] [--backend <provider:model>] \
   [--understander <provider:model>] [--bold <provider:model>] \
   [--critique <provider:model>] [--reducer <provider:model>] \
   "<feature-description>"
-planner plan [--dry-run] [--verbose] [--backend <provider:model>] \
-  [--understander <provider:model>] [--bold <provider:model>] \
-  [--critique <provider:model>] [--reducer <provider:model>] \
-  "<feature-description>"  # legacy alias
-planner --help
 ```
 
-## Subcommands
+## Pipeline Stages
 
-### `plan`
-
-Runs the full multi-agent debate pipeline for a feature description:
+`lol plan` runs the full multi-agent debate pipeline for a feature description:
 
 1. **Understander** (sonnet) - Gathers codebase context with `Read,Grep,Glob` tools
 2. **Bold-proposer** (opus) - Researches SOTA solutions and proposes innovative approaches with `Read,Grep,Glob,WebSearch,WebFetch` tools and `--permission-mode plan`
@@ -53,20 +46,16 @@ Stage-specific flags override `--backend`. Defaults remain `claude:sonnet` (unde
 Example:
 
 ```bash
-planner plan --understander cursor:gpt-5.2-codex "Plan with cursor understander"
+lol plan --understander cursor:gpt-5.2-codex "Plan with cursor understander"
 ```
 
 ### Default Issue Creation
 
-By default, `plan` creates a placeholder GitHub issue before the pipeline runs using a truncated placeholder title (`[plan] placeholder: <first 50 chars>...`), and uses `issue-{N}` artifact naming. After the consensus stage completes, the issue body is updated with the final plan, the title is set from the first `Implementation Plan:` or `Consensus Plan:` header in the consensus file (fallback: truncated feature description), and the `agentize:plan` label is applied.
+By default, `lol plan` creates a placeholder GitHub issue before the pipeline runs using a truncated placeholder title (`[plan] placeholder: <first 50 chars>...`), and uses `issue-{N}` artifact naming. After the consensus stage completes, the issue body is updated with the final plan, the title is set from the first `Implementation Plan:` or `Consensus Plan:` header in the consensus file (fallback: truncated feature description), and the `agentize:plan` label is applied.
 
 Requires `gh` CLI to be installed and authenticated. If `gh` is unavailable or issue creation fails, logs a warning and falls back to timestamp-based artifact naming.
 
-### `--help`
-
-Displays usage information and available subcommands.
-
-## Pipeline Stages
+## Prompt Rendering
 
 Each stage uses `acw` for file-based CLI invocation. Prompts are rendered at runtime by concatenating:
 - Agent base prompt (from `.claude-plugin/agents/*.md`)
@@ -93,7 +82,7 @@ All intermediate and final artifacts are written to `.tmp/`:
 
 ## Relationship to /ultra-planner
 
-The `/ultra-planner` command remains the Claude Code interface for multi-agent planning with automatic issue creation and refinement. `planner plan` provides the same debate pipeline as a shell function for:
+The `/ultra-planner` command remains the Claude Code interface for multi-agent planning with automatic issue creation and refinement. `lol plan` provides the same debate pipeline as a shell function for:
 - Scripted or automated workflows
 - CI/CD integration
 - Direct invocation without Claude Code
@@ -102,7 +91,7 @@ See `docs/feat/core/ultra-planner.md` and `docs/tutorial/01-ultra-planner.md` fo
 
 ## Visual Output
 
-When stderr is a TTY, `planner plan` emits visual feedback during pipeline execution:
+When stderr is a TTY, `lol plan` emits visual feedback during pipeline execution:
 
 - **Colored "Feature:" label** — highlights the feature description at pipeline start.
 - **Animated stage dots** — expanding/contracting dot pattern (`.. ... .... ..... .... ...`) while each stage runs.

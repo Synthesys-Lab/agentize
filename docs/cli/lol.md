@@ -157,7 +157,7 @@ lol plan --verbose "Add real-time notifications"
 lol plan --understander cursor:gpt-5.2-codex "Plan with cursor understander"
 ```
 
-See [planner CLI](planner.md) for pipeline stage details and artifact naming.
+See [planner pipeline module](planner.md) for pipeline stage details and artifact naming.
 
 ### lol serve
 
