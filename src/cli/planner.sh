@@ -22,6 +22,9 @@ _planner_script_dir() {
 
 _PLANNER_DIR="$(_planner_script_dir)"
 
+# Source shared terminal helpers
+source "$_PLANNER_DIR/term/colors.sh"
+
 # Source all modules in dependency order
 source "$_PLANNER_DIR/planner/pipeline.sh"
 source "$_PLANNER_DIR/planner/github.sh"

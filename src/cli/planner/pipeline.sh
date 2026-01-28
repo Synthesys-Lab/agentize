@@ -18,11 +18,7 @@ _planner_anim_enabled() {
 # Print colored "Feature:" label and description to stderr
 _planner_print_feature() {
     local desc="$1"
-    if _planner_color_enabled; then
-        printf '\033[1;36mFeature:\033[0m %s\n' "$desc" >&2
-    else
-        echo "Feature: $desc" >&2
-    fi
+    term_label "Feature:" "$desc" "info"
 }
 
 # Start a timer, outputs epoch seconds
@@ -57,7 +53,8 @@ _planner_anim_start() {
         local dots=".."
         local growing=1
         while true; do
-            printf '\r\033[K%s %s' "$label" "$dots" >&2
+            term_clear_line
+            printf '%s %s' "$label" "$dots" >&2
             sleep 0.4
             if [ "$growing" -eq 1 ]; then
                 dots="${dots}."
@@ -78,7 +75,7 @@ _planner_anim_stop() {
     if [ -n "$_PLANNER_ANIM_PID" ]; then
         kill "$_PLANNER_ANIM_PID" 2>/dev/null
         wait "$_PLANNER_ANIM_PID" 2>/dev/null
-        printf '\r\033[K' >&2
+        term_clear_line
         _PLANNER_ANIM_PID=""
     fi
 }
@@ -86,11 +83,7 @@ _planner_anim_stop() {
 # Print styled "issue created: <url>" to stderr
 _planner_print_issue_created() {
     local url="$1"
-    if _planner_color_enabled; then
-        printf '\033[1;32missue created:\033[0m %s\n' "$url" >&2
-    else
-        echo "issue created: $url" >&2
-    fi
+    term_label "issue created:" "$url" "success"
 }
 
 # ── Backend parsing and invocation ──
@@ -457,11 +450,7 @@ _planner_run_pipeline() {
         }
         # Print final issue link if URL is available
         if [ -n "${_PLANNER_ISSUE_URL:-}" ]; then
-            if _planner_color_enabled; then
-                printf '\033[1;32mSee the full plan at:\033[0m %s\n' "$_PLANNER_ISSUE_URL" >&2
-            else
-                echo "See the full plan at: $_PLANNER_ISSUE_URL" >&2
-            fi
+            term_label "See the full plan at:" "$_PLANNER_ISSUE_URL" "success"
         fi
     fi
 
