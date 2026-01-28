@@ -92,6 +92,57 @@ _planner_print_issue_created() {
     fi
 }
 
+# ── Backend parsing and invocation ──
+
+# Validate backend spec format (provider:model). Empty is allowed.
+# Usage: _planner_validate_backend "<spec>" "<label>"
+_planner_validate_backend() {
+    local spec="$1"
+    local label="${2:-backend}"
+    if [ -z "$spec" ]; then
+        return 0
+    fi
+    case "$spec" in
+        *:*)
+            ;;
+        *)
+            echo "Error: Invalid ${label} backend '$spec' (expected provider:model)" >&2
+            return 1
+            ;;
+    esac
+    local provider="${spec%%:*}"
+    local model="${spec#*:}"
+    if [ -z "$provider" ] || [ -z "$model" ]; then
+        echo "Error: Invalid ${label} backend '$spec' (expected provider:model)" >&2
+        return 1
+    fi
+    return 0
+}
+
+# Invoke acw for a backend spec with optional Claude-only flags.
+# Usage: _planner_acw_run <backend-spec> <input> <output> <tools> [permission-mode]
+_planner_acw_run() {
+    local backend_spec="$1"
+    local input="$2"
+    local output="$3"
+    local tools="$4"
+    local permission_mode="${5:-}"
+    local provider=""
+    local model=""
+
+    IFS=':' read -r provider model <<< "$backend_spec"
+
+    local -a args=()
+    if [ "$provider" = "claude" ]; then
+        args+=(--tools "$tools")
+        if [ -n "$permission_mode" ]; then
+            args+=(--permission-mode "$permission_mode")
+        fi
+    fi
+
+    acw "$provider" "$model" "$input" "$output" "${args[@]}"
+}
+
 # ── Prompt rendering ──
 
 # Render a prompt by concatenating agent base prompt, optional plan-guideline, and context
@@ -104,9 +155,18 @@ _planner_render_prompt() {
     local context_file="${5:-}"
 
     local repo_root="${AGENTIZE_HOME:-$(git rev-parse --show-toplevel 2>/dev/null)}"
+    if [ -z "$repo_root" ] || [ ! -d "$repo_root" ]; then
+        echo "Error: Could not determine repo root. Set AGENTIZE_HOME or run inside a git repo." >&2
+        return 1
+    fi
+    local agent_path="$repo_root/$agent_md"
+    if [ ! -f "$agent_path" ]; then
+        echo "Error: Agent prompt not found: $agent_path" >&2
+        return 1
+    fi
 
     # Start with agent base prompt (strip YAML frontmatter)
-    sed '/^---$/,/^---$/d' "$repo_root/$agent_md" > "$output_file"
+    sed '/^---$/,/^---$/d' "$agent_path" > "$output_file"
 
     # Append plan-guideline content if requested (strip YAML frontmatter)
     if [ "$include_plan_guideline" = "true" ]; then
@@ -138,6 +198,7 @@ _planner_render_prompt() {
         echo "" >> "$output_file"
         cat "$context_file" >> "$output_file"
     fi
+    return 0
 }
 
 # Log a message to stderr, respecting verbose mode
@@ -162,7 +223,16 @@ _planner_run_pipeline() {
     local feature_desc="$1"
     local issue_mode="${2:-true}"
     local verbose="${3:-false}"
+    local backend_default="${4:-}"
+    local backend_understander="${5:-}"
+    local backend_bold="${6:-}"
+    local backend_critique="${7:-}"
+    local backend_reducer="${8:-}"
     local repo_root="${AGENTIZE_HOME:-$(git rev-parse --show-toplevel 2>/dev/null)}"
+    if [ -z "$repo_root" ] || [ ! -d "$repo_root" ]; then
+        echo "Error: Could not determine repo root. Set AGENTIZE_HOME or run inside a git repo." >&2
+        return 1
+    fi
     local timestamp
     timestamp=$(date +%Y%m%d-%H%M%S)
 
@@ -198,6 +268,37 @@ _planner_run_pipeline() {
     local reducer_input="${prefix}-reducer-input.md"
     local reducer_output="${prefix}-reducer.txt"
 
+    if ! _planner_validate_backend "$backend_default" "backend"; then
+        return 1
+    fi
+    if ! _planner_validate_backend "$backend_understander" "understander"; then
+        return 1
+    fi
+    if ! _planner_validate_backend "$backend_bold" "bold"; then
+        return 1
+    fi
+    if ! _planner_validate_backend "$backend_critique" "critique"; then
+        return 1
+    fi
+    if ! _planner_validate_backend "$backend_reducer" "reducer"; then
+        return 1
+    fi
+
+    local default_understander="claude:sonnet"
+    local default_bold="claude:opus"
+    local default_critique="claude:opus"
+    local default_reducer="claude:opus"
+    if [ -n "$backend_default" ]; then
+        default_understander="$backend_default"
+        default_bold="$backend_default"
+        default_critique="$backend_default"
+        default_reducer="$backend_default"
+    fi
+    local understander_backend="${backend_understander:-$default_understander}"
+    local bold_backend="${backend_bold:-$default_bold}"
+    local critique_backend="${backend_critique:-$default_critique}"
+    local reducer_backend="${backend_reducer:-$default_reducer}"
+
     _planner_stage "Starting multi-agent debate pipeline..."
     _planner_print_feature "$feature_desc"
     _planner_log "$verbose" "Artifacts prefix: ${prefix_name}"
@@ -206,14 +307,18 @@ _planner_run_pipeline() {
     # ── Stage 1: Understander ──
     local t_understander
     t_understander=$(_planner_timer_start)
-    _planner_anim_start "Stage 1/5: Running understander (sonnet)"
-    _planner_render_prompt "$understander_input" \
+    _planner_anim_start "Stage 1/5: Running understander (${understander_backend})"
+    if ! _planner_render_prompt "$understander_input" \
         ".claude-plugin/agents/understander.md" \
         "false" \
-        "$feature_desc"
+        "$feature_desc"; then
+        _planner_anim_stop
+        echo "Error: Understander prompt rendering failed" >&2
+        return 2
+    fi
 
-    acw claude sonnet "$understander_input" "$understander_output" \
-        --tools "Read,Grep,Glob"
+    _planner_acw_run "$understander_backend" "$understander_input" "$understander_output" \
+        "Read,Grep,Glob"
     local understander_exit=$?
     _planner_anim_stop
 
@@ -228,16 +333,20 @@ _planner_run_pipeline() {
     # ── Stage 2: Bold-proposer ──
     local t_bold
     t_bold=$(_planner_timer_start)
-    _planner_anim_start "Stage 2/5: Running bold-proposer (opus)"
-    _planner_render_prompt "$bold_input" \
+    _planner_anim_start "Stage 2/5: Running bold-proposer (${bold_backend})"
+    if ! _planner_render_prompt "$bold_input" \
         ".claude-plugin/agents/bold-proposer.md" \
         "true" \
         "$feature_desc" \
-        "$understander_output"
+        "$understander_output"; then
+        _planner_anim_stop
+        echo "Error: Bold-proposer prompt rendering failed" >&2
+        return 2
+    fi
 
-    acw claude opus "$bold_input" "$bold_output" \
-        --tools "Read,Grep,Glob,WebSearch,WebFetch" \
-        --permission-mode plan
+    _planner_acw_run "$bold_backend" "$bold_input" "$bold_output" \
+        "Read,Grep,Glob,WebSearch,WebFetch" \
+        "plan"
     local bold_exit=$?
     _planner_anim_stop
 
@@ -252,28 +361,36 @@ _planner_run_pipeline() {
     # ── Stage 3 & 4: Critique and Reducer (parallel) ──
     local t_parallel
     t_parallel=$(_planner_timer_start)
-    _planner_anim_start "Stage 3-4/5: Running critique and reducer in parallel (opus)"
+    _planner_anim_start "Stage 3-4/5: Running critique and reducer in parallel (${critique_backend}, ${reducer_backend})"
 
     # Critique
-    _planner_render_prompt "$critique_input" \
+    if ! _planner_render_prompt "$critique_input" \
         ".claude-plugin/agents/proposal-critique.md" \
         "true" \
         "$feature_desc" \
-        "$bold_output"
+        "$bold_output"; then
+        _planner_anim_stop
+        echo "Error: Critique prompt rendering failed" >&2
+        return 2
+    fi
 
-    acw claude opus "$critique_input" "$critique_output" \
-        --tools "Read,Grep,Glob,Bash" &
+    _planner_acw_run "$critique_backend" "$critique_input" "$critique_output" \
+        "Read,Grep,Glob,Bash" &
     local critique_pid=$!
 
     # Reducer
-    _planner_render_prompt "$reducer_input" \
+    if ! _planner_render_prompt "$reducer_input" \
         ".claude-plugin/agents/proposal-reducer.md" \
         "true" \
         "$feature_desc" \
-        "$bold_output"
+        "$bold_output"; then
+        _planner_anim_stop
+        echo "Error: Reducer prompt rendering failed" >&2
+        return 2
+    fi
 
-    acw claude opus "$reducer_input" "$reducer_output" \
-        --tools "Read,Grep,Glob" &
+    _planner_acw_run "$reducer_backend" "$reducer_input" "$reducer_output" \
+        "Read,Grep,Glob" &
     local reducer_pid=$!
 
     # Wait for both and capture exit codes

@@ -72,7 +72,7 @@ export _PLANNER_CONSENSUS_SCRIPT="$STUB_CONSENSUS"
 export PLANNER_NO_ANIM=1
 
 # ── Test 1: --dry-run mode (skips issue creation, uses timestamp artifacts) ──
-output=$(planner plan --dry-run "Add a test feature for validation" 2>&1) || {
+output=$(planner plan --dry-run --understander cursor:gpt-5.2-codex "Add a test feature for validation" 2>&1) || {
     echo "Pipeline output: $output" >&2
     test_fail "planner plan --dry-run exited with non-zero status"
 }
@@ -84,6 +84,13 @@ if [ "$CALL_COUNT" -lt 2 ]; then
     cat "$CALL_LOG" >&2
     test_fail "Expected at least 2 acw calls, got $CALL_COUNT"
 fi
+
+# Verify backend override applied to understander stage
+grep -q "acw cursor gpt-5.2-codex" "$CALL_LOG" || {
+    echo "Call log contents:" >&2
+    cat "$CALL_LOG" >&2
+    test_fail "Expected understander stage to use cursor:gpt-5.2-codex"
+}
 
 # Verify parallel critique and reducer both invoked (should have 4 total acw calls)
 if [ "$CALL_COUNT" -lt 4 ]; then

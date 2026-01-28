@@ -7,12 +7,30 @@ Thin loader for the planner CLI module. Sources modular implementation files fro
 ## Public Entry Point
 
 ```bash
-lol plan [--dry-run] [--verbose] "<feature-description>"
-planner plan [--dry-run] [--verbose] "<feature-description>"  # legacy alias
+lol plan [--dry-run] [--verbose] [--backend <provider:model>] \
+  [--understander <provider:model>] [--bold <provider:model>] \
+  [--critique <provider:model>] [--reducer <provider:model>] \
+  "<feature-description>"
+planner plan [--dry-run] [--verbose] [--backend <provider:model>] \
+  [--understander <provider:model>] [--bold <provider:model>] \
+  [--critique <provider:model>] [--reducer <provider:model>] \
+  "<feature-description>"  # legacy alias
 planner --help
 ```
 
 `planner` is the only public function exported by this module. `lol plan` delegates to the same `_planner_run_pipeline` function.
+
+## Backend Overrides
+
+Planner supports per-stage backend overrides using `provider:model` strings:
+
+- `--backend <provider:model>` (default for all stages)
+- `--understander <provider:model>`
+- `--bold <provider:model>`
+- `--critique <provider:model>`
+- `--reducer <provider:model>`
+
+Stage-specific flags override `--backend`. Defaults are `claude:sonnet` for understander and `claude:opus` for bold/critique/reducer.
 
 ## Private Helpers
 
