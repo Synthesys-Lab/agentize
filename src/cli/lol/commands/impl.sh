@@ -71,6 +71,7 @@ lol_cmd_impl() {
 
     # Initialize input/output files
     local input_file="$worktree_path/.tmp/impl-input.txt"
+    local base_input_file="$worktree_path/.tmp/impl-input-base.txt"
     local output_file="$worktree_path/.tmp/impl-output.txt"
     local finalize_file="$worktree_path/.tmp/finalize.txt"
 
@@ -81,7 +82,13 @@ lol_cmd_impl() {
         > "$issue_file" 2>/dev/null
 
     if [ -s "$issue_file" ]; then
-        echo "Implement the feature described in $issue_file" > "$input_file"
+        cat > "$base_input_file" <<EOF
+Primary goal: implement issue #$issue_no described in $issue_file.
+Each iteration:
+- create .tmp/commit-report-iter-N.txt with the full commit message (or .tmp/commit-msg-iter-N.txt first line).
+- update $finalize_file with PR title (first line) and body (full file); include "Issue $issue_no resolved" only when done.
+EOF
+        cp "$base_input_file" "$input_file"
         echo "For each iteration, create .tmp/commit-report-iter-N.txt with the full commit message." >&2
         echo "If only .tmp/commit-msg-iter-N.txt exists, its first line will be used." >&2
         echo "Once completed the implementation, create a $finalize_file file with the PR title and body." >&2
@@ -101,6 +108,29 @@ lol_cmd_impl() {
     while [ $iter -lt "$max_iterations" ]; do
         iter=$((iter + 1))
         echo "Iteration $iter/$max_iterations..."
+
+        # Build input from original issue + last iteration output (if any)
+        if [ -s "$base_input_file" ]; then
+            local prev_iter=$((iter - 1))
+            local prev_commit_report_file="$worktree_path/.tmp/commit-report-iter-$prev_iter.txt"
+            local prev_commit_msg_file="$worktree_path/.tmp/commit-msg-iter-$prev_iter.txt"
+            {
+                cat "$base_input_file"
+                if [ -s "$output_file" ]; then
+                    printf "\n\n---\nOutput from last iteration:\n"
+                    cat "$output_file"
+                fi
+                if [ "$prev_iter" -ge 1 ]; then
+                    if [ -s "$prev_commit_report_file" ]; then
+                        printf "\n\n---\nPrevious iteration summary (commit report):\n"
+                        cat "$prev_commit_report_file"
+                    elif [ -s "$prev_commit_msg_file" ]; then
+                        printf "\n\n---\nPrevious iteration summary (commit message):\n"
+                        cat "$prev_commit_msg_file"
+                    fi
+                fi
+            } > "$input_file"
+        fi
 
         # Run acw
         if [ -n "$yolo_flag" ]; then
@@ -150,10 +180,6 @@ lol_cmd_impl() {
             break
         fi
 
-        # Use output as next input
-        if [ -f "$output_file" ]; then
-            cp "$output_file" "$input_file"
-        fi
     done
 
     # Step 3: Check if completed or hit max iterations
