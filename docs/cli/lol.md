@@ -190,6 +190,10 @@ lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
 | `--max-iterations` | No | `10` | Maximum `acw` iterations before giving up |
 | `--yolo` | No | Off | Pass through to provider CLI options |
 
+#### Issue prefetch
+
+Before the loop starts, `lol impl` attempts to fetch the issue title/body (and labels if present) via `gh issue view` and writes it to `.tmp/issue-<N>.md`. If the file is non-empty, the initial prompt references it; otherwise it falls back to `Implement issue #<N>`.
+
 #### Completion marker
 
 Create `.tmp/report.txt` in the worktree and include `Issue <N> resolved` to finish.
