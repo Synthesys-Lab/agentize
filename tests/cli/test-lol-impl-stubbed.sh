@@ -618,7 +618,7 @@ ITERATION_COUNT=0
 > "$GH_CALL_LOG"
 > "$GIT_CALL_LOG"
 rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
-rm -f "$STUB_WORKTREE/.tmp/commit-msg-iter-"*.txt
+find "$STUB_WORKTREE/.tmp" -name 'commit-msg-iter-*.txt' -delete 2>/dev/null || true
 GIT_HAS_CHANGES=1
 export GIT_HAS_CHANGES
 
@@ -648,14 +648,15 @@ if ! grep -q "git commit -m cli: implement feature from commit-msg file" "$GIT_C
 fi
 
 # Clean up
-rm -f "$STUB_WORKTREE/.tmp/finalize.txt" "$STUB_WORKTREE/.tmp/commit-msg-iter-"*.txt
+rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
+find "$STUB_WORKTREE/.tmp" -name 'commit-msg-iter-*.txt' -delete 2>/dev/null || true
 
 # ── Test 9c: Fallback to default commit message when file missing ──
 ITERATION_COUNT=0
 > "$ACW_CALL_LOG"
 > "$GH_CALL_LOG"
 > "$GIT_CALL_LOG"
-rm -f "$STUB_WORKTREE/.tmp/commit-msg-iter-"*.txt
+find "$STUB_WORKTREE/.tmp" -name 'commit-msg-iter-*.txt' -delete 2>/dev/null || true
 GIT_HAS_CHANGES=1
 export GIT_HAS_CHANGES
 
