@@ -100,6 +100,20 @@ lol_cmd_impl() {
             }
         fi
 
+        # Stage and commit changes for this iteration
+        (cd "$worktree_path" && git add -A) || {
+            echo "Error: Failed to stage changes for iteration $iter" >&2
+            return 1
+        }
+        if (cd "$worktree_path" && ! git diff --cached --quiet); then
+            (cd "$worktree_path" && git commit -m "impl: issue #$issue_no iteration $iter") || {
+                echo "Error: Failed to commit iteration $iter" >&2
+                return 1
+            }
+        else
+            echo "No changes to commit for iteration $iter"
+        fi
+
         # Check for completion marker
         if [ -f "$report_file" ]; then
             if grep -q "Issue $issue_no resolved" "$report_file"; then
@@ -121,8 +135,41 @@ lol_cmd_impl() {
         return 1
     fi
 
-    # Step 4: Create PR
-    echo "Creating pull request..."
+    # Step 4: Detect remote and base branch
+    local push_remote=""
+    local base_branch=""
+
+    # Detect push remote: prefer upstream, then origin
+    if (cd "$worktree_path" && git remote | grep -q "^upstream$"); then
+        push_remote="upstream"
+    elif (cd "$worktree_path" && git remote | grep -q "^origin$"); then
+        push_remote="origin"
+    else
+        echo "Error: No remote found (need upstream or origin)" >&2
+        return 1
+    fi
+
+    # Detect base branch: prefer master, then main
+    if (cd "$worktree_path" && git rev-parse --verify "refs/remotes/${push_remote}/master" >/dev/null 2>&1); then
+        base_branch="master"
+    elif (cd "$worktree_path" && git rev-parse --verify "refs/remotes/${push_remote}/main" >/dev/null 2>&1); then
+        base_branch="main"
+    else
+        echo "Error: No default branch found (need master or main on $push_remote)" >&2
+        return 1
+    fi
+
+    # Step 5: Push and create PR
+    echo "Pushing to $push_remote and creating pull request..."
+
+    # Get current branch name
+    local branch_name
+    branch_name=$(cd "$worktree_path" && git branch --show-current)
+
+    # Push branch to remote
+    (cd "$worktree_path" && git push -u "$push_remote" "$branch_name") || {
+        echo "Warning: Failed to push branch to $push_remote" >&2
+    }
 
     # Get PR title from first line of report
     local pr_title
@@ -135,8 +182,8 @@ lol_cmd_impl() {
     local pr_body
     pr_body=$(cat "$report_file")
 
-    # Create PR using gh CLI
-    (cd "$worktree_path" && gh pr create --title "$pr_title" --body "$pr_body") || {
+    # Create PR using gh CLI with explicit base branch
+    (cd "$worktree_path" && gh pr create --base "$base_branch" --title "$pr_title" --body "$pr_body") || {
         echo "Warning: Failed to create PR. You may need to create it manually." >&2
     }
 

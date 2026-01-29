@@ -23,7 +23,56 @@ mkdir -p "$STUB_WORKTREE/.tmp"
 WT_CALL_LOG="$TMP_DIR/wt-calls.log"
 ACW_CALL_LOG="$TMP_DIR/acw-calls.log"
 GH_CALL_LOG="$TMP_DIR/gh-calls.log"
-touch "$WT_CALL_LOG" "$ACW_CALL_LOG" "$GH_CALL_LOG"
+GIT_CALL_LOG="$TMP_DIR/git-calls.log"
+touch "$WT_CALL_LOG" "$ACW_CALL_LOG" "$GH_CALL_LOG" "$GIT_CALL_LOG"
+
+# Stub git function - by default simulates changes exist
+GIT_HAS_CHANGES=1
+GIT_REMOTES="origin"
+GIT_DEFAULT_BRANCH="main"
+export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH
+
+git() {
+    echo "git $*" >> "$GIT_CALL_LOG"
+    case "$1" in
+        add)
+            return 0
+            ;;
+        diff)
+            if [ "$2" = "--cached" ] && [ "$3" = "--quiet" ]; then
+                # Return 1 if changes exist (non-quiet), 0 if no changes
+                [ "$GIT_HAS_CHANGES" = "1" ] && return 1 || return 0
+            fi
+            return 0
+            ;;
+        commit)
+            return 0
+            ;;
+        remote)
+            # List remotes
+            echo "$GIT_REMOTES"
+            return 0
+            ;;
+        rev-parse)
+            if [ "$2" = "--verify" ]; then
+                # Simulate branch exists based on GIT_DEFAULT_BRANCH
+                local check_branch="${3#refs/remotes/*/}"
+                if [ "$check_branch" = "$GIT_DEFAULT_BRANCH" ]; then
+                    return 0
+                fi
+                return 1
+            fi
+            return 0
+            ;;
+        push)
+            return 0
+            ;;
+        *)
+            return 0
+            ;;
+    esac
+}
+export -f git 2>/dev/null || true
 
 # Stub wt function
 wt() {
@@ -387,6 +436,187 @@ if ! grep -q "issue.*456\|#456" "$STUB_WORKTREE/.tmp/impl-input.txt"; then
     echo "impl-input.txt content:" >&2
     cat "$STUB_WORKTREE/.tmp/impl-input.txt" >&2
     test_fail "Expected fallback prompt to mention issue number"
+fi
+
+# ── Test 8: Git commit after iteration when changes exist ──
+ITERATION_COUNT=0
+> "$ACW_CALL_LOG"
+> "$GH_CALL_LOG"
+> "$GIT_CALL_LOG"
+rm -f "$STUB_WORKTREE/.tmp/report.txt"
+GIT_HAS_CHANGES=1
+GIT_REMOTES="origin"
+GIT_DEFAULT_BRANCH="main"
+export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH
+
+# Reset wt stub
+wt() {
+    echo "wt $*" >> "$WT_CALL_LOG"
+    case "$1" in
+        pathto) echo "$STUB_WORKTREE"; return 0 ;;
+        spawn) return 0 ;;
+        *) return 0 ;;
+    esac
+}
+export -f wt 2>/dev/null || true
+
+# Stub acw that creates completion marker on second iteration
+acw() {
+    local output_file="$4"
+    echo "acw $*" >> "$ACW_CALL_LOG"
+    ITERATION_COUNT=$((ITERATION_COUNT + 1))
+    export ITERATION_COUNT
+    if [ "$ITERATION_COUNT" -eq 2 ]; then
+        mkdir -p "$STUB_WORKTREE/.tmp"
+        echo "PR: Git commit test" > "$STUB_WORKTREE/.tmp/report.txt"
+        echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
+    fi
+    echo "Stub response for iteration $ITERATION_COUNT" > "$output_file"
+    return 0
+}
+export -f acw 2>/dev/null || true
+
+# Reset gh stub
+gh() {
+    echo "gh $*" >> "$GH_CALL_LOG"
+    case "$1" in
+        pr) [ "$2" = "create" ] && echo "https://github.com/test/repo/pull/1"; return 0 ;;
+        *) return 0 ;;
+    esac
+}
+export -f gh 2>/dev/null || true
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed with git commit enabled"
+}
+
+# Verify git add was called for each iteration
+if ! grep -q "git add -A" "$GIT_CALL_LOG"; then
+    echo "GIT call log:" >&2
+    cat "$GIT_CALL_LOG" >&2
+    test_fail "Expected git add -A to be called"
+fi
+
+# Verify git commit was called (since GIT_HAS_CHANGES=1)
+if ! grep -q "git commit" "$GIT_CALL_LOG"; then
+    echo "GIT call log:" >&2
+    cat "$GIT_CALL_LOG" >&2
+    test_fail "Expected git commit to be called when changes exist"
+fi
+
+# ── Test 9: Skip commit when no changes ──
+ITERATION_COUNT=0
+> "$ACW_CALL_LOG"
+> "$GH_CALL_LOG"
+> "$GIT_CALL_LOG"
+rm -f "$STUB_WORKTREE/.tmp/report.txt"
+GIT_HAS_CHANGES=0  # No changes
+export GIT_HAS_CHANGES
+
+# Create completion marker immediately
+echo "PR: No changes test" > "$STUB_WORKTREE/.tmp/report.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
+
+acw() {
+    echo "acw $*" >> "$ACW_CALL_LOG"
+    echo "Stub response" > "$4"
+    return 0
+}
+export -f acw 2>/dev/null || true
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed even with no changes"
+}
+
+# Verify git add was called
+if ! grep -q "git add -A" "$GIT_CALL_LOG"; then
+    echo "GIT call log:" >&2
+    cat "$GIT_CALL_LOG" >&2
+    test_fail "Expected git add -A to be called"
+fi
+
+# Verify git commit was NOT called (since GIT_HAS_CHANGES=0)
+if grep -q "git commit" "$GIT_CALL_LOG"; then
+    echo "GIT call log:" >&2
+    cat "$GIT_CALL_LOG" >&2
+    test_fail "Expected git commit to NOT be called when no changes"
+fi
+
+# ── Test 10: Push remote precedence (upstream over origin) ──
+ITERATION_COUNT=0
+> "$ACW_CALL_LOG"
+> "$GH_CALL_LOG"
+> "$GIT_CALL_LOG"
+GIT_HAS_CHANGES=1
+GIT_REMOTES=$'upstream\norigin'  # Both remotes available
+GIT_DEFAULT_BRANCH="master"
+export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH
+
+# Create completion marker immediately
+echo "PR: Remote precedence test" > "$STUB_WORKTREE/.tmp/report.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
+
+acw() {
+    echo "acw $*" >> "$ACW_CALL_LOG"
+    echo "Stub response" > "$4"
+    return 0
+}
+export -f acw 2>/dev/null || true
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed with upstream remote"
+}
+
+# Verify git push used upstream (not origin)
+if ! grep -q "git push -u upstream" "$GIT_CALL_LOG"; then
+    echo "GIT call log:" >&2
+    cat "$GIT_CALL_LOG" >&2
+    test_fail "Expected git push to use upstream remote"
+fi
+
+# ── Test 11: Base branch selection (master over main) ──
+# The previous test already sets GIT_DEFAULT_BRANCH="master"
+# Verify gh pr create used --base master
+if ! grep -q "gh pr create.*--base master" "$GH_CALL_LOG"; then
+    echo "GH call log:" >&2
+    cat "$GH_CALL_LOG" >&2
+    test_fail "Expected gh pr create with --base master"
+fi
+
+# ── Test 12: Fallback to origin and main when upstream/master unavailable ──
+ITERATION_COUNT=0
+> "$ACW_CALL_LOG"
+> "$GH_CALL_LOG"
+> "$GIT_CALL_LOG"
+GIT_HAS_CHANGES=1
+GIT_REMOTES="origin"  # Only origin available
+GIT_DEFAULT_BRANCH="main"
+export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH
+
+# Create completion marker immediately
+echo "PR: Fallback remote test" > "$STUB_WORKTREE/.tmp/report.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed with origin fallback"
+}
+
+# Verify git push used origin
+if ! grep -q "git push -u origin" "$GIT_CALL_LOG"; then
+    echo "GIT call log:" >&2
+    cat "$GIT_CALL_LOG" >&2
+    test_fail "Expected git push to use origin remote"
+fi
+
+# Verify gh pr create used --base main
+if ! grep -q "gh pr create.*--base main" "$GH_CALL_LOG"; then
+    echo "GH call log:" >&2
+    cat "$GH_CALL_LOG" >&2
+    test_fail "Expected gh pr create with --base main"
 fi
 
 test_pass "lol impl workflow with stubbed dependencies"

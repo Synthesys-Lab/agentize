@@ -199,6 +199,10 @@ Before the loop starts, `lol impl` attempts to fetch the issue title/body (and l
 Create `.tmp/report.txt` in the worktree and include `Issue <N> resolved` to finish.
 The first line of `.tmp/report.txt` is used as the PR title.
 
+#### Git workflow
+
+Each iteration stages and commits changes (skipping commits when there are no changes). On completion, the branch is pushed to `upstream` (or `origin`) and the PR targets `master` (or `main`).
+
 #### Example
 
 ```bash
