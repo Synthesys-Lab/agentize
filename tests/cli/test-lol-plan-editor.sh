@@ -14,8 +14,7 @@ source "$LOL_CLI"
 TEST_HOME=$(make_temp_dir "test-home-$$")
 export HOME="$TEST_HOME"
 
-# Test 1: Error when VISUAL and EDITOR are both unset
-unset VISUAL
+# Test 1: Error when EDITOR is unset
 unset EDITOR
 
 set +e
@@ -24,11 +23,11 @@ exit_code=$?
 set -e
 
 if [ "$exit_code" -eq 0 ]; then
-  test_fail "--editor should fail when VISUAL and EDITOR are unset"
+  test_fail "--editor should fail when EDITOR is unset"
 fi
 
-if ! echo "$output" | grep -q "VISUAL.*EDITOR"; then
-  test_fail "--editor error message should mention VISUAL and EDITOR"
+if ! echo "$output" | grep -q "EDITOR is not set"; then
+  test_fail "--editor error message should mention EDITOR is not set"
 fi
 
 # Test 2: Error when --editor is combined with positional argument
@@ -57,7 +56,6 @@ STUB
 chmod +x "$STUB_EDITOR"
 
 export EDITOR="$STUB_EDITOR"
-unset VISUAL
 
 # Mock lol_cmd_plan to capture what it receives
 captured_desc=""
@@ -119,35 +117,6 @@ set -e
 
 if [ "$exit_code" -eq 0 ]; then
   test_fail "--editor should fail when editor exits non-zero"
-fi
-
-# Test 6: VISUAL takes precedence over EDITOR
-VISUAL_EDITOR="$TEST_HOME/visual-editor.sh"
-cat > "$VISUAL_EDITOR" << 'STUB'
-#!/usr/bin/env bash
-echo "From VISUAL" > "$1"
-STUB
-chmod +x "$VISUAL_EDITOR"
-
-EDITOR_SCRIPT="$TEST_HOME/editor-script.sh"
-cat > "$EDITOR_SCRIPT" << 'STUB'
-#!/usr/bin/env bash
-echo "From EDITOR" > "$1"
-STUB
-chmod +x "$EDITOR_SCRIPT"
-
-export VISUAL="$VISUAL_EDITOR"
-export EDITOR="$EDITOR_SCRIPT"
-
-captured_desc=""
-
-set +e
-_lol_parse_plan --editor --dry-run
-exit_code=$?
-set -e
-
-if [ "$captured_desc" != "From VISUAL" ]; then
-  test_fail "VISUAL should take precedence over EDITOR, got: '$captured_desc'"
 fi
 
 test_pass "lol plan --editor flag works correctly"

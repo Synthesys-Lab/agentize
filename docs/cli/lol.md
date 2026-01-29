@@ -140,7 +140,7 @@ Runs the full multi-agent debate pipeline for a feature description, producing a
 | `--bold` | No | - | Override backend for bold-proposer stage |
 | `--critique` | No | - | Override backend for critique stage |
 | `--reducer` | No | - | Override backend for reducer stage |
-| `--editor` | No | - | Open $VISUAL/$EDITOR to compose feature description |
+| `--editor` | No | - | Open $EDITOR to compose feature description |
 | `--refine <issue-no> [refinement-instructions]` | No | - | Refine an existing plan issue (optional focus) |
 
 By default, `lol plan` creates a GitHub issue when `gh` is available. Use `--dry-run` to skip issue creation and use timestamp-based artifact naming instead.
