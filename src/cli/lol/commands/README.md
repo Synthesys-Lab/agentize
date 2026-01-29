@@ -14,6 +14,8 @@ Per-command implementation files for the `lol` CLI. Each file exports exactly on
 | `serve.sh` | `lol_cmd_serve` | Run polling server for automation |
 | `claude-clean.sh` | `lol_cmd_claude_clean` | Remove stale entries from ~/.claude.json |
 | `usage.sh` | `lol_cmd_usage` | Report Claude Code token usage statistics |
+| `plan.sh` | `lol_cmd_plan` | Run multi-agent debate pipeline |
+| `impl.sh` | `lol_cmd_impl` | Automate issue-to-implementation loop |
 
 ## Design
 

@@ -145,11 +145,11 @@ echo "$output" | grep -qi "backend\|provider:model" || {
     test_fail "Error message should mention backend format"
 }
 
-# ── Test 2: Completion marker detection ──
+# ── Test 2: Completion marker detection (using finalize.txt) ──
 ITERATION_COUNT=0
 > "$ACW_CALL_LOG"
 
-# Stub acw that creates completion marker on second iteration
+# Stub acw that creates completion marker on second iteration using finalize.txt
 acw() {
     local cli_name="$1"
     local model_name="$2"
@@ -162,12 +162,12 @@ acw() {
     ITERATION_COUNT=$((ITERATION_COUNT + 1))
     export ITERATION_COUNT
 
-    # On second iteration, create completion marker
+    # On second iteration, create completion marker using finalize.txt (preferred)
     if [ "$ITERATION_COUNT" -eq 2 ]; then
         mkdir -p "$STUB_WORKTREE/.tmp"
-        echo "PR: Fix issue 123" > "$STUB_WORKTREE/.tmp/report.txt"
-        echo "" >> "$STUB_WORKTREE/.tmp/report.txt"
-        echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
+        echo "PR: Fix issue 123" > "$STUB_WORKTREE/.tmp/finalize.txt"
+        echo "" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+        echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
     fi
 
     echo "Stub response for iteration $ITERATION_COUNT" > "$output_file"
@@ -195,10 +195,72 @@ if ! grep -q "gh pr create" "$GH_CALL_LOG"; then
     test_fail "Expected gh pr create to be called"
 fi
 
+# Clean up for next test
+rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
+
+# ── Test 2b: Finalize.txt takes precedence over report.txt ──
+ITERATION_COUNT=0
+> "$ACW_CALL_LOG"
+> "$GH_CALL_LOG"
+
+# Create both files, finalize.txt should be used
+mkdir -p "$STUB_WORKTREE/.tmp"
+echo "PR: From finalize" > "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "PR: From report (should not be used)" > "$STUB_WORKTREE/.tmp/report.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
+
+acw() {
+    echo "acw $*" >> "$ACW_CALL_LOG"
+    echo "Stub response" > "$4"
+    return 0
+}
+export -f acw 2>/dev/null || true
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed with both finalize and report present"
+}
+
+# Verify PR title comes from finalize.txt (first line = "PR: From finalize")
+if ! grep -q 'gh pr create.*--title.*From finalize' "$GH_CALL_LOG"; then
+    echo "GH call log:" >&2
+    cat "$GH_CALL_LOG" >&2
+    test_fail "Expected PR title from finalize.txt, not report.txt"
+fi
+
+# Clean up for next test
+rm -f "$STUB_WORKTREE/.tmp/finalize.txt" "$STUB_WORKTREE/.tmp/report.txt"
+
+# ── Test 2c: Fallback to report.txt when finalize.txt absent ──
+ITERATION_COUNT=0
+> "$ACW_CALL_LOG"
+> "$GH_CALL_LOG"
+
+# Create only report.txt (legacy) - no finalize.txt
+mkdir -p "$STUB_WORKTREE/.tmp"
+echo "PR: From legacy report" > "$STUB_WORKTREE/.tmp/report.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed with legacy report.txt"
+}
+
+# Verify PR title comes from report.txt
+if ! grep -q 'gh pr create.*--title.*From legacy report' "$GH_CALL_LOG"; then
+    echo "GH call log:" >&2
+    cat "$GH_CALL_LOG" >&2
+    test_fail "Expected PR title from legacy report.txt"
+fi
+
+# Clean up for next test
+rm -f "$STUB_WORKTREE/.tmp/report.txt"
+
 # ── Test 3: Max iterations limit ──
 ITERATION_COUNT=0
 > "$ACW_CALL_LOG"
-rm -f "$STUB_WORKTREE/.tmp/report.txt"
+rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
 
 # Stub acw that never creates completion marker
 acw() {
@@ -230,10 +292,16 @@ if [ "$CALL_COUNT" -ne 3 ]; then
     test_fail "Expected exactly 3 acw calls for --max-iterations 3 (got $CALL_COUNT)"
 fi
 
-# Verify error message mentions max iterations
+# Verify error message mentions max iterations and both file names
 echo "$output" | grep -qi "max.*iteration\|iteration.*limit" || {
     echo "Output: $output" >&2
     test_fail "Error message should mention max iterations limit"
+}
+
+# Verify error message mentions finalize.txt (or both completion files)
+echo "$output" | grep -qi "finalize" || {
+    echo "Output: $output" >&2
+    test_fail "Error message should mention finalize.txt"
 }
 
 # ── Test 4: Backend parsing and provider/model split ──
@@ -242,8 +310,8 @@ ITERATION_COUNT=0
 
 # Create completion marker immediately
 mkdir -p "$STUB_WORKTREE/.tmp"
-echo "PR: Quick fix" > "$STUB_WORKTREE/.tmp/report.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
+echo "PR: Quick fix" > "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
     echo "acw $1 $2 $3 $4" >> "$ACW_CALL_LOG"
@@ -292,14 +360,14 @@ grep -q "\-\-yolo" "$ACW_CALL_LOG" || {
 ITERATION_COUNT=0
 > "$ACW_CALL_LOG"
 > "$GH_CALL_LOG"
-rm -f "$STUB_WORKTREE/.tmp/report.txt"
+rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
 rm -f "$STUB_WORKTREE/.tmp/issue-123.md"
 rm -f "$STUB_WORKTREE/.tmp/impl-input.txt"
 
 # Create completion marker immediately
 mkdir -p "$STUB_WORKTREE/.tmp"
-echo "PR: Prefetch test" > "$STUB_WORKTREE/.tmp/report.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
+echo "PR: Prefetch test" > "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 # Stub gh to provide issue content
 gh() {
@@ -386,8 +454,8 @@ wt() {
 export -f wt 2>/dev/null || true
 
 # Create completion marker
-echo "PR: Fallback test" > "$STUB_WORKTREE/.tmp/report.txt"
-echo "Issue 456 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
+echo "PR: Fallback test" > "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Issue 456 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 # Stub gh to fail for issue view
 gh() {
@@ -443,7 +511,7 @@ ITERATION_COUNT=0
 > "$ACW_CALL_LOG"
 > "$GH_CALL_LOG"
 > "$GIT_CALL_LOG"
-rm -f "$STUB_WORKTREE/.tmp/report.txt"
+rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
 GIT_HAS_CHANGES=1
 GIT_REMOTES="origin"
 GIT_DEFAULT_BRANCH="main"
@@ -468,8 +536,8 @@ acw() {
     export ITERATION_COUNT
     if [ "$ITERATION_COUNT" -eq 2 ]; then
         mkdir -p "$STUB_WORKTREE/.tmp"
-        echo "PR: Git commit test" > "$STUB_WORKTREE/.tmp/report.txt"
-        echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
+        echo "PR: Git commit test" > "$STUB_WORKTREE/.tmp/finalize.txt"
+        echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
     fi
     echo "Stub response for iteration $ITERATION_COUNT" > "$output_file"
     return 0
@@ -510,13 +578,13 @@ ITERATION_COUNT=0
 > "$ACW_CALL_LOG"
 > "$GH_CALL_LOG"
 > "$GIT_CALL_LOG"
-rm -f "$STUB_WORKTREE/.tmp/report.txt"
+rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
 GIT_HAS_CHANGES=0  # No changes
 export GIT_HAS_CHANGES
 
 # Create completion marker immediately
-echo "PR: No changes test" > "$STUB_WORKTREE/.tmp/report.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
+echo "PR: No changes test" > "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
     echo "acw $*" >> "$ACW_CALL_LOG"
@@ -544,6 +612,73 @@ if grep -q "git commit" "$GIT_CALL_LOG"; then
     test_fail "Expected git commit to NOT be called when no changes"
 fi
 
+# ── Test 9b: Per-iteration commit message from file ──
+ITERATION_COUNT=0
+> "$ACW_CALL_LOG"
+> "$GH_CALL_LOG"
+> "$GIT_CALL_LOG"
+rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
+rm -f "$STUB_WORKTREE/.tmp/commit-msg-iter-"*.txt
+GIT_HAS_CHANGES=1
+export GIT_HAS_CHANGES
+
+# Create completion marker and commit message file
+mkdir -p "$STUB_WORKTREE/.tmp"
+echo "PR: Commit msg test" > "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "cli: implement feature from commit-msg file" > "$STUB_WORKTREE/.tmp/commit-msg-iter-1.txt"
+
+acw() {
+    echo "acw $*" >> "$ACW_CALL_LOG"
+    echo "Stub response" > "$4"
+    return 0
+}
+export -f acw 2>/dev/null || true
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed with commit-msg file"
+}
+
+# Verify git commit used the message from commit-msg-iter-1.txt
+if ! grep -q "git commit -m cli: implement feature from commit-msg file" "$GIT_CALL_LOG"; then
+    echo "GIT call log:" >&2
+    cat "$GIT_CALL_LOG" >&2
+    test_fail "Expected commit message from commit-msg-iter-1.txt"
+fi
+
+# Clean up
+rm -f "$STUB_WORKTREE/.tmp/finalize.txt" "$STUB_WORKTREE/.tmp/commit-msg-iter-"*.txt
+
+# ── Test 9c: Fallback to default commit message when file missing ──
+ITERATION_COUNT=0
+> "$ACW_CALL_LOG"
+> "$GH_CALL_LOG"
+> "$GIT_CALL_LOG"
+rm -f "$STUB_WORKTREE/.tmp/commit-msg-iter-"*.txt
+GIT_HAS_CHANGES=1
+export GIT_HAS_CHANGES
+
+# Create completion marker but no commit message file
+mkdir -p "$STUB_WORKTREE/.tmp"
+echo "PR: Default msg test" > "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed without commit-msg file"
+}
+
+# Verify git commit used tagged default message (chore: issue #123 iteration 1)
+if ! grep -q "git commit -m chore: issue #123 iteration 1" "$GIT_CALL_LOG"; then
+    echo "GIT call log:" >&2
+    cat "$GIT_CALL_LOG" >&2
+    test_fail "Expected default tagged commit message"
+fi
+
+# Clean up
+rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
+
 # ── Test 10: Push remote precedence (upstream over origin) ──
 ITERATION_COUNT=0
 > "$ACW_CALL_LOG"
@@ -555,8 +690,8 @@ GIT_DEFAULT_BRANCH="master"
 export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH
 
 # Create completion marker immediately
-echo "PR: Remote precedence test" > "$STUB_WORKTREE/.tmp/report.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
+echo "PR: Remote precedence test" > "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
     echo "acw $*" >> "$ACW_CALL_LOG"
@@ -597,8 +732,8 @@ GIT_DEFAULT_BRANCH="main"
 export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH
 
 # Create completion marker immediately
-echo "PR: Fallback remote test" > "$STUB_WORKTREE/.tmp/report.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
+echo "PR: Fallback remote test" > "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2

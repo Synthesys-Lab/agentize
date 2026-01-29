@@ -63,7 +63,8 @@ lol_cmd_impl() {
     # Initialize input/output files
     local input_file="$worktree_path/.tmp/impl-input.txt"
     local output_file="$worktree_path/.tmp/impl-output.txt"
-    local report_file="$worktree_path/.tmp/report.txt"
+    local finalize_file="$worktree_path/.tmp/finalize.txt"
+    local report_file="$worktree_path/.tmp/report.txt"  # legacy fallback
 
     # Prefetch issue content (title/body/labels) for the initial prompt
     local issue_file="$worktree_path/.tmp/issue-${issue_no}.md"
@@ -106,7 +107,13 @@ lol_cmd_impl() {
             return 1
         }
         if (cd "$worktree_path" && ! git diff --cached --quiet); then
-            (cd "$worktree_path" && git commit -m "impl: issue #$issue_no iteration $iter") || {
+            # Check for per-iteration commit message file
+            local commit_msg_file="$worktree_path/.tmp/commit-msg-iter-$iter.txt"
+            local commit_msg="chore: issue #$issue_no iteration $iter"
+            if [ -s "$commit_msg_file" ]; then
+                commit_msg="$(head -n1 "$commit_msg_file")"
+            fi
+            (cd "$worktree_path" && git commit -m "$commit_msg") || {
                 echo "Error: Failed to commit iteration $iter" >&2
                 return 1
             }
@@ -114,12 +121,16 @@ lol_cmd_impl() {
             echo "No changes to commit for iteration $iter"
         fi
 
-        # Check for completion marker
-        if [ -f "$report_file" ]; then
-            if grep -q "Issue $issue_no resolved" "$report_file"; then
-                echo "Completion marker found!"
-                break
-            fi
+        # Check for completion marker (prefer finalize.txt, accept legacy report.txt)
+        local completion_file=""
+        if [ -f "$finalize_file" ] && grep -q "Issue $issue_no resolved" "$finalize_file"; then
+            completion_file="$finalize_file"
+        elif [ -f "$report_file" ] && grep -q "Issue $issue_no resolved" "$report_file"; then
+            completion_file="$report_file"
+        fi
+        if [ -n "$completion_file" ]; then
+            echo "Completion marker found!"
+            break
         fi
 
         # Use output as next input
@@ -129,9 +140,16 @@ lol_cmd_impl() {
     done
 
     # Step 3: Check if completed or hit max iterations
-    if [ ! -f "$report_file" ] || ! grep -q "Issue $issue_no resolved" "$report_file"; then
+    # Re-check completion_file after loop (it's set during the loop)
+    local completion_file=""
+    if [ -f "$finalize_file" ] && grep -q "Issue $issue_no resolved" "$finalize_file"; then
+        completion_file="$finalize_file"
+    elif [ -f "$report_file" ] && grep -q "Issue $issue_no resolved" "$report_file"; then
+        completion_file="$report_file"
+    fi
+    if [ -z "$completion_file" ]; then
         echo "Error: Max iteration limit ($max_iterations) reached without completion marker" >&2
-        echo "To continue, increase --max-iterations or manually create .tmp/report.txt with 'Issue $issue_no resolved'" >&2
+        echo "To continue, increase --max-iterations or create .tmp/finalize.txt (or .tmp/report.txt) with 'Issue $issue_no resolved'" >&2
         return 1
     fi
 
@@ -171,16 +189,16 @@ lol_cmd_impl() {
         echo "Warning: Failed to push branch to $push_remote" >&2
     }
 
-    # Get PR title from first line of report
+    # Get PR title from first line of completion file
     local pr_title
-    pr_title=$(head -n1 "$report_file")
+    pr_title=$(head -n1 "$completion_file")
     if [ -z "$pr_title" ]; then
         pr_title="Implement issue #$issue_no"
     fi
 
-    # Get PR body from full report
+    # Get PR body from full completion file
     local pr_body
-    pr_body=$(cat "$report_file")
+    pr_body=$(cat "$completion_file")
 
     # Create PR using gh CLI with explicit base branch
     (cd "$worktree_path" && gh pr create --base "$base_branch" --title "$pr_title" --body "$pr_body") || {
