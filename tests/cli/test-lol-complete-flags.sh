@@ -47,6 +47,7 @@ plan_output=$(lol --complete plan-flags 2>/dev/null)
 echo "$plan_output" | grep -q "^--dry-run$" || test_fail "plan-flags missing: --dry-run"
 echo "$plan_output" | grep -q "^--verbose$" || test_fail "plan-flags missing: --verbose"
 echo "$plan_output" | grep -q "^--refine$" || test_fail "plan-flags missing: --refine"
+echo "$plan_output" | grep -q "^--editor$" || test_fail "plan-flags missing: --editor"
 
 # Test impl-flags
 impl_output=$(lol --complete impl-flags 2>/dev/null)

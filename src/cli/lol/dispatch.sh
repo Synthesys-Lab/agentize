@@ -104,7 +104,7 @@ lol() {
             echo "  lol project --associate <owner>/<id>"
             echo "  lol project --automation [--write <path>]"
             echo "  lol serve"
-            echo "  lol plan [--dry-run] [--verbose] [--refine <issue-no> [refinement-instructions]] [--backend <provider:model>] \"<feature-description>\""
+            echo "  lol plan [--dry-run] [--verbose] [--editor] [--refine <issue-no> [refinement-instructions]] [--backend <provider:model>] [<feature-description>]"
             echo "  lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]"
             echo "  lol usage [--today | --week] [--cache] [--cost]"
             echo "  lol claude-clean [--dry-run]"
@@ -119,6 +119,7 @@ lol() {
             echo "  --title <title>     Project title (project --create)"
             echo "  --dry-run           Skip issue creation (plan) or preview changes (claude-clean)"
             echo "  --verbose           Print detailed stage logs (plan)"
+            echo "  --editor            Open \$VISUAL/\$EDITOR to compose feature description (plan)"
             echo "  --refine            Refine an existing plan issue (plan)"
             echo "  --backend           Default backend for plan stages (provider:model)"
             echo "  --understander      Override backend for understander stage"
@@ -143,6 +144,7 @@ lol() {
             echo "  lol plan \"Add JWT auth\"        # Run planning pipeline"
             echo "  lol plan --dry-run \"Refactor\"  # Plan without creating issue"
             echo "  lol plan --refine 42 \"Tighten scope\""
+            echo "  lol plan --editor --dry-run     # Compose description in your editor"
             return 1
             ;;
     esac

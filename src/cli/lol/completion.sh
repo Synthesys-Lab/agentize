@@ -45,6 +45,7 @@ lol_complete() {
         plan-flags)
             echo "--dry-run"
             echo "--verbose"
+            echo "--editor"
             echo "--refine"
             ;;
         impl-flags)

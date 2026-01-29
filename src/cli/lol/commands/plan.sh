@@ -19,7 +19,7 @@ lol_cmd_plan() {
     if [ -z "$feature_desc" ] && [ -z "$refine_issue_number" ]; then
         echo "Error: Feature description is required." >&2
         echo "" >&2
-        echo "Usage: lol plan [--dry-run] [--verbose] [--refine <issue-number> [refinement-instructions]] \"<feature-description>\"" >&2
+        echo "Usage: lol plan [--dry-run] [--verbose] [--editor] [--refine <issue-number> [refinement-instructions]] [<feature-description>]" >&2
         return 1
     fi
 

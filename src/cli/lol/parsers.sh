@@ -185,6 +185,7 @@ _lol_parse_usage() {
 _lol_parse_plan() {
     local dry_run="false"
     local verbose="false"
+    local use_editor="false"
     local backend_default=""
     local backend_understander=""
     local backend_bold=""
@@ -199,11 +200,13 @@ _lol_parse_plan() {
         echo "lol plan: Run the multi-agent debate pipeline"
         echo ""
         echo "Usage: lol plan [options] \"<feature-description>\""
+        echo "       lol plan --editor [options]"
         echo "       lol plan --refine <issue-number> [refinement-instructions]"
         echo ""
         echo "Options:"
         echo "  --dry-run    Skip GitHub issue creation; use timestamp-based artifacts"
         echo "  --verbose    Print detailed stage logs (quiet by default)"
+        echo "  --editor     Open \$VISUAL/\$EDITOR to compose feature description"
         echo "  --refine     Refine an existing plan issue by number"
         echo "  --backend    Default backend for all stages (provider:model)"
         echo "  --understander Override backend for understander stage"
@@ -223,6 +226,10 @@ _lol_parse_plan() {
                 ;;
             --verbose)
                 verbose="true"
+                shift
+                ;;
+            --editor)
+                use_editor="true"
                 shift
                 ;;
             --refine)
@@ -310,6 +317,58 @@ _lol_parse_plan() {
                 ;;
         esac
     done
+
+    # Handle --editor flag
+    if [ "$use_editor" = "true" ]; then
+        # Check mutual exclusion with positional description
+        if [ -n "$feature_desc" ]; then
+            echo "Error: Cannot use --editor with a positional feature description." >&2
+            echo "Use either --editor OR provide a description, not both." >&2
+            return 1
+        fi
+
+        # Resolve editor command: VISUAL takes precedence over EDITOR
+        local editor_cmd=""
+        if [ -n "$VISUAL" ]; then
+            editor_cmd="$VISUAL"
+        elif [ -n "$EDITOR" ]; then
+            editor_cmd="$EDITOR"
+        else
+            echo "Error: Neither \$VISUAL nor \$EDITOR is set." >&2
+            echo "Set one of these environment variables to use --editor." >&2
+            return 1
+        fi
+
+        # Create temp file and set up cleanup trap
+        local tmp_file
+        tmp_file=$(mktemp)
+        trap 'rm -f "$tmp_file"' EXIT INT TERM
+
+        # Invoke editor
+        if ! "$editor_cmd" "$tmp_file"; then
+            echo "Error: Editor exited with non-zero status." >&2
+            rm -f "$tmp_file"
+            trap - EXIT INT TERM
+            return 1
+        fi
+
+        # Read content and validate
+        feature_desc=$(cat "$tmp_file")
+        rm -f "$tmp_file"
+        trap - EXIT INT TERM
+
+        # Check for empty/whitespace-only content
+        local trimmed
+        trimmed=$(echo "$feature_desc" | tr -d '[:space:]')
+        if [ -z "$trimmed" ]; then
+            echo "Error: Feature description is empty." >&2
+            echo "Write content in the editor to provide a description." >&2
+            return 1
+        fi
+
+        # Trim trailing newlines
+        feature_desc=$(echo "$feature_desc" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')
+    fi
 
     # Validate feature description
     if [ -z "$feature_desc" ] && [ -z "$refine_issue_number" ]; then
