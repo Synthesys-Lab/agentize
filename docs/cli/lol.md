@@ -188,7 +188,7 @@ lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
 |--------|----------|---------|-------------|
 | `--backend` | No | `codex:gpt-5.2-codex` | Backend in `provider:model` form |
 | `--max-iterations` | No | `10` | Maximum `acw` iterations before giving up |
-| `--yolo` | No | Off | Pass through to provider CLI options |
+| `--yolo` | No | Off | Pass through to provider CLI options (Claude via acw maps to `--dangerously-skip-permissions`) |
 
 #### Issue prefetch
 

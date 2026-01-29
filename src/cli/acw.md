@@ -69,7 +69,7 @@ Using files for input/output rather than stdin/stdout provides:
 ### Provider Isolation
 
 Each provider has its own invocation function to:
-- Handle CLI-specific flag formats
+- Handle CLI-specific flag formats (e.g., normalize `--yolo` to Claude's `--dangerously-skip-permissions`)
 - Manage output redirection differences
 - Allow targeted updates when provider CLIs change
 

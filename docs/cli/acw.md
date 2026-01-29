@@ -89,7 +89,7 @@ Use `acw --complete <topic>` to get completion values programmatically:
 | Topic | Description |
 |-------|-------------|
 | `providers` | List of supported providers (claude, codex, opencode, cursor) |
-| `cli-options` | Common CLI options |
+| `cli-options` | Common CLI options (e.g., --help, --model, --max-tokens, --yolo) |
 
 ### Setup
 
@@ -103,7 +103,7 @@ autoload -Uz compinit && compinit
 ## Notes
 
 - The output directory is created automatically if it doesn't exist
-- Provider-specific options are passed through unchanged
+- Provider-specific options are passed through unchanged, except `--yolo` is normalized to Claude's `--dangerously-skip-permissions`
 - The wrapper returns the provider's exit code on successful execution
 - Best-effort providers (opencode, cursor) may have limited functionality
 - Only `acw` is the public function; all helper functions (provider invocation, completion, validation) are internal (prefixed with `_acw_`) and won't appear in tab completion
