@@ -333,3 +333,79 @@ _lol_parse_plan() {
         "$backend_default" "$backend_understander" "$backend_bold" \
         "$backend_critique" "$backend_reducer" "$refine_issue_number"
 }
+
+# Parse impl command arguments and call lol_cmd_impl
+_lol_parse_impl() {
+    local issue_no=""
+    local backend="codex:gpt-5.2-codex"
+    local max_iterations="10"
+    local yolo="0"
+
+    # Handle --help
+    if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+        echo "lol impl: Automate issue-to-implementation loop"
+        echo ""
+        echo "Usage: lol impl <issue-no> [options]"
+        echo ""
+        echo "Options:"
+        echo "  --backend <provider:model>    Backend in provider:model form (default: codex:gpt-5.2-codex)"
+        echo "  --max-iterations <N>          Maximum acw iterations (default: 10)"
+        echo "  --yolo                        Pass through to provider CLI options"
+        echo "  --help                        Show this help message"
+        return 0
+    fi
+
+    # Parse arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --backend)
+                shift
+                if [ -z "$1" ]; then
+                    echo "Error: --backend requires provider:model" >&2
+                    echo "Usage: lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]" >&2
+                    return 1
+                fi
+                backend="$1"
+                shift
+                ;;
+            --max-iterations)
+                shift
+                if [ -z "$1" ]; then
+                    echo "Error: --max-iterations requires a number" >&2
+                    echo "Usage: lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]" >&2
+                    return 1
+                fi
+                max_iterations="$1"
+                shift
+                ;;
+            --yolo)
+                yolo="1"
+                shift
+                ;;
+            -*)
+                echo "Error: Unknown option '$1'" >&2
+                echo "Usage: lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]" >&2
+                return 1
+                ;;
+            *)
+                if [ -z "$issue_no" ]; then
+                    issue_no="$1"
+                else
+                    echo "Error: Unexpected argument '$1'" >&2
+                    echo "Usage: lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]" >&2
+                    return 1
+                fi
+                shift
+                ;;
+        esac
+    done
+
+    # Validate issue number
+    if [ -z "$issue_no" ]; then
+        echo "Error: Issue number is required" >&2
+        echo "Usage: lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]" >&2
+        return 1
+    fi
+
+    lol_cmd_impl "$issue_no" "$backend" "$max_iterations" "$yolo"
+}

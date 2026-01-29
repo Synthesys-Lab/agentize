@@ -48,6 +48,13 @@ echo "$plan_output" | grep -q "^--dry-run$" || test_fail "plan-flags missing: --
 echo "$plan_output" | grep -q "^--verbose$" || test_fail "plan-flags missing: --verbose"
 echo "$plan_output" | grep -q "^--refine$" || test_fail "plan-flags missing: --refine"
 
+# Test impl-flags
+impl_output=$(lol --complete impl-flags 2>/dev/null)
+
+echo "$impl_output" | grep -q "^--backend$" || test_fail "impl-flags missing: --backend"
+echo "$impl_output" | grep -q "^--max-iterations$" || test_fail "impl-flags missing: --max-iterations"
+echo "$impl_output" | grep -q "^--yolo$" || test_fail "impl-flags missing: --yolo"
+
 # Test unknown topic returns empty
 unknown_output=$(lol --complete unknown-topic 2>/dev/null)
 if [ -n "$unknown_output" ]; then

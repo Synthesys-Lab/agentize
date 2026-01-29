@@ -16,6 +16,7 @@ lol_complete() {
             echo "serve"
             echo "claude-clean"
             echo "plan"
+            echo "impl"
             ;;
         project-modes)
             echo "--create"
@@ -45,6 +46,11 @@ lol_complete() {
             echo "--dry-run"
             echo "--verbose"
             echo "--refine"
+            ;;
+        impl-flags)
+            echo "--backend"
+            echo "--max-iterations"
+            echo "--yolo"
             ;;
         *)
             # Unknown topic, return empty

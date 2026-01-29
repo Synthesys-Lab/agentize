@@ -83,6 +83,9 @@ lol() {
         plan)
             _lol_parse_plan "$@"
             ;;
+        impl)
+            _lol_parse_impl "$@"
+            ;;
         usage)
             _lol_parse_usage "$@"
             ;;
@@ -102,6 +105,7 @@ lol() {
             echo "  lol project --automation [--write <path>]"
             echo "  lol serve"
             echo "  lol plan [--dry-run] [--verbose] [--refine <issue-no> [refinement-instructions]] [--backend <provider:model>] \"<feature-description>\""
+            echo "  lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]"
             echo "  lol usage [--today | --week] [--cache] [--cost]"
             echo "  lol claude-clean [--dry-run]"
             echo ""

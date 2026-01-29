@@ -170,6 +170,40 @@ lol plan --dry-run --refine 42 "Add more error handling and edge cases"
 
 See [planner pipeline module](planner.md) for pipeline stage details and artifact naming.
 
+### lol impl
+
+Automate the issue-to-implementation loop using `wt` + `acw`.
+
+```bash
+lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
+```
+
+#### Options
+
+| Option | Required | Default | Description |
+|--------|----------|---------|-------------|
+| `--backend` | No | `codex:gpt-5.2-codex` | Backend in `provider:model` form |
+| `--max-iterations` | No | `10` | Maximum `acw` iterations before giving up |
+| `--yolo` | No | Off | Pass through to provider CLI options |
+
+#### Completion marker
+
+Create `.tmp/report.txt` in the worktree and include `Issue <N> resolved` to finish.
+The first line of `.tmp/report.txt` is used as the PR title.
+
+#### Example
+
+```bash
+# Start implementation loop for issue 42
+lol impl 42
+
+# Use a different backend
+lol impl 42 --backend cursor:gpt-5.2-codex
+
+# Limit iterations and enable yolo mode
+lol impl 42 --max-iterations 5 --yolo
+```
+
 ### lol serve
 
 Long-running server that polls GitHub Projects for "Plan Accepted" issues and automatically invokes `wt spawn` to start implementation.
