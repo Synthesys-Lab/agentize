@@ -119,11 +119,11 @@ lol usage --week
 Run the multi-agent debate pipeline.
 
 ```bash
-lol plan [--dry-run] [--verbose] [--refine <issue-no> [refinement-instructions]] \
+lol plan [--dry-run] [--verbose] [--editor] [--refine <issue-no> [refinement-instructions]] \
   [--backend <provider:model>] [--understander <provider:model>] \
   [--bold <provider:model>] [--critique <provider:model>] \
   [--reducer <provider:model>] \
-  "<feature-description>"
+  [<feature-description>]
 lol plan --refine <issue-no> [refinement-instructions]
 ```
 
@@ -140,6 +140,7 @@ Runs the full multi-agent debate pipeline for a feature description, producing a
 | `--bold` | No | - | Override backend for bold-proposer stage |
 | `--critique` | No | - | Override backend for critique stage |
 | `--reducer` | No | - | Override backend for reducer stage |
+| `--editor` | No | - | Open $VISUAL/$EDITOR to compose feature description |
 | `--refine <issue-no> [refinement-instructions]` | No | - | Refine an existing plan issue (optional focus) |
 
 By default, `lol plan` creates a GitHub issue when `gh` is available. Use `--dry-run` to skip issue creation and use timestamp-based artifact naming instead.
@@ -166,6 +167,9 @@ lol plan --refine 42 "Focus on reducing complexity"
 
 # Refine without publishing back to GitHub (still writes issue-refine artifacts)
 lol plan --dry-run --refine 42 "Add more error handling and edge cases"
+
+# Compose the feature description in your editor
+lol plan --editor --dry-run
 ```
 
 See [planner pipeline module](planner.md) for pipeline stage details and artifact naming.

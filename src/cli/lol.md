@@ -81,7 +81,7 @@ Shell-agnostic completion helper for completion systems.
 - `project-automation-flags`: List flags for `lol project --automation`
 - `claude-clean-flags`: List flags for `lol claude-clean`
 - `usage-flags`: List flags for `lol usage`
-- `plan-flags`: List flags for `lol plan`
+- `plan-flags`: List flags for `lol plan` (`--dry-run`, `--verbose`, `--editor`)
 
 **Example:**
 ```bash
