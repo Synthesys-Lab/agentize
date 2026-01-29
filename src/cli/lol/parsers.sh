@@ -206,7 +206,7 @@ _lol_parse_plan() {
         echo "Options:"
         echo "  --dry-run    Skip GitHub issue creation; use timestamp-based artifacts"
         echo "  --verbose    Print detailed stage logs (quiet by default)"
-        echo "  --editor     Open \$VISUAL/\$EDITOR to compose feature description"
+        echo "  --editor     Open \$EDITOR to compose feature description"
         echo "  --refine     Refine an existing plan issue by number"
         echo "  --backend    Default backend for all stages (provider:model)"
         echo "  --understander Override backend for understander stage"
@@ -327,17 +327,14 @@ _lol_parse_plan() {
             return 1
         fi
 
-        # Resolve editor command: VISUAL takes precedence over EDITOR
+        # Resolve editor command: EDITOR only
         local editor_cmd=""
-        if [ -n "$VISUAL" ]; then
-            editor_cmd="$VISUAL"
-        elif [ -n "$EDITOR" ]; then
-            editor_cmd="$EDITOR"
-        else
-            echo "Error: Neither \$VISUAL nor \$EDITOR is set." >&2
-            echo "Set one of these environment variables to use --editor." >&2
+        if [ -z "$EDITOR" ]; then
+            echo "Error: \$EDITOR is not set." >&2
+            echo "Set the EDITOR environment variable to use --editor." >&2
             return 1
         fi
+        editor_cmd="$EDITOR"
 
         # Create temp file and set up cleanup trap
         local tmp_file

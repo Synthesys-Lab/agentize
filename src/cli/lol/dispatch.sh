@@ -119,7 +119,7 @@ lol() {
             echo "  --title <title>     Project title (project --create)"
             echo "  --dry-run           Skip issue creation (plan) or preview changes (claude-clean)"
             echo "  --verbose           Print detailed stage logs (plan)"
-            echo "  --editor            Open \$VISUAL/\$EDITOR to compose feature description (plan)"
+            echo "  --editor            Open \$EDITOR to compose feature description (plan)"
             echo "  --refine            Refine an existing plan issue (plan)"
             echo "  --backend           Default backend for plan stages (provider:model)"
             echo "  --understander      Override backend for understander stage"
