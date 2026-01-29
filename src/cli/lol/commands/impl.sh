@@ -65,8 +65,17 @@ lol_cmd_impl() {
     local output_file="$worktree_path/.tmp/impl-output.txt"
     local report_file="$worktree_path/.tmp/report.txt"
 
-    # Create initial input (can be customized based on issue content)
-    echo "Implement issue #$issue_no" > "$input_file"
+    # Prefetch issue content (title/body/labels) for the initial prompt
+    local issue_file="$worktree_path/.tmp/issue-${issue_no}.md"
+    gh issue view "$issue_no" --json title,body,labels \
+        -q '("# " + .title + "\n\n" + (if (.labels|length)>0 then "Labels: " + (.labels|map(.name)|join(", ")) + "\n\n" else "" end) + .body + "\n")' \
+        > "$issue_file" 2>/dev/null
+    if [ -s "$issue_file" ]; then
+        echo "Implement the feature described in $issue_file" > "$input_file"
+    else
+        echo "Implement issue #$issue_no" > "$input_file"
+        echo "Warning: failed to prefetch issue #$issue_no; using issue number prompt" >&2
+    fi
 
     # Build yolo flag for acw
     local yolo_flag=""
