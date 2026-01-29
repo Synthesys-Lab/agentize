@@ -17,9 +17,19 @@ _acw_invoke_claude() {
     local output="$3"
     shift 3
 
+    # Normalize --yolo to Claude's supported flag
+    local args=()
+    for arg in "$@"; do
+        if [ "$arg" = "--yolo" ]; then
+            args+=( "--dangerously-skip-permissions" )
+        else
+            args+=( "$arg" )
+        fi
+    done
+
     # Claude uses -p @file for input, output to stdout
     # stderr passes through for progress messages
-    claude --model "$model" -p "@$input" "$@" > "$output"
+    claude --model "$model" -p "@$input" "${args[@]}" > "$output"
 }
 
 # Invoke Codex CLI
