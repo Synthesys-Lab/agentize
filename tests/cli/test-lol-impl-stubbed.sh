@@ -239,4 +239,154 @@ grep -q "\-\-yolo" "$ACW_CALL_LOG" || {
     test_fail "Expected --yolo to be passed to acw"
 }
 
+# ── Test 6: Issue prefetch success ──
+ITERATION_COUNT=0
+> "$ACW_CALL_LOG"
+> "$GH_CALL_LOG"
+rm -f "$STUB_WORKTREE/.tmp/report.txt"
+rm -f "$STUB_WORKTREE/.tmp/issue-123.md"
+rm -f "$STUB_WORKTREE/.tmp/impl-input.txt"
+
+# Create completion marker immediately
+mkdir -p "$STUB_WORKTREE/.tmp"
+echo "PR: Prefetch test" > "$STUB_WORKTREE/.tmp/report.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
+
+# Stub gh to provide issue content
+gh() {
+    echo "gh $*" >> "$GH_CALL_LOG"
+    case "$1" in
+        issue)
+            if [ "$2" = "view" ]; then
+                # Return issue content in expected format
+                echo "# Test Issue Title"
+                echo ""
+                echo "Labels: bug, enhancement"
+                echo ""
+                echo "This is the issue body content."
+            fi
+            return 0
+            ;;
+        pr)
+            if [ "$2" = "create" ]; then
+                echo "https://github.com/test/repo/pull/1"
+            fi
+            return 0
+            ;;
+        *)
+            return 0
+            ;;
+    esac
+}
+export -f gh 2>/dev/null || true
+
+acw() {
+    echo "acw $*" >> "$ACW_CALL_LOG"
+    echo "Stub response" > "$4"
+    return 0
+}
+export -f acw 2>/dev/null || true
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed with issue prefetch"
+}
+
+# Verify gh issue view was called
+grep -q "gh issue view 123" "$GH_CALL_LOG" || {
+    echo "GH call log:" >&2
+    cat "$GH_CALL_LOG" >&2
+    test_fail "Expected gh issue view to be called for prefetch"
+}
+
+# Verify issue file was created
+if [ ! -f "$STUB_WORKTREE/.tmp/issue-123.md" ]; then
+    test_fail "Expected .tmp/issue-123.md to be created"
+fi
+
+# Verify initial prompt references the issue file
+if ! grep -q "issue-123.md" "$STUB_WORKTREE/.tmp/impl-input.txt"; then
+    echo "impl-input.txt content:" >&2
+    cat "$STUB_WORKTREE/.tmp/impl-input.txt" >&2
+    test_fail "Expected impl-input.txt to reference issue-123.md"
+fi
+
+# ── Test 7: Issue prefetch fallback on failure ──
+ITERATION_COUNT=0
+> "$ACW_CALL_LOG"
+> "$GH_CALL_LOG"
+rm -f "$STUB_WORKTREE/.tmp/issue-456.md"
+rm -f "$STUB_WORKTREE/.tmp/impl-input.txt"
+
+# Update wt stub to return different worktree for issue 456
+wt() {
+    echo "wt $*" >> "$WT_CALL_LOG"
+    case "$1" in
+        pathto)
+            echo "$STUB_WORKTREE"
+            return 0
+            ;;
+        spawn)
+            return 0
+            ;;
+        *)
+            return 0
+            ;;
+    esac
+}
+export -f wt 2>/dev/null || true
+
+# Create completion marker
+echo "PR: Fallback test" > "$STUB_WORKTREE/.tmp/report.txt"
+echo "Issue 456 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
+
+# Stub gh to fail for issue view
+gh() {
+    echo "gh $*" >> "$GH_CALL_LOG"
+    case "$1" in
+        issue)
+            if [ "$2" = "view" ]; then
+                # Simulate failure (network error, auth failure, etc.)
+                return 1
+            fi
+            return 0
+            ;;
+        pr)
+            if [ "$2" = "create" ]; then
+                echo "https://github.com/test/repo/pull/1"
+            fi
+            return 0
+            ;;
+        *)
+            return 0
+            ;;
+    esac
+}
+export -f gh 2>/dev/null || true
+
+output=$(lol impl 456 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed even when prefetch fails"
+}
+
+# Verify warning was emitted about prefetch failure
+echo "$output" | grep -qi "warning\|failed.*prefetch\|issue.*456" || {
+    echo "Output: $output" >&2
+    test_fail "Expected warning about prefetch failure"
+}
+
+# Verify initial prompt falls back to simple issue number reference
+if grep -q "issue-456.md" "$STUB_WORKTREE/.tmp/impl-input.txt" 2>/dev/null; then
+    echo "impl-input.txt content:" >&2
+    cat "$STUB_WORKTREE/.tmp/impl-input.txt" >&2
+    test_fail "Expected impl-input.txt to NOT reference issue file on fallback"
+fi
+
+# Verify fallback prompt mentions issue number
+if ! grep -q "issue.*456\|#456" "$STUB_WORKTREE/.tmp/impl-input.txt"; then
+    echo "impl-input.txt content:" >&2
+    cat "$STUB_WORKTREE/.tmp/impl-input.txt" >&2
+    test_fail "Expected fallback prompt to mention issue number"
+fi
+
 test_pass "lol impl workflow with stubbed dependencies"
