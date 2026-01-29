@@ -119,10 +119,12 @@ lol usage --week
 Run the multi-agent debate pipeline.
 
 ```bash
-lol plan [--dry-run] [--verbose] [--backend <provider:model>] \
-  [--understander <provider:model>] [--bold <provider:model>] \
-  [--critique <provider:model>] [--reducer <provider:model>] \
+lol plan [--dry-run] [--verbose] [--refine <issue-no> [refinement-instructions]] \
+  [--backend <provider:model>] [--understander <provider:model>] \
+  [--bold <provider:model>] [--critique <provider:model>] \
+  [--reducer <provider:model>] \
   "<feature-description>"
+lol plan --refine <issue-no> [refinement-instructions]
 ```
 
 Runs the full multi-agent debate pipeline for a feature description, producing a consensus implementation plan. This is the preferred entrypoint for the planner pipeline.
@@ -138,8 +140,11 @@ Runs the full multi-agent debate pipeline for a feature description, producing a
 | `--bold` | No | - | Override backend for bold-proposer stage |
 | `--critique` | No | - | Override backend for critique stage |
 | `--reducer` | No | - | Override backend for reducer stage |
+| `--refine <issue-no> [refinement-instructions]` | No | - | Refine an existing plan issue (optional focus) |
 
 By default, `lol plan` creates a GitHub issue when `gh` is available. Use `--dry-run` to skip issue creation and use timestamp-based artifact naming instead.
+
+When `--refine` is set, the issue body is fetched from GitHub and used as the debate context. Optional refinement instructions are appended to the context to guide the agents. Refinement runs write artifacts prefixed with `issue-refine-<N>` and update the existing issue unless `--dry-run` is provided. This mode requires authenticated `gh` access to read the issue body.
 
 #### Example
 
@@ -155,6 +160,12 @@ lol plan --verbose "Add real-time notifications"
 
 # Use a different backend for the understander stage
 lol plan --understander cursor:gpt-5.2-codex "Plan with cursor understander"
+
+# Refine an existing plan issue
+lol plan --refine 42 "Focus on reducing complexity"
+
+# Refine without publishing back to GitHub (still writes issue-refine artifacts)
+lol plan --dry-run --refine 42 "Add more error handling and edge cases"
 ```
 
 See [planner pipeline module](planner.md) for pipeline stage details and artifact naming.

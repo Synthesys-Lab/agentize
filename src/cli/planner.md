@@ -7,10 +7,12 @@ Internal loader for the planner pipeline module used by `lol plan`. Sources modu
 ## Public Entry Point
 
 ```bash
-lol plan [--dry-run] [--verbose] [--backend <provider:model>] \
-  [--understander <provider:model>] [--bold <provider:model>] \
-  [--critique <provider:model>] [--reducer <provider:model>] \
+lol plan [--dry-run] [--verbose] [--refine <issue-no> [refinement-instructions]] \
+  [--backend <provider:model>] [--understander <provider:model>] \
+  [--bold <provider:model>] [--critique <provider:model>] \
+  [--reducer <provider:model>] \
   "<feature-description>"
+lol plan --refine <issue-no> [refinement-instructions]
 ```
 
 This module exports only internal `_planner_*` helpers; the public entrypoint is `lol plan`.
@@ -31,9 +33,10 @@ Stage-specific flags override `--backend`. Defaults are `claude:sonnet` for unde
 
 | Function | Location | Purpose |
 |----------|----------|---------|
-| `_planner_run_pipeline` | `planner/pipeline.sh` | Orchestrates the multi-agent debate pipeline (optional issue mode) |
+| `_planner_run_pipeline` | `planner/pipeline.sh` | Orchestrates the multi-agent debate pipeline (optional issue mode/refine) |
 | `_planner_render_prompt` | `planner/pipeline.sh` | Concatenates agent prompt + plan-guideline + context into a temp file |
 | `_planner_issue_create` | `planner/github.sh` | Creates placeholder GitHub issue (optional) |
+| `_planner_issue_fetch` | `planner/github.sh` | Fetches existing issue body for refine mode |
 | `_planner_issue_publish` | `planner/github.sh` | Updates issue body and adds `agentize:plan` label |
 
 ## Module Load Order

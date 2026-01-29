@@ -101,7 +101,7 @@ lol() {
             echo "  lol project --associate <owner>/<id>"
             echo "  lol project --automation [--write <path>]"
             echo "  lol serve"
-            echo "  lol plan [--dry-run] [--verbose] [--backend <provider:model>] \"<feature-description>\""
+            echo "  lol plan [--dry-run] [--verbose] [--refine <issue-no> [refinement-instructions]] [--backend <provider:model>] \"<feature-description>\""
             echo "  lol usage [--today | --week] [--cache] [--cost]"
             echo "  lol claude-clean [--dry-run]"
             echo ""
@@ -115,6 +115,7 @@ lol() {
             echo "  --title <title>     Project title (project --create)"
             echo "  --dry-run           Skip issue creation (plan) or preview changes (claude-clean)"
             echo "  --verbose           Print detailed stage logs (plan)"
+            echo "  --refine            Refine an existing plan issue (plan)"
             echo "  --backend           Default backend for plan stages (provider:model)"
             echo "  --understander      Override backend for understander stage"
             echo "  --bold              Override backend for bold-proposer stage"
@@ -137,6 +138,7 @@ lol() {
             echo "  lol claude-clean                # Remove stale entries"
             echo "  lol plan \"Add JWT auth\"        # Run planning pipeline"
             echo "  lol plan --dry-run \"Refactor\"  # Plan without creating issue"
+            echo "  lol plan --refine 42 \"Tighten scope\""
             return 1
             ;;
     esac

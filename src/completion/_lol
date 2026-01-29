@@ -84,6 +84,7 @@ _lol_plan() {
     _arguments \
         '--dry-run[Skip GitHub issue creation; use timestamp-based artifacts]' \
         '--verbose[Print detailed stage logs]' \
+        '--refine[Refine an existing plan issue]:issue-number:' \
         ':feature description:'
 }
 

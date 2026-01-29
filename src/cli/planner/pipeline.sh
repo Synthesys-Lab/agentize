@@ -212,7 +212,7 @@ _planner_stage() {
 }
 
 # Run the full multi-agent debate pipeline
-# Usage: _planner_run_pipeline "<feature-description>" [issue-mode] [verbose]
+# Usage: _planner_run_pipeline "<feature-description>" [issue-mode] [verbose] [backends...] [refine-issue-number]
 _planner_run_pipeline() {
     local feature_desc="$1"
     local issue_mode="${2:-true}"
@@ -222,6 +222,7 @@ _planner_run_pipeline() {
     local backend_bold="${6:-}"
     local backend_critique="${7:-}"
     local backend_reducer="${8:-}"
+    local refine_issue_number="${9:-}"
     local repo_root="${AGENTIZE_HOME:-$(git rev-parse --show-toplevel 2>/dev/null)}"
     if [ -z "$repo_root" ] || [ ! -d "$repo_root" ]; then
         echo "Error: Could not determine repo root. Set AGENTIZE_HOME or run inside a git repo." >&2
@@ -233,11 +234,28 @@ _planner_run_pipeline() {
     # Ensure .tmp directory exists
     mkdir -p "$repo_root/.tmp"
 
-    # Determine artifact prefix: issue-N or timestamp
+    # Determine artifact prefix: issue-N, issue-refine-N, or timestamp
     local issue_number=""
     local prefix_name=""
+    local refine_instructions=""
 
-    if [ "$issue_mode" = "true" ]; then
+    if [ -n "$refine_issue_number" ]; then
+        refine_instructions="$feature_desc"
+        local issue_body
+        issue_body=$(_planner_issue_fetch "$refine_issue_number") || {
+            echo "Error: Failed to fetch issue #${refine_issue_number} for refinement" >&2
+            return 1
+        }
+        if ! echo "$issue_body" | grep -Eq "Implementation Plan:|Consensus Plan:"; then
+            echo "Warning: Issue #${refine_issue_number} does not look like a plan (missing Implementation/Consensus Plan headers)" >&2
+        fi
+        feature_desc="$issue_body"
+        if [ -n "$refine_instructions" ]; then
+            feature_desc="${feature_desc}"$'\n\n'"Refinement focus:"$'\n'"${refine_instructions}"
+        fi
+        issue_number="$refine_issue_number"
+        prefix_name="issue-refine-${refine_issue_number}"
+    elif [ "$issue_mode" = "true" ]; then
         issue_number=$(_planner_issue_create "$feature_desc")
         if [ -n "$issue_number" ]; then
             prefix_name="issue-${issue_number}"
@@ -438,7 +456,7 @@ _planner_run_pipeline() {
     _planner_log "$verbose" "Consensus plan: $consensus_path"
     _planner_log "$verbose" ""
 
-    # Publish to GitHub issue if in issue mode and issue was created
+    # Publish to GitHub issue if in issue mode and issue number is available
     if [ "$issue_mode" = "true" ] && [ -n "$issue_number" ]; then
         _planner_stage "Publishing plan to issue #${issue_number}..."
         local plan_title

@@ -15,7 +15,7 @@ planner/github.sh    - GitHub issue creation/update helpers
 ## Load Order
 
 1. `pipeline.sh` - Defines `_planner_run_pipeline()` and `_planner_render_prompt()` helpers
-2. `github.sh` - Defines `_planner_issue_create()` and `_planner_issue_publish()` helpers
+2. `github.sh` - Defines `_planner_issue_create()`, `_planner_issue_fetch()`, and `_planner_issue_publish()` helpers
 
 ## Related Documentation
 

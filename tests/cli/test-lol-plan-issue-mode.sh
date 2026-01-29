@@ -35,6 +35,18 @@ gh() {
             echo '{"number":42}'
             return 0
         fi
+        # Return issue body for refine fetch
+        if echo "$*" | grep -q "json.*body"; then
+            echo "# Implementation Plan: Refinement Seed"
+            echo ""
+            echo "Refine this plan."
+            return 0
+        fi
+        # Return URL for refine fetch
+        if echo "$*" | grep -q "json.*url"; then
+            echo "https://github.com/test/repo/issues/42"
+            return 0
+        fi
         return 0
     elif [ "$1" = "issue" ] && [ "$2" = "edit" ]; then
         return 0
@@ -156,7 +168,73 @@ echo "$output" | grep -q "consensus\|Consensus" || {
     test_fail "Pipeline should still complete with --dry-run"
 }
 
-# ── Test 3: Fallback when gh fails (default mode) ──
+# ── Test 3: --refine uses issue-refine prefix and publishes ──
+# Reset logs
+> "$GH_CALL_LOG"
+> "$ACW_CALL_LOG"
+
+output=$(lol plan --refine 42 "Tighten scope" 2>&1) || {
+    echo "Pipeline output: $output" >&2
+    test_fail "lol plan --refine exited with non-zero status"
+}
+
+echo "$output" | grep -q "issue-refine-42" || {
+    echo "Output: $output" >&2
+    test_fail "Expected issue-refine-42 artifact prefix in output"
+}
+
+if grep -q "gh issue create" "$GH_CALL_LOG"; then
+    echo "GH call log:" >&2
+    cat "$GH_CALL_LOG" >&2
+    test_fail "--refine should NOT create a new issue"
+fi
+
+grep -q "gh issue view" "$GH_CALL_LOG" || {
+    echo "GH call log:" >&2
+    cat "$GH_CALL_LOG" >&2
+    test_fail "--refine should fetch the existing issue"
+}
+
+grep -q "gh issue edit" "$GH_CALL_LOG" || {
+    echo "GH call log:" >&2
+    cat "$GH_CALL_LOG" >&2
+    test_fail "--refine should publish updates to the existing issue"
+}
+
+# ── Test 4: --dry-run --refine skips publish but keeps issue-refine prefix ──
+# Reset logs
+> "$GH_CALL_LOG"
+> "$ACW_CALL_LOG"
+
+output=$(lol plan --dry-run --refine 42 "Add error cases" 2>&1) || {
+    echo "Pipeline output: $output" >&2
+    test_fail "lol plan --dry-run --refine exited with non-zero status"
+}
+
+echo "$output" | grep -q "issue-refine-42" || {
+    echo "Output: $output" >&2
+    test_fail "Expected issue-refine-42 artifact prefix in output (dry-run refine)"
+}
+
+if grep -q "gh issue create" "$GH_CALL_LOG"; then
+    echo "GH call log:" >&2
+    cat "$GH_CALL_LOG" >&2
+    test_fail "--dry-run --refine should NOT create a new issue"
+fi
+
+if grep -q "gh issue edit" "$GH_CALL_LOG"; then
+    echo "GH call log:" >&2
+    cat "$GH_CALL_LOG" >&2
+    test_fail "--dry-run --refine should NOT publish updates"
+fi
+
+grep -q "gh issue view" "$GH_CALL_LOG" || {
+    echo "GH call log:" >&2
+    cat "$GH_CALL_LOG" >&2
+    test_fail "--dry-run --refine should still fetch the issue body"
+}
+
+# ── Test 5: Fallback when gh fails (default mode) ──
 # Reset logs
 > "$GH_CALL_LOG"
 > "$ACW_CALL_LOG"

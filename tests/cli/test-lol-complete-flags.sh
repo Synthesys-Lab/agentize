@@ -46,6 +46,7 @@ plan_output=$(lol --complete plan-flags 2>/dev/null)
 
 echo "$plan_output" | grep -q "^--dry-run$" || test_fail "plan-flags missing: --dry-run"
 echo "$plan_output" | grep -q "^--verbose$" || test_fail "plan-flags missing: --verbose"
+echo "$plan_output" | grep -q "^--refine$" || test_fail "plan-flags missing: --refine"
 
 # Test unknown topic returns empty
 unknown_output=$(lol --complete unknown-topic 2>/dev/null)

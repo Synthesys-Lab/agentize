@@ -3,7 +3,7 @@
 # Delegates to planner pipeline for multi-agent debate
 
 # Run the multi-agent debate pipeline
-# Usage: lol_cmd_plan <feature_desc> <issue_mode> <verbose> <backend_default> <backend_understander> <backend_bold> <backend_critique> <backend_reducer>
+# Usage: lol_cmd_plan <feature_desc_or_refine_instructions> <issue_mode> <verbose> <backend_default> <backend_understander> <backend_bold> <backend_critique> <backend_reducer> <refine_issue_number>
 lol_cmd_plan() {
     local feature_desc="$1"
     local issue_mode="$2"
@@ -13,12 +13,13 @@ lol_cmd_plan() {
     local backend_bold="$6"
     local backend_critique="$7"
     local backend_reducer="$8"
+    local refine_issue_number="$9"
 
     # Validate feature description
-    if [ -z "$feature_desc" ]; then
+    if [ -z "$feature_desc" ] && [ -z "$refine_issue_number" ]; then
         echo "Error: Feature description is required." >&2
         echo "" >&2
-        echo "Usage: lol plan [--dry-run] [--verbose] \"<feature-description>\"" >&2
+        echo "Usage: lol plan [--dry-run] [--verbose] [--refine <issue-number> [refinement-instructions]] \"<feature-description>\"" >&2
         return 1
     fi
 
@@ -35,5 +36,5 @@ lol_cmd_plan() {
     # Delegate to planner pipeline
     _planner_run_pipeline "$feature_desc" "$issue_mode" "$verbose" \
         "$backend_default" "$backend_understander" "$backend_bold" \
-        "$backend_critique" "$backend_reducer"
+        "$backend_critique" "$backend_reducer" "$refine_issue_number"
 }

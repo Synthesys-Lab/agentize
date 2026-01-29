@@ -29,4 +29,8 @@ echo "$output" | grep -q "lol usage" || test_fail "Usage text missing 'lol usage
 # Verify usage text includes lol plan command
 echo "$output" | grep -q "lol plan" || test_fail "Usage text missing 'lol plan' command"
 
+# Verify lol plan --help includes --refine
+plan_help=$(lol plan --help 2>&1)
+echo "$plan_help" | grep -q "\-\-refine" || test_fail "lol plan --help missing '--refine' option"
+
 test_pass "lol usage text includes documented commands"

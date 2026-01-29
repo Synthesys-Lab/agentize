@@ -5,10 +5,12 @@ Internal pipeline module used by `lol plan` to run the multi-agent debate workfl
 ## Usage
 
 ```bash
-lol plan [--dry-run] [--verbose] [--backend <provider:model>] \
-  [--understander <provider:model>] [--bold <provider:model>] \
-  [--critique <provider:model>] [--reducer <provider:model>] \
+lol plan [--dry-run] [--verbose] [--refine <issue-no> [refinement-instructions]] \
+  [--backend <provider:model>] [--understander <provider:model>] \
+  [--bold <provider:model>] [--critique <provider:model>] \
+  [--reducer <provider:model>] \
   "<feature-description>"
+lol plan --refine <issue-no> [refinement-instructions]
 ```
 
 ## Pipeline Stages
@@ -26,6 +28,10 @@ Both critique and reducer append plan-guideline content and run in parallel via 
 ### `--dry-run` (optional flag)
 
 Skips GitHub issue creation and uses timestamp-based artifact naming. The pipeline still runs fully; only the issue creation/publish step is skipped.
+
+### `--refine <issue-no> [refinement-instructions]`
+
+Refines an existing plan issue by fetching its body from GitHub and rerunning the debate. Optional refinement instructions are appended to the context to steer the agents. Refinement runs still write artifacts with `issue-refine-<N>` prefixes and update the existing issue unless `--dry-run` is set. Requires authenticated `gh` access to read the issue body.
 
 ### `--verbose` (optional flag)
 
@@ -53,6 +59,8 @@ lol plan --understander cursor:gpt-5.2-codex "Plan with cursor understander"
 
 By default, `lol plan` creates a placeholder GitHub issue before the pipeline runs using a truncated placeholder title (`[plan] placeholder: <first 50 chars>...`), and uses `issue-{N}` artifact naming. After the consensus stage completes, the issue body is updated with the final plan, the title is set from the first `Implementation Plan:` or `Consensus Plan:` header in the consensus file (fallback: truncated feature description), and the `agentize:plan` label is applied.
 
+When `--refine` is used, no placeholder issue is created. The issue body is fetched and reused as debate context, and the issue is updated in-place after the consensus stage (unless `--dry-run` is set).
+
 Requires `gh` CLI to be installed and authenticated. If `gh` is unavailable or issue creation fails, logs a warning and falls back to timestamp-based artifact naming.
 
 ## Prompt Rendering
@@ -78,6 +86,11 @@ All intermediate and final artifacts are written to `.tmp/`:
 .tmp/issue-{N}-critique.txt
 .tmp/issue-{N}-reducer.txt
 .tmp/issue-{N}-consensus.md             # Final consensus plan (also published to issue)
+.tmp/issue-refine-{N}-understander.txt  # Refinement artifacts (issue body context)
+.tmp/issue-refine-{N}-bold.txt
+.tmp/issue-refine-{N}-critique.txt
+.tmp/issue-refine-{N}-reducer.txt
+.tmp/issue-refine-{N}-consensus.md      # Refinement consensus (published unless --dry-run)
 ```
 
 ## Relationship to /ultra-planner

@@ -191,16 +191,20 @@ _lol_parse_plan() {
     local backend_critique=""
     local backend_reducer=""
     local feature_desc=""
+    local refine_issue_number=""
+    local refine_instructions=""
 
     # Handle --help
     if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
         echo "lol plan: Run the multi-agent debate pipeline"
         echo ""
         echo "Usage: lol plan [options] \"<feature-description>\""
+        echo "       lol plan --refine <issue-number> [refinement-instructions]"
         echo ""
         echo "Options:"
         echo "  --dry-run    Skip GitHub issue creation; use timestamp-based artifacts"
         echo "  --verbose    Print detailed stage logs (quiet by default)"
+        echo "  --refine     Refine an existing plan issue by number"
         echo "  --backend    Default backend for all stages (provider:model)"
         echo "  --understander Override backend for understander stage"
         echo "  --bold       Override backend for bold-proposer stage"
@@ -219,6 +223,16 @@ _lol_parse_plan() {
                 ;;
             --verbose)
                 verbose="true"
+                shift
+                ;;
+            --refine)
+                shift
+                if [ -z "$1" ]; then
+                    echo "Error: --refine requires an issue number" >&2
+                    echo "Usage: lol plan [options] \"<feature-description>\"" >&2
+                    return 1
+                fi
+                refine_issue_number="$1"
                 shift
                 ;;
             --backend)
@@ -277,12 +291,20 @@ _lol_parse_plan() {
                 return 1
                 ;;
             *)
-                if [ -z "$feature_desc" ]; then
-                    feature_desc="$1"
+                if [ -n "$refine_issue_number" ]; then
+                    if [ -n "$refine_instructions" ]; then
+                        refine_instructions="${refine_instructions} $1"
+                    else
+                        refine_instructions="$1"
+                    fi
                 else
-                    echo "Error: Unexpected argument '$1'" >&2
-                    echo "Usage: lol plan [options] \"<feature-description>\"" >&2
-                    return 1
+                    if [ -z "$feature_desc" ]; then
+                        feature_desc="$1"
+                    else
+                        echo "Error: Unexpected argument '$1'" >&2
+                        echo "Usage: lol plan [options] \"<feature-description>\"" >&2
+                        return 1
+                    fi
                 fi
                 shift
                 ;;
@@ -290,11 +312,15 @@ _lol_parse_plan() {
     done
 
     # Validate feature description
-    if [ -z "$feature_desc" ]; then
+    if [ -z "$feature_desc" ] && [ -z "$refine_issue_number" ]; then
         echo "Error: Feature description is required." >&2
         echo "" >&2
         echo "Usage: lol plan [options] \"<feature-description>\"" >&2
         return 1
+    fi
+
+    if [ -n "$refine_issue_number" ]; then
+        feature_desc="$refine_instructions"
     fi
 
     # Convert --dry-run to issue_mode (inverse logic)
@@ -305,5 +331,5 @@ _lol_parse_plan() {
 
     lol_cmd_plan "$feature_desc" "$issue_mode" "$verbose" \
         "$backend_default" "$backend_understander" "$backend_bold" \
-        "$backend_critique" "$backend_reducer"
+        "$backend_critique" "$backend_reducer" "$refine_issue_number"
 }

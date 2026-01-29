@@ -185,17 +185,25 @@ Run the multi-agent debate pipeline via `lol plan`.
 
 **Signature:**
 ```bash
-lol_cmd_plan <feature_desc> <issue_mode> <verbose>
+lol_cmd_plan <feature_desc_or_refine_instructions> <issue_mode> <verbose> \
+  <backend_default> <backend_understander> <backend_bold> <backend_critique> <backend_reducer> \
+  <refine_issue_number>
 ```
 
 **Parameters:**
-- `feature_desc`: Feature description string (required)
-- `issue_mode`: `"true"` to create GitHub issue, `"false"` to skip (required)
+- `feature_desc_or_refine_instructions`: Feature description string, or refinement instructions when refining (required unless `refine_issue_number` is set)
+- `issue_mode`: `"true"` to create/update GitHub issue, `"false"` to skip publish (required)
 - `verbose`: `"true"` for detailed logs, `"false"` for quiet mode (required)
+- `backend_default`: Default backend for all stages (provider:model, optional)
+- `backend_understander`: Override backend for understander stage (optional)
+- `backend_bold`: Override backend for bold-proposer stage (optional)
+- `backend_critique`: Override backend for critique stage (optional)
+- `backend_reducer`: Override backend for reducer stage (optional)
+- `refine_issue_number`: Issue number to refine (optional)
 
 **Operations:**
 1. Lazily load planner modules (sources `planner.sh` if not already loaded)
-2. Call `_planner_run_pipeline` with parsed flags
+2. Call `_planner_run_pipeline` with parsed flags, including optional refine issue number
 
 **Return codes:**
 - `0`: Pipeline completed successfully

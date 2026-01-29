@@ -44,6 +44,7 @@ lol_complete() {
         plan-flags)
             echo "--dry-run"
             echo "--verbose"
+            echo "--refine"
             ;;
         *)
             # Unknown topic, return empty

@@ -49,6 +49,35 @@ _planner_issue_create() {
     return 0
 }
 
+# Fetch existing GitHub issue body for refinement
+# Usage: _planner_issue_fetch "<issue-number>"
+# Outputs: issue body on stdout; returns non-zero on failure
+_planner_issue_fetch() {
+    local issue_number="$1"
+
+    if ! _planner_gh_available; then
+        echo "Error: gh CLI not available or not authenticated; cannot refine issue #$issue_number" >&2
+        return 1
+    fi
+
+    local issue_body
+    issue_body=$(gh issue view "$issue_number" --json body -q .body 2>/dev/null)
+    local body_exit=$?
+    if [ $body_exit -ne 0 ]; then
+        echo "Error: Failed to fetch issue #$issue_number body" >&2
+        return 1
+    fi
+
+    local issue_url
+    issue_url=$(gh issue view "$issue_number" --json url -q .url 2>/dev/null)
+    if [ $? -eq 0 ] && [ -n "$issue_url" ]; then
+        _PLANNER_ISSUE_URL="$issue_url"
+    fi
+
+    echo "$issue_body"
+    return 0
+}
+
 # Publish the consensus plan to a GitHub issue
 # Usage: _planner_issue_publish "<issue-number>" "<title>" "<body-file>"
 # Returns 0 on success, 1 on failure (caller should log warning but not fail pipeline)
