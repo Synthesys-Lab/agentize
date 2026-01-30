@@ -36,6 +36,9 @@ lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
 
 ## Internal Helpers
 
+### _lol_cmd_impl()
+Private entrypoint function for the command implementation. It validates arguments and orchestrates the issue-to-implementation loop described above.
+
 ### Worktree resolution
 - Uses `wt pathto`/`wt spawn`/`wt goto` to ensure a worktree exists for the issue.
 

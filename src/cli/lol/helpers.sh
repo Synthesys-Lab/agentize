@@ -3,10 +3,10 @@
 # Provides language detection and other utility functions
 
 # Detect project language based on file structure
-# Usage: lol_detect_lang <project_path>
+# Usage: _lol_detect_lang <project_path>
 # Returns: stdout: "python", "c", or "cxx"
 #          exit code: 0 if detected, 1 if unable to detect
-lol_detect_lang() {
+_lol_detect_lang() {
     local project_path="$1"
 
     # Validate project path is provided

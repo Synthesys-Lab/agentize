@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-# lol_cmd_serve: Run polling server for GitHub Projects automation
+# _lol_cmd_serve: Run polling server for GitHub Projects automation
 # Runs in subshell to preserve set -e semantics
-# Usage: lol_cmd_serve
+# Usage: _lol_cmd_serve
 # Configuration is YAML-only: server.period and server.num_workers in .agentize.local.yaml
 # TG credentials are also YAML-only (loaded from .agentize.local.yaml in Python)
-lol_cmd_serve() (
+_lol_cmd_serve() (
     set -e
 
     # Check if in a bare repo with wt initialized

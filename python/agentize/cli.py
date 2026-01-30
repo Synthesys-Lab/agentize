@@ -25,17 +25,17 @@ def run_shell_command(cmd: str, agentize_home: str) -> int:
 
 def handle_complete(args: argparse.Namespace, agentize_home: str) -> int:
     """Handle --complete flag."""
-    return run_shell_command(f'lol_complete "{args.complete}"', agentize_home)
+    return run_shell_command(f'_lol_complete "{args.complete}"', agentize_home)
 
 
 def handle_version(agentize_home: str) -> int:
     """Handle --version flag."""
-    return run_shell_command("lol_cmd_version", agentize_home)
+    return run_shell_command("_lol_cmd_version", agentize_home)
 
 
 def handle_upgrade(agentize_home: str) -> int:
     """Handle upgrade command."""
-    return run_shell_command("lol_cmd_upgrade", agentize_home)
+    return run_shell_command("_lol_cmd_upgrade", agentize_home)
 
 
 def handle_project(args: argparse.Namespace, agentize_home: str) -> int:
@@ -43,12 +43,12 @@ def handle_project(args: argparse.Namespace, agentize_home: str) -> int:
     if args.create:
         org = args.org or ""
         title = args.title or ""
-        cmd = f'lol_cmd_project "create" "{org}" "{title}"'
+        cmd = f'_lol_cmd_project "create" "{org}" "{title}"'
     elif args.associate:
-        cmd = f'lol_cmd_project "associate" "{args.associate}"'
+        cmd = f'_lol_cmd_project "associate" "{args.associate}"'
     elif args.automation:
         write_path = args.write or ""
-        cmd = f'lol_cmd_project "automation" "{write_path}"'
+        cmd = f'_lol_cmd_project "automation" "{write_path}"'
     else:
         print("Error: Must specify --create, --associate, or --automation")
         return 1
@@ -58,7 +58,7 @@ def handle_project(args: argparse.Namespace, agentize_home: str) -> int:
 def handle_serve(args: argparse.Namespace, agentize_home: str) -> int:
     """Handle serve command."""
     period = args.period or "5m"
-    cmd = f'lol_cmd_serve "{period}" "{args.tg_token}" "{args.tg_chat_id}"'
+    cmd = f'_lol_cmd_serve "{period}" "{args.tg_token}" "{args.tg_chat_id}"'
     return run_shell_command(cmd, agentize_home)
 
 
@@ -69,14 +69,14 @@ def handle_plan(args: argparse.Namespace, agentize_home: str) -> int:
         return 1
     issue_mode = "false" if args.dry_run else "true"
     verbose = "true" if args.verbose else "false"
-    cmd = f'lol_cmd_plan "{args.description}" "{issue_mode}" "{verbose}"'
+    cmd = f'_lol_cmd_plan "{args.description}" "{issue_mode}" "{verbose}"'
     return run_shell_command(cmd, agentize_home)
 
 
 def handle_claude_clean(args: argparse.Namespace, agentize_home: str) -> int:
     """Handle claude-clean command."""
     dry_run = "1" if args.dry_run else "0"
-    cmd = f'lol_cmd_claude_clean "{dry_run}"'
+    cmd = f'_lol_cmd_claude_clean "{dry_run}"'
     return run_shell_command(cmd, agentize_home)
 
 

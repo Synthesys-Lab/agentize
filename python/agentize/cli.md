@@ -30,11 +30,11 @@ The Python CLI supports the same commands as the shell implementation:
 
 ## Implementation
 
-The Python CLI delegates to shell functions via `bash -c` with `AGENTIZE_HOME` set:
+The Python CLI delegates to private shell helpers via `bash -c` with `AGENTIZE_HOME` set:
 
 ```python
 subprocess.run(
-    ["bash", "-c", f"source $AGENTIZE_HOME/setup.sh && lol_cmd_{command} {args}"],
+    ["bash", "-c", f"source $AGENTIZE_HOME/setup.sh && _lol_cmd_{command} {args}"],
     env={**os.environ, "AGENTIZE_HOME": agentize_home}
 )
 ```

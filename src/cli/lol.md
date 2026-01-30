@@ -9,13 +9,13 @@ The implementation is split into sourced modules in `lol/`:
 | Module | Purpose |
 |--------|---------|
 | `helpers.sh` | Language detection and utility functions |
-| `completion.sh` | Shell-agnostic completion helper (`lol_complete`) |
+| `completion.sh` | Shell-agnostic completion helper (`_lol_complete`) |
 | `commands.sh` | Thin loader that sources `commands/*.sh` |
-| `commands/` | Per-command implementations (`lol_cmd_*`) |
+| `commands/` | Per-command implementations (`_lol_cmd_*`) |
 | `dispatch.sh` | Main dispatcher, help text, and `lol` function |
 | `parsers.sh` | Argument parsing for each command |
 
-`lol.sh` sources these modules in order. External interfaces remain unchanged.
+`lol.sh` sources these modules in order. The public entrypoint remains `lol()`, while helpers and command functions are private.
 
 The `commands/` directory contains individual files for each command:
 - `upgrade.sh`, `version.sh`
@@ -23,7 +23,7 @@ The `commands/` directory contains individual files for each command:
 
 ## External Interface
 
-Functions exported for shell usage when sourced.
+Functions exported for shell usage when sourced. `lol()` is the only public entrypoint.
 
 ### lol()
 
@@ -63,7 +63,11 @@ lol upgrade
 lol project --create
 ```
 
-### lol_complete()
+## Internal Helpers
+
+Private helpers and command implementations used by `lol()` and wrappers. These are not part of the public shell API.
+
+### _lol_complete()
 
 Shell-agnostic completion helper for completion systems.
 
@@ -85,7 +89,7 @@ Shell-agnostic completion helper for completion systems.
 
 **Example:**
 ```bash
-lol_complete commands
+_lol_complete commands
 # Output:
 # upgrade
 # project
@@ -93,7 +97,7 @@ lol_complete commands
 # claude-clean
 ```
 
-### lol_detect_lang()
+### _lol_detect_lang()
 
 Detect project language based on file structure.
 
@@ -111,17 +115,17 @@ Detect project language based on file structure.
 
 **Example:**
 ```bash
-lang=$(lol_detect_lang "/path/to/project")
+lang=$(_lol_detect_lang "/path/to/project")
 if [ $? -eq 0 ]; then
     echo "Detected: $lang"
 fi
 ```
 
-## Command Implementations
+### Command Implementations (private)
 
 Subshell command functions called by main dispatcher. Each runs in a subshell to preserve `set -e` semantics and isolate environment variables.
 
-### lol_cmd_upgrade()
+#### _lol_cmd_upgrade()
 
 Upgrade agentize installation via git pull and rebuild environment.
 
@@ -139,13 +143,13 @@ Upgrade agentize installation via git pull and rebuild environment.
 - `0`: Upgrade successful
 - `1`: Not a worktree, dirty tree, rebase failed, or make setup failed
 
-### lol_cmd_project()
+#### _lol_cmd_project()
 
 GitHub Projects v2 integration.
 
 **Signature:**
 ```bash
-lol_cmd_project <mode> [arg1] [arg2] [arg3]
+_lol_cmd_project <mode> [arg1] [arg2] [arg3]
 ```
 
 **Parameters:**
@@ -179,13 +183,13 @@ lol_cmd_project <mode> [arg1] [arg2] [arg3]
 - `0`: Operation successful
 - `1`: Invalid mode, project not found, or API error
 
-### lol_cmd_plan()
+#### _lol_cmd_plan()
 
 Run the multi-agent debate pipeline via `lol plan`.
 
 **Signature:**
 ```bash
-lol_cmd_plan <feature_desc_or_refine_instructions> <issue_mode> <verbose> \
+_lol_cmd_plan <feature_desc_or_refine_instructions> <issue_mode> <verbose> \
   <refine_issue_number>
 ```
 
@@ -204,13 +208,13 @@ lol_cmd_plan <feature_desc_or_refine_instructions> <issue_mode> <verbose> \
 - `1`: Missing or invalid arguments
 - `2`: Stage execution failure
 
-### lol_cmd_claude_clean()
+#### _lol_cmd_claude_clean()
 
 Remove stale project entries from `~/.claude.json`.
 
 **Signature:**
 ```bash
-lol_cmd_claude_clean <dry_run>
+_lol_cmd_claude_clean <dry_run>
 ```
 
 **Parameters:**
@@ -229,7 +233,7 @@ lol_cmd_claude_clean <dry_run>
 - `0`: Operation successful (or no stale entries found)
 - `1`: Missing dependency (jq) or write failed
 
-### lol_cmd_version()
+#### _lol_cmd_version()
 
 Display version information.
 
@@ -249,6 +253,21 @@ Last update:  <commit-hash>
 **Return codes:**
 - `0`: Always
 - `1`: Unexpected arguments provided
+
+#### _lol_cmd_usage()
+
+Report Claude Code token usage statistics via the Python usage module. See
+`lol/commands/usage.md` for flag handling and output formatting.
+
+#### _lol_cmd_serve()
+
+Start the polling server for automation workflows. Configuration is loaded from
+`.agentize.local.yaml` (no CLI flags). See `lol/commands/serve.md` for details.
+
+#### _lol_cmd_impl()
+
+Drive the issue-to-implementation loop (`lol impl`) and manage per-iteration
+commit reports. See `lol/commands/impl.md` for the workflow contract.
 
 ## Internal Helpers
 

@@ -8,25 +8,26 @@ Modular implementation of the `lol` SDK CLI. These files are sourced by `lol.sh`
 
 | File | Description | Exports |
 |------|-------------|---------|
-| `helpers.sh` | Language detection and utility functions | `lol_detect_lang` |
-| `completion.sh` | Shell-agnostic completion helper | `lol_complete` |
+| `helpers.sh` | Language detection and utility functions | `_lol_detect_lang` (private) |
+| `completion.sh` | Shell-agnostic completion helper | `_lol_complete` (private) |
 | `project-lib.sh` | Shared project setup library | `project_init_context`, `project_preflight_check`, `project_read_metadata`, `project_update_metadata`, `project_create`, `project_associate`, `project_generate_automation`, `project_verify_status_options` |
-| `commands.sh` | Thin loader that sources `commands/*.sh` | All `lol_cmd_*` functions |
+| `commands.sh` | Thin loader that sources `commands/*.sh` | All `_lol_cmd_*` functions (private) |
 | `commands/` | Per-command implementation files | See below |
 | `dispatch.sh` | Main dispatcher and help text | `lol` |
-| `parsers.sh` | Argument parsing for each command | `lol_parse_project`, `lol_parse_serve`, `lol_parse_usage`, `lol_parse_claude_clean`, `lol_parse_plan` |
+| `parsers.sh` | Argument parsing for each command | `_lol_parse_project`, `_lol_parse_serve`, `_lol_parse_usage`, `_lol_parse_claude_clean`, `_lol_parse_plan`, `_lol_parse_impl` |
 
 ### commands/ Directory
 
 | File | Exports |
 |------|---------|
-| `upgrade.sh` | `lol_cmd_upgrade` |
-| `version.sh` | `lol_cmd_version` |
-| `project.sh` | `lol_cmd_project` |
-| `serve.sh` | `lol_cmd_serve` |
-| `claude-clean.sh` | `lol_cmd_claude_clean` |
-| `usage.sh` | `lol_cmd_usage` |
-| `plan.sh` | `lol_cmd_plan` |
+| `upgrade.sh` | `_lol_cmd_upgrade` |
+| `version.sh` | `_lol_cmd_version` |
+| `project.sh` | `_lol_cmd_project` |
+| `serve.sh` | `_lol_cmd_serve` |
+| `claude-clean.sh` | `_lol_cmd_claude_clean` |
+| `usage.sh` | `_lol_cmd_usage` |
+| `plan.sh` | `_lol_cmd_plan` |
+| `impl.sh` | `_lol_cmd_impl` |
 
 ## Load Order
 
@@ -42,8 +43,8 @@ The parent `lol.sh` sources modules in this order:
 ## Design Principles
 
 - Each module is self-contained and sources only its required dependencies
-- All functions use the `lol_` prefix to avoid namespace collisions
-- Command implementations (`lol_cmd_*`) run in subshells to preserve `set -e` semantics
+- `lol()` is the only public entrypoint; internal helpers use the `_lol_` prefix
+- Command implementations (`_lol_cmd_*`) run in subshells to preserve `set -e` semantics
 - Parsers convert CLI arguments to positional arguments for command functions
 - The dispatcher handles top-level routing and help text
 

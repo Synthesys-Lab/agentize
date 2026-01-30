@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-# lol_cmd_upgrade: Upgrade agentize installation
+# _lol_cmd_upgrade: Upgrade agentize installation
 # Runs in subshell to preserve set -e semantics
-lol_cmd_upgrade() (
+_lol_cmd_upgrade() (
     set -e
 
     # Validate AGENTIZE_HOME is a valid git worktree

@@ -2,7 +2,7 @@
 # lol CLI argument parsers
 # Parse command-line arguments and call command implementations
 
-# Parse upgrade command arguments and call lol_cmd_upgrade
+# Parse upgrade command arguments and call _lol_cmd_upgrade
 _lol_parse_upgrade() {
     # Reject unexpected arguments
     if [ $# -gt 0 ]; then
@@ -11,10 +11,10 @@ _lol_parse_upgrade() {
         return 1
     fi
 
-    lol_cmd_upgrade
+    _lol_cmd_upgrade
 }
 
-# Parse project command arguments and call lol_cmd_project
+# Parse project command arguments and call _lol_cmd_project
 _lol_parse_project() {
     local mode=""
     local org=""
@@ -89,23 +89,23 @@ _lol_parse_project() {
     fi
 
     # Call command with positional arguments
-    # For create: lol_cmd_project create [org] [title]
-    # For associate: lol_cmd_project associate <org/id>
-    # For automation: lol_cmd_project automation [write_path]
+    # For create: _lol_cmd_project create [org] [title]
+    # For associate: _lol_cmd_project associate <org/id>
+    # For automation: _lol_cmd_project automation [write_path]
     case "$mode" in
         create)
-            lol_cmd_project "create" "$org" "$title"
+            _lol_cmd_project "create" "$org" "$title"
             ;;
         associate)
-            lol_cmd_project "associate" "$associate_arg"
+            _lol_cmd_project "associate" "$associate_arg"
             ;;
         automation)
-            lol_cmd_project "automation" "$write_path"
+            _lol_cmd_project "automation" "$write_path"
             ;;
     esac
 }
 
-# Parse serve command arguments and call lol_cmd_serve
+# Parse serve command arguments and call _lol_cmd_serve
 # Note: lol serve no longer accepts CLI flags; configure .agentize.local.yaml instead
 _lol_parse_serve() {
     # Reject any CLI arguments - configuration is YAML-only
@@ -120,10 +120,10 @@ _lol_parse_serve() {
         return 1
     fi
 
-    lol_cmd_serve
+    _lol_cmd_serve
 }
 
-# Parse claude-clean command arguments and call lol_cmd_claude_clean
+# Parse claude-clean command arguments and call _lol_cmd_claude_clean
 _lol_parse_claude_clean() {
     local dry_run="0"
 
@@ -142,10 +142,10 @@ _lol_parse_claude_clean() {
         esac
     done
 
-    lol_cmd_claude_clean "$dry_run"
+    _lol_cmd_claude_clean "$dry_run"
 }
 
-# Parse usage command arguments and call lol_cmd_usage
+# Parse usage command arguments and call _lol_cmd_usage
 _lol_parse_usage() {
     local mode="today"
     local cache="0"
@@ -178,10 +178,10 @@ _lol_parse_usage() {
         esac
     done
 
-    lol_cmd_usage "$mode" "$cache" "$cost"
+    _lol_cmd_usage "$mode" "$cache" "$cost"
 }
 
-# Parse plan command arguments and call lol_cmd_plan
+# Parse plan command arguments and call _lol_cmd_plan
 _lol_parse_plan() {
     local dry_run="false"
     local verbose="false"
@@ -331,10 +331,10 @@ _lol_parse_plan() {
         issue_mode="false"
     fi
 
-    lol_cmd_plan "$feature_desc" "$issue_mode" "$verbose" "$refine_issue_number"
+    _lol_cmd_plan "$feature_desc" "$issue_mode" "$verbose" "$refine_issue_number"
 }
 
-# Parse impl command arguments and call lol_cmd_impl
+# Parse impl command arguments and call _lol_cmd_impl
 _lol_parse_impl() {
     local issue_no=""
     local backend="codex:gpt-5.2-codex"
@@ -407,5 +407,5 @@ _lol_parse_impl() {
         return 1
     fi
 
-    lol_cmd_impl "$issue_no" "$backend" "$max_iterations" "$yolo"
+    _lol_cmd_impl "$issue_no" "$backend" "$max_iterations" "$yolo"
 }

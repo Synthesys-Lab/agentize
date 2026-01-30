@@ -4,7 +4,7 @@
 
 # Shell-agnostic completion helper
 # Returns newline-delimited lists for shell completion systems
-lol_complete() {
+_lol_complete() {
     local topic="$1"
 
     case "$topic" in

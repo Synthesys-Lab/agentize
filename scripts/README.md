@@ -71,12 +71,12 @@ This directory contains utility scripts, git hooks, and wrapper entrypoints for 
 
 These scripts delegate to `src/cli/lol.sh`:
 
-- `agentize-project.sh` - Project command wrapper (calls `lol_cmd_project`)
+- `agentize-project.sh` - Project command wrapper (calls `_lol_cmd_project`)
   - Usage: Called by `lol project` command or directly with environment variables
   - Environment variables: `AGENTIZE_PROJECT_MODE`, `AGENTIZE_PROJECT_ORG`, etc.
   - Exit codes: 0 (success), 1 (failure)
 
-- `detect-lang.sh` - Language detection wrapper (calls `lol_detect_lang`)
+- `detect-lang.sh` - Language detection wrapper (calls `_lol_detect_lang`)
   - Usage: `./scripts/detect-lang.sh <project_path>`
   - Exit codes: 0 (detected), 1 (unable to detect)
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# detect-lang.sh - Wrapper for lol_detect_lang
+# detect-lang.sh - Wrapper for _lol_detect_lang
 #
 # This is a compatibility wrapper that delegates to the canonical implementation
 # in src/cli/lol.sh. Direct script execution is preserved for backwards compatibility.
@@ -33,4 +33,4 @@ else
 fi
 
 # Execute the detect language function with the provided argument
-lol_detect_lang "$1"
+_lol_detect_lang "$1"

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-# lol_cmd_claude_clean: Remove stale project entries from ~/.claude.json
+# _lol_cmd_claude_clean: Remove stale project entries from ~/.claude.json
 # Runs in subshell to preserve set -e semantics
-# Usage: lol_cmd_claude_clean <dry_run>
-lol_cmd_claude_clean() (
+# Usage: _lol_cmd_claude_clean <dry_run>
+_lol_cmd_claude_clean() (
     set -e
 
     local dry_run="$1"

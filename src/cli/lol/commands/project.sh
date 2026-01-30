@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-# lol_cmd_project: GitHub Projects v2 integration
+# _lol_cmd_project: GitHub Projects v2 integration
 # Runs in subshell to preserve set -e semantics
 # Uses shared project library from src/cli/lol/project-lib.sh
-# Usage: lol_cmd_project <mode> [arg1] [arg2]
-#   For create mode:    lol_cmd_project create [org] [title]
-#   For associate mode: lol_cmd_project associate <org/id>
-#   For automation mode: lol_cmd_project automation [write_path]
-lol_cmd_project() (
+# Usage: _lol_cmd_project <mode> [arg1] [arg2]
+#   For create mode:    _lol_cmd_project create [org] [title]
+#   For associate mode: _lol_cmd_project associate <org/id>
+#   For automation mode: _lol_cmd_project automation [write_path]
+_lol_cmd_project() (
     set -e
 
     # Positional arguments:
@@ -27,7 +27,7 @@ lol_cmd_project() (
     # Validate mode
     if [ -z "$mode" ]; then
         echo "Error: mode is required (argument 1)"
-        echo "Usage: lol_cmd_project <mode> [arg1] [arg2]"
+        echo "Usage: _lol_cmd_project <mode> [arg1] [arg2]"
         exit 1
     fi
 

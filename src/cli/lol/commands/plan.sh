@@ -3,8 +3,8 @@
 # Delegates to planner pipeline for multi-agent debate
 
 # Run the multi-agent debate pipeline
-# Usage: lol_cmd_plan <feature_desc_or_refine_instructions> <issue_mode> <verbose> <refine_issue_number>
-lol_cmd_plan() {
+# Usage: _lol_cmd_plan <feature_desc_or_refine_instructions> <issue_mode> <verbose> <refine_issue_number>
+_lol_cmd_plan() {
     local feature_desc="$1"
     local issue_mode="$2"
     local verbose="$3"

@@ -32,7 +32,7 @@ def run_shell_function(
     """Run a shell function with AGENTIZE_HOME set.
 
     Args:
-        cmd: The shell command to run (e.g., "wt spawn 123", "lol_cmd_version")
+        cmd: The shell command to run (e.g., "wt spawn 123", "_lol_cmd_version")
         capture_output: Whether to capture stdout/stderr
         agentize_home: Override AGENTIZE_HOME (defaults to auto-detection)
 

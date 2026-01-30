@@ -57,9 +57,9 @@ chmod +x "$STUB_EDITOR"
 
 export EDITOR="$STUB_EDITOR"
 
-# Mock lol_cmd_plan to capture what it receives
+# Mock _lol_cmd_plan to capture what it receives
 captured_desc=""
-lol_cmd_plan() {
+_lol_cmd_plan() {
   captured_desc="$1"
   return 0
 }

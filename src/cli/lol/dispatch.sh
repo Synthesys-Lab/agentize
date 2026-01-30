@@ -25,7 +25,7 @@ lol() {
     # Handle completion helper before AGENTIZE_HOME validation
     # This allows completion to work even outside agentize context
     if [ "$1" = "--complete" ]; then
-        lol_complete "$2"
+        _lol_complete "$2"
         return 0
     fi
 
@@ -59,7 +59,7 @@ lol() {
     # Handle --version flag as alias for version subcommand
     if [ "$1" = "--version" ]; then
         _lol_log_version
-        lol_cmd_version
+        _lol_cmd_version
         return $?
     fi
 
@@ -91,7 +91,7 @@ lol() {
             ;;
         version)
             _lol_log_version
-            lol_cmd_version
+            _lol_cmd_version
             ;;
         *)
             _lol_log_version

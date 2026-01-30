@@ -2,13 +2,13 @@
 # lol impl command implementation
 # Automates the issue-to-implementation loop using wt + acw
 
-# Main lol_cmd_impl function
+# Main _lol_cmd_impl function
 # Arguments:
 #   $1 - issue_no: Issue number to implement
 #   $2 - backend: Backend in provider:model form (default: codex:gpt-5.2-codex)
 #   $3 - max_iterations: Maximum acw iterations (default: 10)
 #   $4 - yolo: Boolean flag for --yolo passthrough (0 or 1)
-lol_cmd_impl() {
+_lol_cmd_impl() {
     local issue_no="$1"
     local backend="${2:-codex:gpt-5.2-codex}"
     local max_iterations="${3:-10}"

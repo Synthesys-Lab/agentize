@@ -122,10 +122,12 @@ The source-first pattern ensures:
 
 ### Command Isolation
 
-`lol.sh` command implementations (`lol_cmd_*`) use subshell functions to:
+`lol.sh` command implementations (`_lol_cmd_*`) use subshell functions to:
 - Preserve `set -e` error handling semantics
 - Isolate environment variables from the user's shell
 - Match the behavior of the original executable scripts
+
+`lol()` is the only public shell entrypoint; helper and command functions are private.
 
 ## Related Documentation
 

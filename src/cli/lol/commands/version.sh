@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# lol_cmd_version: Display version information
-lol_cmd_version() {
+# _lol_cmd_version: Display version information
+_lol_cmd_version() {
     # Get installation commit from AGENTIZE_HOME
     local install_commit="Not a git repository"
     if git -C "$AGENTIZE_HOME" rev-parse HEAD >/dev/null 2>&1; then

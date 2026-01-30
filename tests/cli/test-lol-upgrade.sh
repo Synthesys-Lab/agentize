@@ -100,7 +100,7 @@ export PATH="$MOCK_BIN_DIR:$PATH"
 rm -f "$MOCK_AGENTIZE_HOME/setup-was-called.marker"
 rm -f "$CLAUDE_LOG"
 
-output=$(lol_cmd_upgrade 2>&1) || true
+output=$(_lol_cmd_upgrade 2>&1) || true
 
 # Check that claude was called with plugin update arguments
 if [ ! -f "$CLAUDE_LOG" ]; then
@@ -124,7 +124,7 @@ export PATH="${PATH#$MOCK_BIN_DIR:}"
 # Remove stale marker
 rm -f "$MOCK_AGENTIZE_HOME/setup-was-called.marker"
 
-output=$(lol_cmd_upgrade 2>&1) || true
+output=$(_lol_cmd_upgrade 2>&1) || true
 
 # Upgrade should still succeed (make setup marker should exist)
 if [ ! -f "$MOCK_AGENTIZE_HOME/setup-was-called.marker" ]; then
