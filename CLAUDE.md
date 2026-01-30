@@ -1,4 +1,5 @@
 - When replying to me, always say: "Dude, " before your actual answer.
+- When mentioning issue or PR, if not specified, it always refers to this project repository.
 - This project aims at
   - Creating a AI-powered SDK to faciliate generic software engineering.
   - Bootstrapping the development of this SDK using AI.
