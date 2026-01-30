@@ -85,6 +85,8 @@ To refine: /ultra-planner --refine 42
 To implement: /issue-to-impl 42
 ```
 
+CLI alternative: use `lol plan` for shell automation. See `docs/cli/lol.md` for options.
+
 ## Refinement with `--refine` Mode
 
 Improve an existing plan issue by running the debate again:

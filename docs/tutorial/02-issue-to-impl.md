@@ -31,6 +31,8 @@ This allows large features to span multiple work sessions while maintaining clea
 
 Replace `42` with your issue number from Tutorial 01.
 
+CLI alternative: use `lol impl 42` for shell automation. See `docs/cli/lol.md` for options.
+
 ## What Happens Automatically
 
 When you run `/issue-to-impl`:

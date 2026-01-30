@@ -12,6 +12,8 @@ Complete all tutorials in 15-25 minutes (3-5 minutes each):
 4. `03-advanced-usage.md` - Parallel development workflows with clones or worktrees
 5. `04-project.md` - Configuring project board automation with PAT
 
+CLI users: start with `docs/cli/README.md` or the `lol` reference in `docs/cli/lol.md`.
+
 ## Tutorial Format
 
 Each tutorial includes:
