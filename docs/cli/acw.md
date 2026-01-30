@@ -22,7 +22,13 @@ acw --help
 | `model-name` | Yes | Model identifier passed to the provider |
 | `input-file` | Yes | Path to file containing the prompt |
 | `output-file` | Yes | Path where response will be written |
-| `cli-options` | No | Additional options passed to the provider CLI |
+| `cli-options` | No | Additional options passed to the provider CLI (acw consumes `--silent`) |
+
+## acw-Managed Options
+
+| Option | Description |
+|--------|-------------|
+| `--silent` | Suppress provider stderr output while keeping acw validation errors visible |
 
 ## Supported Providers
 
@@ -57,6 +63,9 @@ acw codex gpt-4o prompt.txt response.txt
 
 # Pass additional options to the provider
 acw claude claude-sonnet-4-20250514 prompt.txt response.txt --max-tokens 4096
+
+# Suppress provider stderr output (acw errors still appear)
+acw claude claude-sonnet-4-20250514 prompt.txt response.txt --silent
 ```
 
 ### Script Integration
@@ -89,7 +98,7 @@ Use `acw --complete <topic>` to get completion values programmatically:
 | Topic | Description |
 |-------|-------------|
 | `providers` | List of supported providers (claude, codex, opencode, cursor) |
-| `cli-options` | Common CLI options (e.g., --help, --model, --max-tokens, --yolo) |
+| `cli-options` | Common CLI options (e.g., --help, --model, --max-tokens, --yolo, --silent) |
 
 ### Setup
 
@@ -104,6 +113,7 @@ autoload -Uz compinit && compinit
 
 - The output directory is created automatically if it doesn't exist
 - Provider-specific options are passed through unchanged, except `--yolo` is normalized to Claude's `--dangerously-skip-permissions`
+- `--silent` suppresses provider stderr output but does not hide acw validation errors
 - The wrapper returns the provider's exit code on successful execution
 - Best-effort providers (opencode, cursor) may have limited functionality
 - Only `acw` is the public function; all helper functions (provider invocation, completion, validation) are internal (prefixed with `_acw_`) and won't appear in tab completion

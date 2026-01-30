@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Unit tests for command-line interface commands (`wt`, `lol`) validating individual CLI features, argument parsing, and error handling.
+Unit tests for command-line interface commands (`wt`, `lol`, `acw`) validating individual CLI features, argument parsing, and error handling.
 
 ## Contents
 
@@ -17,6 +17,17 @@ Tests for the `wt` (worktree) command:
 - `test-wt-goto.sh` - Tests worktree navigation with `wt goto`
 - `test-wt-purge.sh` - Tests cleanup of stale worktrees
 - `test-wt-zsh-completion-crash.sh` - Tests zsh completion stability
+
+### Agent CLI Wrapper Tests (`test-acw-*`)
+
+Tests for the `acw` (Agent CLI Wrapper) command:
+
+- `test-acw-command-functions-loaded.sh` - Smoke test for `_acw_*` function availability
+- `test-acw-completion.sh` - Tests shell completion topics for acw
+- `test-acw-help-text.sh` - Validates help text formatting and content
+- `test-acw-missing-args.sh` - Missing argument error handling
+- `test-acw-silent-flag.sh` - Verifies provider stderr suppression and arg filtering for `--silent`
+- `test-acw-yolo-translation.sh` - Tests `--yolo` translation to Claude's safety flag
 
 ### Agentize CLI Tests (`test-lol-*`, `test-agentize-*`)
 

@@ -26,6 +26,9 @@ echo "$output" | grep -q "codex" || test_fail "Usage text missing 'codex' provid
 # Verify usage text includes --help flag
 echo "$output" | grep -q "\-\-help" || test_fail "Usage text missing '--help' flag"
 
+# Verify usage text includes --silent flag
+echo "$output" | grep -q "\-\-silent" || test_fail "Usage text missing '--silent' flag"
+
 # Verify usage text mentions input-file and output-file
 echo "$output" | grep -q "input-file" || test_fail "Usage text missing 'input-file' argument"
 echo "$output" | grep -q "output-file" || test_fail "Usage text missing 'output-file' argument"
