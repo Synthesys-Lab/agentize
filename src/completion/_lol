@@ -2,7 +2,7 @@
 
 # Zsh completion for lol (AI-powered SDK CLI)
 # Provides interactive command-line hints for lol subcommands and flags
-# Supports: upgrade, project, plan, usage, version, serve, claude-clean
+# Supports: upgrade, version, project, usage, serve, claude-clean, plan, impl
 
 _lol() {
     local curcontext="$curcontext" state line
@@ -18,26 +18,28 @@ _lol() {
     # Fallback to static command list if dynamic fetch failed
     if (( ${#commands} == 0 )); then
         commands=(
+            'upgrade:Upgrade agentize installation'
+            'version:Display version information'
+            'project:Manage GitHub Projects v2 integration'
+            'usage:Report Claude Code token usage statistics'
+            'serve:Start polling server for GitHub Projects automation'
             'claude-clean:Remove stale Claude config entries'
             'plan:Run multi-agent debate pipeline'
-            'upgrade:Upgrade agentize installation'
-            'project:Manage GitHub Projects v2 integration'
-            'serve:Start polling server for GitHub Projects automation'
-            'usage:Report Claude Code token usage statistics'
-            'version:Display version information'
+            'impl:Automate the issue-to-implementation loop using wt + acw'
         )
     else
         # Add descriptions to dynamically fetched commands
         local -a commands_with_desc
         for cmd in $commands; do
             case $cmd in
+                upgrade) commands_with_desc+=('upgrade:Upgrade agentize installation') ;;
+                version) commands_with_desc+=('version:Display version information') ;;
+                project) commands_with_desc+=('project:Manage GitHub Projects v2 integration') ;;
+                usage) commands_with_desc+=('usage:Report Claude Code token usage statistics') ;;
+                serve) commands_with_desc+=('serve:Start polling server for GitHub Projects automation') ;;
                 claude-clean) commands_with_desc+=('claude-clean:Remove stale Claude config entries') ;;
                 plan) commands_with_desc+=('plan:Run multi-agent debate pipeline') ;;
-                upgrade) commands_with_desc+=('upgrade:Upgrade agentize installation') ;;
-                project) commands_with_desc+=('project:Manage GitHub Projects v2 integration') ;;
-                serve) commands_with_desc+=('serve:Start polling server for GitHub Projects automation') ;;
-                usage) commands_with_desc+=('usage:Report Claude Code token usage statistics') ;;
-                version) commands_with_desc+=('version:Display version information') ;;
+                impl) commands_with_desc+=('impl:Automate the issue-to-implementation loop using wt + acw') ;;
             esac
         done
         commands=( $commands_with_desc )
@@ -58,6 +60,9 @@ _lol() {
                     ;;
                 plan)
                     _lol_plan
+                    ;;
+                impl)
+                    _lol_impl
                     ;;
                 upgrade)
                     _lol_upgrade
@@ -87,6 +92,34 @@ _lol_plan() {
         '--editor[Open $EDITOR to compose feature description]' \
         '--refine[Refine an existing plan issue]:issue-number:' \
         ':feature description:'
+}
+
+# Completion for 'lol impl' subcommand
+_lol_impl() {
+    local -a impl_flags impl_flags_with_desc
+
+    # Try dynamic fetch first
+    if (( $+commands[lol] )); then
+        impl_flags=( ${(f)"$(lol --complete impl-flags 2>/dev/null)"} )
+    fi
+
+    # Fallback to static flags
+    if (( ${#impl_flags} == 0 )); then
+        impl_flags=( '--backend' '--max-iterations' '--yolo' )
+    fi
+
+    for flag in $impl_flags; do
+        case $flag in
+            --backend) impl_flags_with_desc+=( '--backend[Backend in provider:model form]:backend:' ) ;;
+            --max-iterations) impl_flags_with_desc+=( '--max-iterations[Maximum iterations before giving up]:number:' ) ;;
+            --yolo) impl_flags_with_desc+=( '--yolo[Enable dangerous mode for provider CLI]' ) ;;
+            *) impl_flags_with_desc+=( "$flag" ) ;;
+        esac
+    done
+
+    _arguments \
+        ${impl_flags_with_desc[@]} \
+        ':issue-number:'
 }
 
 # Completion for 'lol upgrade' subcommand
