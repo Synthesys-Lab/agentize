@@ -62,6 +62,16 @@ Run CLI tests under multiple shells:
 TEST_SHELLS="bash zsh" bash tests/cli/test-wt-complete-commands.sh
 ```
 
+## Manual Completion Check (Zsh)
+
+These checks are interactive and cannot be automated in CI.
+
+1. Source the completion file: `source src/completion/_lol`
+2. Verify unique prefix completion: type `lol plan --ed<TAB>`
+   - Expected: completes to `--editor` on the first tab press
+3. Verify ambiguous prefix behavior: type `lol plan --<TAB>`
+   - Expected: shows all available options
+
 ## Test Patterns
 
 CLI tests follow the standard test structure:

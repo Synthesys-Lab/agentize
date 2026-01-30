@@ -44,3 +44,5 @@ for the known flags so the completion UI remains informative.
   helper fails.
 - Descriptions are sourced from the CLI documentation to minimize drift and keep
   the UX consistent with the published interface.
+- `_lol_plan()` uses `_arguments -s` to enable smart option matching so unique
+  flag prefixes (like `--ed`) complete immediately without requiring a second tab.

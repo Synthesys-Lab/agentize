@@ -86,7 +86,7 @@ _lol() {
 
 # Completion for 'lol plan' subcommand
 _lol_plan() {
-    _arguments \
+    _arguments -s \
         '--dry-run[Skip GitHub issue creation; use timestamp-based artifacts]' \
         '--verbose[Print detailed stage logs]' \
         '--editor[Open $EDITOR to compose feature description]' \
