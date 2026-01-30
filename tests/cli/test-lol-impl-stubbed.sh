@@ -32,6 +32,12 @@ GIT_REMOTES="origin"
 GIT_DEFAULT_BRANCH="main"
 export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH
 
+write_commit_report() {
+    local iter="$1"
+    mkdir -p "$STUB_WORKTREE/.tmp"
+    echo "cli: stub commit report $iter" > "$STUB_WORKTREE/.tmp/commit-report-iter-$iter.txt"
+}
+
 git() {
     echo "git $*" >> "$GIT_CALL_LOG"
     case "$1" in
@@ -110,6 +116,7 @@ acw() {
     # Increment iteration count
     ITERATION_COUNT=$((ITERATION_COUNT + 1))
     export ITERATION_COUNT
+    write_commit_report "$ITERATION_COUNT"
 
     # Write stub output
     echo "Stub response for iteration $ITERATION_COUNT" > "$output_file"
@@ -161,6 +168,7 @@ acw() {
 
     ITERATION_COUNT=$((ITERATION_COUNT + 1))
     export ITERATION_COUNT
+    write_commit_report "$ITERATION_COUNT"
 
     # On second iteration, create completion marker using finalize.txt (preferred)
     if [ "$ITERATION_COUNT" -eq 2 ]; then
@@ -212,6 +220,9 @@ echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
 
 acw() {
     echo "acw $*" >> "$ACW_CALL_LOG"
+    ITERATION_COUNT=$((ITERATION_COUNT + 1))
+    export ITERATION_COUNT
+    write_commit_report "$ITERATION_COUNT"
     echo "Stub response" > "$4"
     return 0
 }
@@ -315,6 +326,9 @@ echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
     echo "acw $1 $2 $3 $4" >> "$ACW_CALL_LOG"
+    ITERATION_COUNT=$((ITERATION_COUNT + 1))
+    export ITERATION_COUNT
+    write_commit_report "$ITERATION_COUNT"
     echo "Stub response" > "$4"
     return 0
 }
@@ -339,6 +353,9 @@ ITERATION_COUNT=0
 # Redefine acw stub to capture all arguments including flags
 acw() {
     echo "acw $*" >> "$ACW_CALL_LOG"
+    ITERATION_COUNT=$((ITERATION_COUNT + 1))
+    export ITERATION_COUNT
+    write_commit_report "$ITERATION_COUNT"
     echo "Stub response" > "$4"
     return 0
 }
@@ -399,6 +416,9 @@ export -f gh 2>/dev/null || true
 
 acw() {
     echo "acw $*" >> "$ACW_CALL_LOG"
+    ITERATION_COUNT=$((ITERATION_COUNT + 1))
+    export ITERATION_COUNT
+    write_commit_report "$ITERATION_COUNT"
     echo "Stub response" > "$4"
     return 0
 }
@@ -534,6 +554,7 @@ acw() {
     echo "acw $*" >> "$ACW_CALL_LOG"
     ITERATION_COUNT=$((ITERATION_COUNT + 1))
     export ITERATION_COUNT
+    write_commit_report "$ITERATION_COUNT"
     if [ "$ITERATION_COUNT" -eq 2 ]; then
         mkdir -p "$STUB_WORKTREE/.tmp"
         echo "PR: Git commit test" > "$STUB_WORKTREE/.tmp/finalize.txt"
@@ -588,6 +609,9 @@ echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
     echo "acw $*" >> "$ACW_CALL_LOG"
+    ITERATION_COUNT=$((ITERATION_COUNT + 1))
+    export ITERATION_COUNT
+    write_commit_report "$ITERATION_COUNT"
     echo "Stub response" > "$4"
     return 0
 }
@@ -612,24 +636,26 @@ if grep -q "git commit" "$GIT_CALL_LOG"; then
     test_fail "Expected git commit to NOT be called when no changes"
 fi
 
-# ── Test 9b: Per-iteration commit message from file ──
+# ── Test 9b: Per-iteration commit report file ──
 ITERATION_COUNT=0
 > "$ACW_CALL_LOG"
 > "$GH_CALL_LOG"
 > "$GIT_CALL_LOG"
 rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
-find "$STUB_WORKTREE/.tmp" -name 'commit-msg-iter-*.txt' -delete 2>/dev/null || true
+find "$STUB_WORKTREE/.tmp" -name 'commit-report-iter-*.txt' -delete 2>/dev/null || true
 GIT_HAS_CHANGES=1
 export GIT_HAS_CHANGES
 
-# Create completion marker and commit message file
+# Create completion marker
 mkdir -p "$STUB_WORKTREE/.tmp"
-echo "PR: Commit msg test" > "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "PR: Commit report test" > "$STUB_WORKTREE/.tmp/finalize.txt"
 echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "cli: implement feature from commit-msg file" > "$STUB_WORKTREE/.tmp/commit-msg-iter-1.txt"
 
 acw() {
     echo "acw $*" >> "$ACW_CALL_LOG"
+    ITERATION_COUNT=$((ITERATION_COUNT + 1))
+    export ITERATION_COUNT
+    write_commit_report "$ITERATION_COUNT"
     echo "Stub response" > "$4"
     return 0
 }
@@ -637,45 +663,53 @@ export -f acw 2>/dev/null || true
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2
-    test_fail "lol impl should succeed with commit-msg file"
+    test_fail "lol impl should succeed with commit-report file"
 }
 
-# Verify git commit used the message from commit-msg-iter-1.txt
-if ! grep -q "git commit -m cli: implement feature from commit-msg file" "$GIT_CALL_LOG"; then
+# Verify git commit used the commit-report file
+if ! grep -q "git commit -F .*commit-report-iter-1.txt" "$GIT_CALL_LOG"; then
     echo "GIT call log:" >&2
     cat "$GIT_CALL_LOG" >&2
-    test_fail "Expected commit message from commit-msg-iter-1.txt"
+    test_fail "Expected git commit to use commit-report-iter-1.txt"
 fi
 
 # Clean up
 rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
-find "$STUB_WORKTREE/.tmp" -name 'commit-msg-iter-*.txt' -delete 2>/dev/null || true
+find "$STUB_WORKTREE/.tmp" -name 'commit-report-iter-*.txt' -delete 2>/dev/null || true
 
-# ── Test 9c: Fallback to default commit message when file missing ──
+# ── Test 9c: Fail when commit report file missing ──
 ITERATION_COUNT=0
 > "$ACW_CALL_LOG"
 > "$GH_CALL_LOG"
 > "$GIT_CALL_LOG"
-find "$STUB_WORKTREE/.tmp" -name 'commit-msg-iter-*.txt' -delete 2>/dev/null || true
+find "$STUB_WORKTREE/.tmp" -name 'commit-report-iter-*.txt' -delete 2>/dev/null || true
 GIT_HAS_CHANGES=1
 export GIT_HAS_CHANGES
 
-# Create completion marker but no commit message file
+# Create completion marker but no commit report file
 mkdir -p "$STUB_WORKTREE/.tmp"
-echo "PR: Default msg test" > "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "PR: Missing report test" > "$STUB_WORKTREE/.tmp/finalize.txt"
 echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
-output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+acw() {
+    echo "acw $*" >> "$ACW_CALL_LOG"
+    ITERATION_COUNT=$((ITERATION_COUNT + 1))
+    export ITERATION_COUNT
+    echo "Stub response" > "$4"
+    return 0
+}
+export -f acw 2>/dev/null || true
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) && {
     echo "Output: $output" >&2
-    test_fail "lol impl should succeed without commit-msg file"
+    test_fail "lol impl should fail when commit report is missing"
 }
 
-# Verify git commit used tagged default message (chore: issue #123 iteration 1)
-if ! grep -q "git commit -m chore: issue #123 iteration 1" "$GIT_CALL_LOG"; then
-    echo "GIT call log:" >&2
-    cat "$GIT_CALL_LOG" >&2
-    test_fail "Expected default tagged commit message"
-fi
+# Verify error message mentions missing commit report
+echo "$output" | grep -qi "missing commit report" || {
+    echo "Output: $output" >&2
+    test_fail "Expected missing commit report error"
+}
 
 # Clean up
 rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
@@ -696,6 +730,9 @@ echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
     echo "acw $*" >> "$ACW_CALL_LOG"
+    ITERATION_COUNT=$((ITERATION_COUNT + 1))
+    export ITERATION_COUNT
+    write_commit_report "$ITERATION_COUNT"
     echo "Stub response" > "$4"
     return 0
 }

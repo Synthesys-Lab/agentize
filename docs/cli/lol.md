@@ -201,7 +201,7 @@ The first line of the completion file is used as the PR title.
 
 #### Git workflow
 
-Each iteration stages and commits changes (skipping commits when there are no changes). If `.tmp/commit-msg-iter-<N>.txt` exists, its first line is used as the commit message for iteration `<N>`. On completion, the branch is pushed to `upstream` (or `origin`) and the PR targets `master` (or `main`).
+Each iteration stages and commits changes (skipping commits when there are no changes). A `.tmp/commit-report-iter-<N>.txt` file is required for each iteration and is used as the commit message for iteration `<N>`. On completion, the branch is pushed to `upstream` (or `origin`) and the PR targets `master` (or `main`).
 
 #### Example
 

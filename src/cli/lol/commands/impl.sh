@@ -85,12 +85,11 @@ lol_cmd_impl() {
         cat > "$base_input_file" <<EOF
 Primary goal: implement issue #$issue_no described in $issue_file.
 Each iteration:
-- create .tmp/commit-report-iter-N.txt with the full commit message (or .tmp/commit-msg-iter-N.txt first line).
+- create the commit report file for the current iteration in .tmp (the exact filename will be provided each iteration).
 - update $finalize_file with PR title (first line) and body (full file); include "Issue $issue_no resolved" only when done.
 EOF
         cp "$base_input_file" "$input_file"
-        echo "For each iteration, create .tmp/commit-report-iter-N.txt with the full commit message." >&2
-        echo "If only .tmp/commit-msg-iter-N.txt exists, its first line will be used." >&2
+        echo "For each iteration, create the per-iteration .tmp/commit-report-iter-<iter>.txt file with the full commit message." >&2
         echo "Once completed the implementation, create a $finalize_file file with the PR title and body." >&2
     else
         echo "Error: Failed to fetch issue content for issue #$issue_no" >&2
@@ -113,21 +112,17 @@ EOF
         if [ -s "$base_input_file" ]; then
             local prev_iter=$((iter - 1))
             local prev_commit_report_file="$worktree_path/.tmp/commit-report-iter-$prev_iter.txt"
-            local prev_commit_msg_file="$worktree_path/.tmp/commit-msg-iter-$prev_iter.txt"
             {
                 cat "$base_input_file"
+                printf "\nCurrent iteration: %s\n" "$iter"
+                printf "Create .tmp/commit-report-iter-%s.txt for this iteration.\n" "$iter"
                 if [ -s "$output_file" ]; then
                     printf "\n\n---\nOutput from last iteration:\n"
                     cat "$output_file"
                 fi
-                if [ "$prev_iter" -ge 1 ]; then
-                    if [ -s "$prev_commit_report_file" ]; then
-                        printf "\n\n---\nPrevious iteration summary (commit report):\n"
-                        cat "$prev_commit_report_file"
-                    elif [ -s "$prev_commit_msg_file" ]; then
-                        printf "\n\n---\nPrevious iteration summary (commit message):\n"
-                        cat "$prev_commit_msg_file"
-                    fi
+                if [ "$prev_iter" -ge 1 ] && [ -s "$prev_commit_report_file" ]; then
+                    printf "\n\n---\nPrevious iteration summary (commit report):\n"
+                    cat "$prev_commit_report_file"
                 fi
             } > "$input_file"
         fi
@@ -143,25 +138,20 @@ EOF
             }
         fi
 
+        # Guard: require per-iteration commit report to be generated
+        local commit_report_file="$worktree_path/.tmp/commit-report-iter-$iter.txt"
+        if [ ! -s "$commit_report_file" ]; then
+            echo "Error: Missing commit report for iteration $iter" >&2
+            echo "Expected: $commit_report_file" >&2
+            return 1
+        fi
+
         # Stage and commit changes for this iteration
         (cd "$worktree_path" && git add -A) || {
             echo "Error: Failed to stage changes for iteration $iter" >&2
             return 1
         }
         if (cd "$worktree_path" && ! git diff --cached --quiet); then
-            # Use commit report file as commit message (fallback to commit-msg file)
-            local commit_msg_file="$worktree_path/.tmp/commit-msg-iter-$iter.txt"
-            local commit_report_file="$worktree_path/.tmp/commit-report-iter-$iter.txt"
-            local default_commit_msg="chore: issue #$issue_no iteration $iter"
-
-            if [ ! -s "$commit_report_file" ]; then
-                if [ -s "$commit_msg_file" ]; then
-                    printf "%s\n" "$(head -n1 "$commit_msg_file")" > "$commit_report_file"
-                else
-                    printf "%s\n" "$default_commit_msg" > "$commit_report_file"
-                fi
-            fi
-
             (cd "$worktree_path" && git commit -F "$commit_report_file") || {
                 echo "Error: Failed to commit iteration $iter" >&2
                 return 1
