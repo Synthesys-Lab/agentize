@@ -93,6 +93,13 @@ workflows:
     model: sonnet                  # Model for dev-req planning
   rebase:
     model: haiku                   # Model for PR rebase
+
+planner:
+  backend: claude:opus             # Default backend for all planner stages
+  understander: claude:sonnet      # Override understander stage
+  bold: claude:opus                # Override bold-proposer stage
+  critique: claude:opus            # Override critique stage
+  reducer: claude:opus             # Override reducer stage
 ```
 
 **Note:** The `allowed_user_ids` field uses a CSV string format since the minimal YAML parser does not support native arrays.

@@ -186,11 +186,6 @@ _lol_parse_plan() {
     local dry_run="false"
     local verbose="false"
     local use_editor="false"
-    local backend_default=""
-    local backend_understander=""
-    local backend_bold=""
-    local backend_critique=""
-    local backend_reducer=""
     local feature_desc=""
     local refine_issue_number=""
     local refine_instructions=""
@@ -208,11 +203,6 @@ _lol_parse_plan() {
         echo "  --verbose    Print detailed stage logs (quiet by default)"
         echo "  --editor     Open \$EDITOR to compose feature description"
         echo "  --refine     Refine an existing plan issue by number"
-        echo "  --backend    Default backend for all stages (provider:model)"
-        echo "  --understander Override backend for understander stage"
-        echo "  --bold       Override backend for bold-proposer stage"
-        echo "  --critique   Override backend for critique stage"
-        echo "  --reducer    Override backend for reducer stage"
         echo "  --help       Show this help message"
         return 0
     fi
@@ -242,55 +232,11 @@ _lol_parse_plan() {
                 refine_issue_number="$1"
                 shift
                 ;;
-            --backend)
-                shift
-                if [ -z "$1" ]; then
-                    echo "Error: --backend requires provider:model" >&2
-                    echo "Usage: lol plan [options] \"<feature-description>\"" >&2
-                    return 1
-                fi
-                backend_default="$1"
-                shift
-                ;;
-            --understander)
-                shift
-                if [ -z "$1" ]; then
-                    echo "Error: --understander requires provider:model" >&2
-                    echo "Usage: lol plan [options] \"<feature-description>\"" >&2
-                    return 1
-                fi
-                backend_understander="$1"
-                shift
-                ;;
-            --bold)
-                shift
-                if [ -z "$1" ]; then
-                    echo "Error: --bold requires provider:model" >&2
-                    echo "Usage: lol plan [options] \"<feature-description>\"" >&2
-                    return 1
-                fi
-                backend_bold="$1"
-                shift
-                ;;
-            --critique)
-                shift
-                if [ -z "$1" ]; then
-                    echo "Error: --critique requires provider:model" >&2
-                    echo "Usage: lol plan [options] \"<feature-description>\"" >&2
-                    return 1
-                fi
-                backend_critique="$1"
-                shift
-                ;;
-            --reducer)
-                shift
-                if [ -z "$1" ]; then
-                    echo "Error: --reducer requires provider:model" >&2
-                    echo "Usage: lol plan [options] \"<feature-description>\"" >&2
-                    return 1
-                fi
-                backend_reducer="$1"
-                shift
+            --backend|--understander|--bold|--critique|--reducer)
+                echo "Error: Backend flags are no longer supported for lol plan." >&2
+                echo "Configure planner backends in .agentize.local.yaml (planner.backend, planner.understander, planner.bold, planner.critique, planner.reducer)." >&2
+                echo "Usage: lol plan [options] \"<feature-description>\"" >&2
+                return 1
                 ;;
             -*)
                 echo "Error: Unknown option '$1'" >&2
@@ -385,9 +331,7 @@ _lol_parse_plan() {
         issue_mode="false"
     fi
 
-    lol_cmd_plan "$feature_desc" "$issue_mode" "$verbose" \
-        "$backend_default" "$backend_understander" "$backend_bold" \
-        "$backend_critique" "$backend_reducer" "$refine_issue_number"
+    lol_cmd_plan "$feature_desc" "$issue_mode" "$verbose" "$refine_issue_number"
 }
 
 # Parse impl command arguments and call lol_cmd_impl

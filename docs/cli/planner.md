@@ -6,9 +6,6 @@ Internal pipeline module used by `lol plan` to run the multi-agent debate workfl
 
 ```bash
 lol plan [--dry-run] [--verbose] [--refine <issue-no> [refinement-instructions]] \
-  [--backend <provider:model>] [--understander <provider:model>] \
-  [--bold <provider:model>] [--critique <provider:model>] \
-  [--reducer <provider:model>] \
   "<feature-description>"
 lol plan --refine <issue-no> [refinement-instructions]
 ```
@@ -37,23 +34,20 @@ Refines an existing plan issue by fetching its body from GitHub and rerunning th
 
 Prints detailed stage logs. By default, the pipeline runs in quiet mode, printing only stage names and output paths.
 
-### Backend Selection (optional flags)
+### Backend Selection (.agentize.local.yaml)
 
-You can override the backend per stage using `provider:model` strings:
+Configure planner backends in `.agentize.local.yaml` using `provider:model` strings:
 
-- `--backend <provider:model>`: Default backend for all stages
-- `--understander <provider:model>`: Override understander stage
-- `--bold <provider:model>`: Override bold-proposer stage
-- `--critique <provider:model>`: Override critique stage
-- `--reducer <provider:model>`: Override reducer stage
-
-Stage-specific flags override `--backend`. Defaults remain `claude:sonnet` (understander) and `claude:opus` (others).
-
-Example:
-
-```bash
-lol plan --understander cursor:gpt-5.2-codex "Plan with cursor understander"
+```yaml
+planner:
+  backend: claude:opus
+  understander: claude:sonnet
+  bold: claude:opus
+  critique: claude:opus
+  reducer: claude:opus
 ```
+
+Stage-specific keys override `planner.backend`. Defaults remain `claude:sonnet` (understander) and `claude:opus` (others).
 
 ### Default Issue Creation
 

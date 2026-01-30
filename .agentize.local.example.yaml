@@ -50,6 +50,16 @@ workflows:
     model: haiku                   # Model for PR rebase
 
 # -----------------------------------------------------------------------------
+# Planner Backends - lol plan stage configuration
+# -----------------------------------------------------------------------------
+planner:
+  backend: claude:opus             # Default backend for all stages
+  understander: claude:sonnet      # Override understander stage
+  bold: claude:opus                # Override bold-proposer stage
+  critique: claude:opus            # Override critique stage
+  reducer: claude:opus             # Override reducer stage
+
+# -----------------------------------------------------------------------------
 # Permission Rules - User-configurable allow/deny patterns
 # -----------------------------------------------------------------------------
 permissions:

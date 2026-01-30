@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Test: Pipeline flow with stubbed acw and consensus script
-# Tests both default (quiet) mode and --verbose mode via lol plan
+# Tests YAML-based backend overrides plus default (quiet) and --verbose modes via lol plan
 
 source "$(dirname "$0")/../common.sh"
 
@@ -16,6 +16,12 @@ source "$LOL_CLI"
 # Create temp directory for test artifacts
 TMP_DIR=$(make_temp_dir "test-lol-plan-pipeline-$$")
 trap 'cleanup_dir "$TMP_DIR"' EXIT
+
+# Create YAML config with planner backend override
+cat > "$TMP_DIR/.agentize.local.yaml" <<'YAMLEOF'
+planner:
+  understander: cursor:gpt-5.2-codex
+YAMLEOF
 
 # Create a call log to track invocations
 CALL_LOG="$TMP_DIR/acw-calls.log"
@@ -74,7 +80,10 @@ export _PLANNER_CONSENSUS_SCRIPT="$STUB_CONSENSUS"
 export PLANNER_NO_ANIM=1
 
 # ── Test 1: --dry-run mode (skips issue creation, uses timestamp artifacts) ──
-output=$(lol plan --dry-run --understander cursor:gpt-5.2-codex "Add a test feature for validation" 2>&1) || {
+output=$(
+    cd "$TMP_DIR" && \
+    lol plan --dry-run "Add a test feature for validation" 2>&1
+) || {
     echo "Pipeline output: $output" >&2
     test_fail "lol plan --dry-run exited with non-zero status"
 }
@@ -116,7 +125,10 @@ echo "$output" | grep -qE "agent runs [0-9]+s" || {
 # ── Test 2: --verbose mode outputs detailed stage info ──
 > "$CALL_LOG"
 
-output_verbose=$(lol plan --dry-run --verbose "Add verbose test feature" 2>&1) || {
+output_verbose=$(
+    cd "$TMP_DIR" && \
+    lol plan --dry-run --verbose "Add verbose test feature" 2>&1
+) || {
     echo "Pipeline output: $output_verbose" >&2
     test_fail "lol plan --dry-run --verbose exited with non-zero status"
 }

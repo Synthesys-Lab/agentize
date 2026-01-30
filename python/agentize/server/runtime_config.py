@@ -32,6 +32,7 @@ VALID_TOP_LEVEL_KEYS = {
     "handsoff",  # Handsoff mode settings
     "project", "git", "agentize", "worktree", "pre_commit",  # Metadata keys (shared with .agentize.yaml)
     "permissions",  # User-configurable permission rules
+    "planner",  # Planner backend configuration
 }
 
 # Valid workflow names

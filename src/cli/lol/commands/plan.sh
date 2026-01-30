@@ -3,17 +3,12 @@
 # Delegates to planner pipeline for multi-agent debate
 
 # Run the multi-agent debate pipeline
-# Usage: lol_cmd_plan <feature_desc_or_refine_instructions> <issue_mode> <verbose> <backend_default> <backend_understander> <backend_bold> <backend_critique> <backend_reducer> <refine_issue_number>
+# Usage: lol_cmd_plan <feature_desc_or_refine_instructions> <issue_mode> <verbose> <refine_issue_number>
 lol_cmd_plan() {
     local feature_desc="$1"
     local issue_mode="$2"
     local verbose="$3"
-    local backend_default="$4"
-    local backend_understander="$5"
-    local backend_bold="$6"
-    local backend_critique="$7"
-    local backend_reducer="$8"
-    local refine_issue_number="$9"
+    local refine_issue_number="$4"
 
     # Validate feature description
     if [ -z "$feature_desc" ] && [ -z "$refine_issue_number" ]; then
@@ -34,7 +29,5 @@ lol_cmd_plan() {
     fi
 
     # Delegate to planner pipeline
-    _planner_run_pipeline "$feature_desc" "$issue_mode" "$verbose" \
-        "$backend_default" "$backend_understander" "$backend_bold" \
-        "$backend_critique" "$backend_reducer" "$refine_issue_number"
+    _planner_run_pipeline "$feature_desc" "$issue_mode" "$verbose" "$refine_issue_number"
 }

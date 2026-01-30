@@ -186,7 +186,6 @@ Run the multi-agent debate pipeline via `lol plan`.
 **Signature:**
 ```bash
 lol_cmd_plan <feature_desc_or_refine_instructions> <issue_mode> <verbose> \
-  <backend_default> <backend_understander> <backend_bold> <backend_critique> <backend_reducer> \
   <refine_issue_number>
 ```
 
@@ -194,11 +193,6 @@ lol_cmd_plan <feature_desc_or_refine_instructions> <issue_mode> <verbose> \
 - `feature_desc_or_refine_instructions`: Feature description string, or refinement instructions when refining (required unless `refine_issue_number` is set)
 - `issue_mode`: `"true"` to create/update GitHub issue, `"false"` to skip publish (required)
 - `verbose`: `"true"` for detailed logs, `"false"` for quiet mode (required)
-- `backend_default`: Default backend for all stages (provider:model, optional)
-- `backend_understander`: Override backend for understander stage (optional)
-- `backend_bold`: Override backend for bold-proposer stage (optional)
-- `backend_critique`: Override backend for critique stage (optional)
-- `backend_reducer`: Override backend for reducer stage (optional)
 - `refine_issue_number`: Issue number to refine (optional)
 
 **Operations:**

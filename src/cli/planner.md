@@ -8,26 +8,26 @@ Internal loader for the planner pipeline module used by `lol plan`. Sources modu
 
 ```bash
 lol plan [--dry-run] [--verbose] [--refine <issue-no> [refinement-instructions]] \
-  [--backend <provider:model>] [--understander <provider:model>] \
-  [--bold <provider:model>] [--critique <provider:model>] \
-  [--reducer <provider:model>] \
   "<feature-description>"
 lol plan --refine <issue-no> [refinement-instructions]
 ```
 
 This module exports only internal `_planner_*` helpers; the public entrypoint is `lol plan`.
 
-## Backend Overrides
+## Backend Configuration (.agentize.local.yaml)
 
-Planner supports per-stage backend overrides using `provider:model` strings:
+Planner reads per-stage backend overrides from `.agentize.local.yaml` using `provider:model` strings:
 
-- `--backend <provider:model>` (default for all stages)
-- `--understander <provider:model>`
-- `--bold <provider:model>`
-- `--critique <provider:model>`
-- `--reducer <provider:model>`
+```yaml
+planner:
+  backend: claude:opus
+  understander: claude:sonnet
+  bold: claude:opus
+  critique: claude:opus
+  reducer: claude:opus
+```
 
-Stage-specific flags override `--backend`. Defaults are `claude:sonnet` for understander and `claude:opus` for bold/critique/reducer.
+Stage-specific keys override `planner.backend`. Defaults are `claude:sonnet` for understander and `claude:opus` for bold/critique/reducer.
 
 ## Private Helpers
 

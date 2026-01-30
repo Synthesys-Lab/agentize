@@ -120,9 +120,6 @@ Run the multi-agent debate pipeline.
 
 ```bash
 lol plan [--dry-run] [--verbose] [--editor] [--refine <issue-no> [refinement-instructions]] \
-  [--backend <provider:model>] [--understander <provider:model>] \
-  [--bold <provider:model>] [--critique <provider:model>] \
-  [--reducer <provider:model>] \
   [<feature-description>]
 lol plan --refine <issue-no> [refinement-instructions]
 ```
@@ -135,17 +132,27 @@ Runs the full multi-agent debate pipeline for a feature description, producing a
 |--------|----------|---------|-------------|
 | `--dry-run` | No | - | Skip GitHub issue creation; use timestamp-based artifacts |
 | `--verbose` | No | - | Print detailed stage logs (quiet by default) |
-| `--backend` | No | - | Default backend for all stages (provider:model) |
-| `--understander` | No | - | Override backend for understander stage |
-| `--bold` | No | - | Override backend for bold-proposer stage |
-| `--critique` | No | - | Override backend for critique stage |
-| `--reducer` | No | - | Override backend for reducer stage |
 | `--editor` | No | - | Open $EDITOR to compose feature description |
 | `--refine <issue-no> [refinement-instructions]` | No | - | Refine an existing plan issue (optional focus) |
 
 By default, `lol plan` creates a GitHub issue when `gh` is available. Use `--dry-run` to skip issue creation and use timestamp-based artifact naming instead.
 
 When `--refine` is set, the issue body is fetched from GitHub and used as the debate context. Optional refinement instructions are appended to the context to guide the agents. Refinement runs write artifacts prefixed with `issue-refine-<N>` and update the existing issue unless `--dry-run` is provided. This mode requires authenticated `gh` access to read the issue body.
+
+#### Backend configuration (.agentize.local.yaml)
+
+Configure planner backends via `.agentize.local.yaml` instead of CLI flags:
+
+```yaml
+planner:
+  backend: claude:opus
+  understander: claude:sonnet
+  bold: claude:opus
+  critique: claude:opus
+  reducer: claude:opus
+```
+
+Stage-specific keys override `planner.backend`. If a key is missing, defaults remain `claude:sonnet` for understander and `claude:opus` for bold/critique/reducer.
 
 #### Example
 
@@ -158,9 +165,6 @@ lol plan --dry-run "Refactor database layer for connection pooling"
 
 # Run pipeline with detailed stage output
 lol plan --verbose "Add real-time notifications"
-
-# Use a different backend for the understander stage
-lol plan --understander cursor:gpt-5.2-codex "Plan with cursor understander"
 
 # Refine an existing plan issue
 lol plan --refine 42 "Focus on reducing complexity"

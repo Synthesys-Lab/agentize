@@ -113,6 +113,110 @@ _planner_validate_backend() {
     return 0
 }
 
+# Load planner backends from .agentize.local.yaml (planner.* keys).
+# Outputs newline-delimited key=value pairs for configured keys.
+# Usage: _planner_load_backend_config <repo-root> <start-dir>
+_planner_load_backend_config() {
+    local repo_root="$1"
+    local start_dir="$2"
+    PLANNER_CONFIG_REPO_ROOT="$repo_root" \
+    PLANNER_CONFIG_START_DIR="$start_dir" \
+    python3 - <<'PY'
+import os
+import sys
+from pathlib import Path
+
+repo_root = Path(os.environ.get("PLANNER_CONFIG_REPO_ROOT", ""))
+start_dir = os.environ.get("PLANNER_CONFIG_START_DIR")
+
+if not repo_root:
+    print("Error: Missing repo root for planner config lookup", file=sys.stderr)
+    sys.exit(1)
+
+plugin_dir = repo_root / ".claude-plugin"
+if not plugin_dir.is_dir():
+    print(f"Error: Planner config helper not found: {plugin_dir}", file=sys.stderr)
+    sys.exit(1)
+
+sys.path.insert(0, str(plugin_dir))
+
+def _fallback_helpers():
+    import os
+    from pathlib import Path
+    try:
+        import yaml
+    except Exception as exc:
+        print(f"Error: Failed to import PyYAML: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    def find_local_config_file(start_dir=None):
+        if start_dir is None:
+            start_dir = Path.cwd()
+        current = Path(start_dir).resolve()
+        while True:
+            candidate = current / ".agentize.local.yaml"
+            if candidate.is_file():
+                return candidate
+            parent = current.parent
+            if parent == current:
+                break
+            current = parent
+
+        agentize_home = os.getenv("AGENTIZE_HOME")
+        if agentize_home:
+            candidate = Path(agentize_home) / ".agentize.local.yaml"
+            if candidate.is_file():
+                return candidate
+
+        home = os.getenv("HOME")
+        if home:
+            candidate = Path(home) / ".agentize.local.yaml"
+            if candidate.is_file():
+                return candidate
+
+        return None
+
+    def parse_yaml_file(path):
+        with open(path, "r") as f:
+            return yaml.safe_load(f) or {}
+
+    return find_local_config_file, parse_yaml_file
+
+try:
+    from lib.local_config_io import find_local_config_file, parse_yaml_file
+except Exception:
+    find_local_config_file, parse_yaml_file = _fallback_helpers()
+
+try:
+    path = find_local_config_file(Path(start_dir) if start_dir else None)
+    if path is None:
+        sys.exit(0)
+    config = parse_yaml_file(path)
+    planner = config.get("planner")
+    if planner is None:
+        sys.exit(0)
+    if not isinstance(planner, dict):
+        print(f"Error: planner section in {path} must be a mapping", file=sys.stderr)
+        sys.exit(1)
+    for key in ("backend", "understander", "bold", "critique", "reducer"):
+        if key not in planner:
+            continue
+        value = planner.get(key)
+        if value is None:
+            continue
+        if not isinstance(value, str):
+            print(f"Error: planner.{key} in {path} must be a string", file=sys.stderr)
+            sys.exit(1)
+        value = value.strip()
+        if not value:
+            continue
+        print(f"{key}={value}")
+except Exception as exc:
+    print(f"Error: Failed to load planner config: {exc}", file=sys.stderr)
+    sys.exit(1)
+PY
+}
+
 # Invoke acw for a backend spec with optional Claude-only flags.
 # Usage: _planner_acw_run <backend-spec> <input> <output> <tools> [permission-mode]
 _planner_acw_run() {
@@ -212,17 +316,12 @@ _planner_stage() {
 }
 
 # Run the full multi-agent debate pipeline
-# Usage: _planner_run_pipeline "<feature-description>" [issue-mode] [verbose] [backends...] [refine-issue-number]
+# Usage: _planner_run_pipeline "<feature-description>" [issue-mode] [verbose] [refine-issue-number]
 _planner_run_pipeline() {
     local feature_desc="$1"
     local issue_mode="${2:-true}"
     local verbose="${3:-false}"
-    local backend_default="${4:-}"
-    local backend_understander="${5:-}"
-    local backend_bold="${6:-}"
-    local backend_critique="${7:-}"
-    local backend_reducer="${8:-}"
-    local refine_issue_number="${9:-}"
+    local refine_issue_number="${4:-}"
     local repo_root="${AGENTIZE_HOME:-$(git rev-parse --show-toplevel 2>/dev/null)}"
     if [ -z "$repo_root" ] || [ ! -d "$repo_root" ]; then
         echo "Error: Could not determine repo root. Set AGENTIZE_HOME or run inside a git repo." >&2
@@ -292,19 +391,49 @@ _planner_run_pipeline() {
     local reducer_input="${prefix}-reducer-input.md"
     local reducer_output="${prefix}-reducer.txt"
 
-    if ! _planner_validate_backend "$backend_default" "backend"; then
+    local config_start_dir="${PWD:-$(pwd)}"
+    local planner_backend=""
+    local planner_understander=""
+    local planner_bold=""
+    local planner_critique=""
+    local planner_reducer=""
+    local backend_config
+    backend_config=$(_planner_load_backend_config "$repo_root" "$config_start_dir") || return 1
+    if [ -n "$backend_config" ]; then
+        while IFS='=' read -r key value; do
+            case "$key" in
+                backend)
+                    planner_backend="$value"
+                    ;;
+                understander)
+                    planner_understander="$value"
+                    ;;
+                bold)
+                    planner_bold="$value"
+                    ;;
+                critique)
+                    planner_critique="$value"
+                    ;;
+                reducer)
+                    planner_reducer="$value"
+                    ;;
+            esac
+        done <<< "$backend_config"
+    fi
+
+    if ! _planner_validate_backend "$planner_backend" "planner.backend"; then
         return 1
     fi
-    if ! _planner_validate_backend "$backend_understander" "understander"; then
+    if ! _planner_validate_backend "$planner_understander" "planner.understander"; then
         return 1
     fi
-    if ! _planner_validate_backend "$backend_bold" "bold"; then
+    if ! _planner_validate_backend "$planner_bold" "planner.bold"; then
         return 1
     fi
-    if ! _planner_validate_backend "$backend_critique" "critique"; then
+    if ! _planner_validate_backend "$planner_critique" "planner.critique"; then
         return 1
     fi
-    if ! _planner_validate_backend "$backend_reducer" "reducer"; then
+    if ! _planner_validate_backend "$planner_reducer" "planner.reducer"; then
         return 1
     fi
 
@@ -312,16 +441,16 @@ _planner_run_pipeline() {
     local default_bold="claude:opus"
     local default_critique="claude:opus"
     local default_reducer="claude:opus"
-    if [ -n "$backend_default" ]; then
-        default_understander="$backend_default"
-        default_bold="$backend_default"
-        default_critique="$backend_default"
-        default_reducer="$backend_default"
+    if [ -n "$planner_backend" ]; then
+        default_understander="$planner_backend"
+        default_bold="$planner_backend"
+        default_critique="$planner_backend"
+        default_reducer="$planner_backend"
     fi
-    local understander_backend="${backend_understander:-$default_understander}"
-    local bold_backend="${backend_bold:-$default_bold}"
-    local critique_backend="${backend_critique:-$default_critique}"
-    local reducer_backend="${backend_reducer:-$default_reducer}"
+    local understander_backend="${planner_understander:-$default_understander}"
+    local bold_backend="${planner_bold:-$default_bold}"
+    local critique_backend="${planner_critique:-$default_critique}"
+    local reducer_backend="${planner_reducer:-$default_reducer}"
 
     _planner_stage "Starting multi-agent debate pipeline..."
     _planner_print_feature "$feature_desc"
