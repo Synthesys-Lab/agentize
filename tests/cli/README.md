@@ -18,6 +18,13 @@ Tests for the `wt` (worktree) command:
 - `test-wt-purge.sh` - Tests cleanup of stale worktrees
 - `test-wt-zsh-completion-crash.sh` - Tests zsh completion stability
 
+### Agent CLI Wrapper Tests (`test-acw-*`)
+
+Tests for the `acw` command:
+
+- `test-acw-silent-flag.sh` - Validates `--silent` stderr suppression and option filtering
+- `test-acw-yolo-translation.sh` - Tests `--yolo` translation for Claude provider
+
 ### Agentize CLI Tests (`test-lol-*`, `test-agentize-*`)
 
 Tests for the `lol` (agentize) command:

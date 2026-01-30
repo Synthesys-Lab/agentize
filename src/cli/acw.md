@@ -33,6 +33,8 @@ acw <cli-name> <model-name> <input-file> <output-file> [options...]
 
 Validates arguments, dispatches to provider function, returns provider exit code.
 
+Options include `--silent`, which suppresses provider stderr output while keeping acw validation errors visible. The flag is consumed by `acw` and not forwarded to providers.
+
 This is the **only public function** exported by `acw.sh`. All other functions are internal (prefixed with `_acw_`).
 
 ### Private Functions

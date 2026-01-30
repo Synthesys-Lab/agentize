@@ -21,6 +21,7 @@ Arguments:
 
 Options:
   --help        Show this help message
+  --silent      Suppress provider stderr output
   [options...]  Additional options passed to the provider CLI
 
 Providers:
@@ -107,19 +108,51 @@ acw() {
     # Shift past the four required arguments
     shift 4
 
+    # Parse acw-specific options and filter provider args
+    local silent_mode=0
+    local filtered_args=()
+    local arg
+
+    for arg in "$@"; do
+        if [ "$arg" = "--silent" ]; then
+            silent_mode=1
+        else
+            filtered_args+=( "$arg" )
+        fi
+    done
+
+    set -- "${filtered_args[@]}"
+
     # Dispatch to provider function
-    case "$cli_name" in
-        claude)
-            _acw_invoke_claude "$model_name" "$input_file" "$output_file" "$@"
-            ;;
-        codex)
-            _acw_invoke_codex "$model_name" "$input_file" "$output_file" "$@"
-            ;;
-        opencode)
-            _acw_invoke_opencode "$model_name" "$input_file" "$output_file" "$@"
-            ;;
-        cursor)
-            _acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@"
-            ;;
-    esac
+    if [ "$silent_mode" -eq 1 ]; then
+        case "$cli_name" in
+            claude)
+                _acw_invoke_claude "$model_name" "$input_file" "$output_file" "$@" 2>/dev/null
+                ;;
+            codex)
+                _acw_invoke_codex "$model_name" "$input_file" "$output_file" "$@" 2>/dev/null
+                ;;
+            opencode)
+                _acw_invoke_opencode "$model_name" "$input_file" "$output_file" "$@" 2>/dev/null
+                ;;
+            cursor)
+                _acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@" 2>/dev/null
+                ;;
+        esac
+    else
+        case "$cli_name" in
+            claude)
+                _acw_invoke_claude "$model_name" "$input_file" "$output_file" "$@"
+                ;;
+            codex)
+                _acw_invoke_codex "$model_name" "$input_file" "$output_file" "$@"
+                ;;
+            opencode)
+                _acw_invoke_opencode "$model_name" "$input_file" "$output_file" "$@"
+                ;;
+            cursor)
+                _acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@"
+                ;;
+        esac
+    fi
 }
