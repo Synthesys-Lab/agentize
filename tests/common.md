@@ -44,8 +44,10 @@ Removes the provided directory if it exists.
 
 ### Python runtime selection
 The script resolves `PYTHON_BIN` by checking `python3.11`, then `python3`, then
-`python`, to keep tests compatible with newer typing syntax while still working on
-systems with older installations.
+`python`, storing the absolute executable path. Using the full path avoids
+recursing back into the `python3()` wrapper when the selected runtime is
+`python3`, while keeping tests compatible with newer typing syntax and older
+installations.
 
 ### Shell portability
 Exporting `python3()` is required for subshells that rely on the helper. Since
