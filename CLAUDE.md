@@ -3,8 +3,8 @@
   - Creating a AI-powered SDK to faciliate generic software engineering.
   - Bootstrapping the development of this SDK using AI.
   - Thus, changing `.md` files is changing the project core modules themselves.
-- To test whole the project, run `TEST_SHELLS="bash zsh" make test`
-  - If full `make test` fails, it is ok to run `make test-fast` to skip sandbox related tests as per `./.github/workflows/test.yml`.
+- To test whole the project, run `TEST_SHELLS="bash zsh" make test-fast`
+  - `make test` is currently failing due to sandbox availability issue. Fix it later.
   - To test a specific module, look at all `*.sh` files in the `tests/` folder.
   - To add a new test, create a new `*.sh` file in the `tests/` folder, and append it to `test-all.sh`.
   - However, DO NOT be too obsessed to achieve 100% test coverage (at least for this project).
