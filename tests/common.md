@@ -14,7 +14,7 @@ Shared test helper providing PROJECT_ROOT detection, environment isolation, and 
 
 Prefer `python3` when available; fall back to `python` for portability across developer machines and CI.
 
-The `python3()` wrapper function delegates to `PYTHON_BIN` and remains local to the test shell to avoid shell-specific export behavior (`export -f` is bash-only).
+The `python3()` wrapper function delegates to `PYTHON_BIN` using the `command` builtin to bypass function lookup and call the binary directly. The wrapper remains local to the test shell to avoid shell-specific export behavior (`export -f` is bash-only).
 
 ## Test Result Helpers
 

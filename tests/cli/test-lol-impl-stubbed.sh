@@ -78,7 +78,6 @@ git() {
             ;;
     esac
 }
-export -f git 2>/dev/null || true
 
 # Stub wt function
 wt() {
@@ -97,7 +96,6 @@ wt() {
             ;;
     esac
 }
-export -f wt 2>/dev/null || true
 
 # Track iteration count for acw
 ITERATION_COUNT=0
@@ -122,7 +120,6 @@ acw() {
     echo "Stub response for iteration $ITERATION_COUNT" > "$output_file"
     return 0
 }
-export -f acw 2>/dev/null || true
 
 # Stub gh function
 gh() {
@@ -149,7 +146,6 @@ gh() {
             ;;
     esac
 }
-export -f gh 2>/dev/null || true
 
 # ── Test 1: Invalid backend format (missing colon) ──
 ITERATION_COUNT=0
@@ -191,7 +187,6 @@ acw() {
     echo "Stub response for iteration $ITERATION_COUNT" > "$output_file"
     return 0
 }
-export -f acw 2>/dev/null || true
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2
@@ -236,7 +231,6 @@ acw() {
     echo "Stub response" > "$4"
     return 0
 }
-export -f acw 2>/dev/null || true
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2
@@ -298,7 +292,6 @@ acw() {
     echo "Stub response for iteration $ITERATION_COUNT" > "$output_file"
     return 0
 }
-export -f acw 2>/dev/null || true
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex --max-iterations 3 2>&1) && {
     # Should fail because max iterations reached without completion
@@ -342,7 +335,6 @@ acw() {
     echo "Stub response" > "$4"
     return 0
 }
-export -f acw 2>/dev/null || true
 
 output=$(lol impl 123 --backend cursor:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2
@@ -369,7 +361,6 @@ acw() {
     echo "Stub response" > "$4"
     return 0
 }
-export -f acw 2>/dev/null || true
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex --yolo 2>&1) || {
     echo "Output: $output" >&2
@@ -422,7 +413,6 @@ gh() {
             ;;
     esac
 }
-export -f gh 2>/dev/null || true
 
 acw() {
     echo "acw $*" >> "$ACW_CALL_LOG"
@@ -432,7 +422,6 @@ acw() {
     echo "Stub response" > "$4"
     return 0
 }
-export -f acw 2>/dev/null || true
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2
@@ -481,7 +470,6 @@ wt() {
             ;;
     esac
 }
-export -f wt 2>/dev/null || true
 
 # Create completion marker
 echo "PR: Fallback test" > "$STUB_WORKTREE/.tmp/finalize.txt"
@@ -509,7 +497,6 @@ gh() {
             ;;
     esac
 }
-export -f gh 2>/dev/null || true
 
 output=$(lol impl 456 --backend codex:gpt-5.2-codex 2>&1) && {
     echo "Output: $output" >&2
@@ -549,7 +536,6 @@ wt() {
         *) return 0 ;;
     esac
 }
-export -f wt 2>/dev/null || true
 
 # Stub acw that creates completion marker on second iteration
 acw() {
@@ -566,7 +552,6 @@ acw() {
     echo "Stub response for iteration $ITERATION_COUNT" > "$output_file"
     return 0
 }
-export -f acw 2>/dev/null || true
 
 # Reset gh stub
 gh() {
@@ -586,7 +571,6 @@ gh() {
         *) return 0 ;;
     esac
 }
-export -f gh 2>/dev/null || true
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2
@@ -628,7 +612,6 @@ acw() {
     echo "Stub response" > "$4"
     return 0
 }
-export -f acw 2>/dev/null || true
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2
@@ -672,7 +655,6 @@ acw() {
     echo "Stub response" > "$4"
     return 0
 }
-export -f acw 2>/dev/null || true
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2
@@ -711,7 +693,6 @@ acw() {
     echo "Stub response" > "$4"
     return 0
 }
-export -f acw 2>/dev/null || true
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) && {
     echo "Output: $output" >&2
@@ -749,7 +730,6 @@ acw() {
     echo "Stub response" > "$4"
     return 0
 }
-export -f acw 2>/dev/null || true
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2

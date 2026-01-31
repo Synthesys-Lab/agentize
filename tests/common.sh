@@ -38,11 +38,9 @@ TESTS_DIR="$PROJECT_ROOT/tests"
 # ============================================================
 # Python runtime selection for tests
 # ============================================================
-# Prefer python3.11 when available to ensure compatibility with PEP 604 types.
+# Prefer python3 when available; fall back to python for portability.
 PYTHON_BIN=""
-if command -v python3.11 >/dev/null 2>&1; then
-  PYTHON_BIN="python3.11"
-elif command -v python3 >/dev/null 2>&1; then
+if command -v python3 >/dev/null 2>&1; then
   PYTHON_BIN="python3"
 elif command -v python >/dev/null 2>&1; then
   PYTHON_BIN="python"
@@ -52,10 +50,11 @@ else
 fi
 export PYTHON_BIN
 
+# Wrapper function stays local to the test shell to avoid shell-specific export behavior.
+# Uses command to bypass function lookup and call the binary directly.
 python3() {
-  "$PYTHON_BIN" "$@"
+  command "$PYTHON_BIN" "$@"
 }
-export -f python3
 
 # ============================================================
 # Color constants for terminal output

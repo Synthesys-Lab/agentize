@@ -53,7 +53,6 @@ gh() {
     fi
     return 0
 }
-export -f gh 2>/dev/null || true
 
 # ── acw stub setup ──
 ACW_CALL_LOG="$TMP_DIR/acw-calls.log"
@@ -80,7 +79,6 @@ acw() {
     fi
     return 0
 }
-export -f acw 2>/dev/null || true
 
 # ── Stub consensus script ──
 STUB_CONSENSUS_DIR="$TMP_DIR/consensus-stub"
@@ -244,7 +242,6 @@ gh() {
     echo "gh $*" >> "$GH_CALL_LOG"
     return 1
 }
-export -f gh 2>/dev/null || true
 
 output=$(lol plan "Add fallback test feature" 2>&1) || {
     echo "Pipeline output: $output" >&2

@@ -55,7 +55,6 @@ acw() {
     fi
     return 0
 }
-export -f acw 2>/dev/null || true
 
 # Create stub consensus script
 STUB_CONSENSUS_DIR="$TMP_DIR/consensus-stub"
