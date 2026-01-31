@@ -71,9 +71,8 @@ _lol_cmd_impl() {
 
     # Initialize input/output files
     local base_input_file="$worktree_path/.tmp/impl-input-base.txt"
-    local output_file="$worktree_path/.tmp/impl-output.txt"
+    local output_prefix="$worktree_path/.tmp/impl-output"
     local finalize_file="$worktree_path/.tmp/finalize.txt"
-    local report_file="$worktree_path/.tmp/report.txt"
 
     # Prefetch issue content (title/body/labels) for the initial prompt
     local issue_file="$worktree_path/.tmp/issue-${issue_no}.md"
@@ -88,7 +87,8 @@ Each iteration:
 - determine the next steps towards completing the implementation.
 - make changes to the codebase in the current worktree.
 - create the commit report file for the current iteration in .tmp (the exact filename will be provided each iteration).
-- claim "Issue $issue_no resolved", run all test cases to ensure the implementation resolves the issue and does not break existing functionality.
+- update $finalize_file with PR title (first line) and body (full file); include "Closes #$issue_no" only when done.
+- before claiming "Closes #$issue_no", run all test cases to ensure the implementation resolves the issue and does not break existing functionality.
 - it is okay not to complete the implementation in the current iteration; failed tests or incomplete implementations will be handled in further iterations, but remember to leave a clear report to suggest what to do next.
 EOF
         echo "For each iteration, create the per-iteration .tmp/commit-report-iter-<iter>.txt file with the full commit message." >&2
@@ -120,9 +120,10 @@ EOF
                 cat "$base_input_file"
                 printf "\nCurrent iteration: %s\n" "$iter"
                 printf "Create .tmp/commit-report-iter-%s.txt for this iteration.\n" "$iter"
-                if [ -s "$output_file" ]; then
+                local prev_output_file="$worktree_path/.tmp/impl-output-$prev_iter.txt"
+                if [ -s "$prev_output_file" ]; then
                     printf "\n\n---\nOutput from last iteration:\n"
-                    cat "$output_file"
+                    tail -n 200 "$prev_output_file"
                 fi
                 if [ "$prev_iter" -ge 1 ] && [ -s "$prev_commit_report_file" ]; then
                     printf "\n\n---\nPrevious iteration summary (commit report):\n"
@@ -132,6 +133,7 @@ EOF
         fi
 
         # Run acw
+        local output_file="${output_prefix}-${iter}.txt"
         if [ -n "$yolo_flag" ]; then
             acw "$provider" "$model" "$input_file" "$output_file" $yolo_flag || {
                 echo "Warning: acw exited with non-zero status on iteration $iter" >&2
@@ -142,12 +144,10 @@ EOF
             }
         fi
 
-        # Check for completion marker (finalize.txt preferred, report.txt legacy)
+        # Check for completion marker (finalize.txt only)
         local completion_file=""
-        if [ -f "$finalize_file" ] && grep -q "Issue $issue_no resolved" "$finalize_file"; then
+        if [ -f "$finalize_file" ] && grep -Fq "Closes #$issue_no" "$finalize_file"; then
             completion_file="$finalize_file"
-        elif [ -f "$report_file" ] && grep -q "Issue $issue_no resolved" "$report_file"; then
-            completion_file="$report_file"
         fi
 
         # Guard: require per-iteration commit report when completing
@@ -186,14 +186,12 @@ EOF
     # Step 3: Check if completed or hit max iterations
     # Re-check completion_file after loop (it's set during the loop)
     local completion_file=""
-    if [ -f "$finalize_file" ] && grep -q "Issue $issue_no resolved" "$finalize_file"; then
+    if [ -f "$finalize_file" ] && grep -Fq "Closes #$issue_no" "$finalize_file"; then
         completion_file="$finalize_file"
-    elif [ -f "$report_file" ] && grep -q "Issue $issue_no resolved" "$report_file"; then
-        completion_file="$report_file"
     fi
     if [ -z "$completion_file" ]; then
         echo "Error: Max iteration limit ($max_iterations) reached without completion marker" >&2
-        echo "To continue, increase --max-iterations or create .tmp/finalize.txt (preferred) or .tmp/report.txt with 'Issue $issue_no resolved'" >&2
+        echo "To continue, increase --max-iterations or create .tmp/finalize.txt with 'Closes #$issue_no'" >&2
         return 1
     fi
 
@@ -242,7 +240,9 @@ EOF
 
     # Get PR body from full completion file
     local pr_body
-    echo "Closes #$issue_no" >> "$completion_file"
+    if ! grep -Fq "Closes #$issue_no" "$completion_file"; then
+        echo "Closes #$issue_no" >> "$completion_file"
+    fi
     pr_body=$(cat "$completion_file")
 
     # Create PR using gh CLI with explicit base branch

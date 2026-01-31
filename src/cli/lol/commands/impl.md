@@ -20,8 +20,10 @@ lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
 - Ensures a worktree exists for the issue, then switches into it.
 - Prefetches issue content via `gh issue view`; if it fails, the command exits with an error.
 - Iterates `acw` runs, requiring a per-iteration commit report file in `.tmp/commit-report-iter-<iter>.txt`.
+- Writes per-iteration outputs to `.tmp/impl-output-<iter>.txt` and feeds the previous iteration output into the next prompt (tail 200 lines).
 - Stages and commits changes each iteration when there are staged diffs.
-- Detects completion via `.tmp/finalize.txt` (preferred) or `.tmp/report.txt` when they contain `Issue <no> resolved`.
+- Prompts the agent to run all test cases before declaring completion.
+- Detects completion only via `.tmp/finalize.txt` when it contains the exact line `Closes #<no>`.
 - Pushes the branch to a detected remote and opens a PR using the completion file contents.
 
 **Outputs**:
@@ -52,5 +54,5 @@ Private entrypoint function for the command implementation. It validates argumen
 - Requires `.tmp/commit-report-iter-<iter>.txt` and commits changes when present.
 
 ### Completion detection and PR creation
-- Prefers `.tmp/finalize.txt`; falls back to `.tmp/report.txt`.
-- Uses the completion file first line for PR title and full file as PR body.
+- Requires `.tmp/finalize.txt` with the exact marker line `Closes #<no>`.
+- Uses the finalize file first line for PR title and full file as PR body.
