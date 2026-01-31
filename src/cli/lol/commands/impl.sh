@@ -73,7 +73,6 @@ _lol_cmd_impl() {
     local base_input_file="$worktree_path/.tmp/impl-input-base.txt"
     local output_file="$worktree_path/.tmp/impl-output.txt"
     local finalize_file="$worktree_path/.tmp/finalize.txt"
-    local report_file="$worktree_path/.tmp/report.txt"
 
     # Prefetch issue content (title/body/labels) for the initial prompt
     local issue_file="$worktree_path/.tmp/issue-${issue_no}.md"
@@ -139,12 +138,10 @@ EOF
             }
         fi
 
-        # Check for completion marker (finalize.txt preferred, report.txt legacy)
+        # Check for completion marker (finalize.txt)
         local completion_file=""
         if [ -f "$finalize_file" ] && grep -q "Issue $issue_no resolved" "$finalize_file"; then
             completion_file="$finalize_file"
-        elif [ -f "$report_file" ] && grep -q "Issue $issue_no resolved" "$report_file"; then
-            completion_file="$report_file"
         fi
 
         # Guard: require per-iteration commit report when completing
@@ -185,12 +182,10 @@ EOF
     local completion_file=""
     if [ -f "$finalize_file" ] && grep -q "Issue $issue_no resolved" "$finalize_file"; then
         completion_file="$finalize_file"
-    elif [ -f "$report_file" ] && grep -q "Issue $issue_no resolved" "$report_file"; then
-        completion_file="$report_file"
     fi
     if [ -z "$completion_file" ]; then
         echo "Error: Max iteration limit ($max_iterations) reached without completion marker" >&2
-        echo "To continue, increase --max-iterations or create .tmp/finalize.txt (preferred) or .tmp/report.txt with 'Issue $issue_no resolved'" >&2
+        echo "To continue, increase --max-iterations or create .tmp/finalize.txt with 'Issue $issue_no resolved'" >&2
         return 1
     fi
 

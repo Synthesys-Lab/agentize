@@ -211,67 +211,6 @@ fi
 # Clean up for next test
 rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
 
-# ── Test 2b: Finalize.txt takes precedence over report.txt ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
-> "$GH_CALL_LOG"
-
-# Create both files, finalize.txt should be used
-mkdir -p "$STUB_WORKTREE/.tmp"
-echo "PR: From finalize" > "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "PR: From report (should not be used)" > "$STUB_WORKTREE/.tmp/report.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
-
-acw() {
-    echo "acw $*" >> "$ACW_CALL_LOG"
-    ITERATION_COUNT=$((ITERATION_COUNT + 1))
-    export ITERATION_COUNT
-    write_commit_report "$ITERATION_COUNT"
-    echo "Stub response" > "$4"
-    return 0
-}
-
-output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
-    echo "Output: $output" >&2
-    test_fail "lol impl should succeed with both finalize and report present"
-}
-
-# Verify PR title comes from finalize.txt (first line = "PR: From finalize")
-if ! grep -q 'gh pr create.*--title.*From finalize' "$GH_CALL_LOG"; then
-    echo "GH call log:" >&2
-    cat "$GH_CALL_LOG" >&2
-    test_fail "Expected PR title from finalize.txt, not report.txt"
-fi
-
-# Clean up for next test
-rm -f "$STUB_WORKTREE/.tmp/finalize.txt" "$STUB_WORKTREE/.tmp/report.txt"
-
-# ── Test 2c: Fallback to report.txt when finalize.txt absent ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
-> "$GH_CALL_LOG"
-
-# Create only report.txt (legacy) - no finalize.txt
-mkdir -p "$STUB_WORKTREE/.tmp"
-echo "PR: From legacy report" > "$STUB_WORKTREE/.tmp/report.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
-
-output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
-    echo "Output: $output" >&2
-    test_fail "lol impl should succeed with legacy report.txt"
-}
-
-# Verify PR title comes from report.txt
-if ! grep -q 'gh pr create.*--title.*From legacy report' "$GH_CALL_LOG"; then
-    echo "GH call log:" >&2
-    cat "$GH_CALL_LOG" >&2
-    test_fail "Expected PR title from legacy report.txt"
-fi
-
-# Clean up for next test
-rm -f "$STUB_WORKTREE/.tmp/report.txt"
-
 # ── Test 3: Max iterations limit ──
 ITERATION_COUNT=0
 > "$ACW_CALL_LOG"
@@ -312,7 +251,7 @@ echo "$output" | grep -qi "max.*iteration\|iteration.*limit" || {
     test_fail "Error message should mention max iterations limit"
 }
 
-# Verify error message mentions finalize.txt (or both completion files)
+# Verify error message mentions finalize.txt
 echo "$output" | grep -qi "finalize" || {
     echo "Output: $output" >&2
     test_fail "Error message should mention finalize.txt"

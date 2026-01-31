@@ -200,7 +200,7 @@ Before the loop starts, `lol impl` attempts to fetch the issue title/body (and l
 
 #### Completion marker
 
-Create `.tmp/finalize.txt` (preferred) or `.tmp/report.txt` (legacy) in the worktree and include `Issue <N> resolved` to finish.
+Create `.tmp/finalize.txt` in the worktree and include `Issue <N> resolved` to finish.
 The first line of the completion file is used as the PR title.
 
 #### Git workflow

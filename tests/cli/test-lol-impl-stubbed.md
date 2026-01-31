@@ -17,20 +17,18 @@ Stubs are defined in the test shell and used by sourced CLI code to keep behavio
 
 1. Invalid backend format detection
 2. Completion marker detection via `finalize.txt`
-3. Precedence of `finalize.txt` over `report.txt`
-4. Fallback to `report.txt` when `finalize.txt` absent
-5. Max iterations limit enforcement
-6. Backend parsing and provider/model split
-7. `--yolo` flag passthrough
-8. Issue prefetch success
-9. Issue prefetch failure handling
-10. Git commit after iteration when changes exist
-11. Skip commit when no changes
-12. Per-iteration commit report file
-13. Missing commit report detection
-14. Push remote precedence (upstream over origin)
-15. Base branch selection (master over main)
-16. Fallback to origin and main when upstream/master unavailable
+3. Max iterations limit enforcement
+4. Backend parsing and provider/model split
+5. `--yolo` flag passthrough
+6. Issue prefetch success
+7. Issue prefetch failure handling
+8. Git commit after iteration when changes exist
+9. Skip commit when no changes
+10. Per-iteration commit report file
+11. Missing commit report detection
+12. Push remote precedence (upstream over origin)
+13. Base branch selection (master over main)
+14. Fallback to origin and main when upstream/master unavailable
 
 ## Usage
 

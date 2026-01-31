@@ -21,7 +21,7 @@ lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
 - Prefetches issue content via `gh issue view`; if it fails, the command exits with an error.
 - Iterates `acw` runs, requiring a per-iteration commit report file in `.tmp/commit-report-iter-<iter>.txt`.
 - Stages and commits changes each iteration when there are staged diffs.
-- Detects completion via `.tmp/finalize.txt` (preferred) or `.tmp/report.txt` when they contain `Issue <no> resolved`.
+- Detects completion via `.tmp/finalize.txt` when it contains `Issue <no> resolved`.
 - Pushes the branch to a detected remote and opens a PR using the completion file contents.
 
 **Outputs**:
@@ -52,5 +52,5 @@ Private entrypoint function for the command implementation. It validates argumen
 - Requires `.tmp/commit-report-iter-<iter>.txt` and commits changes when present.
 
 ### Completion detection and PR creation
-- Prefers `.tmp/finalize.txt`; falls back to `.tmp/report.txt`.
+- Uses `.tmp/finalize.txt` for completion detection.
 - Uses the completion file first line for PR title and full file as PR body.

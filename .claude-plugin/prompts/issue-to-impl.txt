@@ -6,7 +6,6 @@ The ultimate goal of this workflow is to deliver a PR on GitHub that implements 
    - Use `gh issue view` to view the original plan of the workflow.
 1. If you have completed a milestone but still have more to do, please continue on the next milestone!
 {#plan_context#}1.3. To signal completion, create `.tmp/finalize.txt` with `Issue <N> resolved` and the PR title on the first line.
-   - Legacy `.tmp/report.txt` is still accepted but `.tmp/finalize.txt` is preferred.
 1.4. For per-iteration commits, optionally create `.tmp/commit-msg-iter-<N>.txt` with a tag-prefixed subject line (e.g., `cli: implement feature X`).
    - See `docs/git-msg-tags.md` for valid tags.
 1.5. If you are working on documentation updates (Step 5):
