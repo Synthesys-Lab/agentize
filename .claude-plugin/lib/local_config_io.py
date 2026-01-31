@@ -14,7 +14,10 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-import yaml
+try:
+    import yaml
+except Exception:
+    yaml = None
 
 
 def find_local_config_file(start_dir: Path | None = None) -> Path | None:
@@ -73,7 +76,10 @@ def parse_yaml_file(path: Path) -> dict:
         path: Path to the YAML file
 
     Returns:
-        Parsed configuration as nested dict. Returns {} on empty content.
+        Parsed configuration as nested dict. Returns {} on empty content or if
+        PyYAML is unavailable.
     """
+    if yaml is None:
+        return {}
     with open(path, "r") as f:
         return yaml.safe_load(f) or {}

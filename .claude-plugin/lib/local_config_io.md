@@ -32,6 +32,7 @@ Parse a YAML file using `yaml.safe_load()`.
 - `path`: Path to the YAML file
 
 **Returns:** Parsed configuration as nested dict. Returns `{}` on empty content.
+If PyYAML is unavailable, returns `{}` to keep callers operational.
 
 ## Design Rationale
 
@@ -43,6 +44,8 @@ Parse a YAML file using `yaml.safe_load()`.
 **Single implementation:** Both modules previously duplicated ~55 lines of identical search logic. Centralizing this eliminates drift and maintenance burden.
 
 **No caching:** Caching is intentionally NOT in this module. The server needs fresh config on each poll cycle, while hooks benefit from caching. Each caller implements the appropriate caching strategy.
+
+**Graceful dependency handling:** When PyYAML is unavailable, parsing returns `{}` so hooks and server helpers can continue with defaults. Install PyYAML to enable YAML-backed configuration.
 
 ## Internal Usage
 

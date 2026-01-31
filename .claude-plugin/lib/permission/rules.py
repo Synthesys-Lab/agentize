@@ -17,7 +17,10 @@ import subprocess
 from pathlib import Path
 from typing import Any, Optional
 
-import yaml
+try:
+    import yaml
+except Exception:
+    yaml = None
 
 # Module-level cache for YAML rules
 _yaml_rules_cache: Optional[dict] = None
@@ -230,8 +233,10 @@ def _parse_yaml_file(path: Path) -> dict:
         path: Path to the YAML file
 
     Returns:
-        Parsed configuration as nested dict
+        Parsed configuration as nested dict. Returns {} if PyYAML is unavailable.
     """
+    if yaml is None:
+        return {}
     with open(path, "r") as f:
         return yaml.safe_load(f) or {}
 
