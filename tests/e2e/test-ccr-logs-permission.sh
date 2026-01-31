@@ -45,6 +45,23 @@ if ! command -v uv >/dev/null 2>&1; then
     echo "=== CCR logs directory permission tests passed (partial) ==="
     exit 0
 fi
+if ! command -v podman >/dev/null 2>&1 && ! command -v docker >/dev/null 2>&1; then
+    echo "SKIP: Tests 4-5 require podman or docker (sandbox tests)"
+    echo "=== CCR logs directory permission tests passed (partial) ==="
+    exit 0
+fi
+runtime_ok=0
+if command -v podman >/dev/null 2>&1 && podman info >/dev/null 2>&1; then
+    runtime_ok=1
+fi
+if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+    runtime_ok=1
+fi
+if [ "$runtime_ok" -ne 1 ]; then
+    echo "SKIP: container runtime not available (podman/docker not running)"
+    echo "=== CCR logs directory permission tests passed (partial) ==="
+    exit 0
+fi
 
 # Test 4: Verify CCR can run with --ccr flag without permission error
 echo "Test 4: Testing CCR --help runs without permission error..."

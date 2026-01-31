@@ -1,4 +1,6 @@
 """GitHub issue/PR discovery and GraphQL helpers for the server module."""
+from __future__ import annotations
+
 
 import json
 import re

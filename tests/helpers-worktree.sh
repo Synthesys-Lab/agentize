@@ -2,7 +2,7 @@
 # Purpose: Shared helper providing worktree test setup functions
 # Expected: Sourced by worktree tests to create test environments
 
-# Source gh mock helpers (use TESTS_DIR from common.sh for shell-neutral sourcing)
+# Source gh mock helpers (use TESTS_DIR from inlined test setup for shell-neutral sourcing)
 source "$TESTS_DIR/helpers-gh-mock.sh"
 
 # Create a bare test repository with basic setup

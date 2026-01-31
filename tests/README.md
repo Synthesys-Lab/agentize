@@ -11,14 +11,13 @@ Automated test scripts verify that SDK templates, CLI tools, and infrastructure 
 ### Test Infrastructure
 
 - `test-all.sh` - Master test runner that executes all test suites and reports summary
-- `common.sh` - Shared test helper providing `PROJECT_ROOT`, test result helpers, and resource management
 - `helpers-worktree.sh` - Shared worktree test setup/cleanup helpers
 - `helpers-gh-mock.sh` - Shared gh mock helpers for issue/PR tests
 - `helpers-makefile-validation.sh` - Shared helpers for makefile validation tests
 
 ### Test Organization Pattern
 
-Each test script follows the naming pattern `test-<feature>-<case>.sh` and represents a **single test case**. All test scripts source `common.sh` for shared functionality and maintain shell-neutral compatibility.
+Each test script follows the naming pattern `test-<feature>-<case>.sh` and represents a **single test case**. Each test inlines a small shared setup block (project root detection, helper functions) to keep shell-neutral compatibility.
 
 Test files are organized into categorical subdirectories:
 - **`tests/sdk/`** - SDK template tests (fast unit tests for SDK generation)
@@ -70,14 +69,14 @@ zsh tests/sdk/test-c-sdk.sh
 
 Each test script represents a single test case and follows this pattern:
 
-1. Source the shared test helper: `source "$(dirname "$0")/common.sh"`
+1. Inline the shared test setup block (project root detection, helpers)
 2. Set up test environment (temporary directories via `make_temp_dir`)
 3. Execute the functionality being tested
 4. Validate expected outcomes (using `test_pass` or `test_fail`)
 5. Clean up test artifacts (using `cleanup_dir` or implicit cleanup)
 6. Exit with status code (0 = pass, 1 = fail)
 
-The shared helper `tests/common.sh` provides:
+The inlined setup block provides:
 - `PROJECT_ROOT` and `TESTS_DIR` variables
 - Color constants for terminal output
 - Test result helpers: `test_pass`, `test_fail`, `test_info`
@@ -95,10 +94,10 @@ All shell tests must live in a categorized subdirectory under `tests/`. Do not c
    - `tests/lint/` for validation tests
    - `tests/e2e/` for end-to-end integration tests
 2. Create a new test script: `tests/<category>/test-<feature>-<case>.sh`
-3. Source the common helper: `source "$(dirname "$0")/../common.sh"`
+3. Inline the shared test setup block (project root detection, helpers)
 4. Source feature-specific helpers if needed: `source "$(dirname "$0")/../helpers-*.sh"`
 5. Implement a single test case with clear assertions
-6. Use helper functions from `common.sh` or feature-specific helpers
+6. Use the inlined helper functions or feature-specific helpers
 7. The test will be automatically discovered by `test-all.sh` (no manual registration required)
 8. Update `.claude/settings.local.json` to allow execution without permission prompts (see `tests/CLAUDE.md`)
 

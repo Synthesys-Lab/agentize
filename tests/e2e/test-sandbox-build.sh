@@ -4,6 +4,20 @@ set -e
 
 echo "=== Testing sandbox Dockerfile ==="
 
+# Skip if sandbox prerequisites are missing
+if ! command -v uv >/dev/null 2>&1; then
+    echo "SKIP: sandbox tests require 'uv'"
+    exit 0
+fi
+if ! command -v podman >/dev/null 2>&1; then
+    echo "SKIP: sandbox tests require 'podman'"
+    exit 0
+fi
+if ! podman info >/dev/null 2>&1; then
+    echo "SKIP: podman is not available (daemon not running)"
+    exit 0
+fi
+
 # Build the Docker image using the Python script's build command
 echo "Building Docker image..."
 uv ./sandbox/run.py --build

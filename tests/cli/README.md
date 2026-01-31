@@ -87,7 +87,7 @@ These checks are interactive and cannot be automated in CI.
 
 CLI tests follow the standard test structure:
 
-1. Source `common.sh` for test helpers
+1. Inline the shared test setup block (project root detection + helpers)
 2. Set up test environment (temporary directories, mock repositories)
 3. Execute CLI command with specific arguments
 4. Validate:

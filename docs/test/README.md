@@ -57,14 +57,14 @@ Python tests for server modules and `.claude-plugin/lib` modules live in `python
 
 Each test script represents a **single test case** and follows this pattern:
 
-1. Source the shared test helper: `source "$(dirname "$0")/common.sh"`
+1. Inline the shared test setup block (project root detection + helpers)
 2. Set up test environment (temporary directories via `make_temp_dir`)
 3. Execute the functionality being tested
 4. Validate expected outcomes (using `test_pass` or `test_fail`)
 5. Clean up test artifacts (using `cleanup_dir` or implicit cleanup)
 6. Exit with status code (0 = pass, 1 = fail)
 
-The shared helper `tests/common.sh` provides:
+The inlined setup block provides:
 - `PROJECT_ROOT` and `TESTS_DIR` variables
 - Color constants for terminal output
 - Test result helpers: `test_pass`, `test_fail`, `test_info`
