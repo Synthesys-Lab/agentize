@@ -21,6 +21,7 @@ lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
 - Prefetches issue content via `gh issue view`; if it fails, the command exits with an error.
 - Iterates `acw` runs, requiring a per-iteration commit report file in `.tmp/commit-report-iter-<iter>.txt`.
 - Writes per-iteration outputs to `.tmp/impl-output-<iter>.txt` and feeds the previous iteration output into the next prompt (tail 200 lines).
+- Prompts the agent to work iteratively by assessing progress, making code changes, and leaving a clear report when incomplete.
 - Stages and commits changes each iteration when there are staged diffs.
 - Prompts the agent to run all test cases before declaring completion.
 - Detects completion only via `.tmp/finalize.txt` when it contains the exact line `Closes #<no>`.
