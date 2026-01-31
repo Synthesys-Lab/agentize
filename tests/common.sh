@@ -55,7 +55,8 @@ export PYTHON_BIN
 python3() {
   "$PYTHON_BIN" "$@"
 }
-export -f python3
+# export -f is bash-only; ignore failures so zsh can source this file safely.
+export -f python3 2>/dev/null || true
 
 # ============================================================
 # Color constants for terminal output
