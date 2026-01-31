@@ -24,6 +24,7 @@ else
 fi
 
 SCRIPT_DIR="$PROJECT_ROOT/tests"
+export AGENTIZE_TESTS_COMMON="$PROJECT_ROOT/tests/common.sh"
 
 # Detect if TEST_SHELLS was explicitly set (check BEFORE applying default)
 EXPLICIT_SHELLS=0

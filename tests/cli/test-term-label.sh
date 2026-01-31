@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # Test: term label helpers respect NO_COLOR and PLANNER_NO_COLOR
 
-source "$(dirname "$0")/../common.sh"
+# Shared test helpers
+set -e
+TESTS_COMMON="${AGENTIZE_TESTS_COMMON:-$(git rev-parse --show-toplevel 2>/dev/null)/tests/common.sh}"
+[ -f "$TESTS_COMMON" ] || { echo "Error: Cannot locate tests/common.sh" >&2; exit 1; }
+source "$TESTS_COMMON"
 
 TERM_COLORS="$PROJECT_ROOT/src/cli/term/colors.sh"
 

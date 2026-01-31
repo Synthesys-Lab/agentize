@@ -2,7 +2,11 @@
 # Test: acw --yolo translation for Claude provider
 # Verifies that --yolo is translated to --dangerously-skip-permissions when invoking Claude
 
-source "$(dirname "$0")/../common.sh"
+# Shared test helpers
+set -e
+TESTS_COMMON="${AGENTIZE_TESTS_COMMON:-$(git rev-parse --show-toplevel 2>/dev/null)/tests/common.sh}"
+[ -f "$TESTS_COMMON" ] || { echo "Error: Cannot locate tests/common.sh" >&2; exit 1; }
+source "$TESTS_COMMON"
 
 ACW_CLI="$PROJECT_ROOT/src/cli/acw.sh"
 

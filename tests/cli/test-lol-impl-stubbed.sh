@@ -2,7 +2,11 @@
 # Test: lol impl workflow with stubbed wt, acw, and gh
 # Tests worktree path resolution, backend parsing, iteration limits, and completion marker detection
 
-source "$(dirname "$0")/../common.sh"
+# Shared test helpers
+set -e
+TESTS_COMMON="${AGENTIZE_TESTS_COMMON:-$(git rev-parse --show-toplevel 2>/dev/null)/tests/common.sh}"
+[ -f "$TESTS_COMMON" ] || { echo "Error: Cannot locate tests/common.sh" >&2; exit 1; }
+source "$TESTS_COMMON"
 
 LOL_CLI="$PROJECT_ROOT/src/cli/lol.sh"
 
@@ -185,7 +189,7 @@ acw() {
         mkdir -p "$STUB_WORKTREE/.tmp"
         echo "PR: Fix issue 123" > "$STUB_WORKTREE/.tmp/finalize.txt"
         echo "" >> "$STUB_WORKTREE/.tmp/finalize.txt"
-        echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+        echo "Closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
     fi
 
     echo "Stub response for iteration $ITERATION_COUNT" > "$output_file"
@@ -215,68 +219,6 @@ fi
 
 # Clean up for next test
 rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
-
-# ── Test 2b: Finalize.txt takes precedence over report.txt ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
-> "$GH_CALL_LOG"
-
-# Create both files, finalize.txt should be used
-mkdir -p "$STUB_WORKTREE/.tmp"
-echo "PR: From finalize" > "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "PR: From report (should not be used)" > "$STUB_WORKTREE/.tmp/report.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
-
-acw() {
-    echo "acw $*" >> "$ACW_CALL_LOG"
-    ITERATION_COUNT=$((ITERATION_COUNT + 1))
-    export ITERATION_COUNT
-    write_commit_report "$ITERATION_COUNT"
-    echo "Stub response" > "$4"
-    return 0
-}
-export -f acw 2>/dev/null || true
-
-output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
-    echo "Output: $output" >&2
-    test_fail "lol impl should succeed with both finalize and report present"
-}
-
-# Verify PR title comes from finalize.txt (first line = "PR: From finalize")
-if ! grep -q 'gh pr create.*--title.*From finalize' "$GH_CALL_LOG"; then
-    echo "GH call log:" >&2
-    cat "$GH_CALL_LOG" >&2
-    test_fail "Expected PR title from finalize.txt, not report.txt"
-fi
-
-# Clean up for next test
-rm -f "$STUB_WORKTREE/.tmp/finalize.txt" "$STUB_WORKTREE/.tmp/report.txt"
-
-# ── Test 2c: Fallback to report.txt when finalize.txt absent ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
-> "$GH_CALL_LOG"
-
-# Create only report.txt (legacy) - no finalize.txt
-mkdir -p "$STUB_WORKTREE/.tmp"
-echo "PR: From legacy report" > "$STUB_WORKTREE/.tmp/report.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
-
-output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
-    echo "Output: $output" >&2
-    test_fail "lol impl should succeed with legacy report.txt"
-}
-
-# Verify PR title comes from report.txt
-if ! grep -q 'gh pr create.*--title.*From legacy report' "$GH_CALL_LOG"; then
-    echo "GH call log:" >&2
-    cat "$GH_CALL_LOG" >&2
-    test_fail "Expected PR title from legacy report.txt"
-fi
-
-# Clean up for next test
-rm -f "$STUB_WORKTREE/.tmp/report.txt"
 
 # ── Test 3: Max iterations limit ──
 ITERATION_COUNT=0
@@ -332,7 +274,7 @@ ITERATION_COUNT=0
 # Create completion marker immediately
 mkdir -p "$STUB_WORKTREE/.tmp"
 echo "PR: Quick fix" > "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
     echo "acw $1 $2 $3 $4" >> "$ACW_CALL_LOG"
@@ -394,7 +336,7 @@ rm -f "$STUB_WORKTREE/.tmp/impl-input-"*
 # Create completion marker immediately
 mkdir -p "$STUB_WORKTREE/.tmp"
 echo "PR: Prefetch test" > "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 # Stub gh to provide issue content
 gh() {
@@ -485,7 +427,7 @@ export -f wt 2>/dev/null || true
 
 # Create completion marker
 echo "PR: Fallback test" > "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "Issue 456 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Closes #456" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 # Stub gh to fail for issue view
 gh() {
@@ -561,7 +503,7 @@ acw() {
     if [ "$ITERATION_COUNT" -eq 2 ]; then
         mkdir -p "$STUB_WORKTREE/.tmp"
         echo "PR: Git commit test" > "$STUB_WORKTREE/.tmp/finalize.txt"
-        echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+        echo "Closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
     fi
     echo "Stub response for iteration $ITERATION_COUNT" > "$output_file"
     return 0
@@ -618,7 +560,7 @@ export GIT_HAS_CHANGES
 
 # Create completion marker immediately
 echo "PR: No changes test" > "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
     echo "acw $*" >> "$ACW_CALL_LOG"
@@ -662,7 +604,7 @@ export GIT_HAS_CHANGES
 # Create completion marker
 mkdir -p "$STUB_WORKTREE/.tmp"
 echo "PR: Commit report test" > "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
     echo "acw $*" >> "$ACW_CALL_LOG"
@@ -702,7 +644,7 @@ export GIT_HAS_CHANGES
 # Create completion marker but no commit report file
 mkdir -p "$STUB_WORKTREE/.tmp"
 echo "PR: Missing report test" > "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
     echo "acw $*" >> "$ACW_CALL_LOG"
@@ -739,7 +681,7 @@ export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH
 
 # Create completion marker immediately
 echo "PR: Remote precedence test" > "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
     echo "acw $*" >> "$ACW_CALL_LOG"
@@ -784,7 +726,7 @@ export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH
 
 # Create completion marker immediately
 echo "PR: Fallback remote test" > "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2

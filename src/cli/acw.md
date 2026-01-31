@@ -32,6 +32,7 @@ acw <cli-name> <model-name> <input-file> <output-file> [options...]
 ```
 
 Validates arguments, dispatches to provider function, returns provider exit code.
+`--silent` is a reserved option that suppresses provider stderr output while keeping acw validation errors visible.
 
 This is the **only public function** exported by `acw.sh`. All other functions are internal (prefixed with `_acw_`).
 
@@ -72,6 +73,10 @@ Each provider has its own invocation function to:
 - Handle CLI-specific flag formats (e.g., normalize `--yolo` to Claude's `--dangerously-skip-permissions`)
 - Manage output redirection differences
 - Allow targeted updates when provider CLIs change
+
+### Provider Noise Control
+
+`--silent` is handled in the dispatcher so provider stderr output can be suppressed without hiding acw's own validation errors.
 
 ### Bash 3.2 Compatibility
 

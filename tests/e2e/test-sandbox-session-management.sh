@@ -2,9 +2,34 @@
 # Purpose: Test sandbox session management with tmux-based worktree + container combinations
 # Expected: run.py subcommands (new, ls, rm, attach) work correctly with SQLite state
 
-source "$(dirname "$0")/../common.sh"
+# Shared test helpers
+set -e
+TESTS_COMMON="${AGENTIZE_TESTS_COMMON:-$(git rev-parse --show-toplevel 2>/dev/null)/tests/common.sh}"
+[ -f "$TESTS_COMMON" ] || { echo "Error: Cannot locate tests/common.sh" >&2; exit 1; }
+source "$TESTS_COMMON"
 
 set -e
+
+# Skip if sandbox prerequisites are missing
+if ! command -v uv >/dev/null 2>&1; then
+  echo "SKIP: sandbox tests require 'uv'"
+  exit 0
+fi
+if ! command -v podman >/dev/null 2>&1 && ! command -v docker >/dev/null 2>&1; then
+  echo "SKIP: sandbox tests require podman or docker"
+  exit 0
+fi
+runtime_ok=0
+if command -v podman >/dev/null 2>&1 && podman info >/dev/null 2>&1; then
+  runtime_ok=1
+fi
+if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+  runtime_ok=1
+fi
+if [ "$runtime_ok" -ne 1 ]; then
+  echo "SKIP: container runtime not available (podman/docker not running)"
+  exit 0
+fi
 
 test_info "Testing sandbox session management"
 

@@ -4,6 +4,8 @@ Claude Code token usage statistics module.
 Parses JSONL files from ~/.claude/projects/**/*.jsonl to extract and aggregate
 token usage statistics by time bucket.
 """
+from __future__ import annotations
+
 
 import json
 from datetime import datetime, timedelta

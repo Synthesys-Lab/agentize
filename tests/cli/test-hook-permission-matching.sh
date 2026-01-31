@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # Test: PreToolUse hook permission matching
 
-source "$(dirname "$0")/../common.sh"
+# Shared test helpers
+set -e
+TESTS_COMMON="${AGENTIZE_TESTS_COMMON:-$(git rev-parse --show-toplevel 2>/dev/null)/tests/common.sh}"
+[ -f "$TESTS_COMMON" ] || { echo "Error: Cannot locate tests/common.sh" >&2; exit 1; }
+source "$TESTS_COMMON"
 
 # Isolate environment to prevent reading user's config during tests
 # The config loader walks UP from cwd, so we must run from /tmp to avoid finding user config

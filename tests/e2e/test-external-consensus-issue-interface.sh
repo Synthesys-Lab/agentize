@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # Test: external-consensus.sh 3-report-path argument parsing
 
-source "$(dirname "$0")/../common.sh"
+# Shared test helpers
+set -e
+TESTS_COMMON="${AGENTIZE_TESTS_COMMON:-$(git rev-parse --show-toplevel 2>/dev/null)/tests/common.sh}"
+[ -f "$TESTS_COMMON" ] || { echo "Error: Cannot locate tests/common.sh" >&2; exit 1; }
+source "$TESTS_COMMON"
 
 # Override PROJECT_ROOT to use current worktree instead of AGENTIZE_HOME
 PROJECT_ROOT=$(git rev-parse --show-toplevel)

@@ -5,7 +5,11 @@
 
 set -euo pipefail
 
-source "$(dirname "$0")/../common.sh"
+# Shared test helpers
+set -e
+TESTS_COMMON="${AGENTIZE_TESTS_COMMON:-$(git rev-parse --show-toplevel 2>/dev/null)/tests/common.sh}"
+[ -f "$TESTS_COMMON" ] || { echo "Error: Cannot locate tests/common.sh" >&2; exit 1; }
+source "$TESTS_COMMON"
 
 PROMPT_FILE="$PROJECT_ROOT/.claude-plugin/skills/external-synthesize/external-synthesize-prompt.md"
 

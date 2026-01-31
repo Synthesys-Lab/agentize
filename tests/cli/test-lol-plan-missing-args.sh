@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # Test: lol plan with no args exits non-zero and prints usage
 
-source "$(dirname "$0")/../common.sh"
+# Shared test helpers
+set -e
+TESTS_COMMON="${AGENTIZE_TESTS_COMMON:-$(git rev-parse --show-toplevel 2>/dev/null)/tests/common.sh}"
+[ -f "$TESTS_COMMON" ] || { echo "Error: Cannot locate tests/common.sh" >&2; exit 1; }
+source "$TESTS_COMMON"
 
 LOL_CLI="$PROJECT_ROOT/src/cli/lol.sh"
 PLANNER_CLI="$PROJECT_ROOT/src/cli/planner.sh"

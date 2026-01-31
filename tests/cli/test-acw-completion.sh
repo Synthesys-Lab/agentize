@@ -2,7 +2,11 @@
 # Test: acw completion functionality
 # Verifies acw --complete returns expected values for each topic
 
-source "$(dirname "$0")/../common.sh"
+# Shared test helpers
+set -e
+TESTS_COMMON="${AGENTIZE_TESTS_COMMON:-$(git rev-parse --show-toplevel 2>/dev/null)/tests/common.sh}"
+[ -f "$TESTS_COMMON" ] || { echo "Error: Cannot locate tests/common.sh" >&2; exit 1; }
+source "$TESTS_COMMON"
 
 ACW_CLI="$PROJECT_ROOT/src/cli/acw.sh"
 
@@ -25,7 +29,7 @@ done
 test_info "Checking --complete cli-options"
 options_output=$(acw --complete cli-options)
 
-for option in "--help" "--model" "--yolo"; do
+for option in "--help" "--model" "--yolo" "--silent"; do
     if ! echo "$options_output" | grep -q "^${option}$"; then
         test_fail "Option '$option' not found in --complete cli-options output"
     fi

@@ -19,6 +19,7 @@ _acw_complete() {
             echo "--model"
             echo "--max-tokens"
             echo "--yolo"
+            echo "--silent"
             ;;
         *)
             # Unknown topic, return empty (graceful degradation)

@@ -112,7 +112,7 @@ workflows:
 
 **No environment overrides:** YAML is the sole configuration source, providing a single, predictable place to manage settings.
 
-**PyYAML library:** Uses `yaml.safe_load()` for full YAML 1.2 compliance, providing robust parsing with support for all standard YAML features.
+**PyYAML library:** Uses `yaml.safe_load()` for full YAML 1.2 compliance. When PyYAML is unavailable, YAML configuration is treated as empty so hooks fall back to defaults.
 
 ## Internal Usage
 

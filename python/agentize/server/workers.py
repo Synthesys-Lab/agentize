@@ -1,4 +1,6 @@
 """Worktree spawn/rebase and worker status file management for the server module."""
+from __future__ import annotations
+
 
 import os
 import re

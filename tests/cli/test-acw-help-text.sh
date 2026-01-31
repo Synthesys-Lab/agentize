@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # Test: acw usage text includes documented commands and providers
 
-source "$(dirname "$0")/../common.sh"
+# Shared test helpers
+set -e
+TESTS_COMMON="${AGENTIZE_TESTS_COMMON:-$(git rev-parse --show-toplevel 2>/dev/null)/tests/common.sh}"
+[ -f "$TESTS_COMMON" ] || { echo "Error: Cannot locate tests/common.sh" >&2; exit 1; }
+source "$TESTS_COMMON"
 
 ACW_CLI="$PROJECT_ROOT/src/cli/acw.sh"
 
@@ -25,6 +29,9 @@ echo "$output" | grep -q "codex" || test_fail "Usage text missing 'codex' provid
 
 # Verify usage text includes --help flag
 echo "$output" | grep -q "\-\-help" || test_fail "Usage text missing '--help' flag"
+
+# Verify usage text includes --silent flag
+echo "$output" | grep -q "\-\-silent" || test_fail "Usage text missing '--silent' flag"
 
 # Verify usage text mentions input-file and output-file
 echo "$output" | grep -q "input-file" || test_fail "Usage text missing 'input-file' argument"
