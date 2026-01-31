@@ -6,7 +6,7 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from agentize.server.log import _log
 from agentize.server.runtime_config import load_runtime_config
@@ -48,7 +48,7 @@ def _is_debug_enabled() -> bool:
     return _coerce_bool(debug_value, False)
 
 
-def load_config() -> tuple[str, int, str | None]:
+def load_config() -> tuple[str, int, Optional[str]]:
     """Load project config from .agentize.yaml.
 
     Returns:
@@ -520,7 +520,7 @@ def filter_conflicting_prs(prs: list[dict], owner: str, repo: str, project_id: s
     return conflicting
 
 
-def resolve_issue_from_pr(pr: dict) -> int | None:
+def resolve_issue_from_pr(pr: dict) -> Optional[int]:
     """Resolve issue number from PR metadata.
 
     Fallback order:

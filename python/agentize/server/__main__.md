@@ -4,7 +4,7 @@
 
 Functions exported via `__init__.py`:
 
-### `run_server(period: int, num_workers: int = 5, workflow_models: dict[str, str] | None = None) -> None`
+### `run_server(period: int, num_workers: int = 5, workflow_models: Optional[dict[str, str]] = None) -> None`
 
 Main polling loop that monitors GitHub Projects for ready issues.
 
@@ -56,7 +56,7 @@ Send server startup notification to Telegram with hostname, project info, and wo
 
 Log with timestamp and source location (file:line:function).
 
-### `load_runtime_config(start_dir: Path | None = None) -> tuple[dict, Path | None]`
+### `load_runtime_config(start_dir: Optional[Path] = None) -> tuple[dict, Optional[Path]]`
 
 Load runtime configuration from `.agentize.local.yaml`.
 
@@ -94,7 +94,7 @@ workflows:
 
 Parse period string (e.g., "5m", "300s") to seconds.
 
-### `load_config() -> tuple[str, int, str | None]`
+### `load_config() -> tuple[str, int, Optional[str]]`
 
 Load project org, ID, and optional remote URL from `.agentize.yaml`.
 
@@ -143,7 +143,7 @@ Query refinement candidates with label-first discovery. Discovers issues with bo
 
 Discover open issues with both `agentize:plan` and `agentize:refine` labels using `gh issue list`. Returns list of issue metadata dicts with number and labels.
 
-### `spawn_refinement(issue_no: int, model: str | None = None) -> tuple[bool, int | None]`
+### `spawn_refinement(issue_no: int, model: Optional[str] = None) -> tuple[bool, Optional[int]]`
 
 Spawn a refinement session for the given issue.
 
@@ -194,7 +194,7 @@ Filter items to issues eligible for feat-request planning:
 
 When `handsoff.debug: true` is set in `.agentize.local.yaml`, logs per-issue inspection with `[dev-req-filter]` prefix.
 
-### `spawn_feat_request(issue_no: int, model: str | None = None) -> tuple[bool, int | None]`
+### `spawn_feat_request(issue_no: int, model: Optional[str] = None) -> tuple[bool, Optional[int]]`
 
 Spawn a feat-request planning session for the given issue.
 
@@ -221,7 +221,7 @@ Clean up after feat-request planning completion: remove `agentize:dev-req` label
 
 Check if a worktree exists for the given issue number.
 
-### `spawn_worktree(issue_no: int, model: str | None = None) -> tuple[bool, int | None]`
+### `spawn_worktree(issue_no: int, model: Optional[str] = None) -> tuple[bool, Optional[int]]`
 
 Spawn a new worktree for the given issue via `wt spawn`.
 
@@ -274,7 +274,7 @@ When `handsoff.debug: true` is set in `.agentize.local.yaml`, logs per-PR inspec
 
 **Returns:** List of `(pr_no, issue_no)` tuples for PRs ready for review resolution.
 
-### `spawn_review_resolution(pr_no: int, issue_no: int, model: str | None = None) -> tuple[bool, int | None]`
+### `spawn_review_resolution(pr_no: int, issue_no: int, model: Optional[str] = None) -> tuple[bool, Optional[int]]`
 
 Spawn a review resolution session for the given PR.
 
@@ -321,7 +321,7 @@ When `handsoff.debug: true` is set in `.agentize.local.yaml`, logs per-PR inspec
 
 **Returns:** List of PR numbers that need rebasing.
 
-### `resolve_issue_from_pr(pr: dict) -> int | None`
+### `resolve_issue_from_pr(pr: dict) -> Optional[int]`
 
 Resolve issue number from PR metadata.
 
@@ -332,7 +332,7 @@ Resolve issue number from PR metadata.
 
 **Returns:** Issue number or None if no match found.
 
-### `rebase_worktree(pr_no: int, issue_no: int | None = None, model: str | None = None) -> tuple[bool, int | None]`
+### `rebase_worktree(pr_no: int, issue_no: Optional[int] = None, model: Optional[str] = None) -> tuple[bool, Optional[int]]`
 
 Rebase a PR's worktree using `wt rebase` command.
 
@@ -358,7 +358,7 @@ Worker notifications display issue and PR numbers as clickable hyperlinks when a
 
 **Graceful degradation:** If the remote URL cannot be resolved or parsed, notifications display plain text (e.g., `#42`) without error.
 
-### `_extract_repo_slug(remote_url: str) -> str | None`
+### `_extract_repo_slug(remote_url: str) -> Optional[str]`
 
 Extract `org/repo` slug from a GitHub remote URL.
 
@@ -369,20 +369,20 @@ Handles common URL formats:
 
 Returns `None` if the URL format is not recognized.
 
-### `_format_worker_assignment_message(issue_no: int, issue_title: str, worker_id: int, issue_url: str | None) -> str`
+### `_format_worker_assignment_message(issue_no: int, issue_title: str, worker_id: int, issue_url: Optional[str]) -> str`
 
 Build an HTML-formatted Telegram message for worker assignment notification.
 
 Includes issue link when `issue_url` is provided, otherwise displays issue number only.
 
-### `_format_worker_completion_message(issue_no: int, worker_id: int, issue_url: str | None, pr_url: str | None = None) -> str`
+### `_format_worker_completion_message(issue_no: int, worker_id: int, issue_url: Optional[str], pr_url: Optional[str] = None) -> str`
 
 Build an HTML-formatted Telegram message for worker completion notification.
 
 Includes issue link when `issue_url` is provided, otherwise displays issue number only.
 Includes PR link when `pr_url` is provided.
 
-### `_resolve_session_dir(base_dir: str | None = None) -> Path`
+### `_resolve_session_dir(base_dir: Optional[str] = None) -> Path`
 
 Returns hooked-sessions directory path using `AGENTIZE_HOME` fallback.
 
@@ -391,7 +391,7 @@ Returns hooked-sessions directory path using `AGENTIZE_HOME` fallback.
 
 **Returns:** Path to `{base}/.tmp/hooked-sessions/` directory.
 
-### `_load_issue_index(issue_no: int, session_dir: Path) -> str | None`
+### `_load_issue_index(issue_no: int, session_dir: Path) -> Optional[str]`
 
 Reads issue index file and returns session_id.
 
@@ -401,7 +401,7 @@ Reads issue index file and returns session_id.
 
 **Returns:** session_id string or None if index file not found.
 
-### `_load_session_state(session_id: str, session_dir: Path) -> dict | None`
+### `_load_session_state(session_id: str, session_dir: Path) -> Optional[dict]`
 
 Loads session state JSON file.
 
@@ -411,7 +411,7 @@ Loads session state JSON file.
 
 **Returns:** Session state dict or None if not found.
 
-### `_get_session_state_for_issue(issue_no: int, session_dir: Path) -> dict | None`
+### `_get_session_state_for_issue(issue_no: int, session_dir: Path) -> Optional[dict]`
 
 Combined lookup: issue index -> session state.
 
@@ -425,7 +425,7 @@ Combined lookup: issue index -> session state.
 
 Remove issue index file after notification to prevent duplicates.
 
-### `set_pr_number_for_issue(issue_no: int, pr_number: int, session_dir: Path | None = None) -> bool`
+### `set_pr_number_for_issue(issue_no: int, pr_number: int, session_dir: Optional[Path] = None) -> bool`
 
 Best-effort persistence of PR number into session state.
 

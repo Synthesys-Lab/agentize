@@ -3,9 +3,10 @@
 import json
 import os
 from pathlib import Path
+from typing import Optional
 
 
-def _resolve_session_dir(base_dir: str | None = None) -> Path:
+def _resolve_session_dir(base_dir: Optional[str] = None) -> Path:
     """Returns hooked-sessions directory using AGENTIZE_HOME fallback.
 
     Args:
@@ -18,7 +19,7 @@ def _resolve_session_dir(base_dir: str | None = None) -> Path:
     return Path(base) / '.tmp' / 'hooked-sessions'
 
 
-def _load_issue_index(issue_no: int, session_dir: Path) -> str | None:
+def _load_issue_index(issue_no: int, session_dir: Path) -> Optional[str]:
     """Reads issue index and returns session_id.
 
     Args:
@@ -40,7 +41,7 @@ def _load_issue_index(issue_no: int, session_dir: Path) -> str | None:
         return None
 
 
-def _load_session_state(session_id: str, session_dir: Path) -> dict | None:
+def _load_session_state(session_id: str, session_dir: Path) -> Optional[dict]:
     """Loads session JSON.
 
     Args:
@@ -61,7 +62,7 @@ def _load_session_state(session_id: str, session_dir: Path) -> dict | None:
         return None
 
 
-def _get_session_state_for_issue(issue_no: int, session_dir: Path) -> dict | None:
+def _get_session_state_for_issue(issue_no: int, session_dir: Path) -> Optional[dict]:
     """Combined lookup: issue index -> session state.
 
     Args:
@@ -91,7 +92,7 @@ def _remove_issue_index(issue_no: int, session_dir: Path) -> None:
         pass  # Best effort cleanup
 
 
-def set_pr_number_for_issue(issue_no: int, pr_number: int, session_dir: Path | None = None) -> bool:
+def set_pr_number_for_issue(issue_no: int, pr_number: int, session_dir: Optional[Path] = None) -> bool:
     """Best-effort persistence of PR number into session state.
 
     Args:

@@ -3,6 +3,7 @@
 import os
 import subprocess
 from pathlib import Path
+from typing import Optional
 
 
 def get_agentize_home() -> str:
@@ -27,7 +28,7 @@ def run_shell_function(
     cmd: str,
     *,
     capture_output: bool = False,
-    agentize_home: str | None = None,
+    agentize_home: Optional[str] = None,
 ) -> subprocess.CompletedProcess:
     """Run a shell function with AGENTIZE_HOME set.
 

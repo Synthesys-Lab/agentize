@@ -8,6 +8,7 @@ token usage statistics by time bucket.
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Optional
 
 
 # Static per-model pricing rates (USD per million tokens)
@@ -33,7 +34,7 @@ def get_model_pricing() -> dict:
     return MODEL_PRICING.copy()
 
 
-def match_model_pricing(model_id: str) -> dict | None:
+def match_model_pricing(model_id: str) -> Optional[dict]:
     """Match a model ID to its pricing rates using longest-prefix matching."""
     if not model_id:
         return None

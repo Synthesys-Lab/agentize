@@ -5,6 +5,7 @@ import re
 import socket
 import sys
 from pathlib import Path
+from typing import Optional
 
 # Add .claude-plugin to path for lib imports
 _repo_root = Path(__file__).resolve().parents[3]
@@ -78,7 +79,7 @@ def notify_server_start(token: str, chat_id: str, org: str, project_id: int, per
         print("Warning: Failed to send Telegram startup notification", file=sys.stderr)
 
 
-def _extract_repo_slug(remote_url: str) -> str | None:
+def _extract_repo_slug(remote_url: str) -> Optional[str]:
     """Extract org/repo slug from a GitHub remote URL.
 
     Handles:
@@ -109,7 +110,7 @@ def _format_worker_assignment_message(
     issue_no: int,
     issue_title: str,
     worker_id: int,
-    issue_url: str | None
+    issue_url: Optional[str]
 ) -> str:
     """Build HTML-formatted Telegram message for worker assignment.
 
@@ -139,8 +140,8 @@ def _format_worker_assignment_message(
 def _format_worker_completion_message(
     issue_no: int,
     worker_id: int,
-    issue_url: str | None,
-    pr_url: str | None = None
+    issue_url: Optional[str],
+    pr_url: Optional[str] = None
 ) -> str:
     """Build HTML-formatted Telegram message for worker completion.
 

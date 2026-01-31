@@ -15,7 +15,7 @@ caching, use local_config.py instead.
 
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 # Add .claude-plugin to path for shared helper import
 _repo_root = Path(__file__).resolve().parents[3]
@@ -42,7 +42,7 @@ VALID_WORKFLOW_NAMES = {"impl", "refine", "dev_req", "rebase"}
 VALID_MODELS = {"opus", "sonnet", "haiku"}
 
 
-def load_runtime_config(start_dir: Path | None = None) -> tuple[dict, Path | None]:
+def load_runtime_config(start_dir: Optional[Path] = None) -> tuple[dict, Optional[Path]]:
     """Load runtime configuration from .agentize.local.yaml.
 
     Searches from start_dir up to parent directories until the config file is found.
@@ -81,11 +81,11 @@ def load_runtime_config(start_dir: Path | None = None) -> tuple[dict, Path | Non
 
 
 def resolve_precedence(
-    cli_value: Any | None,
-    env_value: Any | None,
-    config_value: Any | None,
-    default: Any | None,
-) -> Any | None:
+    cli_value: Optional[Any],
+    env_value: Optional[Any],
+    config_value: Optional[Any],
+    default: Optional[Any],
+) -> Optional[Any]:
     """Return first non-None value in precedence order.
 
     Precedence: CLI > env > config > default

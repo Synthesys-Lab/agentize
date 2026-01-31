@@ -8,7 +8,7 @@ Separates runtime configuration (credentials, machine-specific tuning) from proj
 
 ## External Interface
 
-### `load_runtime_config(start_dir: Path | None = None) -> tuple[dict, Path | None]`
+### `load_runtime_config(start_dir: Optional[Path] = None) -> tuple[dict, Optional[Path]]`
 
 Load runtime configuration from `.agentize.local.yaml`.
 
@@ -47,7 +47,7 @@ Extract workflow -> model mapping from config.
 
 ## Shared Helpers (from `lib.local_config_io`)
 
-### `find_local_config_file(start_dir: Path | None) -> Path | None`
+### `find_local_config_file(start_dir: Optional[Path]) -> Optional[Path]`
 
 Shared YAML file discovery helper used by both server and hooks. Searches for `.agentize.local.yaml` using the standard search order (walk up from start_dir, then `$AGENTIZE_HOME`, then `$HOME`).
 

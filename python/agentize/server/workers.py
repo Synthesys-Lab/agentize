@@ -5,6 +5,7 @@ import re
 import subprocess
 import time
 from pathlib import Path
+from typing import Optional
 
 from agentize.shell import run_shell_function
 from agentize.server.log import _log
@@ -14,7 +15,7 @@ from agentize.server.log import _log
 DEFAULT_WORKERS_DIR = '.tmp/workers'
 
 
-def _parse_pid_from_output(stdout: str) -> int | None:
+def _parse_pid_from_output(stdout: str) -> Optional[int]:
     """Parse PID from wt command output.
 
     Looks for lines containing 'PID' and extracts the number.
@@ -33,7 +34,7 @@ def worktree_exists(issue_no: int) -> bool:
     return result.returncode == 0
 
 
-def spawn_worktree(issue_no: int, model: str | None = None) -> tuple[bool, int | None]:
+def spawn_worktree(issue_no: int, model: Optional[str] = None) -> tuple[bool, Optional[int]]:
     """Spawn a new worktree for the given issue.
 
     Args:
@@ -54,7 +55,11 @@ def spawn_worktree(issue_no: int, model: str | None = None) -> tuple[bool, int |
     return True, _parse_pid_from_output(result.stdout)
 
 
-def rebase_worktree(pr_no: int, issue_no: int | None = None, model: str | None = None) -> tuple[bool, int | None]:
+def rebase_worktree(
+    pr_no: int,
+    issue_no: Optional[int] = None,
+    model: Optional[str] = None
+) -> tuple[bool, Optional[int]]:
     """Rebase a PR's worktree using wt rebase command.
 
     Args:
@@ -157,7 +162,7 @@ def _cleanup_feat_request(issue_no: int) -> None:
     _log(f"Dev-req cleanup for issue #{issue_no}: removed agentize:dev-req label")
 
 
-def spawn_refinement(issue_no: int, model: str | None = None) -> tuple[bool, int | None]:
+def spawn_refinement(issue_no: int, model: Optional[str] = None) -> tuple[bool, Optional[int]]:
     """Spawn a refinement session for the given issue.
 
     Runs planning on main branch worktree and spawns
@@ -204,7 +209,7 @@ def spawn_refinement(issue_no: int, model: str | None = None) -> tuple[bool, int
     return True, proc.pid
 
 
-def spawn_feat_request(issue_no: int, model: str | None = None) -> tuple[bool, int | None]:
+def spawn_feat_request(issue_no: int, model: Optional[str] = None) -> tuple[bool, Optional[int]]:
     """Spawn a feat-request planning session for the given issue.
 
     Runs planning on main branch worktree, and spawns claude with /ultra-planner --from-issue headlessly.
@@ -257,7 +262,11 @@ def spawn_feat_request(issue_no: int, model: str | None = None) -> tuple[bool, i
     return True, proc.pid
 
 
-def spawn_review_resolution(pr_no: int, issue_no: int, model: str | None = None) -> tuple[bool, int | None]:
+def spawn_review_resolution(
+    pr_no: int,
+    issue_no: int,
+    model: Optional[str] = None
+) -> tuple[bool, Optional[int]]:
     """Spawn a review resolution session for the given PR.
 
     Runs in the issue-specific worktree (not main), spawns claude with /resolve-review headlessly.
@@ -390,8 +399,8 @@ def read_worker_status(worker_id: int, workers_dir: str = DEFAULT_WORKERS_DIR) -
 def write_worker_status(
     worker_id: int,
     state: str,
-    issue: int | None,
-    pid: int | None,
+    issue: Optional[int],
+    pid: Optional[int],
     workers_dir: str = DEFAULT_WORKERS_DIR
 ) -> None:
     """Write worker status to file atomically.
@@ -417,7 +426,7 @@ def write_worker_status(
     tmp_file.rename(status_file)
 
 
-def get_free_worker(num_workers: int, workers_dir: str = DEFAULT_WORKERS_DIR) -> int | None:
+def get_free_worker(num_workers: int, workers_dir: str = DEFAULT_WORKERS_DIR) -> Optional[int]:
     """Find the first FREE worker slot.
 
     Returns:
@@ -457,10 +466,10 @@ def cleanup_dead_workers(
     num_workers: int,
     workers_dir: str = DEFAULT_WORKERS_DIR,
     *,
-    tg_token: str | None = None,
-    tg_chat_id: str | None = None,
-    repo_slug: str | None = None,
-    session_dir: Path | None = None
+    tg_token: Optional[str] = None,
+    tg_chat_id: Optional[str] = None,
+    repo_slug: Optional[str] = None,
+    session_dir: Optional[Path] = None
 ) -> None:
     """Mark workers with dead PIDs as FREE and send completion notifications.
 

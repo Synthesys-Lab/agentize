@@ -123,7 +123,7 @@ Format USD cost with dollar sign and appropriate precision.
 ### match_model_pricing
 
 ```python
-def match_model_pricing(model_id: str) -> dict | None
+def match_model_pricing(model_id: str) -> Optional[dict]
 ```
 
 Match a model ID to its pricing rates using longest-prefix matching.
