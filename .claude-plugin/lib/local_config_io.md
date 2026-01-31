@@ -8,7 +8,7 @@ Provides a single source of truth for YAML file search order and parsing logic. 
 
 ## External Interface
 
-### `find_local_config_file(start_dir: Path | None = None) -> Path | None`
+### `find_local_config_file(start_dir: Optional[Path] = None) -> Optional[Path]`
 
 Find `.agentize.local.yaml` using the standard search order.
 
@@ -31,7 +31,7 @@ Parse a YAML file using `yaml.safe_load()`.
 **Parameters:**
 - `path`: Path to the YAML file
 
-**Returns:** Parsed configuration as nested dict. Returns `{}` on empty content.
+**Returns:** Parsed configuration as nested dict. Returns `{}` on empty content. Returns `{}` when PyYAML is unavailable so hooks can continue with defaults.
 
 ## Design Rationale
 

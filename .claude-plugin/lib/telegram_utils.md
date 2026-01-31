@@ -18,7 +18,7 @@ Escape special HTML characters for Telegram HTML parse mode.
 - `<` → `&lt;`
 - `>` → `&gt;`
 
-### `telegram_request(...) -> dict | None`
+### `telegram_request(...) -> Optional[dict]`
 
 Make an HTTP request to the Telegram Bot API.
 
@@ -26,11 +26,11 @@ Make an HTTP request to the Telegram Bot API.
 def telegram_request(
     token: str,
     method: str,
-    payload: dict | None = None,
+    payload: Optional[dict] = None,
     timeout_sec: int = 10,
-    on_error: Callable[[Exception], None] | None = None,
-    urlopen_fn: Callable[..., Any] | None = None
-) -> dict | None
+    on_error: Optional[Callable[[Exception], None]] = None,
+    urlopen_fn: Optional[Callable[..., Any]] = None
+) -> Optional[dict]
 ```
 
 **Parameters:**
