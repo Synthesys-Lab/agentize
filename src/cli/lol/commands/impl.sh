@@ -71,7 +71,7 @@ _lol_cmd_impl() {
 
     # Initialize input/output files
     local base_input_file="$worktree_path/.tmp/impl-input-base.txt"
-    local output_file="$worktree_path/.tmp/impl-output.txt"
+    local output_prefix="$worktree_path/.tmp/impl-output"
     local finalize_file="$worktree_path/.tmp/finalize.txt"
     local report_file="$worktree_path/.tmp/report.txt"
 
@@ -85,6 +85,7 @@ Primary goal: implement issue #$issue_no described in $issue_file.
 Each iteration:
 - create the commit report file for the current iteration in .tmp (the exact filename will be provided each iteration).
 - update $finalize_file with PR title (first line) and body (full file); include "Issue $issue_no resolved" only when done.
+- before claiming "Issue $issue_no resolved", run all test cases to ensure the implementation resolves the issue and does not break existing functionality.
 EOF
         echo "For each iteration, create the per-iteration .tmp/commit-report-iter-<iter>.txt file with the full commit message." >&2
         echo "Once completed the implementation, create a $finalize_file file with the PR title and body." >&2
@@ -115,9 +116,10 @@ EOF
                 cat "$base_input_file"
                 printf "\nCurrent iteration: %s\n" "$iter"
                 printf "Create .tmp/commit-report-iter-%s.txt for this iteration.\n" "$iter"
-                if [ -s "$output_file" ]; then
+                local prev_output_file="$worktree_path/.tmp/impl-output-$prev_iter.txt"
+                if [ -s "$prev_output_file" ]; then
                     printf "\n\n---\nOutput from last iteration:\n"
-                    cat "$output_file"
+                    tail -n 200 "$prev_output_file"
                 fi
                 if [ "$prev_iter" -ge 1 ] && [ -s "$prev_commit_report_file" ]; then
                     printf "\n\n---\nPrevious iteration summary (commit report):\n"
@@ -127,6 +129,7 @@ EOF
         fi
 
         # Run acw
+        local output_file="${output_prefix}-${iter}.txt"
         if [ -n "$yolo_flag" ]; then
             acw "$provider" "$model" "$input_file" "$output_file" $yolo_flag || {
                 echo "Warning: acw exited with non-zero status on iteration $iter" >&2
