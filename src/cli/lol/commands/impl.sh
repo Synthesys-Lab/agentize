@@ -90,6 +90,8 @@ Each iteration:
 - update $finalize_file with PR title (first line) and body (full file); include "Closes #$issue_no" only when done.
 - before claiming "Closes #$issue_no", run all test cases to ensure the implementation resolves the issue and does not break existing functionality.
 - it is okay not to complete the implementation in the current iteration; failed tests or incomplete implementations will be handled in further iterations, but remember to leave a clear report to suggest what to do next.
+Only when the implementation is complete and all tests pass, create $finalize_file with the PR title and body.
+Include a line exactly "Closes #$issue_no" in $finalize_file to mark completion.
 EOF
         echo "For each iteration, create the per-iteration .tmp/commit-report-iter-<iter>.txt file with the full commit message." >&2
         echo "Once completed the implementation, create a $finalize_file file with the PR title and body." >&2
