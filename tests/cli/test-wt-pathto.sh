@@ -3,18 +3,11 @@
 
 # Shared test helpers
 set -e
-SCRIPT_PATH="$0"
-if [ -n "${BASH_SOURCE[0]-}" ]; then
-  SCRIPT_PATH="${BASH_SOURCE[0]}"
-fi
-if [ "${SCRIPT_PATH%/*}" = "$SCRIPT_PATH" ]; then
-  SCRIPT_DIR="."
-else
-  SCRIPT_DIR="${SCRIPT_PATH%/*}"
-fi
-source "$SCRIPT_DIR/../common.sh"
+TESTS_COMMON="${AGENTIZE_TESTS_COMMON:-$(git rev-parse --show-toplevel 2>/dev/null)/tests/common.sh}"
+[ -f "$TESTS_COMMON" ] || { echo "Error: Cannot locate tests/common.sh" >&2; exit 1; }
+source "$TESTS_COMMON"
 
-source "$SCRIPT_DIR/../helpers-worktree.sh"
+source "$TESTS_DIR/helpers-worktree.sh"
 
 test_info "wt pathto prints worktree paths"
 

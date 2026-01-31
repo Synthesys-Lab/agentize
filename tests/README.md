@@ -95,19 +95,12 @@ All shell tests must live in a categorized subdirectory under `tests/`. Do not c
    - `tests/lint/` for validation tests
    - `tests/e2e/` for end-to-end integration tests
 2. Create a new test script: `tests/<category>/test-<feature>-<case>.sh`
-3. Resolve the test script directory and source the shared helpers:
+3. Resolve the project root and source the shared helpers:
 
 ```bash
-SCRIPT_PATH="$0"
-if [ -n "${BASH_SOURCE[0]-}" ]; then
-  SCRIPT_PATH="${BASH_SOURCE[0]}"
-fi
-if [ "${SCRIPT_PATH%/*}" = "$SCRIPT_PATH" ]; then
-  SCRIPT_DIR="."
-else
-  SCRIPT_DIR="${SCRIPT_PATH%/*}"
-fi
-source "$SCRIPT_DIR/../common.sh"
+TESTS_COMMON="${AGENTIZE_TESTS_COMMON:-$(git rev-parse --show-toplevel 2>/dev/null)/tests/common.sh}"
+[ -f "$TESTS_COMMON" ] || { echo "Error: Cannot locate tests/common.sh" >&2; exit 1; }
+source "$TESTS_COMMON"
 ```
 4. Source feature-specific helpers if needed: `source "$(dirname "$0")/../helpers-*.sh"`
 5. Implement a single test case with clear assertions

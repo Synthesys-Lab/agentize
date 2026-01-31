@@ -7,16 +7,9 @@ set -euo pipefail
 
 # Shared test helpers
 set -e
-SCRIPT_PATH="$0"
-if [ -n "${BASH_SOURCE[0]-}" ]; then
-  SCRIPT_PATH="${BASH_SOURCE[0]}"
-fi
-if [ "${SCRIPT_PATH%/*}" = "$SCRIPT_PATH" ]; then
-  SCRIPT_DIR="."
-else
-  SCRIPT_DIR="${SCRIPT_PATH%/*}"
-fi
-source "$SCRIPT_DIR/../common.sh"
+TESTS_COMMON="${AGENTIZE_TESTS_COMMON:-$(git rev-parse --show-toplevel 2>/dev/null)/tests/common.sh}"
+[ -f "$TESTS_COMMON" ] || { echo "Error: Cannot locate tests/common.sh" >&2; exit 1; }
+source "$TESTS_COMMON"
 
 PROMPT_FILE="$PROJECT_ROOT/.claude-plugin/skills/external-synthesize/external-synthesize-prompt.md"
 
