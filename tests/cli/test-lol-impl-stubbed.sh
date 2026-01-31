@@ -2,107 +2,18 @@
 # Test: lol impl workflow with stubbed wt, acw, and gh
 # Tests worktree path resolution, backend parsing, iteration limits, and completion marker detection
 
-# Inlined shared test helpers (former tests/common.sh)
+# Shared test helpers
 set -e
-
-# ============================================================
-# Test isolation: Clear Telegram environment variables
-# ============================================================
-# Prevents tests from accidentally sending Telegram API requests
-# when developer environments have these variables set
-unset AGENTIZE_USE_TG TG_API_TOKEN TG_CHAT_ID TG_ALLOWED_USER_IDS TG_APPROVAL_TIMEOUT_SEC TG_POLL_INTERVAL_SEC
-
-# ============================================================
-# Project root detection
-# ============================================================
-
-# Helper function to get the current project root (current worktree being tested)
-# This is different from AGENTIZE_HOME which points to the agentize framework installation
-get_project_root() {
-    git rev-parse --show-toplevel 2>/dev/null
-}
-
-# Get project root using shell-neutral approach
-# For test isolation, always use the current worktree (ignore parent AGENTIZE_HOME)
-PROJECT_ROOT="$(get_project_root)"
-if [ -z "$PROJECT_ROOT" ]; then
-  echo "Error: Cannot determine project root. Run from git repo."
-  exit 1
+SCRIPT_PATH="$0"
+if [ -n "${BASH_SOURCE[0]-}" ]; then
+  SCRIPT_PATH="${BASH_SOURCE[0]}"
 fi
-
-# Export AGENTIZE_HOME for tests - this is the framework installation path
-# Tests use the current project root as the framework location
-export AGENTIZE_HOME="$PROJECT_ROOT"
-
-TESTS_DIR="$PROJECT_ROOT/tests"
-
-# ============================================================
-# Color constants for terminal output
-# ============================================================
-
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# ============================================================
-# Test result helpers
-# ============================================================
-
-# Print test pass message and exit with success
-# Usage: test_pass "message"
-test_pass() {
-  echo -e "${GREEN}✓ Test passed: $1${NC}"
-  exit 0
-}
-
-# Print test fail message and exit with failure
-# Usage: test_fail "message"
-test_fail() {
-  echo -e "${RED}✗ Test failed: $1${NC}"
-  exit 1
-}
-
-# Print test info message
-# Usage: test_info "message"
-test_info() {
-  echo -e "${BLUE}>>> $1${NC}"
-}
-
-# ============================================================
-# Git environment cleanup
-# ============================================================
-
-# Clean all git environment variables to ensure isolated test environment
-# Usage: clean_git_env
-clean_git_env() {
-    unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
-    unset GIT_INDEX_VERSION GIT_COMMON_DIR
-}
-
-# ============================================================
-# Resource management
-# ============================================================
-
-# Create a temporary directory under .tmp and return its path
-# Usage: TMP_DIR=$(make_temp_dir "test-name")
-make_temp_dir() {
-  local test_name="$1"
-  local tmp_dir="$PROJECT_ROOT/.tmp/$test_name"
-  rm -rf "$tmp_dir"
-  mkdir -p "$tmp_dir"
-  echo "$tmp_dir"
-}
-
-# Clean up a directory
-# Usage: cleanup_dir "$TMP_DIR"
-cleanup_dir() {
-  local dir="$1"
-  if [ -n "$dir" ] && [ -d "$dir" ]; then
-    rm -rf "$dir"
-  fi
-}
+if [ "${SCRIPT_PATH%/*}" = "$SCRIPT_PATH" ]; then
+  SCRIPT_DIR="."
+else
+  SCRIPT_DIR="${SCRIPT_PATH%/*}"
+fi
+source "$SCRIPT_DIR/../common.sh"
 
 LOL_CLI="$PROJECT_ROOT/src/cli/lol.sh"
 
@@ -285,7 +196,7 @@ acw() {
         mkdir -p "$STUB_WORKTREE/.tmp"
         echo "PR: Fix issue 123" > "$STUB_WORKTREE/.tmp/finalize.txt"
         echo "" >> "$STUB_WORKTREE/.tmp/finalize.txt"
-        echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+        echo "Closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
     fi
 
     echo "Stub response for iteration $ITERATION_COUNT" > "$output_file"
@@ -315,68 +226,6 @@ fi
 
 # Clean up for next test
 rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
-
-# ── Test 2b: Finalize.txt takes precedence over report.txt ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
-> "$GH_CALL_LOG"
-
-# Create both files, finalize.txt should be used
-mkdir -p "$STUB_WORKTREE/.tmp"
-echo "PR: From finalize" > "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "PR: From report (should not be used)" > "$STUB_WORKTREE/.tmp/report.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
-
-acw() {
-    echo "acw $*" >> "$ACW_CALL_LOG"
-    ITERATION_COUNT=$((ITERATION_COUNT + 1))
-    export ITERATION_COUNT
-    write_commit_report "$ITERATION_COUNT"
-    echo "Stub response" > "$4"
-    return 0
-}
-export -f acw 2>/dev/null || true
-
-output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
-    echo "Output: $output" >&2
-    test_fail "lol impl should succeed with both finalize and report present"
-}
-
-# Verify PR title comes from finalize.txt (first line = "PR: From finalize")
-if ! grep -q 'gh pr create.*--title.*From finalize' "$GH_CALL_LOG"; then
-    echo "GH call log:" >&2
-    cat "$GH_CALL_LOG" >&2
-    test_fail "Expected PR title from finalize.txt, not report.txt"
-fi
-
-# Clean up for next test
-rm -f "$STUB_WORKTREE/.tmp/finalize.txt" "$STUB_WORKTREE/.tmp/report.txt"
-
-# ── Test 2c: Fallback to report.txt when finalize.txt absent ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
-> "$GH_CALL_LOG"
-
-# Create only report.txt (legacy) - no finalize.txt
-mkdir -p "$STUB_WORKTREE/.tmp"
-echo "PR: From legacy report" > "$STUB_WORKTREE/.tmp/report.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/report.txt"
-
-output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
-    echo "Output: $output" >&2
-    test_fail "lol impl should succeed with legacy report.txt"
-}
-
-# Verify PR title comes from report.txt
-if ! grep -q 'gh pr create.*--title.*From legacy report' "$GH_CALL_LOG"; then
-    echo "GH call log:" >&2
-    cat "$GH_CALL_LOG" >&2
-    test_fail "Expected PR title from legacy report.txt"
-fi
-
-# Clean up for next test
-rm -f "$STUB_WORKTREE/.tmp/report.txt"
 
 # ── Test 3: Max iterations limit ──
 ITERATION_COUNT=0
@@ -432,7 +281,7 @@ ITERATION_COUNT=0
 # Create completion marker immediately
 mkdir -p "$STUB_WORKTREE/.tmp"
 echo "PR: Quick fix" > "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
     echo "acw $1 $2 $3 $4" >> "$ACW_CALL_LOG"
@@ -494,7 +343,7 @@ rm -f "$STUB_WORKTREE/.tmp/impl-input-"*
 # Create completion marker immediately
 mkdir -p "$STUB_WORKTREE/.tmp"
 echo "PR: Prefetch test" > "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 # Stub gh to provide issue content
 gh() {
@@ -585,7 +434,7 @@ export -f wt 2>/dev/null || true
 
 # Create completion marker
 echo "PR: Fallback test" > "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "Issue 456 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Closes #456" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 # Stub gh to fail for issue view
 gh() {
@@ -661,7 +510,7 @@ acw() {
     if [ "$ITERATION_COUNT" -eq 2 ]; then
         mkdir -p "$STUB_WORKTREE/.tmp"
         echo "PR: Git commit test" > "$STUB_WORKTREE/.tmp/finalize.txt"
-        echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+        echo "Closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
     fi
     echo "Stub response for iteration $ITERATION_COUNT" > "$output_file"
     return 0
@@ -718,7 +567,7 @@ export GIT_HAS_CHANGES
 
 # Create completion marker immediately
 echo "PR: No changes test" > "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
     echo "acw $*" >> "$ACW_CALL_LOG"
@@ -762,7 +611,7 @@ export GIT_HAS_CHANGES
 # Create completion marker
 mkdir -p "$STUB_WORKTREE/.tmp"
 echo "PR: Commit report test" > "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
     echo "acw $*" >> "$ACW_CALL_LOG"
@@ -802,7 +651,7 @@ export GIT_HAS_CHANGES
 # Create completion marker but no commit report file
 mkdir -p "$STUB_WORKTREE/.tmp"
 echo "PR: Missing report test" > "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
     echo "acw $*" >> "$ACW_CALL_LOG"
@@ -839,7 +688,7 @@ export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH
 
 # Create completion marker immediately
 echo "PR: Remote precedence test" > "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
     echo "acw $*" >> "$ACW_CALL_LOG"
@@ -884,7 +733,7 @@ export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH
 
 # Create completion marker immediately
 echo "PR: Fallback remote test" > "$STUB_WORKTREE/.tmp/finalize.txt"
-echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2

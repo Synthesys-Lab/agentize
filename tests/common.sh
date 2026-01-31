@@ -1,5 +1,5 @@
-#!/bin/bash
-# Purpose: Shared test helper providing PROJECT_ROOT detection, test result helpers, and resource management
+#!/usr/bin/env bash
+# Purpose: Shared test helper providing PROJECT_ROOT detection, runtime setup, and test utilities
 # Expected: Sourced by all test scripts to access common functionality
 
 set -e
@@ -75,21 +75,21 @@ NC='\033[0m' # No Color
 # Print test pass message and exit with success
 # Usage: test_pass "message"
 test_pass() {
-  echo -e "${GREEN}✓ Test passed: $1${NC}"
+  echo -e "${GREEN}PASS: $1${NC}"
   exit 0
 }
 
 # Print test fail message and exit with failure
 # Usage: test_fail "message"
 test_fail() {
-  echo -e "${RED}✗ Test failed: $1${NC}"
+  echo -e "${RED}FAIL: $1${NC}"
   exit 1
 }
 
 # Print test info message
 # Usage: test_info "message"
 test_info() {
-  echo -e "${BLUE}>>> $1${NC}"
+  echo -e "${BLUE}INFO: $1${NC}"
 }
 
 # ============================================================
