@@ -15,7 +15,7 @@ When adding a new shell test:
    - `tests/lint/` for validation tests
    - `tests/e2e/` for end-to-end integration tests
 2. Create the test file in `tests/<category>/test-<feature>-<case>.sh`
-3. Source the shared test helper at the top: `source "$(dirname "$0")/../common.sh"`
+3. Inline the shared test setup block at the top (project root detection + helpers)
 4. Source feature-specific helpers if needed: `source "$(dirname "$0")/../helpers-*.sh"`
 5. Implement a single test case (one test file = one test case)
 6. Tests are automatically discovered by `test-all.sh` (no manual registration required)
@@ -41,7 +41,7 @@ Instead, modify the CLI and SDK code or tests themselves to pass the tests.
 Keep in mind that `AGENTIZE_HOME` is set to point to the current work tree you are testing against!
 `PROJECT_ROOT` is set to the root of the repository using agentize CLI to initialize, update, and
 develop! **NO TEST** shall modify these two variables using `export`. Just use them as they are.
-`PROJECT_ROOT` should be computed using the wrapper in `common.sh`.
+`PROJECT_ROOT` should be computed using the inlined helper wrapper.
 
 If a shell test executes hooks or config discovery that may read `$HOME/.agentize.local.yaml`,
 isolate the user home by setting `HOME` to a temp directory inside the test:
@@ -53,10 +53,9 @@ trap 'cleanup_dir "$TEST_HOME"' EXIT
 
 # Helper Scripts
 
-Helper scripts (`tests/common.sh`, `tests/helpers-*.sh`) are not tests themselves and should NOT be
+Helper scripts (`tests/helpers-*.sh`) are not tests themselves and should NOT be
 added to `test-all.sh` or executed directly. They provide shared functionality for test scripts:
 
-- `common.sh` - PROJECT_ROOT detection, test result helpers, resource management
 - `helpers-worktree.sh` - Worktree test setup/cleanup
 - `helpers-gh-mock.sh` - GitHub API mock helpers
 - `helpers-makefile-validation.sh` - Makefile validation test helpers

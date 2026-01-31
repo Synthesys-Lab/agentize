@@ -37,6 +37,23 @@ if ! command -v uv >/dev/null 2>&1; then
     echo "=== GH CLI credential passthrough tests passed (partial) ==="
     exit 0
 fi
+if ! command -v podman >/dev/null 2>&1 && ! command -v docker >/dev/null 2>&1; then
+    echo "SKIP: Tests 3+ require podman or docker (sandbox tests)"
+    echo "=== GH CLI credential passthrough tests passed (partial) ==="
+    exit 0
+fi
+runtime_ok=0
+if command -v podman >/dev/null 2>&1 && podman info >/dev/null 2>&1; then
+    runtime_ok=1
+fi
+if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+    runtime_ok=1
+fi
+if [ "$runtime_ok" -ne 1 ]; then
+    echo "SKIP: container runtime not available (podman/docker not running)"
+    echo "=== GH CLI credential passthrough tests passed (partial) ==="
+    exit 0
+fi
 
 # Test 3: Verify GH CLI is installed
 echo "Test 3: Verifying GH CLI is installed..."

@@ -8,6 +8,8 @@ Note: This module does NOT cache results. Caching is handled by callers:
 - local_config.py caches for hooks (avoid repeated I/O during permission checks)
 - runtime_config.py does not cache (server needs fresh config each poll cycle)
 """
+from __future__ import annotations
+
 
 import os
 from pathlib import Path

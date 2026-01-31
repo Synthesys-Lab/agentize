@@ -7,6 +7,27 @@ set -e
 
 echo "=== Testing volume mount permissions inside container ==="
 
+# Skip if sandbox prerequisites are missing
+if ! command -v uv >/dev/null 2>&1; then
+    echo "SKIP: sandbox tests require 'uv'"
+    exit 0
+fi
+if ! command -v podman >/dev/null 2>&1 && ! command -v docker >/dev/null 2>&1; then
+    echo "SKIP: sandbox tests require podman or docker"
+    exit 0
+fi
+runtime_ok=0
+if command -v podman >/dev/null 2>&1 && podman info >/dev/null 2>&1; then
+    runtime_ok=1
+fi
+if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+    runtime_ok=1
+fi
+if [ "$runtime_ok" -ne 1 ]; then
+    echo "SKIP: container runtime not available (podman/docker not running)"
+    exit 0
+fi
+
 # Test 1: Verify gh CLI can read its config (no permission denied)
 echo "Testing gh CLI config access..."
 if uv run ./sandbox/run.py --cmd bash -c "test -r /home/agentizer/.config/gh/config.yml" 2>/dev/null; then
