@@ -11,11 +11,10 @@ Note: This module does NOT cache results. Caching is handled by callers:
 
 import os
 from pathlib import Path
+from typing import Optional
 
-import yaml
 
-
-def find_local_config_file(start_dir: Path | None = None) -> Path | None:
+def find_local_config_file(start_dir: Optional[Path] = None) -> Optional[Path]:
     """Find .agentize.local.yaml using the standard search order.
 
     Search order:
@@ -73,5 +72,10 @@ def parse_yaml_file(path: Path) -> dict:
     Returns:
         Parsed configuration as nested dict. Returns {} on empty content.
     """
+    try:
+        import yaml
+    except ModuleNotFoundError:
+        return {}
+
     with open(path, "r") as f:
         return yaml.safe_load(f) or {}

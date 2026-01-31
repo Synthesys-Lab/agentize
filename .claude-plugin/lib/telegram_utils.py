@@ -6,7 +6,7 @@ Provides common helpers for Telegram API integration.
 import json
 import urllib.request
 import urllib.error
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 
 def escape_html(text: str) -> str:
@@ -26,11 +26,11 @@ def escape_html(text: str) -> str:
 def telegram_request(
     token: str,
     method: str,
-    payload: dict | None = None,
+    payload: Optional[dict] = None,
     timeout_sec: int = 10,
-    on_error: Callable[[Exception], None] | None = None,
-    urlopen_fn: Callable[..., Any] | None = None
-) -> dict | None:
+    on_error: Optional[Callable[[Exception], None]] = None,
+    urlopen_fn: Optional[Callable[..., Any]] = None
+) -> Optional[dict]:
     """Make an HTTP request to the Telegram Bot API.
 
     Args:

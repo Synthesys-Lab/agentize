@@ -14,7 +14,7 @@ Provides YAML-only configuration for hooks and lib modules. This enables persist
 
 ## External Interface
 
-### `load_local_config(start_dir: Path | None = None) -> tuple[dict, Path | None]`
+### `load_local_config(start_dir: Optional[Path] = None) -> tuple[dict, Optional[Path]]`
 
 Parse `.agentize.local.yaml` using the YAML search order.
 
@@ -25,7 +25,7 @@ Parse `.agentize.local.yaml` using the YAML search order.
 
 **Search behavior:** Walks up from `start_dir` to parent directories, then falls back to `$AGENTIZE_HOME` and `$HOME`.
 
-### `get_local_value(path: str, default: Any, coerce: Callable | None = None) -> Any`
+### `get_local_value(path: str, default: Any, coerce: Optional[Callable] = None) -> Any`
 
 Resolve YAML value by dotted path with optional coercion.
 

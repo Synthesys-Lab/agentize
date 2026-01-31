@@ -19,6 +19,7 @@ import sys
 import json
 import re
 from pathlib import Path
+from typing import Optional
 
 # Add .claude-plugin to path for lib imports
 _plugin_dir = Path(__file__).resolve().parent.parent
@@ -30,7 +31,7 @@ from lib.session_utils import session_dir, write_issue_index
 from lib.workflow import ULTRA_PLANNER
 
 
-def _extract_issue_number_from_output(output: str) -> int | None:
+def _extract_issue_number_from_output(output: str) -> Optional[int]:
     """Extract issue number from gh issue create output.
 
     The output typically contains a URL like:

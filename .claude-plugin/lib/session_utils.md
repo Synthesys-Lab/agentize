@@ -78,7 +78,7 @@ if not is_handsoff_enabled():
     sys.exit(0)  # Skip hook when handsoff disabled
 ```
 
-### `write_issue_index(session_id: str, issue_no: int | str, workflow: str, sess_dir: str | None = None) -> str`
+### `write_issue_index(session_id: str, issue_no: Union[int, str], workflow: str, sess_dir: Optional[str] = None) -> str`
 
 Write an issue index file for reverse lookup from issue number to session.
 
