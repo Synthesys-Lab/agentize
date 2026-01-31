@@ -82,9 +82,14 @@ _lol_cmd_impl() {
         > "$issue_file" 2>/dev/null && [ -s "$issue_file" ]; then
         cat > "$base_input_file" <<EOF
 Primary goal: implement issue #$issue_no described in $issue_file.
+You are in a loop of implementation, each iteration has an independent context.
 Each iteration:
+- figure out the existing progress of implementation from prior outputs and the current codebase modifications.
+- determine the next steps towards completing the implementation.
+- make changes to the codebase in the current worktree.
 - create the commit report file for the current iteration in .tmp (the exact filename will be provided each iteration).
-- update $finalize_file with PR title (first line) and body (full file); include "Issue $issue_no resolved" only when done.
+- claim "Issue $issue_no resolved", run all test cases to ensure the implementation resolves the issue and does not break existing functionality.
+- it is okay not to complete the implementation in the current iteration; failed tests or incomplete implementations will be handled in further iterations, but remember to leave a clear report to suggest what to do next.
 EOF
         echo "For each iteration, create the per-iteration .tmp/commit-report-iter-<iter>.txt file with the full commit message." >&2
         echo "Once completed the implementation, create a $finalize_file file with the PR title and body." >&2
