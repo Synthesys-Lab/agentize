@@ -88,11 +88,12 @@ Each iteration:
 - determine the next steps towards completing the implementation.
 - make changes to the codebase in the current worktree.
 - create the commit report file for the current iteration in .tmp (the exact filename will be provided each iteration).
-- claim "Issue $issue_no resolved", run all test cases to ensure the implementation resolves the issue and does not break existing functionality.
 - it is okay not to complete the implementation in the current iteration; failed tests or incomplete implementations will be handled in further iterations, but remember to leave a clear report to suggest what to do next.
+
+For each iteration, create the per-iteration .tmp/commit-report-iter-<iter>.txt file with the full commit message.
+Once completed the implementation, create a $finalize_file file with the PR title and body,
+including "closes #$issue_no" in the body to auto-close the issue when the PR is merged.
 EOF
-        echo "For each iteration, create the per-iteration .tmp/commit-report-iter-<iter>.txt file with the full commit message." >&2
-        echo "Once completed the implementation, create a $finalize_file file with the PR title and body." >&2
     else
         rm -f "$issue_file"
         echo "Error: Failed to fetch issue content for issue #$issue_no" >&2
@@ -244,7 +245,6 @@ EOF
 
     # Get PR body from full completion file
     local pr_body
-    echo "Closes #$issue_no" >> "$completion_file"
     pr_body=$(cat "$completion_file")
 
     # Create PR using gh CLI with explicit base branch
