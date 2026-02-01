@@ -1,5 +1,7 @@
 """Telegram notification helpers for the server module."""
 
+from __future__ import annotations
+
 import os
 import re
 import socket

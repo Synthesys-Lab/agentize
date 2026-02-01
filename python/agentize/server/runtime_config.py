@@ -13,6 +13,8 @@ on each poll cycle to pick up file changes without restart. For hooks that need
 caching, use local_config.py instead.
 """
 
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 from typing import Any, Optional

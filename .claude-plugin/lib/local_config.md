@@ -112,7 +112,7 @@ workflows:
 
 **No environment overrides:** YAML is the sole configuration source, providing a single, predictable place to manage settings.
 
-**PyYAML library:** Uses `yaml.safe_load()` for full YAML 1.2 compliance, providing robust parsing with support for all standard YAML features.
+**PyYAML optional:** Uses `yaml.safe_load()` for full YAML 1.2 compliance when available. Without PyYAML, the fallback parser supports nested mappings/lists and basic scalars (strings, ints, floats, booleans, null) but does not support block scalars, anchors, or flow-style syntax.
 
 ## Internal Usage
 

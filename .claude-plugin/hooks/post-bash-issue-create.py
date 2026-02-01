@@ -14,6 +14,8 @@ Output:
 See: https://docs.anthropic.com/en/docs/claude-code/hooks
 """
 
+from __future__ import annotations
+
 import os
 import sys
 import json

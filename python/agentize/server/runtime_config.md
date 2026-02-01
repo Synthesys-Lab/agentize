@@ -55,7 +55,7 @@ Shared YAML file discovery helper used by both server and hooks. Searches for `.
 
 ### `parse_yaml_file(path: Path) -> dict`
 
-Shared YAML parsing helper that wraps `yaml.safe_load()`. Returns `{}` on empty content.
+Shared YAML parsing helper that wraps `yaml.safe_load()` when available, with a minimal fallback parser when PyYAML is not installed. Returns `{}` on empty content.
 
 ## Configuration Schema
 
@@ -102,7 +102,7 @@ planner:
   reducer: claude:opus             # Override reducer stage
 ```
 
-**Note:** The `allowed_user_ids` field uses a CSV string format since the minimal YAML parser does not support native arrays.
+**Note:** The `allowed_user_ids` field uses a CSV string format to align with `coerce_csv_ints`; list values are not consumed by that coercer.
 
 ## Design Rationale
 
@@ -121,12 +121,19 @@ This enables user-wide configuration (e.g., Telegram credentials) while allowing
 
 ## Parser Capabilities
 
-The PyYAML library provides full YAML 1.2 support including:
+When PyYAML is installed, parsing uses `yaml.safe_load()` with full YAML 1.2 support including:
 - Nested dicts and arrays
 - All scalar types (strings, integers, booleans, floats)
 - Multi-line literals (`|` and `>`)
 - Anchors and aliases
 - Flow-style syntax (`[a, b]` and `{a: b}`)
+
+When PyYAML is not installed, the fallback parser supports:
+- Nested mappings and lists
+- Scalars: strings (quoted/unquoted), integers, floats, booleans, null
+- Inline comments (ignored outside quotes)
+
+Unsupported without PyYAML: block scalars (`|`, `>`), anchors/aliases, flow-style syntax.
 
 The `permissions` top-level key is allowed for user-configurable permission rules:
 ```yaml

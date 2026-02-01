@@ -3,6 +3,8 @@
 Provides common helpers for Telegram API integration.
 """
 
+from __future__ import annotations
+
 import json
 import urllib.request
 import urllib.error

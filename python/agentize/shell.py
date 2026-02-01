@@ -1,5 +1,7 @@
 """Utilities for invoking shell functions from Python."""
 
+from __future__ import annotations
+
 import os
 import subprocess
 from pathlib import Path

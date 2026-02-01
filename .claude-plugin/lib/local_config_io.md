@@ -26,12 +26,19 @@ Find `.agentize.local.yaml` using the standard search order.
 
 ### `parse_yaml_file(path: Path) -> dict`
 
-Parse a YAML file using `yaml.safe_load()`.
+Parse a YAML file using `yaml.safe_load()` when available, with a minimal fallback parser when PyYAML is not installed.
 
 **Parameters:**
 - `path`: Path to the YAML file
 
 **Returns:** Parsed configuration as nested dict. Returns `{}` on empty content. Returns `{}` when PyYAML is unavailable so hooks can continue with defaults.
+
+**Fallback parser support (when PyYAML is unavailable):**
+- Nested mappings and lists
+- Scalars: strings (quoted/unquoted), integers, floats, booleans, null
+- Inline comments (ignored outside quotes)
+
+**Unsupported without PyYAML:** Block scalars (`|`, `>`), anchors/aliases, flow-style syntax.
 
 ## Design Rationale
 
@@ -43,6 +50,8 @@ Parse a YAML file using `yaml.safe_load()`.
 **Single implementation:** Both modules previously duplicated ~55 lines of identical search logic. Centralizing this eliminates drift and maintenance burden.
 
 **No caching:** Caching is intentionally NOT in this module. The server needs fresh config on each poll cycle, while hooks benefit from caching. Each caller implements the appropriate caching strategy.
+
+**Optional dependency:** Full YAML parsing uses PyYAML when installed; the fallback parser keeps hooks and server config reading functional without external dependencies.
 
 ## Internal Usage
 

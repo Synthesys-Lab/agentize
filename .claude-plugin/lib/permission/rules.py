@@ -17,10 +17,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, Optional
 
-try:
-    import yaml
-except ModuleNotFoundError:
-    yaml = None
+from lib.local_config_io import parse_yaml_file
 
 # Module-level cache for YAML rules
 _yaml_rules_cache: Optional[dict] = None
@@ -227,7 +224,7 @@ def _find_config_paths(start_dir: Optional[Path] = None) -> tuple[Optional[Path]
 
 
 def _parse_yaml_file(path: Path) -> dict:
-    """Parse YAML file using PyYAML's safe_load.
+    """Parse YAML file using the shared YAML helper.
 
     Args:
         path: Path to the YAML file
@@ -235,10 +232,7 @@ def _parse_yaml_file(path: Path) -> dict:
     Returns:
         Parsed configuration as nested dict
     """
-    if yaml is None:
-        return {}
-    with open(path, "r") as f:
-        return yaml.safe_load(f) or {}
+    return parse_yaml_file(path)
 
 
 def _extract_yaml_rules(config: dict, source: str) -> dict[str, list[tuple[str, str, str]]]:
