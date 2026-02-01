@@ -16,6 +16,7 @@ output=$(lol --complete commands 2>/dev/null)
 # Verify documented commands are present
 # Check each command individually (shell-neutral approach)
 echo "$output" | grep -q "^upgrade$" || test_fail "Missing command: upgrade"
+echo "$output" | grep -q "^use-branch$" || test_fail "Missing command: use-branch"
 echo "$output" | grep -q "^version$" || test_fail "Missing command: version"
 echo "$output" | grep -q "^project$" || test_fail "Missing command: project"
 echo "$output" | grep -q "^usage$" || test_fail "Missing command: usage"

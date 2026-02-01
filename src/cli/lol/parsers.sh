@@ -4,14 +4,61 @@
 
 # Parse upgrade command arguments and call _lol_cmd_upgrade
 _lol_parse_upgrade() {
-    # Reject unexpected arguments
-    if [ $# -gt 0 ]; then
-        echo "Error: lol upgrade does not accept arguments"
-        echo "Usage: lol upgrade"
+    local keep_branch="0"
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --keep-branch)
+                keep_branch="1"
+                shift
+                ;;
+            *)
+                echo "Error: Unknown option '$1'"
+                echo "Usage: lol upgrade [--keep-branch]"
+                return 1
+                ;;
+        esac
+    done
+
+    _lol_cmd_upgrade "$keep_branch"
+}
+
+# Parse use-branch command arguments and call _lol_cmd_use_branch
+_lol_parse_use_branch() {
+    if [ $# -ne 1 ]; then
+        echo "Error: Missing branch reference."
+        echo "Usage: lol use-branch <remote>/<branch>"
+        echo "       lol use-branch <branch>"
         return 1
     fi
 
-    _lol_cmd_upgrade
+    local ref="$1"
+    local remote="origin"
+    local branch=""
+
+    if [ "${ref#*/}" != "$ref" ]; then
+        local candidate_remote="${ref%%/*}"
+        local candidate_branch="${ref#*/}"
+
+        if git -C "$AGENTIZE_HOME" remote get-url "$candidate_remote" >/dev/null 2>&1; then
+            remote="$candidate_remote"
+            branch="$candidate_branch"
+        else
+            remote="origin"
+            branch="$ref"
+        fi
+    else
+        branch="$ref"
+    fi
+
+    if [ -z "$remote" ] || [ -z "$branch" ]; then
+        echo "Error: Invalid branch reference '$ref'."
+        echo "Usage: lol use-branch <remote>/<branch>"
+        echo "       lol use-branch <branch>"
+        return 1
+    fi
+
+    _lol_cmd_use_branch "$remote" "$branch"
 }
 
 # Parse project command arguments and call _lol_cmd_project

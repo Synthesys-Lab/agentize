@@ -10,7 +10,11 @@ None. Parsers are private and invoked by `lol()`.
 ## Internal Helpers
 
 ### _lol_parse_upgrade()
-Validates that no extra arguments are provided, then calls `_lol_cmd_upgrade`.
+Accepts optional `--keep-branch` and passes the flag to `_lol_cmd_upgrade`.
+
+### _lol_parse_use_branch()
+Parses `<remote>/<branch>` or `<branch>` (defaulting the remote to `origin`) and
+calls `_lol_cmd_use_branch`.
 
 ### _lol_parse_project()
 Parses `--create`, `--associate`, and `--automation` modes plus optional flags,

@@ -10,6 +10,7 @@ _lol_complete() {
     case "$topic" in
         commands)
             echo "upgrade"
+            echo "use-branch"
             echo "version"
             echo "project"
             echo "usage"
@@ -17,6 +18,9 @@ _lol_complete() {
             echo "claude-clean"
             echo "plan"
             echo "impl"
+            ;;
+        upgrade-flags)
+            echo "--keep-branch"
             ;;
         project-modes)
             echo "--create"

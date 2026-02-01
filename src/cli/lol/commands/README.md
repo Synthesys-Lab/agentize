@@ -9,6 +9,7 @@ Per-command implementation files for the `lol` CLI. Each file exports exactly on
 | File | Function | Description |
 |------|----------|-------------|
 | `upgrade.sh` | `_lol_cmd_upgrade` | Upgrade agentize installation via git |
+| `use-branch.sh` | `_lol_cmd_use_branch` | Switch to a remote development branch |
 | `version.sh` | `_lol_cmd_version` | Display version information |
 | `project.sh` | `_lol_cmd_project` | GitHub Projects v2 integration |
 | `serve.sh` | `_lol_cmd_serve` | Run polling server for automation |

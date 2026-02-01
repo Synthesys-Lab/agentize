@@ -56,6 +56,11 @@ echo "$impl_output" | grep -q "^--backend$" || test_fail "impl-flags missing: --
 echo "$impl_output" | grep -q "^--max-iterations$" || test_fail "impl-flags missing: --max-iterations"
 echo "$impl_output" | grep -q "^--yolo$" || test_fail "impl-flags missing: --yolo"
 
+# Test upgrade-flags
+upgrade_output=$(lol --complete upgrade-flags 2>/dev/null)
+
+echo "$upgrade_output" | grep -q "^--keep-branch$" || test_fail "upgrade-flags missing: --keep-branch"
+
 # Test unknown topic returns empty
 unknown_output=$(lol --complete unknown-topic 2>/dev/null)
 if [ -n "$unknown_output" ]; then

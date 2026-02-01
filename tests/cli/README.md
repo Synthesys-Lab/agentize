@@ -27,6 +27,8 @@ Tests for the `lol` (agentize) command:
 - `test-lol-help-text.sh` - Validates help text formatting and content
 - `test-lol-version.sh` - Tests version command output
 - `test-lol-claude-clean.sh` - Tests `lol claude-clean` command for cleaning stale entries
+- `test-lol-upgrade.sh` - Tests `lol upgrade` branch selection and setup workflow
+- `test-lol-use-branch.sh` - Tests `lol use-branch` remote branch switching
 - `test-lol-command-functions-loaded.sh` - Smoke test for `_lol_cmd_*` availability and absence of `lol_cmd_*`
 - `test-lol-project-*.sh` - Tests for `lol project` command
 - `test-agentize-cli-*-agentize-home.sh` - Tests for AGENTIZE_HOME validation

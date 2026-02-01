@@ -24,15 +24,30 @@ The Python entrypoint sources `setup.sh` and delegates to the shell implementati
 Upgrade the agentize installation.
 
 ```bash
-lol upgrade
+lol upgrade [--keep-branch]
 ```
 
+By default, `lol upgrade` switches to the default branch before pulling updates.
+Use `--keep-branch` to stay on the current branch and pull from its upstream.
+
 The upgrade process has three phases:
-1. **Pull updates**: Runs `git pull --rebase` to fetch latest changes
+1. **Pull updates**: Switches to the default branch (unless `--keep-branch`) and runs `git pull --rebase`
 2. **Rebuild environment**: Runs `make setup` to regenerate `setup.sh` with any build process changes
 3. **Update Claude plugin** (optional): If `claude` CLI is available, updates the local marketplace and plugin registration. This step is non-fatal; failures do not block the upgrade.
 
 This mirrors the installation process in `scripts/install`, ensuring updates to the build configuration and plugin are applied.
+
+### lol use-branch
+
+Switch to a remote development branch and rebuild the local environment.
+
+```bash
+lol use-branch <remote>/<branch>
+lol use-branch <branch>  # defaults to origin
+```
+
+This command fetches the remote branch, checks it out locally (creating a tracking
+branch if needed), runs `make setup`, and prints shell reload instructions.
 
 ### lol project
 

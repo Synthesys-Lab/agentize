@@ -6,7 +6,8 @@ Dispatch layer for the `lol` CLI, including help output and version logging.
 
 ### lol()
 
-Routes subcommands to their parsers and handles top-level flags.
+Routes subcommands (including `use-branch`) to their parsers and handles
+top-level flags.
 
 **Parameters**:
 - `$1`: Subcommand or flag (`upgrade`, `project`, `plan`, `usage`, `--version`, `--complete`, etc.).

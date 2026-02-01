@@ -25,7 +25,9 @@ Each handler provides completion for a specific `lol` subcommand:
 - `_lol_project()` completes project modes and flags.
 - `_lol_usage()` completes usage-reporting flags.
 - `_lol_claude_clean()` completes cleanup flags.
-- `_lol_upgrade()`, `_lol_version()`, `_lol_serve()` are no-flag handlers.
+- `_lol_upgrade()` completes upgrade flags.
+- `_lol_use_branch()` completes the remote/branch argument.
+- `_lol_version()` and `_lol_serve()` are no-flag handlers.
 
 ## Internal Helpers
 

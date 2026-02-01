@@ -12,7 +12,8 @@ entrypoint routes `--complete` to the internal helper without requiring a full
 agentize environment.
 
 **Parameters**:
-- `topic`: Completion category (e.g., `commands`, `project-modes`, `plan-flags`).
+- `topic`: Completion category (e.g., `commands`, `project-modes`, `plan-flags`,
+  `upgrade-flags`).
 
 **Output**:
 - Newline-delimited tokens to stdout.

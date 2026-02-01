@@ -15,6 +15,7 @@ _lol_commands_dir() {
 _LOL_COMMANDS_DIR="$(_lol_commands_dir)"
 
 source "$_LOL_COMMANDS_DIR/commands/upgrade.sh"
+source "$_LOL_COMMANDS_DIR/commands/use-branch.sh"
 source "$_LOL_COMMANDS_DIR/commands/version.sh"
 source "$_LOL_COMMANDS_DIR/commands/project.sh"
 source "$_LOL_COMMANDS_DIR/commands/serve.sh"

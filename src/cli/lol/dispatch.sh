@@ -71,6 +71,9 @@ lol() {
         upgrade)
             _lol_parse_upgrade "$@"
             ;;
+        use-branch)
+            _lol_parse_use_branch "$@"
+            ;;
         project)
             _lol_parse_project "$@"
             ;;
@@ -98,7 +101,9 @@ lol() {
             echo "lol: AI-powered SDK CLI"
             echo ""
             echo "Usage:"
-            echo "  lol upgrade"
+            echo "  lol upgrade [--keep-branch]"
+            echo "  lol use-branch <remote>/<branch>"
+            echo "  lol use-branch <branch>"
             echo "  lol --version"
             echo "  lol project --create [--org <owner>] [--title <title>]"
             echo "  lol project --associate <owner>/<id>"
@@ -111,6 +116,7 @@ lol() {
             echo ""
             echo "Flags:"
             echo "  --version           Display version information"
+            echo "  --keep-branch       Keep current branch for upgrade (pulls upstream)"
             echo "  --create            Create new GitHub Projects v2 board (project)"
             echo "  --associate <owner>/<id>  Associate existing project board (project)"
             echo "  --automation        Generate automation workflow template (project)"
@@ -135,6 +141,8 @@ lol() {
             echo ""
             echo "Examples:"
             echo "  lol upgrade                     # Upgrade agentize installation"
+            echo "  lol upgrade --keep-branch       # Upgrade without switching branches"
+            echo "  lol use-branch dev/feature      # Switch to a remote development branch"
             echo "  lol --version                   # Display version information"
             echo "  lol project --create --org my-org --title \"My Project\""
             echo "  lol project --associate my-org/3"

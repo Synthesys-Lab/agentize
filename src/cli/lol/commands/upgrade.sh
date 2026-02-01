@@ -5,6 +5,8 @@
 _lol_cmd_upgrade() (
     set -e
 
+    local keep_branch="${1:-0}"
+
     # Validate AGENTIZE_HOME is a valid git worktree
     if ! git -C "$AGENTIZE_HOME" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         echo "Error: AGENTIZE_HOME is not a valid git worktree."
@@ -24,6 +26,9 @@ _lol_cmd_upgrade() (
         exit 1
     fi
 
+    local current_branch
+    current_branch=$(git -C "$AGENTIZE_HOME" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+
     # Resolve default branch from origin/HEAD, fallback to main
     local default_branch
     default_branch=$(git -C "$AGENTIZE_HOME" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
@@ -32,13 +37,56 @@ _lol_cmd_upgrade() (
         default_branch="main"
     fi
 
+    local pull_remote="origin"
+    local pull_branch="$default_branch"
+
+    if [ "$keep_branch" = "1" ]; then
+        if [ -z "$current_branch" ] || [ "$current_branch" = "HEAD" ]; then
+            echo "Error: Cannot keep branch when HEAD is detached."
+            echo "Run without --keep-branch to upgrade the default branch."
+            exit 1
+        fi
+
+        local upstream
+        if ! upstream=$(git -C "$AGENTIZE_HOME" rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2>/dev/null); then
+            echo "Error: Current branch has no upstream configured."
+            echo "Set an upstream with:"
+            echo "  git -C \"\$AGENTIZE_HOME\" branch --set-upstream-to origin/<branch>"
+            echo "OR rerun without --keep-branch to upgrade the default branch."
+            exit 1
+        fi
+
+        pull_remote="${upstream%%/*}"
+        pull_branch="${upstream#*/}"
+    else
+        if [ "$current_branch" != "$default_branch" ]; then
+            echo "Switching to default branch: $default_branch"
+            if ! git -C "$AGENTIZE_HOME" checkout "$default_branch" >/dev/null 2>&1; then
+                echo "Default branch '$default_branch' not found locally; creating from origin/$default_branch"
+                if ! git -C "$AGENTIZE_HOME" fetch origin "$default_branch"; then
+                    echo "Error: Failed to fetch origin/$default_branch"
+                    exit 1
+                fi
+                git -C "$AGENTIZE_HOME" checkout -b "$default_branch" --track "origin/$default_branch"
+            fi
+            current_branch="$default_branch"
+        fi
+    fi
+
     echo "Upgrading agentize installation..."
     echo "  AGENTIZE_HOME: $AGENTIZE_HOME"
     echo "  Default branch: $default_branch"
+    echo "  Current branch: $current_branch"
+    if [ "$keep_branch" = "1" ]; then
+        echo "  Upgrade branch: $current_branch (keeping current branch)"
+        echo "  Upstream: $pull_remote/$pull_branch"
+    else
+        echo "  Upgrade branch: $default_branch (default branch)"
+    fi
     echo ""
 
     # Run git pull --rebase
-    if git -C "$AGENTIZE_HOME" pull --rebase origin "$default_branch"; then
+    if git -C "$AGENTIZE_HOME" pull --rebase "$pull_remote" "$pull_branch"; then
         echo ""
         echo "Running make setup to rebuild environment configuration..."
         if ! make -C "$AGENTIZE_HOME" setup; then

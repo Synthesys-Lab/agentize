@@ -2,7 +2,7 @@
 
 # Zsh completion for lol (AI-powered SDK CLI)
 # Provides interactive command-line hints for lol subcommands and flags
-# Supports: upgrade, version, project, usage, serve, claude-clean, plan, impl
+# Supports: upgrade, use-branch, version, project, usage, serve, claude-clean, plan, impl
 
 _lol() {
     local curcontext="$curcontext" state line
@@ -19,6 +19,7 @@ _lol() {
     if (( ${#commands} == 0 )); then
         commands=(
             'upgrade:Upgrade agentize installation'
+            'use-branch:Switch to a remote development branch'
             'version:Display version information'
             'project:Manage GitHub Projects v2 integration'
             'usage:Report Claude Code token usage statistics'
@@ -33,6 +34,7 @@ _lol() {
         for cmd in $commands; do
             case $cmd in
                 upgrade) commands_with_desc+=('upgrade:Upgrade agentize installation') ;;
+                use-branch) commands_with_desc+=('use-branch:Switch to a remote development branch') ;;
                 version) commands_with_desc+=('version:Display version information') ;;
                 project) commands_with_desc+=('project:Manage GitHub Projects v2 integration') ;;
                 usage) commands_with_desc+=('usage:Report Claude Code token usage statistics') ;;
@@ -66,6 +68,9 @@ _lol() {
                     ;;
                 upgrade)
                     _lol_upgrade
+                    ;;
+                use-branch)
+                    _lol_use_branch
                     ;;
                 project)
                     _lol_project
@@ -124,8 +129,27 @@ _lol_impl() {
 
 # Completion for 'lol upgrade' subcommand
 _lol_upgrade() {
-    # No flags or arguments for upgrade command
-    return 0
+    local -a upgrade_flags upgrade_flags_with_desc
+
+    # Try dynamic fetch first
+    if (( $+commands[lol] )); then
+        upgrade_flags=( ${(f)"$(lol --complete upgrade-flags 2>/dev/null)"} )
+    fi
+
+    # Fallback to static flags
+    if (( ${#upgrade_flags} == 0 )); then
+        upgrade_flags=( '--keep-branch' )
+    fi
+
+    for flag in $upgrade_flags; do
+        case $flag in
+            --keep-branch) upgrade_flags_with_desc+=( '--keep-branch[Keep current branch and pull its upstream]' ) ;;
+            *) upgrade_flags_with_desc+=( "$flag" ) ;;
+        esac
+    done
+
+    _arguments \
+        ${upgrade_flags_with_desc[@]}
 }
 
 # Completion for 'lol version' subcommand
@@ -210,6 +234,12 @@ _lol_claude_clean() {
 _lol_serve() {
     # No CLI flags - show message about YAML configuration
     _message "Configure server.period and server.num_workers in .agentize.local.yaml"
+}
+
+# Completion for 'lol use-branch' subcommand
+_lol_use_branch() {
+    _arguments \
+        ':remote/branch:'
 }
 
 _lol "$@"

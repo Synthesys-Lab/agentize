@@ -13,6 +13,7 @@ source "$LOL_CLI"
 # List of expected command functions
 EXPECTED_FUNCTIONS=(
     "_lol_cmd_upgrade"
+    "_lol_cmd_use_branch"
     "_lol_cmd_version"
     "_lol_cmd_project"
     "_lol_cmd_serve"
@@ -34,6 +35,7 @@ done
 
 DISALLOWED_FUNCTIONS=(
     "lol_cmd_upgrade"
+    "lol_cmd_use_branch"
     "lol_cmd_version"
     "lol_cmd_project"
     "lol_cmd_serve"

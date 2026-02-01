@@ -17,6 +17,9 @@ output=$(lol 2>&1 || true)
 # Verify usage text includes lol upgrade command
 echo "$output" | grep -q "lol upgrade" || test_fail "Usage text missing 'lol upgrade' command"
 
+# Verify usage text includes lol use-branch command
+echo "$output" | grep -q "lol use-branch" || test_fail "Usage text missing 'lol use-branch' command"
+
 # Verify usage text includes --version flag
 echo "$output" | grep -q "\-\-version" || test_fail "Usage text missing '--version' flag"
 
@@ -35,5 +38,8 @@ echo "$output" | grep -q "lol impl" || test_fail "Usage text missing 'lol impl' 
 # Verify lol plan --help includes --refine
 plan_help=$(lol plan --help 2>&1)
 echo "$plan_help" | grep -q "\-\-refine" || test_fail "lol plan --help missing '--refine' option"
+
+# Verify usage text includes --keep-branch flag
+echo "$output" | grep -q "\-\-keep-branch" || test_fail "Usage text missing '--keep-branch' flag"
 
 test_pass "lol usage text includes documented commands"
