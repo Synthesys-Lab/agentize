@@ -54,3 +54,4 @@ Private entrypoint function for the command implementation. It validates argumen
 ### Completion detection and PR creation
 - Uses `.tmp/finalize.txt` for completion detection.
 - Uses the completion file first line for PR title and full file as PR body.
+- Appends `Closes #<issue>` only when a closes line is not already present (case-insensitive).

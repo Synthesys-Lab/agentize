@@ -233,8 +233,11 @@ EOF
     fi
 
     # Get PR body from full completion file
+    # Append closes line only if not already present (case-insensitive)
     local pr_body
-    echo "Closes #$issue_no" >> "$completion_file"
+    if ! grep -qi "closes #$issue_no" "$completion_file" 2>/dev/null; then
+        echo "Closes #$issue_no" >> "$completion_file"
+    fi
     pr_body=$(cat "$completion_file")
 
     # Create PR using gh CLI with explicit base branch

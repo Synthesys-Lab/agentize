@@ -29,6 +29,7 @@ Stubs are defined in the test shell and used by sourced CLI code to keep behavio
 12. Push remote precedence (upstream over origin)
 13. Base branch selection (master over main)
 14. Fallback to origin and main when upstream/master unavailable
+15. PR body closes-line deduplication and append behavior
 
 ## Usage
 

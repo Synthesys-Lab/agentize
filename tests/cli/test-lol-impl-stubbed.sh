@@ -724,4 +724,75 @@ if ! grep -q "gh pr create.*--base main" "$GH_CALL_LOG"; then
     test_fail "Expected gh pr create with --base main"
 fi
 
+# ── Test 13: Closes-line deduplication when already present ──
+ITERATION_COUNT=0
+> "$ACW_CALL_LOG"
+> "$GH_CALL_LOG"
+> "$GIT_CALL_LOG"
+GIT_HAS_CHANGES=1
+GIT_REMOTES="origin"
+GIT_DEFAULT_BRANCH="main"
+export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH
+
+# Create completion marker with closes line already present (lowercase)
+mkdir -p "$STUB_WORKTREE/.tmp"
+echo "PR: Closes dedup test" > "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+
+acw() {
+    echo "acw $*" >> "$ACW_CALL_LOG"
+    ITERATION_COUNT=$((ITERATION_COUNT + 1))
+    export ITERATION_COUNT
+    write_commit_report "$ITERATION_COUNT"
+    echo "Stub response" > "$4"
+    return 0
+}
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed with existing closes line"
+}
+
+# Count occurrences of closes line in gh pr create call
+CLOSES_COUNT=$(grep -oi "closes #123" "$GH_CALL_LOG" | wc -l | tr -d ' ')
+if [ "$CLOSES_COUNT" -ne 1 ]; then
+    echo "GH call log:" >&2
+    cat "$GH_CALL_LOG" >&2
+    test_fail "Expected exactly one 'closes #123' in PR body (got $CLOSES_COUNT)"
+fi
+
+# ── Test 14: Closes-line append when missing ──
+ITERATION_COUNT=0
+> "$ACW_CALL_LOG"
+> "$GH_CALL_LOG"
+> "$GIT_CALL_LOG"
+
+# Create completion marker without closes line
+mkdir -p "$STUB_WORKTREE/.tmp"
+echo "PR: Closes append test" > "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed and append closes line"
+}
+
+# Verify closes line was appended
+if ! grep -qi "closes #123" "$GH_CALL_LOG"; then
+    echo "GH call log:" >&2
+    cat "$GH_CALL_LOG" >&2
+    test_fail "Expected 'Closes #123' to be appended to PR body"
+fi
+
+# Count occurrences - should be exactly 1
+CLOSES_COUNT=$(grep -oi "closes #123" "$GH_CALL_LOG" | wc -l | tr -d ' ')
+if [ "$CLOSES_COUNT" -ne 1 ]; then
+    echo "GH call log:" >&2
+    cat "$GH_CALL_LOG" >&2
+    test_fail "Expected exactly one 'Closes #123' in PR body (got $CLOSES_COUNT)"
+fi
+
 test_pass "lol impl workflow with stubbed dependencies"
