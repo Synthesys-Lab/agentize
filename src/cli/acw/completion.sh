@@ -16,6 +16,8 @@ _acw_complete() {
             ;;
         cli-options)
             echo "--help"
+            echo "--chat"
+            echo "--chat-list"
             echo "--editor"
             echo "--stdout"
             echo "--model"
