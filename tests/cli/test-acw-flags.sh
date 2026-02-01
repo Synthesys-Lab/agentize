@@ -4,7 +4,9 @@
 # Test 2: --editor rejects empty/whitespace-only content
 # Test 3: --editor uses editor content as input
 # Test 4: --stdout merges provider stderr into stdout
-# Test 5: --stdout rejects output-file positional argument
+# Test 5: file mode captures provider stderr to sidecar
+# Test 6: file mode removes empty stderr sidecar
+# Test 7: --stdout rejects output-file positional argument
 
 source "$(dirname "$0")/../common.sh"
 
@@ -46,7 +48,9 @@ if [ -n "$input_file" ] && [ -f "$input_file" ]; then
   cat "$input_file"
 fi
 
-echo "stub-stderr" >&2
+if [ "${ACW_STUB_STDERR:-1}" != "0" ]; then
+  echo "stub-stderr" >&2
+fi
 STUB
 chmod +x "$TEST_BIN/claude"
 
@@ -133,7 +137,61 @@ if ! echo "$merged_output" | grep -q "stub-stderr"; then
   test_fail "--stdout output should include provider stderr"
 fi
 
-# Test 5: --stdout rejects output-file positional argument
+# Test 5: file mode captures provider stderr to sidecar
+output_file="$TEST_HOME/file-response.txt"
+sidecar_file="${output_file}.stderr"
+stderr_capture="$TEST_HOME/file-mode-stderr.txt"
+export ACW_STUB_STDERR="1"
+rm -f "$output_file" "$sidecar_file" "$stderr_capture"
+
+set +e
+acw claude test-model "$input_file" "$output_file" >/dev/null 2>"$stderr_capture"
+exit_code=$?
+set -e
+
+if [ "$exit_code" -ne 0 ]; then
+  test_fail "file mode should succeed with valid input"
+fi
+
+if [ ! -f "$sidecar_file" ]; then
+  test_fail "file mode should create stderr sidecar file"
+fi
+
+if ! grep -q "stub-stderr" "$sidecar_file"; then
+  test_fail "stderr sidecar should contain provider stderr"
+fi
+
+if [ -s "$stderr_capture" ]; then
+  test_fail "file mode should keep provider stderr out of terminal"
+fi
+
+# Test 6: file mode removes empty stderr sidecar
+output_file="$TEST_HOME/empty-stderr-response.txt"
+sidecar_file="${output_file}.stderr"
+stderr_capture="$TEST_HOME/empty-stderr-terminal.txt"
+export ACW_STUB_STDERR="0"
+rm -f "$output_file" "$sidecar_file" "$stderr_capture"
+
+set +e
+acw claude test-model "$input_file" "$output_file" >/dev/null 2>"$stderr_capture"
+exit_code=$?
+set -e
+
+if [ "$exit_code" -ne 0 ]; then
+  test_fail "file mode should succeed when provider writes no stderr"
+fi
+
+if [ -f "$sidecar_file" ]; then
+  test_fail "empty stderr sidecar should be removed"
+fi
+
+if [ -s "$stderr_capture" ]; then
+  test_fail "file mode should keep terminal stderr quiet when provider writes none"
+fi
+
+export ACW_STUB_STDERR="1"
+
+# Test 7: --stdout rejects output-file positional argument
 set +e
 output=$(acw --stdout claude test-model "$input_file" "$TEST_HOME/out.txt" 2>&1)
 exit_code=$?

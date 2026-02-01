@@ -355,6 +355,11 @@ acw() {
 
     # Remaining arguments are provider options
     local provider_exit=0
+    local stderr_file=""
+
+    if [ "$stdout_mode" -eq 0 ]; then
+        stderr_file="${output_file}.stderr"
+    fi
 
     # Dispatch to provider function
     case "$cli_name" in
@@ -362,7 +367,11 @@ acw() {
             if [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 0 ]; then
                 _acw_invoke_claude "$model_name" "$input_file" "$output_file" "$@" 2>&1
             else
-                _acw_invoke_claude "$model_name" "$input_file" "$output_file" "$@"
+                if [ -n "$stderr_file" ]; then
+                    _acw_invoke_claude "$model_name" "$input_file" "$output_file" "$@" 2>"$stderr_file"
+                else
+                    _acw_invoke_claude "$model_name" "$input_file" "$output_file" "$@"
+                fi
             fi
             provider_exit=$?
             ;;
@@ -370,7 +379,11 @@ acw() {
             if [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 0 ]; then
                 _acw_invoke_codex "$model_name" "$input_file" "$output_file" "$@" 2>&1
             else
-                _acw_invoke_codex "$model_name" "$input_file" "$output_file" "$@"
+                if [ -n "$stderr_file" ]; then
+                    _acw_invoke_codex "$model_name" "$input_file" "$output_file" "$@" 2>"$stderr_file"
+                else
+                    _acw_invoke_codex "$model_name" "$input_file" "$output_file" "$@"
+                fi
             fi
             provider_exit=$?
             ;;
@@ -378,7 +391,11 @@ acw() {
             if [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 0 ]; then
                 _acw_invoke_opencode "$model_name" "$input_file" "$output_file" "$@" 2>&1
             else
-                _acw_invoke_opencode "$model_name" "$input_file" "$output_file" "$@"
+                if [ -n "$stderr_file" ]; then
+                    _acw_invoke_opencode "$model_name" "$input_file" "$output_file" "$@" 2>"$stderr_file"
+                else
+                    _acw_invoke_opencode "$model_name" "$input_file" "$output_file" "$@"
+                fi
             fi
             provider_exit=$?
             ;;
@@ -386,11 +403,19 @@ acw() {
             if [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 0 ]; then
                 _acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@" 2>&1
             else
-                _acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@"
+                if [ -n "$stderr_file" ]; then
+                    _acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@" 2>"$stderr_file"
+                else
+                    _acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@"
+                fi
             fi
             provider_exit=$?
             ;;
     esac
+
+    if [ -n "$stderr_file" ] && [ -f "$stderr_file" ] && [ ! -s "$stderr_file" ]; then
+        rm -f "$stderr_file"
+    fi
 
     # Chat mode cleanup and append turn
     if [ "$chat_mode" -eq 1 ]; then
