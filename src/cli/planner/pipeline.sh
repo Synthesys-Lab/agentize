@@ -626,6 +626,6 @@ _planner_run_pipeline() {
     fi
 
     # Output consensus path to stdout
-    term_label "See the full plan locally at:" "$consensus_path"
+    term_label "See the full plan locally at:" "$consensus_path" "info"
     return 0
 }

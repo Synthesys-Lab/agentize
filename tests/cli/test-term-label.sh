@@ -47,7 +47,21 @@ source "$TERM_COLORS"
     fi
 )
 
-# Test 5: term_clear_line emits proper escape sequence (no color involved)
+# Test 5: term_label with info style - verify function signature accepts 3 args
+# Note: Colored output requires TTY on stderr, which isn't available in test context.
+# This test validates the function accepts the style parameter without error.
+(
+    unset NO_COLOR
+    unset PLANNER_NO_COLOR
+    # Call with 3 arguments - should not error
+    output=$(term_label "See the full plan locally at:" "/path/to/file" "info" 2>&1)
+    # In non-TTY context, should still produce correct label/text content
+    if [[ "$output" != *"See the full plan locally at:"* ]] || [[ "$output" != *"/path/to/file"* ]]; then
+        test_fail "term_label with 'info' style should include label and text, got '$output'"
+    fi
+)
+
+# Test 6: term_clear_line emits proper escape sequence (no color involved)
 (
     output=$(term_clear_line 2>&1)
     # The clear line sequence is \r\033[K - we check it contains the escape
