@@ -10,7 +10,8 @@ acw: Agent CLI Wrapper
 Unified file-based interface for invoking AI CLI tools.
 
 Usage:
-  acw [--editor] [--stdout] <cli-name> <model-name> [<input-file>] [<output-file>] [options...]
+  acw [--chat [session-id]] [--editor] [--stdout] <cli-name> <model-name> [<input-file>] [<output-file>] [options...]
+  acw --chat-list
   acw --complete <topic>
   acw --help
 
@@ -21,6 +22,8 @@ Arguments:
   output-file   Path where response will be written (unless --stdout is used)
 
 Options:
+  --chat        Start or continue a chat session
+  --chat-list   List available chat sessions
   --editor      Use $EDITOR to compose the input prompt
   --stdout      Write output to stdout and merge provider stderr into stdout
   --complete    Print completion values for a topic
@@ -39,6 +42,7 @@ Exit Codes:
   2   Unknown provider
   3   Input file not found or not readable
   4   Provider CLI binary not found
+  5   Chat session error (invalid id, missing file, or format error)
   127 Provider execution failed
 
 Examples:
@@ -88,6 +92,8 @@ _acw_validate_no_positional_args() {
 acw() {
     local use_editor=0
     local stdout_mode=0
+    local chat_mode=0
+    local chat_session_id=""
 
     # Parse acw flags before cli-name
     while [ $# -gt 0 ]; do
@@ -99,6 +105,27 @@ acw() {
             --complete)
                 _acw_complete "$2"
                 return 0
+                ;;
+            --chat-list)
+                _acw_chat_list_sessions
+                return 0
+                ;;
+            --chat)
+                chat_mode=1
+                shift
+                # Check if next arg looks like a session ID (not a flag, not a known provider)
+                if [ $# -gt 0 ] && [ "${1:0:1}" != "-" ]; then
+                    case "$1" in
+                        claude|codex|opencode|cursor)
+                            # This is the cli-name, not a session ID
+                            ;;
+                        *)
+                            # Assume it's a session ID
+                            chat_session_id="$1"
+                            shift
+                            ;;
+                    esac
+                fi
                 ;;
             --editor)
                 use_editor=1
@@ -267,13 +294,72 @@ acw() {
         return 4
     fi
 
+    # Chat mode setup
+    local session_file=""
+    local combined_input=""
+    local chat_output_capture=""
+    local original_input_file="$input_file"
+
+    if [ "$chat_mode" -eq 1 ]; then
+        # Validate or generate session ID
+        if [ -n "$chat_session_id" ]; then
+            # Continuing existing session
+            if ! _acw_chat_validate_session_id "$chat_session_id"; then
+                echo "Error: Invalid session ID '$chat_session_id'" >&2
+                echo "Session IDs must be 8-12 base62 characters (a-z, A-Z, 0-9)" >&2
+                if [ -n "$editor_tmp" ]; then
+                    rm -f "$editor_tmp"
+                    trap - EXIT INT TERM
+                fi
+                return 5
+            fi
+
+            session_file=$(_acw_chat_session_path "$chat_session_id")
+
+            if ! _acw_chat_validate_session_file "$session_file"; then
+                if [ -n "$editor_tmp" ]; then
+                    rm -f "$editor_tmp"
+                    trap - EXIT INT TERM
+                fi
+                return 5
+            fi
+        else
+            # Create new session
+            chat_session_id=$(_acw_chat_generate_session_id)
+            if [ $? -ne 0 ]; then
+                if [ -n "$editor_tmp" ]; then
+                    rm -f "$editor_tmp"
+                    trap - EXIT INT TERM
+                fi
+                return 5
+            fi
+
+            session_file=$(_acw_chat_session_path "$chat_session_id")
+            _acw_chat_create_session "$session_file" "$cli_name" "$model_name"
+
+            # Print session ID to stderr
+            echo "Session: $chat_session_id" >&2
+        fi
+
+        # Prepare combined input (session history + new user input)
+        combined_input=$(mktemp)
+        _acw_chat_prepare_input "$session_file" "$input_file" "$combined_input"
+        input_file="$combined_input"
+
+        # For stdout mode in chat, capture output to append to session
+        if [ "$stdout_mode" -eq 1 ]; then
+            chat_output_capture=$(mktemp)
+            output_file="$chat_output_capture"
+        fi
+    fi
+
     # Remaining arguments are provider options
     local provider_exit=0
 
     # Dispatch to provider function
     case "$cli_name" in
         claude)
-            if [ "$stdout_mode" -eq 1 ]; then
+            if [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 0 ]; then
                 _acw_invoke_claude "$model_name" "$input_file" "$output_file" "$@" 2>&1
             else
                 _acw_invoke_claude "$model_name" "$input_file" "$output_file" "$@"
@@ -281,7 +367,7 @@ acw() {
             provider_exit=$?
             ;;
         codex)
-            if [ "$stdout_mode" -eq 1 ]; then
+            if [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 0 ]; then
                 _acw_invoke_codex "$model_name" "$input_file" "$output_file" "$@" 2>&1
             else
                 _acw_invoke_codex "$model_name" "$input_file" "$output_file" "$@"
@@ -289,7 +375,7 @@ acw() {
             provider_exit=$?
             ;;
         opencode)
-            if [ "$stdout_mode" -eq 1 ]; then
+            if [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 0 ]; then
                 _acw_invoke_opencode "$model_name" "$input_file" "$output_file" "$@" 2>&1
             else
                 _acw_invoke_opencode "$model_name" "$input_file" "$output_file" "$@"
@@ -297,7 +383,7 @@ acw() {
             provider_exit=$?
             ;;
         cursor)
-            if [ "$stdout_mode" -eq 1 ]; then
+            if [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 0 ]; then
                 _acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@" 2>&1
             else
                 _acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@"
@@ -305,6 +391,32 @@ acw() {
             provider_exit=$?
             ;;
     esac
+
+    # Chat mode cleanup and append turn
+    if [ "$chat_mode" -eq 1 ]; then
+        if [ "$provider_exit" -eq 0 ]; then
+            # Determine assistant response file
+            local assistant_response=""
+            if [ "$stdout_mode" -eq 1 ]; then
+                assistant_response="$chat_output_capture"
+                # Emit captured output to stdout
+                cat "$chat_output_capture"
+            else
+                assistant_response="$output_file"
+            fi
+
+            # Append turn to session
+            _acw_chat_append_turn "$session_file" "$original_input_file" "$assistant_response"
+        fi
+
+        # Clean up temp files
+        if [ -n "$combined_input" ]; then
+            rm -f "$combined_input"
+        fi
+        if [ -n "$chat_output_capture" ]; then
+            rm -f "$chat_output_capture"
+        fi
+    fi
 
     if [ -n "$editor_tmp" ]; then
         rm -f "$editor_tmp"

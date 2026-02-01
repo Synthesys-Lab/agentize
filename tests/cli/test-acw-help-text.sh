@@ -15,7 +15,7 @@ source "$ACW_CLI"
 output=$(acw 2>&1 || true)
 
 # Verify usage text shows the command format
-echo "$output" | grep -q "acw \\[--editor\\] \\[--stdout\\] <cli-name>" || test_fail "Usage text missing updated command pattern"
+echo "$output" | grep -q "acw \\[--chat" || test_fail "Usage text missing updated command pattern"
 
 # Verify usage text includes claude provider
 echo "$output" | grep -q "claude" || test_fail "Usage text missing 'claude' provider"
