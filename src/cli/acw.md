@@ -36,6 +36,7 @@ Validates arguments, dispatches to provider function, returns provider exit code
 **Flag behavior:**
 - `--editor` uses `$EDITOR` to create the input content (mutually exclusive with `input-file`)
 - `--stdout` writes output to stdout and merges provider stderr into stdout (mutually exclusive with `output-file`)
+- In file mode, provider stderr is written to `<output-file>.stderr` to keep terminal output quiet.
 - `acw` flags must appear before `cli-name`; use `--` to pass provider options that collide with `acw` flags
 
 This is the **only public function** exported by `acw.sh`. All other functions are internal (prefixed with `_acw_`).

@@ -28,6 +28,8 @@ acw --chat-list
   exit with status 0 and the file must contain non-whitespace content.
 - `--stdout`: Routes output to `/dev/stdout` and merges provider stderr into
   stdout for the invocation.
+- File mode (no `--stdout`) redirects provider stderr to `<output-file>.stderr`
+  and removes the sidecar file when stderr is empty.
 - `--complete <topic>`: Prints completion values for the given topic.
 - `--help`: Prints usage text.
 

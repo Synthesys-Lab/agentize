@@ -64,6 +64,7 @@ acw --help
 ```bash
 # Invoke Claude with a prompt file
 acw claude claude-sonnet-4-20250514 prompt.txt response.txt
+# Provider stderr is written to response.txt.stderr in file mode
 
 # Invoke Codex
 acw codex gpt-4o prompt.txt response.txt
@@ -172,6 +173,7 @@ autoload -Uz compinit && compinit
 - Only `acw` is the public function; all helper functions (provider invocation, completion, validation) are internal (prefixed with `_acw_`) and won't appear in tab completion
 - `acw` flags must appear before `cli-name`. Use `--` to pass provider options that collide with `acw` flags.
 - `--stdout` merges provider stderr into stdout so progress and output can be piped together.
+- In file mode (no `--stdout`), provider stderr is written to `<output-file>.stderr`. Empty sidecar files are removed after the provider exits.
 
 ## See Also
 
