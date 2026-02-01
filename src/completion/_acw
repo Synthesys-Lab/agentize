@@ -40,11 +40,13 @@ _acw() {
     _arguments -C \
         '--help[Show help message]' \
         '-h[Show help message]' \
+        '--editor[Compose input in $EDITOR]' \
+        '--stdout[Write output to stdout (merge provider stderr)]' \
         '--complete[Shell completion helper]:topic:(providers cli-options)' \
         '1:provider:->provider' \
         '2:model:' \
-        '3:input-file:_files' \
-        '4:output-file:_files' \
+        '3::input-file:_files' \
+        '4::output-file:_files' \
         '*:additional options:'
 
     case $state in

@@ -28,10 +28,15 @@ acw/
 ### Public Entry Point
 
 ```bash
-acw <cli-name> <model-name> <input-file> <output-file> [options...]
+acw [--editor] [--stdout] <cli-name> <model-name> [<input-file>] [<output-file>] [options...]
 ```
 
 Validates arguments, dispatches to provider function, returns provider exit code.
+
+**Flag behavior:**
+- `--editor` uses `$EDITOR` to create the input content (mutually exclusive with `input-file`)
+- `--stdout` writes output to stdout and merges provider stderr into stdout (mutually exclusive with `output-file`)
+- `acw` flags must appear before `cli-name`; use `--` to pass provider options that collide with `acw` flags
 
 This is the **only public function** exported by `acw.sh`. All other functions are internal (prefixed with `_acw_`).
 

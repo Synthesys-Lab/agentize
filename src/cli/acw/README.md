@@ -62,3 +62,4 @@ acw.sh (thin loader)
 - All other function names prefixed with `_acw_` for internal use
 - Exit codes follow `acw.md` specification (0-4, 127)
 - All functions support both bash and zsh
+- `--stdout` mode routes output to `/dev/stdout` and merges provider stderr into stdout for the invocation

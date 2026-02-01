@@ -16,6 +16,8 @@ _acw_complete() {
             ;;
         cli-options)
             echo "--help"
+            echo "--editor"
+            echo "--stdout"
             echo "--model"
             echo "--max-tokens"
             echo "--yolo"
