@@ -423,6 +423,9 @@ for stage in data["stages"]:
     for agent in agents:
         name = agent.get("name", "unknown")
         agent_md = agent.get("agent_md", "")
+        if not agent_md:
+            print(f"Error: Agent '{name}' missing agent_md path", file=sys.stderr)
+            sys.exit(1)
         backend_key = agent.get("backend_key", name)
         default_backend = agent.get("default_backend", "claude:opus")
         tools = agent.get("tools", "Read,Grep,Glob")
