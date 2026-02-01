@@ -1,5 +1,10 @@
 - When answering me, always put a "Dude, carefully read my response to determine what to do next." at the end of your answer.
 - When mentioning issue or PR, if not specified, it always refers to this project repository.
+- When committing, use `docs/git-msg-tags.md` to determine proper commit message tags. Briefly,
+  - summarize the overall change in this commit.
+  - describe changes to each modified file.
+  - if applicable, mention the related issue.
+  - if applicable, mention the status of **ALL** the test cases.
 - This project aims at
   - Creating a AI-powered SDK to faciliate generic software engineering.
   - Bootstrapping the development of this SDK using AI.
