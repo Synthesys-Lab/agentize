@@ -5,7 +5,8 @@ Unified file-based interface for invoking multiple AI CLI tools.
 ## Synopsis
 
 ```bash
-acw [--editor] [--stdout] <cli-name> <model-name> [<input-file>] [<output-file>] [cli-options...]
+acw [--chat [session-id]] [--editor] [--stdout] <cli-name> <model-name> [<input-file>] [<output-file>] [cli-options...]
+acw --chat-list
 acw --complete <topic>
 acw --help
 ```
@@ -28,6 +29,8 @@ acw --help
 
 | Option | Description |
 |--------|-------------|
+| `--chat [session-id]` | Start or continue a chat session. Creates new session if no ID provided. |
+| `--chat-list` | List available chat sessions and exit. |
 | `--editor` | Use `$EDITOR` to create the input content (mutually exclusive with `input-file`) |
 | `--stdout` | Write output to stdout and merge provider stderr into stdout (mutually exclusive with `output-file`) |
 | `--complete <topic>` | Print completion values for the given topic |
@@ -51,6 +54,7 @@ acw --help
 | 2 | Unknown provider |
 | 3 | Input file not found or not readable |
 | 4 | Provider CLI binary not found |
+| 5 | Chat session error (invalid ID, missing file, or format error) |
 | 127 | Provider execution failed |
 
 ## Examples
@@ -72,6 +76,15 @@ acw --editor claude claude-sonnet-4-20250514 response.txt
 
 # Stream output to stdout (merged with provider stderr)
 acw --stdout claude claude-sonnet-4-20250514 prompt.txt
+
+# Start a new chat session (prints session ID)
+acw --chat claude claude-sonnet-4-20250514 prompt.txt response.txt
+
+# Continue an existing chat session
+acw --chat abc12345 claude claude-sonnet-4-20250514 prompt.txt response.txt
+
+# List all chat sessions
+acw --chat-list
 ```
 
 ### Script Integration
@@ -86,6 +99,40 @@ if [ $? -eq 0 ]; then
     echo "Response written to /tmp/response.txt"
 fi
 ```
+
+## Chat Sessions
+
+Chat sessions enable multi-turn conversations by persisting history as markdown files.
+
+### Session Storage
+
+Sessions are stored under `$AGENTIZE_HOME/.tmp/acw-sessions/` as markdown files with YAML front matter:
+
+```markdown
+---
+provider: claude
+model: claude-sonnet-4-20250514
+created: 2025-01-15T10:30:00Z
+---
+
+# User
+What is the capital of France?
+
+# Assistant
+The capital of France is Paris.
+```
+
+### Session IDs
+
+- Format: 8-character base62 string (a-z, A-Z, 0-9)
+- Generated automatically when `--chat` is used without an ID
+- Printed to stderr when a new session is created
+
+### Chat Flow
+
+1. **New session**: `acw --chat` creates a session file, prints its ID, and runs the first turn.
+2. **Continue session**: `acw --chat <id>` prepends the session history to the current input and appends the new turn after the provider responds.
+3. **List sessions**: `acw --chat-list` lists session IDs with provider, model, and creation date.
 
 ## Environment Variables
 

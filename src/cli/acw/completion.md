@@ -11,8 +11,8 @@ completion systems.
 
 **Topics**:
 - `providers`: Lists supported providers (`claude`, `codex`, `opencode`, `cursor`).
-- `cli-options`: Lists common CLI options (`--help`, `--editor`, `--stdout`,
-  `--model`, `--max-tokens`, `--yolo`).
+- `cli-options`: Lists common CLI options (`--help`, `--chat`, `--chat-list`,
+  `--editor`, `--stdout`, `--model`, `--max-tokens`, `--yolo`).
 
 **Output**:
 - Prints one value per line to stdout.

@@ -3,13 +3,14 @@
 ## Purpose
 
 Command dispatcher for `acw`. Owns argument parsing, help text, validation, and
-provider invocation flow.
+provider invocation flow including chat session orchestration.
 
 ## External Interface
 
 ### Command
 ```bash
-acw [--editor] [--stdout] <cli-name> <model-name> [<input-file>] [<output-file>] [options...]
+acw [--chat [session-id]] [--editor] [--stdout] <cli-name> <model-name> [<input-file>] [<output-file>] [options...]
+acw --chat-list
 ```
 
 **Parameters**:
@@ -20,6 +21,9 @@ acw [--editor] [--stdout] <cli-name> <model-name> [<input-file>] [<output-file>]
 - `options...`: Provider-specific options passed through unchanged
 
 **Flags**:
+- `--chat [session-id]`: Enables chat mode. If `session-id` is omitted, creates a
+  new session; if provided, continues that session.
+- `--chat-list`: Lists available session IDs and basic metadata, then exits.
 - `--editor`: Uses `$EDITOR` to populate a temporary input file. The editor must
   exit with status 0 and the file must contain non-whitespace content.
 - `--stdout`: Routes output to `/dev/stdout` and merges provider stderr into
@@ -44,3 +48,18 @@ Prints usage text, options, providers, and examples.
 ### _acw_validate_no_positional_args()
 Ensures editor/stdout modes do not accept extra positional arguments. Allows
 values following flags and allows positional values after `--`.
+
+## Chat Mode
+
+In chat mode, the dispatcher orchestrates session creation, history prepending,
+and turn appending:
+
+1. **New session**: Creates a session file with YAML front matter, prepends an
+   empty history, runs the provider, and appends the first turn.
+2. **Continue session**: Validates the session file, prepends existing history
+   to a combined temp file, runs the provider, and appends the new turn.
+
+**Stdout capture**: When `--stdout` is combined with `--chat`, the provider
+output is captured to a temp file. After the provider exits, the captured
+content is emitted to stdout and the assistant response is appended to the
+session file.

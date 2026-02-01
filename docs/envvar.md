@@ -123,6 +123,8 @@ These variables are set by shell scripts or the runtime and do not have YAML equ
 
 **Hook path resolution:** When `AGENTIZE_HOME` is set, hooks store session state and logs in `$AGENTIZE_HOME/.tmp/hooked-sessions/`. This enables workflow continuations across worktree switches.
 
+**Chat session storage:** `$AGENTIZE_HOME/.tmp/acw-sessions/` stores persistent `acw` chat sessions as markdown files with YAML front matter.
+
 ## Type Coercion
 
 | Type | Accepted Values | Example |

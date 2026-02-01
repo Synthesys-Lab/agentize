@@ -8,10 +8,10 @@ Modular implementation of the Agent CLI Wrapper (`acw`) command.
 
 | File | Dependencies | Exports |
 |------|--------------|---------|
-| `helpers.sh` | None | `_acw_validate_args`, `_acw_check_cli`, `_acw_ensure_output_dir`, `_acw_check_input_file` (private) |
+| `helpers.sh` | None | Validation helpers (`_acw_validate_args`, `_acw_check_cli`, `_acw_ensure_output_dir`, `_acw_check_input_file`) and chat session helpers (`_acw_chat_*`) (private) |
 | `providers.sh` | `helpers.sh` | `_acw_invoke_claude`, `_acw_invoke_codex`, `_acw_invoke_opencode`, `_acw_invoke_cursor` (private) |
 | `completion.sh` | None | `_acw_complete` (private) |
-| `dispatch.sh` | `helpers.sh`, `providers.sh`, `completion.sh` | `acw` (public) |
+| `dispatch.sh` | `helpers.sh`, `providers.sh`, `completion.sh` | `acw` (public); orchestrates chat session creation, continuation, and history prepending |
 
 ## Load Order
 
@@ -32,6 +32,15 @@ acw.sh (thin loader)
     |     +-- _acw_check_cli()
     |     +-- _acw_ensure_output_dir()
     |     +-- _acw_check_input_file()
+    |     +-- _acw_chat_session_dir()
+    |     +-- _acw_chat_session_path()
+    |     +-- _acw_chat_generate_session_id()
+    |     +-- _acw_chat_validate_session_id()
+    |     +-- _acw_chat_create_session()
+    |     +-- _acw_chat_validate_session_file()
+    |     +-- _acw_chat_prepare_input()
+    |     +-- _acw_chat_append_turn()
+    |     +-- _acw_chat_list_sessions()
     |
     +-- providers.sh (private)
     |     +-- _acw_invoke_claude()
