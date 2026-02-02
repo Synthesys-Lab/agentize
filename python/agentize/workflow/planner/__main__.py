@@ -293,7 +293,6 @@ def run_planner_pipeline(
     )
     t_understander = progress.timer_start() if progress else None
     if progress:
-        progress.term_label("Backend:", _backend_label("understander"), "info")
         progress.anim_start(
             f"Stage 1/5: Running understander ({_backend_label('understander')})"
         )
@@ -305,7 +304,7 @@ def run_planner_pipeline(
     _check_stage_result(results["understander"])
     understander_output = results["understander"].output_path.read_text()
     if progress and t_understander is not None:
-        progress.timer_log("understander", t_understander)
+        progress.timer_log("understander", t_understander, _backend_label("understander"))
         progress.log(f"  Understander complete: {results['understander'].output_path}")
         progress.log("")
 
@@ -315,7 +314,6 @@ def run_planner_pipeline(
     )
     t_bold = progress.timer_start() if progress else None
     if progress:
-        progress.term_label("Backend:", _backend_label("bold"), "info")
         progress.anim_start(f"Stage 2/5: Running bold-proposer ({_backend_label('bold')})")
     try:
         results["bold"] = _run_stage("bold", bold_prompt)
@@ -325,7 +323,7 @@ def run_planner_pipeline(
     _check_stage_result(results["bold"])
     bold_output = results["bold"].output_path.read_text()
     if progress and t_bold is not None:
-        progress.timer_log("bold-proposer", t_bold)
+        progress.timer_log("bold-proposer", t_bold, _backend_label("bold"))
         progress.log(f"  Bold-proposer complete: {results['bold'].output_path}")
         progress.log("")
 
@@ -339,8 +337,6 @@ def run_planner_pipeline(
 
     t_parallel = progress.timer_start() if progress else None
     if progress:
-        progress.term_label("Backend (critique):", _backend_label("critique"), "info")
-        progress.term_label("Backend (reducer):", _backend_label("reducer"), "info")
         progress.anim_start(
             "Stage 3-4/5: Running critique and reducer in parallel "
             f"({_backend_label('critique')}, {_backend_label('reducer')})"
@@ -366,9 +362,9 @@ def run_planner_pipeline(
     critique_output = results["critique"].output_path.read_text()
     reducer_output = results["reducer"].output_path.read_text()
     if progress and t_parallel is not None:
-        progress.timer_log("critique", t_parallel)
+        progress.timer_log("critique", t_parallel, _backend_label("critique"))
         progress.log(f"  Critique complete: {results['critique'].output_path}")
-        progress.timer_log("reducer", t_parallel)
+        progress.timer_log("reducer", t_parallel, _backend_label("reducer"))
         progress.log(f"  Reducer complete: {results['reducer'].output_path}")
         progress.log("")
 
@@ -381,7 +377,6 @@ def run_planner_pipeline(
     )
     t_consensus = progress.timer_start() if progress else None
     if progress:
-        progress.term_label("Backend:", _backend_label("consensus"), "info")
         progress.anim_start(
             f"Stage 5/5: Running consensus ({_backend_label('consensus')})"
         )
@@ -392,7 +387,7 @@ def run_planner_pipeline(
             progress.anim_stop()
     _check_stage_result(results["consensus"])
     if progress and t_consensus is not None:
-        progress.timer_log("consensus", t_consensus)
+        progress.timer_log("consensus", t_consensus, _backend_label("consensus"))
 
     return results
 
@@ -773,7 +768,6 @@ def main(argv: list[str]) -> int:
 
     consensus_backend = stage_backends["consensus"]
     t_consensus = tty.timer_start()
-    tty.term_label("Backend:", f"{consensus_backend[0]}:{consensus_backend[1]}", "info")
     tty.anim_start(f"Stage 5/5: Running consensus ({consensus_backend[0]}:{consensus_backend[1]})")
     try:
         consensus_result = _run_consensus_stage(
@@ -811,7 +805,7 @@ def main(argv: list[str]) -> int:
         consensus_display = str(consensus_result.output_path)
     consensus_path = consensus_result.output_path
 
-    tty.timer_log("consensus", t_consensus)
+    tty.timer_log("consensus", t_consensus, f"{consensus_backend[0]}:{consensus_backend[1]}")
 
     tty.log("")
     tty.stage("Pipeline complete!")

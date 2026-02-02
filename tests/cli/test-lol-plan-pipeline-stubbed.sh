@@ -107,10 +107,10 @@ echo "$output" | grep -qi "consensus" || {
     test_fail "Pipeline output should reference consensus plan"
 }
 
-# Verify per-agent timing logs are present (e.g., "understander agent runs 0s")
-echo "$output" | grep -qE "agent runs [0-9]+s" || {
+# Verify per-agent timing logs are present (e.g., "agent understander (claude:sonnet) runs 0s")
+echo "$output" | grep -qE "agent [a-z-]+ \\([^)]*\\) runs [0-9]+s" || {
     echo "Pipeline output: $output" >&2
-    test_fail "Pipeline output should contain per-agent timing logs (e.g., 'agent runs Ns')"
+    test_fail "Pipeline output should contain per-agent timing logs (e.g., 'agent understander (provider:model) runs Ns')"
 }
 
 # Verify .txt stage artifacts were created

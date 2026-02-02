@@ -77,9 +77,12 @@ class PlannerTTY:
     def timer_start(self) -> float:
         return time.time()
 
-    def timer_log(self, stage: str, start_epoch: float) -> None:
+    def timer_log(self, stage: str, start_epoch: float, backend: str | None = None) -> None:
         elapsed = int(time.time() - start_epoch)
-        print(f"  {stage} agent runs {elapsed}s", file=sys.stderr)
+        if backend:
+            print(f"  agent {stage} ({backend}) runs {elapsed}s", file=sys.stderr)
+        else:
+            print(f"  agent {stage} runs {elapsed}s", file=sys.stderr)
 
     def anim_start(self, label: str) -> None:
         if not self._anim_enabled():

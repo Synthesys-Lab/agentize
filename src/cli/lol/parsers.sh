@@ -369,7 +369,11 @@ _lol_parse_plan() {
     fi
 
     if [ -n "$refine_issue_number" ] && [ -n "$refine_instructions" ]; then
-        feature_desc="$refine_instructions"
+        if [ -n "$feature_desc" ]; then
+            feature_desc="${feature_desc}"$'\n\n'"${refine_instructions}"
+        else
+            feature_desc="$refine_instructions"
+        fi
     fi
 
     # Convert --dry-run to issue_mode (inverse logic)

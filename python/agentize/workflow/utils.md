@@ -18,7 +18,7 @@ class PlannerTTY:
     def stage(self, message: str) -> None: ...
     def log(self, message: str) -> None: ...
     def timer_start(self) -> float: ...
-    def timer_log(self, stage: str, start_epoch: float) -> None: ...
+    def timer_log(self, stage: str, start_epoch: float, backend: str | None = None) -> None: ...
     def anim_start(self, label: str) -> None: ...
     def anim_stop(self) -> None: ...
 ```
@@ -42,7 +42,7 @@ TTY output helper that provides terminal styling, dot animations, and timing log
 | `stage(message)` | Print stage progress message (always shown) |
 | `log(message)` | Print message only when verbose mode enabled |
 | `timer_start()` | Return current epoch time for timing |
-| `timer_log(stage, start_epoch)` | Log elapsed time since `start_epoch` |
+| `timer_log(stage, start_epoch, backend)` | Log elapsed time since `start_epoch` (include backend when provided) |
 | `anim_start(label)` | Start background dot animation with label |
 | `anim_stop()` | Stop any running animation and clear line |
 
@@ -94,7 +94,7 @@ start = tty.timer_start()
 tty.anim_start("Processing")
 # ... do work ...
 tty.anim_stop()
-tty.timer_log("auth-stage", start)
+tty.timer_log("auth-stage", start, "claude:sonnet")
 
 # Direct acw invocation
 result = run_acw(
