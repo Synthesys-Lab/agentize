@@ -11,7 +11,8 @@ python/agentize/
 ├── cli.md                # CLI interface documentation
 ├── shell.py              # Shared shell function invocation utilities
 ├── usage.py              # Claude Code token usage statistics
-├── workflow/             # Python planner workflow orchestration
+├── workflow/             # Python planner + impl workflow orchestration
+│   └── impl/             # Issue-to-implementation workflow (lol impl)
 └── server/               # Polling server module
     └── __main__.py       # Server entry point (python -m agentize.server)
 ```
@@ -26,7 +27,7 @@ python/agentize/
 python -m agentize.cli <command> [options]
 ```
 
-The Python CLI delegates to shell functions via the shared `shell.py` module with `AGENTIZE_HOME` set. It provides argparse-style parsing while preserving shell as the canonical implementation. See `cli.md` for interface details.
+The Python CLI delegates to shell functions for most commands via the shared `shell.py` module with `AGENTIZE_HOME` set. The `impl` command runs the Python workflow implementation. See `cli.md` for interface details.
 
 ### Shell Utilities
 

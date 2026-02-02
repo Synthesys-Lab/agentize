@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test: lol impl workflow with stubbed wt, acw, and gh
+# Test: lol impl workflow with stubbed wt, acw, and gh via overrides
 # Tests worktree path resolution, backend parsing, iteration limits, and completion marker detection
 
 source "$(dirname "$0")/../common.sh"
@@ -9,6 +9,7 @@ LOL_CLI="$PROJECT_ROOT/src/cli/lol.sh"
 test_info "lol impl workflow with stubbed dependencies"
 
 export AGENTIZE_HOME="$PROJECT_ROOT"
+export PYTHONPATH="$PROJECT_ROOT/python"
 source "$LOL_CLI"
 
 # Create temp directory for test artifacts
@@ -26,11 +27,34 @@ GH_CALL_LOG="$TMP_DIR/gh-calls.log"
 GIT_CALL_LOG="$TMP_DIR/git-calls.log"
 touch "$WT_CALL_LOG" "$ACW_CALL_LOG" "$GH_CALL_LOG" "$GIT_CALL_LOG"
 
-# Stub git function - by default simulates changes exist
+# Track iteration count across subprocesses
+ITERATION_COUNT_FILE="$TMP_DIR/iter-count.txt"
+echo 0 > "$ITERATION_COUNT_FILE"
+
+# Stub git behavior controls
 GIT_HAS_CHANGES=1
 GIT_REMOTES="origin"
 GIT_DEFAULT_BRANCH="main"
-export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH
+GIT_BRANCH_NAME="test-branch"
+export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH GIT_BRANCH_NAME
+
+# Shell override script for subprocess invocations
+OVERRIDES="$TMP_DIR/shell-overrides.sh"
+cat <<'OVERRIDES_EOF' > "$OVERRIDES"
+#!/usr/bin/env bash
+
+_next_iter() {
+    local count=0
+    if [ -f "$ITERATION_COUNT_FILE" ]; then
+        count=$(cat "$ITERATION_COUNT_FILE")
+    fi
+    if ! [[ "$count" =~ ^[0-9]+$ ]]; then
+        count=0
+    fi
+    count=$((count + 1))
+    echo "$count" > "$ITERATION_COUNT_FILE"
+    echo "$count"
+}
 
 write_commit_report() {
     local iter="$1"
@@ -38,57 +62,36 @@ write_commit_report() {
     echo "cli: stub commit report $iter" > "$STUB_WORKTREE/.tmp/commit-report-iter-$iter.txt"
 }
 
-git() {
-    echo "git $*" >> "$GIT_CALL_LOG"
-    case "$1" in
-        add)
-            return 0
-            ;;
-        diff)
-            if [ "$2" = "--cached" ] && [ "$3" = "--quiet" ]; then
-                # Return 1 if changes exist (non-quiet), 0 if no changes
-                [ "$GIT_HAS_CHANGES" = "1" ] && return 1 || return 0
-            fi
-            return 0
-            ;;
-        commit)
-            return 0
-            ;;
-        remote)
-            # List remotes
-            echo "$GIT_REMOTES"
-            return 0
-            ;;
-        rev-parse)
-            if [ "$2" = "--verify" ]; then
-                # Simulate branch exists based on GIT_DEFAULT_BRANCH
-                local check_branch="${3#refs/remotes/*/}"
-                if [ "$check_branch" = "$GIT_DEFAULT_BRANCH" ]; then
-                    return 0
-                fi
-                return 1
-            fi
-            return 0
-            ;;
-        push)
-            return 0
-            ;;
-        *)
-            return 0
-            ;;
-    esac
+_write_finalize() {
+    local issue_no="$STUB_ISSUE_NO"
+    local finalize_file="$STUB_WORKTREE/.tmp/finalize.txt"
+    mkdir -p "$STUB_WORKTREE/.tmp"
+    if [ -n "$ACW_FINALIZE_CONTENT" ]; then
+        printf "%s\n" "$ACW_FINALIZE_CONTENT" > "$finalize_file"
+    else
+        echo "PR: Stub finalize" > "$finalize_file"
+        echo "" >> "$finalize_file"
+        echo "Issue ${issue_no} resolved" >> "$finalize_file"
+    fi
 }
 
-# Stub wt function
 wt() {
     echo "wt $*" >> "$WT_CALL_LOG"
     case "$1" in
         pathto)
+            if [ "${WT_PATHTO_FAIL:-0}" = "1" ]; then
+                return 1
+            fi
             echo "$STUB_WORKTREE"
             return 0
             ;;
         spawn)
-            # Simulate worktree spawn (with --no-agent it just creates worktree)
+            if [ "${WT_SPAWN_FAIL:-0}" = "1" ]; then
+                return 1
+            fi
+            return 0
+            ;;
+        goto)
             return 0
             ;;
         *)
@@ -97,36 +100,42 @@ wt() {
     esac
 }
 
-# Track iteration count for acw
-ITERATION_COUNT=0
-export ITERATION_COUNT
-
-# Stub acw function
 acw() {
-    local cli_name="$1"
-    local model_name="$2"
+    local provider="$1"
+    local model="$2"
     local input_file="$3"
     local output_file="$4"
     shift 4
 
-    echo "acw $cli_name $model_name $input_file $output_file $*" >> "$ACW_CALL_LOG"
+    echo "acw $provider $model $input_file $output_file $*" >> "$ACW_CALL_LOG"
 
-    # Increment iteration count
-    ITERATION_COUNT=$((ITERATION_COUNT + 1))
-    export ITERATION_COUNT
-    write_commit_report "$ITERATION_COUNT"
+    local iter
+    iter=$(_next_iter)
 
-    # Write stub output
-    echo "Stub response for iteration $ITERATION_COUNT" > "$output_file"
+    if [ "${ACW_WRITE_COMMIT_REPORT:-1}" = "1" ]; then
+        write_commit_report "$iter"
+    fi
+
+    if [ -n "$ACW_COMPLETION_ITER" ] && [ "$iter" -eq "$ACW_COMPLETION_ITER" ]; then
+        _write_finalize
+    fi
+
+    if [ -n "$ACW_OUTPUT_TEXT" ]; then
+        echo "$ACW_OUTPUT_TEXT" > "$output_file"
+    else
+        echo "Stub response for iteration $iter" > "$output_file"
+    fi
     return 0
 }
 
-# Stub gh function
 gh() {
     echo "gh $*" >> "$GH_CALL_LOG"
     case "$1" in
         issue)
             if [ "$2" = "view" ]; then
+                if [ "${GH_FAIL_ISSUE_VIEW:-0}" = "1" ]; then
+                    return 1
+                fi
                 echo "# Stub Issue Title"
                 echo ""
                 echo "Labels: test"
@@ -147,8 +156,83 @@ gh() {
     esac
 }
 
+git() {
+    echo "git $*" >> "$GIT_CALL_LOG"
+    case "$1" in
+        add)
+            return 0
+            ;;
+        diff)
+            if [ "$2" = "--cached" ] && [ "$3" = "--quiet" ]; then
+                [ "$GIT_HAS_CHANGES" = "1" ] && return 1 || return 0
+            fi
+            return 0
+            ;;
+        commit)
+            return 0
+            ;;
+        remote)
+            echo "$GIT_REMOTES"
+            return 0
+            ;;
+        rev-parse)
+            if [ "$2" = "--verify" ]; then
+                local check_branch="${3#refs/remotes/*/}"
+                if [ "$check_branch" = "$GIT_DEFAULT_BRANCH" ]; then
+                    return 0
+                fi
+                return 1
+            fi
+            return 0
+            ;;
+        branch)
+            if [ "$2" = "--show-current" ]; then
+                echo "${GIT_BRANCH_NAME}"
+                return 0
+            fi
+            return 0
+            ;;
+        push)
+            return 0
+            ;;
+        *)
+            return 0
+            ;;
+    esac
+}
+OVERRIDES_EOF
+
+export AGENTIZE_SHELL_OVERRIDES="$OVERRIDES"
+export STUB_WORKTREE WT_CALL_LOG ACW_CALL_LOG GH_CALL_LOG GIT_CALL_LOG ITERATION_COUNT_FILE
+
+reset_iteration() {
+    echo 0 > "$ITERATION_COUNT_FILE"
+}
+
+reset_logs() {
+    : > "$WT_CALL_LOG"
+    : > "$ACW_CALL_LOG"
+    : > "$GH_CALL_LOG"
+    : > "$GIT_CALL_LOG"
+}
+
+reset_stub_state() {
+    reset_iteration
+    reset_logs
+    unset ACW_COMPLETION_ITER
+    unset ACW_WRITE_COMMIT_REPORT
+    unset ACW_FINALIZE_CONTENT
+    unset ACW_OUTPUT_TEXT
+    unset GH_FAIL_ISSUE_VIEW
+    unset WT_PATHTO_FAIL
+    unset WT_SPAWN_FAIL
+}
+
 # ── Test 1: Invalid backend format (missing colon) ──
-ITERATION_COUNT=0
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
+
 output=$(lol impl 123 --backend "invalid_backend" 2>&1) && {
     test_fail "lol impl should fail with invalid backend format"
 }
@@ -159,34 +243,11 @@ echo "$output" | grep -qi "backend\|provider:model" || {
 }
 
 # ── Test 2: Completion marker detection (using finalize.txt) ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
-
-# Stub acw that creates completion marker on second iteration using finalize.txt
-acw() {
-    local cli_name="$1"
-    local model_name="$2"
-    local input_file="$3"
-    local output_file="$4"
-    shift 4
-
-    echo "acw $cli_name $model_name $input_file $output_file $*" >> "$ACW_CALL_LOG"
-
-    ITERATION_COUNT=$((ITERATION_COUNT + 1))
-    export ITERATION_COUNT
-    write_commit_report "$ITERATION_COUNT"
-
-    # On second iteration, create completion marker using finalize.txt (preferred)
-    if [ "$ITERATION_COUNT" -eq 2 ]; then
-        mkdir -p "$STUB_WORKTREE/.tmp"
-        echo "PR: Fix issue 123" > "$STUB_WORKTREE/.tmp/finalize.txt"
-        echo "" >> "$STUB_WORKTREE/.tmp/finalize.txt"
-        echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
-    fi
-
-    echo "Stub response for iteration $ITERATION_COUNT" > "$output_file"
-    return 0
-}
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
+ACW_COMPLETION_ITER=2
+export ACW_COMPLETION_ITER
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2
@@ -212,25 +273,9 @@ fi
 rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
 
 # ── Test 3: Max iterations limit ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
-rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
-
-# Stub acw that never creates completion marker
-acw() {
-    local cli_name="$1"
-    local model_name="$2"
-    local input_file="$3"
-    local output_file="$4"
-
-    echo "acw $cli_name $model_name $input_file $output_file" >> "$ACW_CALL_LOG"
-
-    ITERATION_COUNT=$((ITERATION_COUNT + 1))
-    export ITERATION_COUNT
-
-    echo "Stub response for iteration $ITERATION_COUNT" > "$output_file"
-    return 0
-}
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex --max-iterations 3 2>&1) && {
     # Should fail because max iterations reached without completion
@@ -258,22 +303,14 @@ echo "$output" | grep -qi "finalize" || {
 }
 
 # ── Test 4: Backend parsing and provider/model split ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
 
 # Create completion marker immediately
 mkdir -p "$STUB_WORKTREE/.tmp"
 echo "PR: Quick fix" > "$STUB_WORKTREE/.tmp/finalize.txt"
 echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
-
-acw() {
-    echo "acw $1 $2 $3 $4" >> "$ACW_CALL_LOG"
-    ITERATION_COUNT=$((ITERATION_COUNT + 1))
-    export ITERATION_COUNT
-    write_commit_report "$ITERATION_COUNT"
-    echo "Stub response" > "$4"
-    return 0
-}
 
 output=$(lol impl 123 --backend cursor:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2
@@ -288,18 +325,13 @@ grep -q "acw cursor gpt-5.2-codex" "$ACW_CALL_LOG" || {
 }
 
 # ── Test 5: Yolo flag passthrough ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
 
-# Redefine acw stub to capture all arguments including flags
-acw() {
-    echo "acw $*" >> "$ACW_CALL_LOG"
-    ITERATION_COUNT=$((ITERATION_COUNT + 1))
-    export ITERATION_COUNT
-    write_commit_report "$ITERATION_COUNT"
-    echo "Stub response" > "$4"
-    return 0
-}
+# Create completion marker immediately
+echo "PR: Yolo test" > "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex --yolo 2>&1) || {
     echo "Output: $output" >&2
@@ -307,16 +339,16 @@ output=$(lol impl 123 --backend codex:gpt-5.2-codex --yolo 2>&1) || {
 }
 
 # Verify yolo flag was passed to acw
-grep -q "\-\-yolo" "$ACW_CALL_LOG" || {
+grep -q -- "--yolo" "$ACW_CALL_LOG" || {
     echo "ACW call log:" >&2
     cat "$ACW_CALL_LOG" >&2
     test_fail "Expected --yolo to be passed to acw"
 }
 
 # ── Test 6: Issue prefetch success ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
-> "$GH_CALL_LOG"
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
 rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
 rm -f "$STUB_WORKTREE/.tmp/issue-123.md"
 rm -f "$STUB_WORKTREE/.tmp/impl-input-"*
@@ -325,42 +357,6 @@ rm -f "$STUB_WORKTREE/.tmp/impl-input-"*
 mkdir -p "$STUB_WORKTREE/.tmp"
 echo "PR: Prefetch test" > "$STUB_WORKTREE/.tmp/finalize.txt"
 echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
-
-# Stub gh to provide issue content
-gh() {
-    echo "gh $*" >> "$GH_CALL_LOG"
-    case "$1" in
-        issue)
-            if [ "$2" = "view" ]; then
-                # Return issue content in expected format
-                echo "# Test Issue Title"
-                echo ""
-                echo "Labels: bug, enhancement"
-                echo ""
-                echo "This is the issue body content."
-            fi
-            return 0
-            ;;
-        pr)
-            if [ "$2" = "create" ]; then
-                echo "https://github.com/test/repo/pull/1"
-            fi
-            return 0
-            ;;
-        *)
-            return 0
-            ;;
-    esac
-}
-
-acw() {
-    echo "acw $*" >> "$ACW_CALL_LOG"
-    ITERATION_COUNT=$((ITERATION_COUNT + 1))
-    export ITERATION_COUNT
-    write_commit_report "$ITERATION_COUNT"
-    echo "Stub response" > "$4"
-    return 0
-}
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2
@@ -387,55 +383,17 @@ if ! grep -q "issue-123.md" "$STUB_WORKTREE/.tmp/impl-input-1.txt"; then
 fi
 
 # ── Test 7: Issue prefetch failure stops execution ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
-> "$GH_CALL_LOG"
+reset_stub_state
+STUB_ISSUE_NO=456
+export STUB_ISSUE_NO
+GH_FAIL_ISSUE_VIEW=1
+export GH_FAIL_ISSUE_VIEW
 rm -f "$STUB_WORKTREE/.tmp/issue-456.md"
 rm -f "$STUB_WORKTREE/.tmp/impl-input-"*
-
-# Update wt stub to return different worktree for issue 456
-wt() {
-    echo "wt $*" >> "$WT_CALL_LOG"
-    case "$1" in
-        pathto)
-            echo "$STUB_WORKTREE"
-            return 0
-            ;;
-        spawn)
-            return 0
-            ;;
-        *)
-            return 0
-            ;;
-    esac
-}
 
 # Create completion marker
 echo "PR: Fallback test" > "$STUB_WORKTREE/.tmp/finalize.txt"
 echo "Issue 456 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
-
-# Stub gh to fail for issue view
-gh() {
-    echo "gh $*" >> "$GH_CALL_LOG"
-    case "$1" in
-        issue)
-            if [ "$2" = "view" ]; then
-                # Simulate failure (network error, auth failure, etc.)
-                return 1
-            fi
-            return 0
-            ;;
-        pr)
-            if [ "$2" = "create" ]; then
-                echo "https://github.com/test/repo/pull/1"
-            fi
-            return 0
-            ;;
-        *)
-            return 0
-            ;;
-    esac
-}
 
 output=$(lol impl 456 --backend codex:gpt-5.2-codex 2>&1) && {
     echo "Output: $output" >&2
@@ -456,60 +414,15 @@ if [ -f "$STUB_WORKTREE/.tmp/impl-input-1.txt" ]; then
 fi
 
 # ── Test 8: Git commit after iteration when changes exist ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
-> "$GH_CALL_LOG"
-> "$GIT_CALL_LOG"
-rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
 GIT_HAS_CHANGES=1
 GIT_REMOTES="origin"
 GIT_DEFAULT_BRANCH="main"
 export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH
-
-# Reset wt stub
-wt() {
-    echo "wt $*" >> "$WT_CALL_LOG"
-    case "$1" in
-        pathto) echo "$STUB_WORKTREE"; return 0 ;;
-        spawn) return 0 ;;
-        *) return 0 ;;
-    esac
-}
-
-# Stub acw that creates completion marker on second iteration
-acw() {
-    local output_file="$4"
-    echo "acw $*" >> "$ACW_CALL_LOG"
-    ITERATION_COUNT=$((ITERATION_COUNT + 1))
-    export ITERATION_COUNT
-    write_commit_report "$ITERATION_COUNT"
-    if [ "$ITERATION_COUNT" -eq 2 ]; then
-        mkdir -p "$STUB_WORKTREE/.tmp"
-        echo "PR: Git commit test" > "$STUB_WORKTREE/.tmp/finalize.txt"
-        echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
-    fi
-    echo "Stub response for iteration $ITERATION_COUNT" > "$output_file"
-    return 0
-}
-
-# Reset gh stub
-gh() {
-    echo "gh $*" >> "$GH_CALL_LOG"
-    case "$1" in
-        issue)
-            if [ "$2" = "view" ]; then
-                echo "# Stub Issue Title"
-                echo ""
-                echo "Labels: test"
-                echo ""
-                echo "Stub issue body."
-            fi
-            return 0
-            ;;
-        pr) [ "$2" = "create" ] && echo "https://github.com/test/repo/pull/1"; return 0 ;;
-        *) return 0 ;;
-    esac
-}
+ACW_COMPLETION_ITER=2
+export ACW_COMPLETION_ITER
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2
@@ -531,26 +444,15 @@ if ! grep -q "git commit" "$GIT_CALL_LOG"; then
 fi
 
 # ── Test 9: Skip commit when no changes ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
-> "$GH_CALL_LOG"
-> "$GIT_CALL_LOG"
-rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
 GIT_HAS_CHANGES=0  # No changes
 export GIT_HAS_CHANGES
 
 # Create completion marker immediately
 echo "PR: No changes test" > "$STUB_WORKTREE/.tmp/finalize.txt"
 echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
-
-acw() {
-    echo "acw $*" >> "$ACW_CALL_LOG"
-    ITERATION_COUNT=$((ITERATION_COUNT + 1))
-    export ITERATION_COUNT
-    write_commit_report "$ITERATION_COUNT"
-    echo "Stub response" > "$4"
-    return 0
-}
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2
@@ -572,11 +474,9 @@ if grep -q "git commit" "$GIT_CALL_LOG"; then
 fi
 
 # ── Test 9b: Per-iteration commit report file ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
-> "$GH_CALL_LOG"
-> "$GIT_CALL_LOG"
-rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
 find "$STUB_WORKTREE/.tmp" -name 'commit-report-iter-*.txt' -delete 2>/dev/null || true
 GIT_HAS_CHANGES=1
 export GIT_HAS_CHANGES
@@ -585,15 +485,6 @@ export GIT_HAS_CHANGES
 mkdir -p "$STUB_WORKTREE/.tmp"
 echo "PR: Commit report test" > "$STUB_WORKTREE/.tmp/finalize.txt"
 echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
-
-acw() {
-    echo "acw $*" >> "$ACW_CALL_LOG"
-    ITERATION_COUNT=$((ITERATION_COUNT + 1))
-    export ITERATION_COUNT
-    write_commit_report "$ITERATION_COUNT"
-    echo "Stub response" > "$4"
-    return 0
-}
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2
@@ -612,26 +503,19 @@ rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
 find "$STUB_WORKTREE/.tmp" -name 'commit-report-iter-*.txt' -delete 2>/dev/null || true
 
 # ── Test 9c: Fail when commit report file missing ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
-> "$GH_CALL_LOG"
-> "$GIT_CALL_LOG"
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
 find "$STUB_WORKTREE/.tmp" -name 'commit-report-iter-*.txt' -delete 2>/dev/null || true
 GIT_HAS_CHANGES=1
 export GIT_HAS_CHANGES
+ACW_WRITE_COMMIT_REPORT=0
+export ACW_WRITE_COMMIT_REPORT
 
 # Create completion marker but no commit report file
 mkdir -p "$STUB_WORKTREE/.tmp"
 echo "PR: Missing report test" > "$STUB_WORKTREE/.tmp/finalize.txt"
 echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
-
-acw() {
-    echo "acw $*" >> "$ACW_CALL_LOG"
-    ITERATION_COUNT=$((ITERATION_COUNT + 1))
-    export ITERATION_COUNT
-    echo "Stub response" > "$4"
-    return 0
-}
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) && {
     echo "Output: $output" >&2
@@ -648,10 +532,9 @@ echo "$output" | grep -qi "missing commit report" || {
 rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
 
 # ── Test 10: Push remote precedence (upstream over origin) ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
-> "$GH_CALL_LOG"
-> "$GIT_CALL_LOG"
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
 GIT_HAS_CHANGES=1
 GIT_REMOTES=$'upstream\norigin'  # Both remotes available
 GIT_DEFAULT_BRANCH="master"
@@ -660,15 +543,6 @@ export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH
 # Create completion marker immediately
 echo "PR: Remote precedence test" > "$STUB_WORKTREE/.tmp/finalize.txt"
 echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
-
-acw() {
-    echo "acw $*" >> "$ACW_CALL_LOG"
-    ITERATION_COUNT=$((ITERATION_COUNT + 1))
-    export ITERATION_COUNT
-    write_commit_report "$ITERATION_COUNT"
-    echo "Stub response" > "$4"
-    return 0
-}
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2
@@ -692,10 +566,9 @@ if ! grep -q "gh pr create.*--base master" "$GH_CALL_LOG"; then
 fi
 
 # ── Test 12: Fallback to origin and main when upstream/master unavailable ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
-> "$GH_CALL_LOG"
-> "$GIT_CALL_LOG"
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
 GIT_HAS_CHANGES=1
 GIT_REMOTES="origin"  # Only origin available
 GIT_DEFAULT_BRANCH="main"
@@ -725,10 +598,9 @@ if ! grep -q "gh pr create.*--base main" "$GH_CALL_LOG"; then
 fi
 
 # ── Test 13: Closes-line deduplication when already present ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
-> "$GH_CALL_LOG"
-> "$GIT_CALL_LOG"
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
 GIT_HAS_CHANGES=1
 GIT_REMOTES="origin"
 GIT_DEFAULT_BRANCH="main"
@@ -740,15 +612,6 @@ echo "PR: Closes dedup test" > "$STUB_WORKTREE/.tmp/finalize.txt"
 echo "" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 echo "closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
-
-acw() {
-    echo "acw $*" >> "$ACW_CALL_LOG"
-    ITERATION_COUNT=$((ITERATION_COUNT + 1))
-    export ITERATION_COUNT
-    write_commit_report "$ITERATION_COUNT"
-    echo "Stub response" > "$4"
-    return 0
-}
 
 output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
     echo "Output: $output" >&2
@@ -764,10 +627,13 @@ if [ "$CLOSES_COUNT" -ne 1 ]; then
 fi
 
 # ── Test 14: Closes-line append when missing ──
-ITERATION_COUNT=0
-> "$ACW_CALL_LOG"
-> "$GH_CALL_LOG"
-> "$GIT_CALL_LOG"
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
+GIT_HAS_CHANGES=1
+GIT_REMOTES="origin"
+GIT_DEFAULT_BRANCH="main"
+export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH
 
 # Create completion marker without closes line
 mkdir -p "$STUB_WORKTREE/.tmp"

@@ -103,7 +103,7 @@ This pattern provides:
 - Functions available in interactive shells via `setup.sh`
 - Direct script execution for testing and non-interactive use
 
-**Optional Python wrapper:** `python -m agentize.cli` provides an argparse-based entrypoint for non-sourced usage. It delegates to shell functions via `bash -c` with `AGENTIZE_HOME` set, preserving the shell implementation as canonical while enabling Python scripting integration.
+**Optional Python wrapper:** `python -m agentize.cli` provides an argparse-based entrypoint for non-sourced usage. It delegates to shell functions for most commands; `lol impl` is implemented in Python and the shell command delegates to it.
 
 ## GitHub Usage
 
@@ -128,11 +128,12 @@ The `--org` flag accepts either a GitHub organization or personal user login. Wh
 
 ## Python Workflow Module
 
-The `python/agentize/workflow` module provides Python-native orchestration for the 5-stage planner pipeline:
+The `python/agentize/workflow` module provides Python-native orchestration for the planner pipeline and the impl workflow:
 
 - Uses `acw` via `setup.sh` for LLM execution
 - Reuses `.claude-plugin/agents/*.md` prompts to maintain behavioral consistency
 - Writes artifacts to `.tmp/` with stable prefixes for reproducibility
 - Supports parallel critique/reducer execution and injectable runners for testing
+- Runs the `lol impl` issue-to-implementation loop with a file-based prompt template
 
 This enables Python scripting integration while preserving shell as the canonical CLI implementation.

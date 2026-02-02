@@ -31,6 +31,8 @@ def run_shell_function(
     *,
     capture_output: bool = False,
     agentize_home: Optional[str] = None,
+    cwd: str | Path | None = None,
+    overrides_path: str | Path | None = None,
 ) -> subprocess.CompletedProcess:
     """Run a shell function with AGENTIZE_HOME set.
 
@@ -46,11 +48,26 @@ def run_shell_function(
     env = os.environ.copy()
     env["AGENTIZE_HOME"] = home
 
-    full_cmd = f'source "$AGENTIZE_HOME/setup.sh" && {cmd}'
+    override_candidate = overrides_path or os.environ.get("AGENTIZE_SHELL_OVERRIDES")
+    override_path = None
+    if override_candidate:
+        override_path = Path(override_candidate).expanduser()
+        if not override_path.exists():
+            override_path = None
+
+    cmd_parts = []
+    setup_path = Path(home) / "setup.sh"
+    if setup_path.exists():
+        cmd_parts.append(f'source "{setup_path}"')
+    if override_path:
+        cmd_parts.append(f'source "{override_path}"')
+    cmd_parts.append(cmd)
+    full_cmd = " && ".join(cmd_parts)
 
     return subprocess.run(
         ["bash", "-c", full_cmd],
         env=env,
         capture_output=capture_output,
         text=True,
+        cwd=str(cwd) if cwd else None,
     )

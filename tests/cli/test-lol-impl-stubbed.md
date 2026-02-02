@@ -11,7 +11,7 @@ Validate `lol impl` behavior with deterministic stubs for external tools.
 - `acw`: Return canned planner/impl outputs
 - `gh`: Return mocked issue data and PR creation responses
 
-Stubs are defined in the test shell and used by sourced CLI code to keep behavior shell-neutral. No `export -f` is used since the CLI is sourced (not invoked as a subprocess).
+Stubs are defined in a shell override script referenced by `AGENTIZE_SHELL_OVERRIDES`. This ensures the Python workflow (invoked in a subprocess) uses the same stubbed `wt`, `acw`, `gh`, and `git` functions.
 
 ## Test Cases
 

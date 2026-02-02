@@ -2,7 +2,7 @@
 """
 Python CLI entrypoint for lol commands.
 
-Delegates to shell functions via bash -c with AGENTIZE_HOME set.
+Delegates to shell functions for most commands via bash -c with AGENTIZE_HOME set.
 Provides argparse-style parsing while preserving shell as the canonical implementation.
 
 Usage:
@@ -14,6 +14,7 @@ import os
 import sys
 
 from agentize.shell import get_agentize_home, run_shell_function
+from agentize.workflow import ImplError, run_impl_workflow
 from agentize.usage import count_usage, format_output
 
 
@@ -78,6 +79,21 @@ def handle_claude_clean(args: argparse.Namespace, agentize_home: str) -> int:
     dry_run = "1" if args.dry_run else "0"
     cmd = f'_lol_cmd_claude_clean "{dry_run}"'
     return run_shell_command(cmd, agentize_home)
+
+
+def handle_impl(args: argparse.Namespace) -> int:
+    """Handle impl command."""
+    try:
+        run_impl_workflow(
+            args.issue_no,
+            backend=args.backend,
+            max_iterations=args.max_iterations,
+            yolo=args.yolo,
+        )
+        return 0
+    except (ImplError, ValueError) as e:
+        print(str(e), file=sys.stderr)
+        return 1
 
 
 def handle_usage(args: argparse.Namespace) -> int:
@@ -183,6 +199,29 @@ def main() -> int:
         "--dry-run", action="store_true", help="Preview changes without modifying"
     )
 
+    # impl command
+    impl_parser = subparsers.add_parser(
+        "impl", help="Issue-to-implementation loop (Python workflow)"
+    )
+    impl_parser.add_argument("issue_no", type=int, help="Issue number to implement")
+    impl_parser.add_argument(
+        "--backend",
+        default="codex:gpt-5.2-codex",
+        help="Backend in provider:model form",
+    )
+    impl_parser.add_argument(
+        "--max-iterations",
+        dest="max_iterations",
+        default=10,
+        type=int,
+        help="Maximum acw iterations (default: 10)",
+    )
+    impl_parser.add_argument(
+        "--yolo",
+        action="store_true",
+        help="Pass through to provider CLI options",
+    )
+
     # version command
     subparsers.add_parser("version", help="Display version information")
 
@@ -208,6 +247,8 @@ def main() -> int:
         return handle_plan(args, agentize_home)
     elif args.command == "claude-clean":
         return handle_claude_clean(args, agentize_home)
+    elif args.command == "impl":
+        return handle_impl(args)
     elif args.command == "version":
         return handle_version(agentize_home)
     else:
