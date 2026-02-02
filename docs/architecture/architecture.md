@@ -125,3 +125,14 @@ The `--org` flag accepts either a GitHub organization or personal user login. Wh
 **Related documentation:**
 - Refer to `./project.md` for Kanban design and project management workflow
 - Refer to `../workflows/github-projects-automation.md` for automation setup
+
+## Python Workflow Module
+
+The `python/agentize/workflow` module provides Python-native orchestration for the 5-stage planner pipeline:
+
+- Uses `acw` via `setup.sh` for LLM execution
+- Reuses `.claude-plugin/agents/*.md` prompts to maintain behavioral consistency
+- Writes artifacts to `.tmp/` with stable prefixes for reproducibility
+- Supports parallel critique/reducer execution and injectable runners for testing
+
+This enables Python scripting integration while preserving shell as the canonical CLI implementation.

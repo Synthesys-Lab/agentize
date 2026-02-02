@@ -11,6 +11,7 @@ python/agentize/
 ├── cli.md                # CLI interface documentation
 ├── shell.py              # Shared shell function invocation utilities
 ├── usage.py              # Claude Code token usage statistics
+├── workflow/             # Python planner workflow orchestration
 └── server/               # Polling server module
     └── __main__.py       # Server entry point (python -m agentize.server)
 ```
