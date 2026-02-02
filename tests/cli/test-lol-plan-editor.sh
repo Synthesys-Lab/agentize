@@ -119,4 +119,69 @@ if [ "$exit_code" -eq 0 ]; then
   test_fail "--editor should fail when editor exits non-zero"
 fi
 
+# Test 6: --refine with --editor uses editor content as refinement focus
+export EDITOR="$STUB_EDITOR"
+captured_desc=""
+
+set +e
+_lol_parse_plan --refine 42 --editor --dry-run
+exit_code=$?
+set -e
+
+if [ "$exit_code" -ne 0 ]; then
+  test_fail "--refine with --editor should succeed"
+fi
+
+if [ "$captured_desc" != "Feature description from editor" ]; then
+  test_fail "Refine with --editor should use editor content, got: '$captured_desc'"
+fi
+
+# Test 7: --refine with --editor and positional instructions concatenates
+# Create a new editor stub for combined test
+COMBINED_EDITOR="$TEST_HOME/combined-editor.sh"
+cat > "$COMBINED_EDITOR" << 'STUB'
+#!/usr/bin/env bash
+echo "Editor refinement focus" > "$1"
+STUB
+chmod +x "$COMBINED_EDITOR"
+
+export EDITOR="$COMBINED_EDITOR"
+captured_desc=""
+
+set +e
+_lol_parse_plan --refine 42 --editor "Positional instructions" --dry-run
+exit_code=$?
+set -e
+
+if [ "$exit_code" -ne 0 ]; then
+  test_fail "--refine with --editor and positional instructions should succeed"
+fi
+
+# Check that editor text comes first, then positional instructions
+if ! echo "$captured_desc" | head -1 | grep -q "Editor refinement focus"; then
+  test_fail "Combined refine should have editor text first, got: '$captured_desc'"
+fi
+
+if ! echo "$captured_desc" | grep -q "Positional instructions"; then
+  test_fail "Combined refine should include positional instructions, got: '$captured_desc'"
+fi
+
+# Test 8: --refine with only positional instructions (no --editor) works unchanged
+unset EDITOR
+export EDITOR=""
+captured_desc=""
+
+set +e
+_lol_parse_plan --refine 42 "Only positional focus" --dry-run
+exit_code=$?
+set -e
+
+if [ "$exit_code" -ne 0 ]; then
+  test_fail "--refine with positional-only instructions should succeed"
+fi
+
+if [ "$captured_desc" != "Only positional focus" ]; then
+  test_fail "Positional-only refine should preserve instructions, got: '$captured_desc'"
+fi
+
 test_pass "lol plan --editor flag works correctly"
