@@ -28,7 +28,7 @@ Modular implementation of the `lol` SDK CLI. These files are sourced by `lol.sh`
 | `claude-clean.sh` | `_lol_cmd_claude_clean` |
 | `usage.sh` | `_lol_cmd_usage` |
 | `plan.sh` | `_lol_cmd_plan` |
-| `impl.sh` | `_lol_cmd_impl` |
+| `impl.sh` | `_lol_cmd_impl` (delegates to Python workflow) |
 
 ## Load Order
 

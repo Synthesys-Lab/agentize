@@ -1,30 +1,36 @@
 # Workflow Module
 
-Python-native orchestration for multi-stage LLM planner workflows.
+Python-native orchestration for multi-stage LLM planner workflows and the `lol impl` loop.
 
 ## Purpose
 
-This module provides a Python entrypoint for running the planner flow that powers `lol plan`. It reuses established prompt templates from `.claude-plugin/agents/` to maintain behavioral consistency while enabling Python scripting integration and external consensus synthesis.
+This module provides a Python entrypoint for running the 5-stage planner flow that powers
+`lol plan`, plus the issue-to-implementation loop for `lol impl`. It reuses established
+prompt templates from `.claude-plugin/agents/` to maintain behavioral consistency while
+enabling Python scripting integration and external consensus synthesis.
 
 ## Architecture
 
-The workflow module wraps the `acw` shell function (Agentize Claude Wrapper) to execute each pipeline stage. Prompts are rendered by combining:
+The workflow module wraps the `acw` shell function (Agentize Claude Wrapper) to execute
+each pipeline stage. Prompts are rendered by combining:
 
 1. Base agent prompts from `.claude-plugin/agents/*.md`
 2. Plan-guideline content from `.claude-plugin/skills/plan-guideline/SKILL.md` (for applicable stages)
 3. Feature description provided by the caller
 4. Previous stage output (for chained stages)
 
-Artifacts (input prompts and outputs) are written to `.tmp/` with a configurable prefix and output suffix.
+Artifacts (input prompts and outputs) are written to `.tmp/` with a configurable prefix
+and output suffix.
 
 ## Modules
 
 | Module | Purpose |
 |--------|---------|
-| `__init__.py` | Package exports: `run_acw`, `run_planner_pipeline`, `StageResult`, `PlannerTTY` |
+| `__init__.py` | Package exports: `run_acw`, `run_planner_pipeline`, `run_impl_workflow`, `StageResult`, `PlannerTTY`, `ImplError` |
 | `utils.py` | Reusable TTY and shell invocation utilities |
 | `planner/` | Standalone planning pipeline package (`python -m agentize.workflow.planner`) |
 | `planner.py` | **DEPRECATED** - Re-exports for backward compatibility (will be removed) |
+| `impl/` | Issue-to-implementation workflow (Python) with file-based prompt |
 
 ## Pipeline Stages
 
@@ -49,7 +55,7 @@ results = run_planner_pipeline(
     "Add user authentication with JWT tokens",
     output_dir=".tmp",
     parallel=True,
-    output_suffix=".txt",
+    output_suffix="-output.md",
     skip_consensus=True,
 )
 

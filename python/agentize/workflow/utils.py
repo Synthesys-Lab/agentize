@@ -178,7 +178,13 @@ def run_acw(
 
     # Quote paths to handle spaces
     cmd_args = " ".join(f'"{arg}"' for arg in cmd_parts)
-    bash_cmd = f'source "{acw_script}" && acw {cmd_args}'
+    overrides_path = os.environ.get("AGENTIZE_SHELL_OVERRIDES")
+    overrides_cmd = ""
+    if overrides_path:
+        override_path = Path(overrides_path).expanduser()
+        if override_path.exists():
+            overrides_cmd = f' && source "{override_path}"'
+    bash_cmd = f'source "{acw_script}"{overrides_cmd} && acw {cmd_args}'
 
     # Set up environment
     env = os.environ.copy()

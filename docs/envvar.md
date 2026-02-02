@@ -116,6 +116,7 @@ These variables are set by shell scripts or the runtime and do not have YAML equ
 | Variable | Type | Description |
 |----------|------|-------------|
 | `AGENTIZE_HOME` | path | Root path of Agentize installation. Auto-detected by `setup.sh`. |
+| `AGENTIZE_SHELL_OVERRIDES` | path | Optional shell script sourced after `setup.sh` to override shell functions (testing/stubs). |
 | `PYTHONPATH` | path | Extended by `setup.sh` to include `$AGENTIZE_HOME/python`. |
 | `WT_DEFAULT_BRANCH` | string | Override default branch detection for worktree operations. |
 | `WT_CURRENT_WORKTREE` | path | Set automatically by `wt goto` to track current worktree. |

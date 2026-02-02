@@ -15,7 +15,7 @@ lol <command> [options]
 python -m agentize.cli <command> [options]
 ```
 
-The Python entrypoint sources `setup.sh` and delegates to the shell implementation. `lol` is the only public shell entrypoint; helper functions are private implementation details. Use the Python entrypoint for non-sourced environments or scripting contexts where argparse-style parsing is preferred.
+The Python entrypoint delegates to shell functions for most commands. `lol impl` runs the Python workflow implementation, and the shell `impl.sh` delegates to it. `lol` is the only public shell entrypoint; helper functions are private implementation details. Use the Python entrypoint for non-sourced environments or scripting contexts where argparse-style parsing is preferred.
 
 ## Commands
 
@@ -211,7 +211,7 @@ lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
 
 #### Issue prefetch
 
-Before the loop starts, `lol impl` attempts to fetch the issue title/body (and labels if present) via `gh issue view` and writes it to `.tmp/issue-<N>.md`. If the file is non-empty, the initial prompt references it; otherwise it falls back to `Implement issue #<N>`.
+Before the loop starts, `lol impl` attempts to fetch the issue title/body (and labels if present) via `gh issue view` and writes it to `.tmp/issue-<N>.md`. If the fetch fails or the file is empty, `lol impl` exits with an error.
 
 #### Completion marker
 

@@ -20,6 +20,7 @@ The Python CLI supports the same commands as the shell implementation:
 | `usage` | Report Claude Code token usage statistics (--cache, --cost) |
 | `claude-clean` | Remove stale project entries from `~/.claude.json` |
 | `version` | Display version information |
+| `impl` | Issue-to-implementation loop (Python workflow) |
 
 ## Top-level Flags
 
@@ -30,7 +31,7 @@ The Python CLI supports the same commands as the shell implementation:
 
 ## Implementation
 
-The Python CLI delegates to private shell helpers via `bash -c` with `AGENTIZE_HOME` set:
+The Python CLI delegates to private shell helpers for most commands via `bash -c` with `AGENTIZE_HOME` set. The `impl` command calls the Python workflow module directly:
 
 ```python
 subprocess.run(
@@ -39,7 +40,7 @@ subprocess.run(
 )
 ```
 
-This preserves the shell implementation as canonical while enabling:
+This preserves the shell implementation for most commands while enabling:
 - Argparse-style flag parsing
 - Python scripting integration
 - Non-sourced environment usage

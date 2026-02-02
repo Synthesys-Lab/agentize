@@ -1,6 +1,6 @@
 # impl.sh
 
-Implements `lol impl`, the issue-to-implementation loop that drives `acw` iterations, git commits, and PR creation.
+Delegates `lol impl` to the Python workflow in `python/agentize/workflow/impl`.
 
 ## External Interface
 
@@ -17,8 +17,8 @@ lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
 - `--yolo`: Pass-through flag to `acw` for autonomous actions.
 
 **Behavior**:
-- Ensures a worktree exists for the issue, then switches into it.
-- Prefetches issue content via `gh issue view`; if it fails, the command exits with an error.
+- Delegates to the Python workflow, which resolves worktrees, runs `acw`, and manages git/PR automation.
+- Prefetches issue content via `gh issue view`; if it fails or returns empty content, the command exits with an error.
 - Iterates `acw` runs, requiring a per-iteration commit report file in `.tmp/commit-report-iter-<iter>.txt`.
 - Stages and commits changes each iteration when there are staged diffs.
 - Detects completion via `.tmp/finalize.txt` when it contains `Issue <no> resolved`.
@@ -37,14 +37,14 @@ lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
 ## Internal Helpers
 
 ### _lol_cmd_impl()
-Private entrypoint function for the command implementation. It validates arguments and orchestrates the issue-to-implementation loop described above.
+Private entrypoint function for the command implementation. It validates arguments and delegates to `python -m agentize.cli impl`.
 
 ### Worktree resolution
-- Uses `wt pathto`/`wt spawn`/`wt goto` to ensure a worktree exists for the issue.
+- Uses `wt pathto`/`wt spawn` to ensure a worktree exists for the issue.
 
 ### Issue prefetch
 - Writes `.tmp/issue-<issue>.md` when `gh issue view` succeeds.
-- Falls back to a minimal prompt when prefetch fails or produces empty content.
+- Exits with an error when prefetch fails or produces empty content.
 
 ### Iteration loop
 - Builds `.tmp/impl-input-<iter>.txt` from the base prompt plus previous output.

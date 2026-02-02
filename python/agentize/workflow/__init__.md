@@ -1,6 +1,6 @@
 # Module: agentize.workflow
 
-Public interfaces for Python planner workflow orchestration.
+Public interfaces for Python planner and impl workflow orchestration.
 
 ## Exports
 
@@ -22,7 +22,8 @@ def run_acw(
 ) -> subprocess.CompletedProcess
 ```
 
-Wrapper around the `acw` shell function that builds and executes an ACW command with quoted paths.
+Wrapper around the `acw` shell function that builds and executes an ACW command with
+quoted paths.
 
 **Parameters:**
 - `provider`: Backend provider (`"claude"` or `"codex"`)
@@ -50,7 +51,8 @@ class PlannerTTY:
     def timer_log(self, stage: str, start_epoch: float, backend: str | None = None) -> None: ...
 ```
 
-TTY output helper with dot animations, timing logs, and styled labels. Respects `NO_COLOR`, `PLANNER_NO_COLOR`, and `PLANNER_NO_ANIM` environment variables.
+TTY output helper with dot animations, timing logs, and styled labels. Respects
+`NO_COLOR`, `PLANNER_NO_COLOR`, and `PLANNER_NO_ANIM` environment variables.
 
 ### From `planner/`
 
@@ -103,11 +105,42 @@ class StageResult:
 
 Structured result for a single pipeline stage.
 
-**Attributes:**
-- `stage`: Stage name (e.g., `"understander"`, `"bold"`)
-- `input_path`: Path to rendered input prompt file
-- `output_path`: Path to stage output file
-- `process`: Completed process with return code, stdout, stderr
+### From `impl/`
+
+#### `run_impl_workflow`
+
+```python
+def run_impl_workflow(
+    issue_no: int,
+    *,
+    backend: str = "codex:gpt-5.2-codex",
+    max_iterations: int = 10,
+    yolo: bool = False,
+) -> None
+```
+
+Run the `lol impl` issue-to-implementation loop in Python. The workflow renders
+prompts from `workflow/impl/continue-prompt.md`, runs `acw`, and manages git/PR
+automation via shell commands.
+
+**Parameters:**
+- `issue_no`: Numeric issue identifier.
+- `backend`: Backend in `provider:model` form.
+- `max_iterations`: Maximum iterations before failing.
+- `yolo`: Pass-through flag to `acw` for autonomous actions.
+
+**Raises:**
+- `ValueError`: Invalid arguments (issue number, backend format, max iterations).
+- `ImplError`: Missing worktree, prefetch failure, or max-iteration exhaustion.
+
+#### `ImplError`
+
+```python
+class ImplError(RuntimeError):
+    ...
+```
+
+Raised for workflow failures in `run_impl_workflow`.
 
 ## Module Organization
 
@@ -115,6 +148,8 @@ Structured result for a single pipeline stage.
 |--------|---------|
 | `utils.py` | Reusable TTY and shell invocation utilities |
 | `planner/` | Standalone planning pipeline package (`python -m agentize.workflow.planner`) |
+| `planner.py` | Backward-compatible re-exports (deprecated) |
+| `impl/` | Issue-to-implementation workflow (Python) with file-based prompt |
 
 ## Error Handling
 
