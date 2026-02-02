@@ -192,14 +192,14 @@ class TestPlannerPipelineExecutionOrder:
         bold_idx = None
 
         for idx, inv in enumerate(invocations):
-            if "understander" in inv["output_file"]:
+            if "understander" in inv["output_file"] and understander_idx is None:
                 understander_idx = idx
-            elif "bold" in inv["output_file"]:
+            if "bold" in inv["output_file"] and bold_idx is None:
                 bold_idx = idx
 
-        assert understander_idx is not None
-        assert bold_idx is not None
-        assert understander_idx < bold_idx
+        assert understander_idx is not None, "Understander stage not found in invocations"
+        assert bold_idx is not None, "Bold stage not found in invocations"
+        assert understander_idx < bold_idx, f"Understander ({understander_idx}) should run before bold ({bold_idx})"
 
 
 # ============================================================
