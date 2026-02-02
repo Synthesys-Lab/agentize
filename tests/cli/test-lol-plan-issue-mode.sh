@@ -99,6 +99,12 @@ acw() {
         echo "# Proposal Critique: Test Feature" > "$output_file"
     elif echo "$output_file" | grep -q "reducer"; then
         echo "# Simplified Proposal: Test Feature" > "$output_file"
+    elif echo "$output_file" | grep -q "consensus"; then
+        echo "Using external-consensus prompt to synthesize a balanced plan." > "$output_file"
+        echo "" >> "$output_file"
+        echo "# Implementation Plan: Improved Test Feature" >> "$output_file"
+        echo "" >> "$output_file"
+        echo "Stub consensus output" >> "$output_file"
     else
         echo "# Unknown Stage Output" > "$output_file"
     fi
@@ -108,29 +114,6 @@ STUBEOF
 chmod +x "$STUB_ACW"
 export PLANNER_ACW_CALL_LOG="$ACW_CALL_LOG"
 export PLANNER_ACW_SCRIPT="$STUB_ACW"
-
-# ── Stub consensus script ──
-STUB_CONSENSUS_DIR="$TMP_DIR/consensus-stub"
-mkdir -p "$STUB_CONSENSUS_DIR"
-STUB_CONSENSUS="$STUB_CONSENSUS_DIR/external-consensus.sh"
-cat > "$STUB_CONSENSUS" <<'STUBEOF'
-#!/usr/bin/env bash
-# Derive consensus path from input filenames (issue-{N} or timestamp prefix)
-INPUT_BASE=$(basename "$1")
-PREFIX="${INPUT_BASE%-*}"
-CONSENSUS_FILE=".tmp/${PREFIX}-consensus.md"
-mkdir -p .tmp
-# Include preamble before the plan header (real consensus files have this)
-echo "Using external-consensus skill to synthesize a balanced plan." > "$CONSENSUS_FILE"
-echo "" >> "$CONSENSUS_FILE"
-echo "# Implementation Plan: Improved Test Feature" >> "$CONSENSUS_FILE"
-echo "" >> "$CONSENSUS_FILE"
-echo "Stub consensus output" >> "$CONSENSUS_FILE"
-echo "$CONSENSUS_FILE"
-exit 0
-STUBEOF
-chmod +x "$STUB_CONSENSUS"
-export _PLANNER_CONSENSUS_SCRIPT="$STUB_CONSENSUS"
 
 export PLANNER_NO_ANIM=1
 

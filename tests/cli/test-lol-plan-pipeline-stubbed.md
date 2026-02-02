@@ -2,12 +2,11 @@
 
 ## Purpose
 
-Validate `lol plan` pipeline behavior via the Python backend with stubbed `acw` and consensus scripts.
+Validate `lol plan` pipeline behavior via the Python backend with stubbed `acw`.
 
 ## Stubs
 
-- `acw` loader (`PLANNER_ACW_SCRIPT`): Writes deterministic stage outputs and logs invocations.
-- `external-consensus.sh` (`_PLANNER_CONSENSUS_SCRIPT`): Produces a predictable consensus file.
+- `acw` loader (`PLANNER_ACW_SCRIPT`): Writes deterministic stage outputs (including consensus) and logs invocations.
 
 ## Test Cases
 

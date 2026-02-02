@@ -7,8 +7,7 @@ Validate `lol plan` issue-mode flow with stubbed `gh` and `acw` responses via th
 ## Stubs
 
 - `gh` CLI (PATH override): Logs issue create/view/edit calls and returns deterministic URLs.
-- `acw` loader (`PLANNER_ACW_SCRIPT`): Writes stage outputs without invoking real models.
-- `external-consensus.sh` (`_PLANNER_CONSENSUS_SCRIPT`): Produces a stable consensus file with an `Implementation Plan` header.
+- `acw` loader (`PLANNER_ACW_SCRIPT`): Writes stage outputs (including consensus) without invoking real models.
 
 ## Test Cases
 

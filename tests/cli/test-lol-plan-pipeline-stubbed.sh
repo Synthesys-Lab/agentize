@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test: Pipeline flow with stubbed acw and consensus script
+# Test: Pipeline flow with stubbed acw
 # Tests YAML-based backend overrides plus default (quiet) and --verbose modes via lol plan
 
 source "$(dirname "$0")/../common.sh"
@@ -7,7 +7,7 @@ source "$(dirname "$0")/../common.sh"
 LOL_CLI="$PROJECT_ROOT/src/cli/lol.sh"
 PLANNER_CLI="$PROJECT_ROOT/src/cli/planner.sh"
 
-test_info "Pipeline generates all stage artifacts with stubbed acw and consensus"
+test_info "Pipeline generates all stage artifacts with stubbed acw"
 
 export AGENTIZE_HOME="$PROJECT_ROOT"
 export PYTHONPATH="$PROJECT_ROOT/python"
@@ -52,6 +52,9 @@ acw() {
     elif echo "$output_file" | grep -q "reducer"; then
         echo "# Simplified Proposal: Test Feature" > "$output_file"
         echo "Stub reducer output" >> "$output_file"
+    elif echo "$output_file" | grep -q "consensus"; then
+        echo "# Consensus Plan: Test Feature" > "$output_file"
+        echo "Stub consensus output" >> "$output_file"
     else
         echo "# Unknown Stage Output" > "$output_file"
         echo "Stub output for unknown stage" >> "$output_file"
@@ -63,25 +66,6 @@ chmod +x "$STUB_ACW"
 
 export PLANNER_ACW_CALL_LOG="$CALL_LOG"
 export PLANNER_ACW_SCRIPT="$STUB_ACW"
-
-# Create stub consensus script
-STUB_CONSENSUS_DIR="$TMP_DIR/consensus-stub"
-mkdir -p "$STUB_CONSENSUS_DIR"
-STUB_CONSENSUS="$STUB_CONSENSUS_DIR/external-consensus.sh"
-cat > "$STUB_CONSENSUS" <<'STUBEOF'
-#!/usr/bin/env bash
-# Stub consensus script
-CONSENSUS_FILE=".tmp/stub-consensus.md"
-mkdir -p .tmp
-echo "# Consensus Plan: Test Feature" > "$CONSENSUS_FILE"
-echo "Stub consensus output from $1 $2 $3" >> "$CONSENSUS_FILE"
-echo "$CONSENSUS_FILE"
-exit 0
-STUBEOF
-chmod +x "$STUB_CONSENSUS"
-
-# Override the consensus script path used by pipeline
-export _PLANNER_CONSENSUS_SCRIPT="$STUB_CONSENSUS"
 
 # Disable animation for stable test output
 export PLANNER_NO_ANIM=1
@@ -110,11 +94,11 @@ grep -q "acw cursor gpt-5.2-codex" "$CALL_LOG" || {
     test_fail "Expected understander stage to use cursor:gpt-5.2-codex"
 }
 
-# Verify parallel critique and reducer both invoked (should have 4 total acw calls)
-if [ "$CALL_COUNT" -lt 4 ]; then
+# Verify parallel critique and reducer both invoked (should have 5 total acw calls)
+if [ "$CALL_COUNT" -lt 5 ]; then
     echo "Call log contents:" >&2
     cat "$CALL_LOG" >&2
-    test_fail "Expected 4 acw calls (understander + bold + critique + reducer), got $CALL_COUNT"
+    test_fail "Expected 5 acw calls (understander + bold + critique + reducer + consensus), got $CALL_COUNT"
 fi
 
 # Verify consensus output was referenced
@@ -158,4 +142,4 @@ echo "$output_verbose" | grep -q "Stage" || {
     test_fail "Verbose output should include stage progress"
 }
 
-test_pass "Pipeline generates all stage artifacts with stubbed acw and consensus"
+test_pass "Pipeline generates all stage artifacts with stubbed acw"

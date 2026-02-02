@@ -91,6 +91,8 @@ acw() {
         echo "# Proposal Critique: Test Feature" > "$output_file"
     elif echo "$output_file" | grep -q "reducer"; then
         echo "# Simplified Proposal: Test Feature" > "$output_file"
+    elif echo "$output_file" | grep -q "consensus"; then
+        echo "# Implementation Plan: Test Plan Title" > "$output_file"
     else
         echo "# Unknown Stage Output" > "$output_file"
     fi
@@ -100,31 +102,6 @@ STUBEOF
 chmod +x "$STUB_ACW"
 export PLANNER_ACW_CALL_LOG="$ACW_LOG"
 export PLANNER_ACW_SCRIPT="$STUB_ACW"
-
-# Stub external consensus script
-STUB_CONSENSUS_DIR="$TMP_DIR/consensus-stub"
-mkdir -p "$STUB_CONSENSUS_DIR"
-STUB_CONSENSUS="$STUB_CONSENSUS_DIR/external-consensus.sh"
-cat > "$STUB_CONSENSUS" <<'STUBEOF'
-#!/usr/bin/env bash
-# Stub consensus script
-REPORT_BASENAME=$(basename "$1")
-ISSUE_NUMBER=""
-if [[ "$REPORT_BASENAME" =~ issue-([0-9]+)- ]]; then
-    ISSUE_NUMBER="${BASH_REMATCH[1]}"
-fi
-if [ -z "$ISSUE_NUMBER" ]; then
-    ISSUE_NUMBER="000"
-fi
-CONSENSUS_FILE=".tmp/issue-${ISSUE_NUMBER}-consensus.md"
-mkdir -p .tmp
-echo "# Implementation Plan: Test Plan Title" > "$CONSENSUS_FILE"
-echo "Stub consensus output" >> "$CONSENSUS_FILE"
-echo "$CONSENSUS_FILE"
-exit 0
-STUBEOF
-chmod +x "$STUB_CONSENSUS"
-export _PLANNER_CONSENSUS_SCRIPT="$STUB_CONSENSUS"
 
 export PLANNER_NO_ANIM=1
 

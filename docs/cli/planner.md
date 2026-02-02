@@ -12,13 +12,13 @@ lol plan --refine <issue-no> [refinement-instructions]
 
 ## Pipeline Stages
 
-`lol plan` runs the full multi-agent debate pipeline for a feature description. Stages 1–4 execute through the Python backend, and Stage 5 delegates to the external consensus script:
+`lol plan` runs the full multi-agent debate pipeline for a feature description. Stages 1–4 execute through the Python backend, and Stage 5 runs consensus synthesis via `acw` using the external-consensus prompt template:
 
 1. **Understander** (sonnet) - Gathers codebase context with `Read,Grep,Glob` tools
 2. **Bold-proposer** (opus) - Researches SOTA solutions and proposes innovative approaches with `Read,Grep,Glob,WebSearch,WebFetch` tools and `--permission-mode plan`
 3. **Critique** (opus) - Validates assumptions and analyzes feasibility (runs in parallel with Reducer)
 4. **Reducer** (opus) - Simplifies proposal following "less is more" philosophy (runs in parallel with Critique)
-5. **External consensus** - Synthesizes final plan from the three reports (invoked via `external-consensus.sh`)
+5. **Consensus** (opus) - Synthesizes final plan from the three reports using the external-consensus prompt
 
 Both critique and reducer append plan-guideline content and run in parallel via the Python executor.
 
@@ -63,6 +63,8 @@ Each stage uses `acw` for file-based CLI invocation. Prompts are rendered at run
 - Agent base prompt (from `.claude-plugin/agents/*.md`)
 - Plan-guideline content (from `.claude-plugin/skills/plan-guideline/SKILL.md`, YAML frontmatter stripped)
 - Feature description and previous stage output
+
+The consensus stage renders a dedicated prompt from `.claude-plugin/skills/external-consensus/external-review-prompt.md` with the three report outputs embedded.
 
 ## Artifacts
 

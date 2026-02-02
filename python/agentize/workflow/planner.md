@@ -4,7 +4,7 @@ Python implementation of the multi-stage planner workflow and CLI backend used b
 
 ## Purpose
 
-Provide a Python-native pipeline runner that reuses existing prompt templates, preserves artifact naming, and supports the external consensus synthesis step required by the CLI planner.
+Provide a Python-native pipeline runner that reuses existing prompt templates, preserves artifact naming, and runs consensus synthesis through `acw` using the external-consensus prompt template.
 
 ## External Interface
 
@@ -50,7 +50,7 @@ CLI entrypoint used by `lol plan`. It orchestrates:
 2. Planner backend config loading from `.agentize.local.yaml`
 3. Issue refinement and placeholder creation (when enabled)
 4. Stages 1–4 via `run_planner_pipeline(..., output_suffix=".txt", skip_consensus=True)`
-5. External consensus synthesis via `external-consensus.sh`
+5. Consensus synthesis via `_run_consensus_stage(...)` using `acw`
 6. Issue publish (title extraction + label application)
 7. Final output paths and optional issue link rendering
 
@@ -68,7 +68,7 @@ understander → bold → critique → reducer → consensus (optional)
                     (parallel when enabled)
 ```
 
-`skip_consensus=True` allows the CLI to delegate Stage 5 to the external consensus script while still using the same prompt rendering for stages 1–4.
+`skip_consensus=True` allows the CLI to run Stage 5 separately with a `.md` output suffix while still using the same prompt rendering for stages 1–4.
 
 ## Artifact Layout
 
@@ -87,7 +87,7 @@ Example with `.txt` output suffix:
 .tmp/issue-123-reducer.txt
 ```
 
-The external consensus step produces the final `.md` plan file.
+The consensus stage writes the final `.md` plan file.
 
 ## Internal Helpers
 
@@ -100,8 +100,8 @@ Loads `planner.*` overrides from `.agentize.local.yaml` via shared YAML helpers.
 ### `_resolve_stage_backends()`
 Normalizes backend defaults (sonnet for understander, opus for the rest) and validates `provider:model` format.
 
-### `_run_external_consensus()`
-Invokes the external consensus script and returns the consensus file path.
+### `_run_consensus_stage()`
+Runs the consensus prompt via `acw` and returns the consensus stage result.
 
 ### `_issue_create()` / `_issue_fetch()` / `_issue_publish()`
 Wraps `gh` issue operations for placeholder creation, refinement context, and plan publishing.
@@ -109,6 +109,6 @@ Wraps `gh` issue operations for placeholder creation, refinement context, and pl
 ## Design Rationale
 
 - **Output suffix control:** Keeps legacy artifact naming for CLI workflows while retaining the default `-output.md` format for library usage.
-- **Consensus delegation:** Supports the external consensus script as the canonical synthesis stage without duplicating its validation logic.
+- **Consensus synthesis:** Runs the same external-consensus prompt template via `acw` to keep consensus output co-located with other stage artifacts.
 - **TTY parity:** Mirrors the shell pipeline’s visual feedback without introducing optional dependencies.
 - **Shared config loading:** Reuses `.agentize.local.yaml` discovery to keep planner backends consistent across workflows.

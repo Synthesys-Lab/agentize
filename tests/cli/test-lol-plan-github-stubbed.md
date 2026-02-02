@@ -7,8 +7,7 @@ Validate GitHub issue creation and publish behavior for `lol plan` with a stubbe
 ## Stubs
 
 - `gh` CLI: Records `issue create` and `issue edit` calls while returning deterministic URLs.
-- `acw` loader (`PLANNER_ACW_SCRIPT`): Writes minimal stage outputs.
-- `external-consensus.sh` (`_PLANNER_CONSENSUS_SCRIPT`): Writes a consensus plan containing an `Implementation Plan` header for title extraction.
+- `acw` loader (`PLANNER_ACW_SCRIPT`): Writes minimal stage outputs including a consensus plan header for title extraction.
 
 ## Test Cases
 

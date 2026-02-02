@@ -803,42 +803,50 @@ def _apply_issue_tag(plan_title: str, issue_number: str) -> str:
     return issue_tag
 
 
-def _run_external_consensus(
-    repo_root: Path,
+def _run_consensus_stage(
+    feature_desc: str,
     bold_path: Path,
     critique_path: Path,
     reducer_path: Path,
-) -> tuple[str, Path]:
-    script_path = os.environ.get(
-        "_PLANNER_CONSENSUS_SCRIPT",
-        str(repo_root / ".claude-plugin/skills/external-consensus/scripts/external-consensus.sh"),
+    output_dir: Path,
+    prefix: str,
+    stage_backends: dict[str, tuple[str, str]],
+    *,
+    runner: Callable[..., subprocess.CompletedProcess] = run_acw,
+) -> StageResult:
+    bold_output = bold_path.read_text()
+    critique_output = critique_path.read_text()
+    reducer_output = reducer_path.read_text()
+    agentize_home = Path(get_agentize_home())
+
+    consensus_prompt = _render_consensus_prompt(
+        feature_desc,
+        bold_output,
+        critique_output,
+        reducer_output,
+        agentize_home,
     )
-    script = Path(script_path)
-    if not script.is_file():
-        raise RuntimeError(f"Consensus script not found: {script}")
 
-    process = subprocess.run(
-        [str(script), str(bold_path), str(critique_path), str(reducer_path)],
-        cwd=str(repo_root),
-        stdout=subprocess.PIPE,
-        text=True,
+    input_path = output_dir / f"{prefix}-consensus-input.md"
+    output_path = output_dir / f"{prefix}-consensus.md"
+    input_path.write_text(consensus_prompt)
+
+    provider, model = stage_backends["consensus"]
+    process = runner(
+        provider,
+        model,
+        input_path,
+        output_path,
+        tools=STAGE_TOOLS.get("consensus"),
+        permission_mode=STAGE_PERMISSION_MODE.get("consensus"),
     )
-    if process.returncode != 0:
-        raise RuntimeError(f"Consensus stage failed with exit code {process.returncode}")
 
-    lines = [line.strip() for line in process.stdout.splitlines() if line.strip()]
-    if not lines:
-        raise RuntimeError("Consensus stage produced no output path")
-
-    consensus_path_text = lines[-1]
-    consensus_path = Path(consensus_path_text)
-    if not consensus_path.is_absolute():
-        consensus_path = repo_root / consensus_path
-
-    if not consensus_path.exists() or consensus_path.stat().st_size == 0:
-        raise RuntimeError("Consensus plan output is missing or empty")
-
-    return consensus_path_text, consensus_path
+    return StageResult(
+        stage="consensus",
+        input_path=input_path,
+        output_path=output_path,
+        process=process,
+    )
 
 
 def main(argv: list[str]) -> int:
@@ -930,20 +938,45 @@ def main(argv: list[str]) -> int:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
 
+    consensus_backend = stage_backends["consensus"]
     t_consensus = tty.timer_start()
-    tty.anim_start("Stage 5/5: Running external consensus synthesis")
+    tty.anim_start(f"Stage 5/5: Running consensus ({consensus_backend[0]}:{consensus_backend[1]})")
     try:
-        consensus_display, consensus_path = _run_external_consensus(
-            repo_root,
+        consensus_result = _run_consensus_stage(
+            feature_desc,
             results["bold"].output_path,
             results["critique"].output_path,
             results["reducer"].output_path,
+            output_dir,
+            prefix_name,
+            stage_backends,
+            runner=run_acw,
         )
-    except RuntimeError as exc:
+    except (FileNotFoundError, RuntimeError, subprocess.TimeoutExpired) as exc:
         tty.anim_stop()
         print(f"Error: {exc}", file=sys.stderr)
         return 2
     tty.anim_stop()
+
+    if consensus_result.process.returncode != 0:
+        print(
+            f"Error: Consensus stage failed with exit code {consensus_result.process.returncode}",
+            file=sys.stderr,
+        )
+        return 2
+    if (
+        not consensus_result.output_path.exists()
+        or consensus_result.output_path.stat().st_size == 0
+    ):
+        print("Error: Consensus plan output is missing or empty", file=sys.stderr)
+        return 2
+
+    try:
+        consensus_display = str(consensus_result.output_path.relative_to(repo_root))
+    except ValueError:
+        consensus_display = str(consensus_result.output_path)
+    consensus_path = consensus_result.output_path
+
     tty.timer_log("consensus", t_consensus)
 
     tty.log("")
