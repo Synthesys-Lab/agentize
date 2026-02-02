@@ -1,114 +1,32 @@
-# Planner Pipeline
+# DEPRECATED: planner.py
 
-Python implementation of the multi-stage planner workflow and CLI backend used by `lol plan`.
+This file is deprecated and will be removed. It exists only for backward compatibility.
 
-## Purpose
+## New Locations
 
-Provide a Python-native pipeline runner that reuses existing prompt templates, preserves artifact naming, and runs consensus synthesis through `acw` using the external-consensus prompt template.
+- **Pipeline orchestration**: `agentize.workflow.planner` package (`planner/__main__.py`)
+- **TTY utilities**: `agentize.workflow.utils` module (`utils.py`)
 
-## External Interface
+## Migration
 
-### `run_acw(provider, model, input_file, output_file, *, tools=None, permission_mode=None, extra_flags=None, timeout=900) -> subprocess.CompletedProcess`
+Replace imports:
 
-Runs the `acw` shell wrapper with quoted arguments and optional Claude-specific flags.
+```python
+# OLD (deprecated)
+from agentize.workflow.planner import run_planner_pipeline, StageResult, PlannerTTY, run_acw
 
-**Parameters:**
-- `provider`: Backend provider (e.g., `"claude"`, `"codex"`)
-- `model`: Model identifier (e.g., `"sonnet"`, `"opus"`)
-- `input_file`: Path to input prompt file
-- `output_file`: Path for stage output
-- `tools`: Tool configuration (Claude provider only)
-- `permission_mode`: Permission mode override (Claude provider only)
-- `extra_flags`: Additional CLI flags
-- `timeout`: Execution timeout in seconds
+# NEW (preferred)
+from agentize.workflow import run_planner_pipeline, StageResult, PlannerTTY, run_acw
 
-### `run_planner_pipeline(feature_desc, *, output_dir=".tmp", backends=None, parallel=True, runner=run_acw, prefix=None, output_suffix="-output.md", skip_consensus=False, progress=None) -> dict[str, StageResult]`
-
-Executes the planner stages (understander → bold → critique → reducer → consensus) and returns per-stage results.
-
-**Parameters:**
-- `feature_desc`: Feature request description to plan
-- `output_dir`: Directory for artifacts
-- `backends`: Mapping of stage names to `(provider, model)` tuples
-- `parallel`: Run critique and reducer in parallel
-- `runner`: Callable used to invoke each stage (injectable for tests)
-- `prefix`: Artifact filename prefix (defaults to timestamp)
-- `output_suffix`: Suffix appended to stage output files (e.g., `.txt`)
-- `skip_consensus`: Skip the consensus stage when external synthesis is used
-- `progress`: Optional `PlannerTTY` for stage logs/animation
-
-**Returns:** Dict mapping stage names to `StageResult` objects.
-
-**Raises:**
-- `FileNotFoundError` when required prompt templates are missing
-- `RuntimeError` when a stage fails or produces empty output
-
-### `main(argv: list[str]) -> int`
-
-CLI entrypoint used by `lol plan`. It orchestrates:
-1. Repo root resolution and `.tmp` output setup
-2. Planner backend config loading from `.agentize.local.yaml`
-3. Issue refinement and placeholder creation (when enabled)
-4. Stages 1–4 via `run_planner_pipeline(..., output_suffix=".txt", skip_consensus=True)`
-5. Consensus synthesis via `_run_consensus_stage(...)` using `acw`
-6. Issue publish (title extraction + label application)
-7. Final output paths and optional issue link rendering
-
-**CLI arguments:**
-- `--feature-desc`: Feature description or refine focus
-- `--issue-mode`: `true` or `false`
-- `--verbose`: `true` or `false`
-- `--refine-issue-number`: Issue number to refine (optional)
-
-## Pipeline Flow
-
-```
-understander → bold → critique → reducer → consensus (optional)
-                        ↓         ↓
-                    (parallel when enabled)
+# Or from specific modules
+from agentize.workflow.utils import PlannerTTY, run_acw
+from agentize.workflow.planner import run_planner_pipeline, StageResult
 ```
 
-`skip_consensus=True` allows the CLI to run Stage 5 separately with a `.md` output suffix while still using the same prompt rendering for stages 1–4.
+## CLI Invocation
 
-## Artifact Layout
+The planner can now be invoked as a runnable package:
 
-Stage input prompts are written as `{prefix}-{stage}-input.md` and outputs follow `{prefix}-{stage}{output_suffix}`.
-
-Example with `.txt` output suffix:
-
+```bash
+python -m agentize.workflow.planner --feature-desc "Add dark mode" --issue-mode true
 ```
-.tmp/issue-123-understander-input.md
-.tmp/issue-123-understander.txt
-.tmp/issue-123-bold-input.md
-.tmp/issue-123-bold.txt
-.tmp/issue-123-critique-input.md
-.tmp/issue-123-critique.txt
-.tmp/issue-123-reducer-input.md
-.tmp/issue-123-reducer.txt
-```
-
-The consensus stage writes the final `.md` plan file.
-
-## Internal Helpers
-
-### `PlannerTTY`
-Formats stage labels, dot animations, and timing logs with the same environment gates as the shell planner (`NO_COLOR`, `PLANNER_NO_COLOR`, `PLANNER_NO_ANIM`).
-
-### `_load_planner_backend_config()`
-Loads `planner.*` overrides from `.agentize.local.yaml` via shared YAML helpers.
-
-### `_resolve_stage_backends()`
-Normalizes backend defaults (sonnet for understander, opus for the rest) and validates `provider:model` format.
-
-### `_run_consensus_stage()`
-Runs the consensus prompt via `acw` and returns the consensus stage result.
-
-### `_issue_create()` / `_issue_fetch()` / `_issue_publish()`
-Wraps `gh` issue operations for placeholder creation, refinement context, and plan publishing.
-
-## Design Rationale
-
-- **Output suffix control:** Keeps legacy artifact naming for CLI workflows while retaining the default `-output.md` format for library usage.
-- **Consensus synthesis:** Runs the same external-consensus prompt template via `acw` to keep consensus output co-located with other stage artifacts.
-- **TTY parity:** Mirrors the shell pipeline’s visual feedback without introducing optional dependencies.
-- **Shared config loading:** Reuses `.agentize.local.yaml` discovery to keep planner backends consistent across workflows.

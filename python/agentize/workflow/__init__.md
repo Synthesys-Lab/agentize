@@ -4,7 +4,9 @@ Public interfaces for Python planner workflow orchestration.
 
 ## Exports
 
-### `run_acw`
+### From `utils.py`
+
+#### `run_acw`
 
 ```python
 def run_acw(
@@ -36,7 +38,23 @@ Wrapper around the `acw` shell function that builds and executes an ACW command 
 
 **Raises:** `subprocess.TimeoutExpired` if execution exceeds timeout
 
-### `run_planner_pipeline`
+#### `PlannerTTY`
+
+```python
+class PlannerTTY:
+    def __init__(self, *, verbose: bool = False) -> None: ...
+    def term_label(self, label: str, text: str, style: str = "") -> None: ...
+    def anim_start(self, label: str) -> None: ...
+    def anim_stop(self) -> None: ...
+    def timer_start(self) -> float: ...
+    def timer_log(self, stage: str, start_epoch: float) -> None: ...
+```
+
+TTY output helper with dot animations, timing logs, and styled labels. Respects `NO_COLOR`, `PLANNER_NO_COLOR`, and `PLANNER_NO_ANIM` environment variables.
+
+### From `planner/`
+
+#### `run_planner_pipeline`
 
 ```python
 def run_planner_pipeline(
@@ -64,7 +82,7 @@ Execute the 5-stage planner pipeline: understander → bold → critique → red
 - `prefix`: Artifact filename prefix (default: timestamp-based)
 - `output_suffix`: Suffix appended to stage output filenames (default: `-output.md`)
 - `skip_consensus`: Skip the consensus stage when external synthesis is used (default: False)
-- `progress`: Optional `PlannerTTY` (from `agentize.workflow.planner`) for stage logs/animation
+- `progress`: Optional `PlannerTTY` for stage logs/animation
 
 **Returns:** Dict mapping stage names to `StageResult` objects
 
@@ -72,7 +90,7 @@ Execute the 5-stage planner pipeline: understander → bold → critique → red
 - `FileNotFoundError`: If required prompt templates are missing
 - `RuntimeError`: If a stage execution fails
 
-### `StageResult`
+#### `StageResult`
 
 ```python
 @dataclass
@@ -91,6 +109,13 @@ Structured result for a single pipeline stage.
 - `output_path`: Path to stage output file
 - `process`: Completed process with return code, stdout, stderr
 
+## Module Organization
+
+| Module | Purpose |
+|--------|---------|
+| `utils.py` | Reusable TTY and shell invocation utilities |
+| `planner/` | Standalone planning pipeline package (`python -m agentize.workflow.planner`) |
+
 ## Error Handling
 
 - Missing prompt templates raise `FileNotFoundError` with the missing path
@@ -100,7 +125,7 @@ Structured result for a single pipeline stage.
 ## Example
 
 ```python
-from agentize.workflow import run_planner_pipeline, StageResult
+from agentize.workflow import run_planner_pipeline, StageResult, PlannerTTY
 
 # Run pipeline with custom backends
 results = run_planner_pipeline(

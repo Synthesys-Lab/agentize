@@ -15,11 +15,27 @@ import pytest
 # Import from the module we're testing (will fail until implementation exists)
 # Using try/except to allow test file to exist before implementation
 try:
-    from agentize.workflow import run_planner_pipeline, StageResult
+    # Primary imports via backward-compat re-exports in workflow/__init__.py
+    from agentize.workflow import run_planner_pipeline, StageResult, run_acw, PlannerTTY
 except ImportError:
     # Define stubs for test discovery before implementation
     StageResult = None
     run_planner_pipeline = None
+    run_acw = None
+    PlannerTTY = None
+
+# Additional import path tests (these will be exercised in dedicated tests below)
+try:
+    from agentize.workflow.utils import run_acw as utils_run_acw, PlannerTTY as utils_PlannerTTY
+except ImportError:
+    utils_run_acw = None
+    utils_PlannerTTY = None
+
+try:
+    from agentize.workflow.planner import run_planner_pipeline as planner_run_pipeline, StageResult as planner_StageResult
+except ImportError:
+    planner_run_pipeline = None
+    planner_StageResult = None
 
 
 # ============================================================
@@ -364,3 +380,48 @@ class TestStageResult:
         assert result.input_path == tmp_path / "input.md"
         assert result.output_path == tmp_path / "output.md"
         assert result.process.returncode == 0
+
+
+# ============================================================
+# Test Import Paths
+# ============================================================
+
+class TestImportPaths:
+    """Tests for verifying all import paths work correctly."""
+
+    @pytest.mark.skipif(run_planner_pipeline is None, reason="Implementation not yet available")
+    def test_workflow_backward_compat_imports(self):
+        """Imports from agentize.workflow work (backward compatibility)."""
+        from agentize.workflow import run_planner_pipeline, StageResult, run_acw, PlannerTTY
+        assert run_planner_pipeline is not None
+        assert StageResult is not None
+        assert run_acw is not None
+        assert PlannerTTY is not None
+
+    @pytest.mark.skipif(utils_run_acw is None, reason="Implementation not yet available")
+    def test_utils_direct_imports(self):
+        """Imports from agentize.workflow.utils work."""
+        from agentize.workflow.utils import run_acw, PlannerTTY
+        assert run_acw is not None
+        assert PlannerTTY is not None
+
+    @pytest.mark.skipif(planner_run_pipeline is None, reason="Implementation not yet available")
+    def test_planner_package_imports(self):
+        """Imports from agentize.workflow.planner work."""
+        from agentize.workflow.planner import run_planner_pipeline, StageResult
+        assert run_planner_pipeline is not None
+        assert StageResult is not None
+
+    @pytest.mark.skipif(run_acw is None or utils_run_acw is None, reason="Implementation not yet available")
+    def test_run_acw_same_function(self):
+        """run_acw from workflow and workflow.utils is the same function."""
+        from agentize.workflow import run_acw as workflow_run_acw
+        from agentize.workflow.utils import run_acw as utils_run_acw
+        assert workflow_run_acw is utils_run_acw
+
+    @pytest.mark.skipif(run_planner_pipeline is None or planner_run_pipeline is None, reason="Implementation not yet available")
+    def test_run_planner_pipeline_same_function(self):
+        """run_planner_pipeline from workflow and workflow.planner is the same function."""
+        from agentize.workflow import run_planner_pipeline as workflow_pipeline
+        from agentize.workflow.planner import run_planner_pipeline as planner_pipeline
+        assert workflow_pipeline is planner_pipeline
