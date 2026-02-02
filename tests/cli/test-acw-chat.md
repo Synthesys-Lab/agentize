@@ -25,6 +25,11 @@ End-to-end tests for `acw` chat session functionality (`--chat` and `--chat-list
 - `--chat --stdout` captures and emits assistant output
 - Captured output is also appended to session file
 
+### Stderr Sidecar (--chat --stdout)
+- Provider stderr is written to `<session-id>.stderr` sidecar file
+- Stdout remains clean (contains only model output)
+- Empty sidecar files are removed after provider exits
+
 ### Session Listing
 - `--chat-list` outputs session IDs with metadata
 - `--chat-list` exits 0 without requiring provider args

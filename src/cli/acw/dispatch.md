@@ -65,3 +65,8 @@ and turn appending:
 output is captured to a temp file. After the provider exits, the captured
 content is emitted to stdout and the assistant response is appended to the
 session file.
+
+**Stderr sidecar**: When `--stdout` is combined with `--chat`, provider stderr
+is appended to `<session-id>.stderr` beside the session file rather than
+merged into stdout. This keeps stdout clean for piping. If the sidecar file
+is newly created and remains empty after the provider exits, it is removed.

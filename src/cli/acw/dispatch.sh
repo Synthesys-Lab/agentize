@@ -356,9 +356,13 @@ acw() {
     # Remaining arguments are provider options
     local provider_exit=0
     local stderr_file=""
+    local stderr_preexist=0
 
     if [ "$stdout_mode" -eq 0 ]; then
         stderr_file="${output_file}.stderr"
+    elif [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 1 ]; then
+        stderr_file="${session_file%.md}.stderr"
+        [ -e "$stderr_file" ] && stderr_preexist=1
     fi
 
     # Dispatch to provider function
@@ -366,6 +370,8 @@ acw() {
         claude)
             if [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 0 ]; then
                 _acw_invoke_claude "$model_name" "$input_file" "$output_file" "$@" 2>&1
+            elif [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 1 ]; then
+                _acw_invoke_claude "$model_name" "$input_file" "$output_file" "$@" 2>>"$stderr_file"
             else
                 if [ -n "$stderr_file" ]; then
                     _acw_invoke_claude "$model_name" "$input_file" "$output_file" "$@" 2>"$stderr_file"
@@ -378,6 +384,8 @@ acw() {
         codex)
             if [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 0 ]; then
                 _acw_invoke_codex "$model_name" "$input_file" "$output_file" "$@" 2>&1
+            elif [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 1 ]; then
+                _acw_invoke_codex "$model_name" "$input_file" "$output_file" "$@" 2>>"$stderr_file"
             else
                 if [ -n "$stderr_file" ]; then
                     _acw_invoke_codex "$model_name" "$input_file" "$output_file" "$@" 2>"$stderr_file"
@@ -390,6 +398,8 @@ acw() {
         opencode)
             if [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 0 ]; then
                 _acw_invoke_opencode "$model_name" "$input_file" "$output_file" "$@" 2>&1
+            elif [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 1 ]; then
+                _acw_invoke_opencode "$model_name" "$input_file" "$output_file" "$@" 2>>"$stderr_file"
             else
                 if [ -n "$stderr_file" ]; then
                     _acw_invoke_opencode "$model_name" "$input_file" "$output_file" "$@" 2>"$stderr_file"
@@ -402,6 +412,8 @@ acw() {
         cursor)
             if [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 0 ]; then
                 _acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@" 2>&1
+            elif [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 1 ]; then
+                _acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@" 2>>"$stderr_file"
             else
                 if [ -n "$stderr_file" ]; then
                     _acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@" 2>"$stderr_file"
@@ -413,7 +425,8 @@ acw() {
             ;;
     esac
 
-    if [ -n "$stderr_file" ] && [ -f "$stderr_file" ] && [ ! -s "$stderr_file" ]; then
+    # Clean up empty stderr sidecar if newly created
+    if [ -n "$stderr_file" ] && [ "$stderr_preexist" -eq 0 ] && [ ! -s "$stderr_file" ]; then
         rm -f "$stderr_file"
     fi
 

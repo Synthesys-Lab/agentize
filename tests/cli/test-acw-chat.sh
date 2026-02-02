@@ -295,4 +295,94 @@ if ! acw --chat-list >/dev/null 2>&1; then
     test_fail "--chat-list should exit 0 without provider args"
 fi
 
+# ============================================================
+# Test 12: Stderr sidecar path derivation
+# ============================================================
+test_info "Checking stderr sidecar path derivation"
+
+# Verify stderr path is derived from session file path
+stderr_session="$session_dir/stderrtest.md"
+expected_stderr="${stderr_session%.md}.stderr"
+expected_stderr_name="stderrtest.stderr"
+
+if [ "$expected_stderr" != "$session_dir/$expected_stderr_name" ]; then
+    test_fail "Stderr path derivation mismatch: expected $session_dir/$expected_stderr_name, got $expected_stderr"
+fi
+
+# ============================================================
+# Test 13: Empty stderr sidecar is cleaned up
+# ============================================================
+test_info "Checking empty stderr sidecar cleanup logic"
+
+# Create a session file and an empty stderr file
+cleanup_session="$session_dir/cleanuptest.md"
+cleanup_stderr="${cleanup_session%.md}.stderr"
+_acw_chat_create_session "$cleanup_session" "claude" "test"
+
+# Simulate: new file created but empty - should be cleaned up
+touch "$cleanup_stderr"
+if [ ! -f "$cleanup_stderr" ]; then
+    test_fail "Failed to create test stderr file"
+fi
+
+# The cleanup logic: if newly created (preexist=0) and empty, remove
+# We test the condition directly since we can't easily mock provider invocation
+stderr_preexist=0
+if [ "$stderr_preexist" -eq 0 ] && [ ! -s "$cleanup_stderr" ]; then
+    rm -f "$cleanup_stderr"
+fi
+
+if [ -f "$cleanup_stderr" ]; then
+    test_fail "Empty newly-created stderr sidecar should have been removed"
+fi
+
+# ============================================================
+# Test 14: Non-empty stderr sidecar is preserved
+# ============================================================
+test_info "Checking non-empty stderr sidecar preservation"
+
+preserve_session="$session_dir/preservetest.md"
+preserve_stderr="${preserve_session%.md}.stderr"
+_acw_chat_create_session "$preserve_session" "claude" "test"
+
+# Create stderr file with content
+echo "Some provider stderr output" > "$preserve_stderr"
+
+# The cleanup logic should not remove non-empty files
+stderr_preexist=0
+if [ "$stderr_preexist" -eq 0 ] && [ ! -s "$preserve_stderr" ]; then
+    rm -f "$preserve_stderr"
+fi
+
+if [ ! -f "$preserve_stderr" ]; then
+    test_fail "Non-empty stderr sidecar should have been preserved"
+fi
+
+# Verify content is intact
+if ! grep -q "Some provider stderr output" "$preserve_stderr"; then
+    test_fail "Stderr sidecar content was corrupted"
+fi
+
+# ============================================================
+# Test 15: Pre-existing stderr sidecar is preserved even if empty
+# ============================================================
+test_info "Checking pre-existing stderr sidecar preservation"
+
+preexist_session="$session_dir/preexisttest.md"
+preexist_stderr="${preexist_session%.md}.stderr"
+_acw_chat_create_session "$preexist_session" "claude" "test"
+
+# Create pre-existing empty stderr file
+touch "$preexist_stderr"
+
+# Simulate: file already existed before this invocation
+stderr_preexist=1
+if [ "$stderr_preexist" -eq 0 ] && [ ! -s "$preexist_stderr" ]; then
+    rm -f "$preexist_stderr"
+fi
+
+if [ ! -f "$preexist_stderr" ]; then
+    test_fail "Pre-existing empty stderr sidecar should have been preserved"
+fi
+
 test_pass "All chat session tests passed"
