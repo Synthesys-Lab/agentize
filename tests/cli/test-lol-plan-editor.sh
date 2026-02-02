@@ -59,8 +59,10 @@ export EDITOR="$STUB_EDITOR"
 
 # Mock _lol_cmd_plan to capture what it receives
 captured_desc=""
+captured_refine=""
 _lol_cmd_plan() {
   captured_desc="$1"
+  captured_refine="$4"
   return 0
 }
 
@@ -77,7 +79,28 @@ if [ "$captured_desc" != "Feature description from editor" ]; then
   test_fail "Feature description should come from editor content, got: '$captured_desc'"
 fi
 
-# Test 4: Empty file or whitespace-only content is rejected
+# Test 4: --refine --editor uses editor content as refinement focus
+captured_desc=""
+captured_refine=""
+
+set +e
+_lol_parse_plan --refine 42 --editor --dry-run
+exit_code=$?
+set -e
+
+if [ "$exit_code" -ne 0 ]; then
+  test_fail "--refine --editor should succeed"
+fi
+
+if [ "$captured_refine" != "42" ]; then
+  test_fail "Refine issue number should be passed through, got: '$captured_refine'"
+fi
+
+if [ "$captured_desc" != "Feature description from editor" ]; then
+  test_fail "Refine focus should come from editor content, got: '$captured_desc'"
+fi
+
+# Test 5: Empty file or whitespace-only content is rejected
 EMPTY_EDITOR="$TEST_HOME/empty-editor.sh"
 cat > "$EMPTY_EDITOR" << 'STUB'
 #!/usr/bin/env bash
@@ -100,7 +123,7 @@ if ! echo "$output" | grep -qi "empty"; then
   test_fail "--editor empty content error should mention 'empty'"
 fi
 
-# Test 5: Non-zero editor exit aborts
+# Test 6: Non-zero editor exit aborts
 FAIL_EDITOR="$TEST_HOME/fail-editor.sh"
 cat > "$FAIL_EDITOR" << 'STUB'
 #!/usr/bin/env bash
