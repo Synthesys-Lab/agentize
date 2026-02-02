@@ -295,6 +295,43 @@ class TestPlannerPipelineArtifactNaming:
 
 
 # ============================================================
+# Test run_planner_pipeline - New Options
+# ============================================================
+
+class TestPlannerPipelineOptions:
+    """Tests for output suffix and skip-consensus behavior."""
+
+    @pytest.mark.skipif(run_planner_pipeline is None, reason="Implementation not yet available")
+    def test_output_suffix_txt(self, tmp_output_dir: Path, stub_runner: Callable):
+        """Custom output_suffix changes output filenames."""
+        results = run_planner_pipeline(
+            "Add planner output suffix",
+            output_dir=tmp_output_dir,
+            runner=stub_runner,
+            prefix="test",
+            output_suffix=".txt",
+        )
+
+        for stage, result in results.items():
+            assert result.output_path.name == f"test-{stage}.txt"
+
+    @pytest.mark.skipif(run_planner_pipeline is None, reason="Implementation not yet available")
+    def test_skip_consensus(self, tmp_output_dir: Path, stub_runner: Callable):
+        """skip_consensus=True omits consensus stage execution."""
+        results = run_planner_pipeline(
+            "Skip consensus stage",
+            output_dir=tmp_output_dir,
+            runner=stub_runner,
+            prefix="test",
+            skip_consensus=True,
+        )
+
+        assert "consensus" not in results
+        output_files = [Path(inv["output_file"]).name for inv in stub_runner.invocations]
+        assert not any("consensus" in output_file for output_file in output_files)
+
+
+# ============================================================
 # Test StageResult dataclass
 # ============================================================
 

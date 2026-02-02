@@ -131,7 +131,8 @@ for shell in $TEST_SHELLS; do
     FAILED_TESTS=0
 
     # Auto-discover and run tests in categorical subdirectories
-    # Notable CLI additions: test-lol-use-branch.sh, test-lol-upgrade.sh
+    # Notable CLI additions: test-lol-use-branch.sh, test-lol-upgrade.sh,
+    # test-lol-plan-github-stubbed.sh
     for category in $CATEGORIES; do
         category_dir="$SCRIPT_DIR/$category"
 

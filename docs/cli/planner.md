@@ -1,6 +1,6 @@
 # Planner Pipeline (Internal)
 
-Internal pipeline module used by `lol plan` to run the multi-agent debate workflow. The standalone `planner` command has been removed.
+Internal pipeline module used by `lol plan` to run the multi-agent debate workflow via the Python backend. The standalone `planner` command has been removed.
 
 ## Usage
 
@@ -12,15 +12,15 @@ lol plan --refine <issue-no> [refinement-instructions]
 
 ## Pipeline Stages
 
-`lol plan` runs the full multi-agent debate pipeline for a feature description:
+`lol plan` runs the full multi-agent debate pipeline for a feature description. Stages 1–4 execute through the Python backend, and Stage 5 delegates to the external consensus script:
 
 1. **Understander** (sonnet) - Gathers codebase context with `Read,Grep,Glob` tools
 2. **Bold-proposer** (opus) - Researches SOTA solutions and proposes innovative approaches with `Read,Grep,Glob,WebSearch,WebFetch` tools and `--permission-mode plan`
 3. **Critique** (opus) - Validates assumptions and analyzes feasibility (runs in parallel with Reducer)
 4. **Reducer** (opus) - Simplifies proposal following "less is more" philosophy (runs in parallel with Critique)
-5. **External consensus** - Synthesizes final plan from the three reports
+5. **External consensus** - Synthesizes final plan from the three reports (invoked via `external-consensus.sh`)
 
-Both critique and reducer append plan-guideline content and run in parallel via background processes.
+Both critique and reducer append plan-guideline content and run in parallel via the Python executor.
 
 ### `--dry-run` (optional flag)
 
@@ -69,7 +69,7 @@ Each stage uses `acw` for file-based CLI invocation. Prompts are rendered at run
 All intermediate and final artifacts are written to `.tmp/`:
 
 ```
-.tmp/{timestamp}-understander.txt       # Default (no --issue)
+.tmp/{timestamp}-understander.txt       # Default (no --issue; Python backend uses output_suffix=\".txt\")
 .tmp/{timestamp}-bold.txt
 .tmp/{timestamp}-critique.txt
 .tmp/{timestamp}-reducer.txt
@@ -103,7 +103,7 @@ When stderr is a TTY, `lol plan` emits visual feedback during pipeline execution
 - **Colored "Feature:" label** — highlights the feature description at pipeline start.
 - **Animated stage dots** — expanding/contracting dot pattern (`.. ... .... ..... .... ...`) while each stage runs.
 - **Per-agent timing** — logs elapsed seconds after each stage completes (e.g., `understander agent runs 12s`).
-- **Styled issue line** — when `--issue` succeeds, prints `issue created: <url>` at pipeline end.
+- **Issue link** — when issue publish succeeds, prints `See the full plan at: <url>`.
 
 ### Environment Toggles
 

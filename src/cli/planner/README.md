@@ -8,14 +8,14 @@ Internal pipeline module used by `lol plan`; the standalone `planner` command ha
 
 ```
 planner.sh           - Loader: determines script dir, sources modules
-planner/pipeline.sh  - Multi-agent pipeline orchestration + status rendering (timing, animation; styling via term helpers)
-planner/github.sh    - GitHub issue creation/update helpers
+planner/pipeline.sh  - Thin adapter that forwards `lol plan` inputs to the Python backend
+planner/github.sh    - Legacy GH helpers (kept for reference; pipeline now uses Python)
 ```
 
 ## Load Order
 
-1. `pipeline.sh` - Defines `_planner_run_pipeline()` and `_planner_render_prompt()` helpers
-2. `github.sh` - Defines `_planner_issue_create()`, `_planner_issue_fetch()`, and `_planner_issue_publish()` helpers
+1. `pipeline.sh` - Defines `_planner_run_pipeline()` adapter
+2. `github.sh` - Legacy GH helpers (not invoked by the adapter)
 
 ## Related Documentation
 

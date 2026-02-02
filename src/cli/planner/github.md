@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Optional GitHub issue helpers for default issue creation and refine mode. `--dry-run` skips issue creation/publish. Encapsulates all `gh` CLI interactions so the pipeline module only needs to call `_planner_issue_create`, `_planner_issue_fetch`, and `_planner_issue_publish` without knowing the `gh` API details.
+Legacy GitHub issue helpers for default issue creation and refine mode. The Python planner backend now owns issue creation and publish logic; this module is retained for reference and compatibility with older shell-only workflows.
 
 ## Private Helpers
 
@@ -15,4 +15,4 @@ Optional GitHub issue helpers for default issue creation and refine mode. `--dry
 
 ## Design Rationale
 
-All GitHub interactions are isolated in this module to keep the pipeline logic (`pipeline.sh`) independent of GitHub. Creation and publishing log warnings and allow timestamp fallbacks when `gh` is unavailable. Refinement fetches are treated as required inputs so the pipeline can reuse existing issue context.
+GitHub interactions remain isolated here to document the historical shell workflow and provide a fallback implementation when needed. The current `lol plan` execution path uses the Python backend for issue handling, but the same behaviors (placeholder creation, refinement fetch, and label application) are preserved in the new implementation.

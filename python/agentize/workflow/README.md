@@ -4,7 +4,7 @@ Python-native orchestration for multi-stage LLM planner workflows.
 
 ## Purpose
 
-This module provides a Python entrypoint for running the 5-stage planner flow that mirrors the shell-based `planner.sh` pipeline. It reuses established prompt templates from `.claude-plugin/agents/` to maintain behavioral consistency while enabling Python scripting integration.
+This module provides a Python entrypoint for running the planner flow that powers `lol plan`. It reuses established prompt templates from `.claude-plugin/agents/` to maintain behavioral consistency while enabling Python scripting integration and external consensus synthesis.
 
 ## Architecture
 
@@ -15,19 +15,19 @@ The workflow module wraps the `acw` shell function (Agentize Claude Wrapper) to 
 3. Feature description provided by the caller
 4. Previous stage output (for chained stages)
 
-Artifacts (input prompts and outputs) are written to `.tmp/` with a configurable prefix.
+Artifacts (input prompts and outputs) are written to `.tmp/` with a configurable prefix and output suffix.
 
 ## Modules
 
 | Module | Purpose |
 |--------|---------|
 | `__init__.py` | Package exports: `run_acw`, `run_planner_pipeline`, `StageResult` |
-| `planner.py` | Pipeline orchestration, prompt rendering, consensus synthesis |
+| `planner.py` | Pipeline orchestration, prompt rendering, CLI backend and consensus integration |
 
 ## Pipeline Stages
 
 ```
-understander → bold → critique → reducer → consensus
+understander → bold → critique → reducer → consensus (optional)
                       ↓           ↓
                     (parallel when enabled)
 ```
@@ -36,7 +36,7 @@ understander → bold → critique → reducer → consensus
 2. **Bold**: Proposes innovative implementation approaches
 3. **Critique**: Validates assumptions and analyzes feasibility
 4. **Reducer**: Simplifies proposals following "less is more" philosophy
-5. **Consensus**: Synthesizes a unified implementation plan
+5. **Consensus**: Synthesizes a unified implementation plan (optional for library use; CLI delegates to the external consensus script)
 
 ## Usage
 
@@ -47,6 +47,8 @@ results = run_planner_pipeline(
     "Add user authentication with JWT tokens",
     output_dir=".tmp",
     parallel=True,
+    output_suffix=".txt",
+    skip_consensus=True,
 )
 
 # Access per-stage results

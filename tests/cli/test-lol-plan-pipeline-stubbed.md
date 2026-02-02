@@ -2,17 +2,17 @@
 
 ## Purpose
 
-Validate `lol plan` pipeline behavior with a stubbed `acw` response and consensus script.
+Validate `lol plan` pipeline behavior via the Python backend with stubbed `acw` and consensus scripts.
 
 ## Stubs
 
-- `acw`: Deterministic pipeline output for assertions (responds based on input content)
-- `external-consensus.sh`: Stub consensus script that produces predictable output
+- `acw` loader (`PLANNER_ACW_SCRIPT`): Writes deterministic stage outputs and logs invocations.
+- `external-consensus.sh` (`_PLANNER_CONSENSUS_SCRIPT`): Produces a predictable consensus file.
 
 ## Test Cases
 
-1. `--dry-run` mode uses timestamp artifacts and skips issue creation
-2. `--verbose` mode outputs detailed stage info
+1. `--dry-run` mode uses timestamp artifacts, writes `.txt` stage outputs, and skips issue creation.
+2. `--verbose` mode emits stage progress labels and timing logs.
 
 ## Usage
 

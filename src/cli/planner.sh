@@ -4,7 +4,7 @@
 # Source-first implementation following the acw.sh/wt.sh/lol.sh pattern
 #
 # Module structure:
-#   planner/pipeline.sh  - Multi-agent pipeline orchestration
+#   planner/pipeline.sh  - Python backend adapter
 #   planner/github.sh    - GitHub issue creation/update helpers
 
 # Determine script directory for sourcing modules

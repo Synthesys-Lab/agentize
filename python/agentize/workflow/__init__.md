@@ -43,10 +43,13 @@ def run_planner_pipeline(
     feature_desc: str,
     *,
     output_dir: str | Path = ".tmp",
-    backends: dict[str, str] | None = None,
+    backends: dict[str, tuple[str, str]] | None = None,
     parallel: bool = True,
     runner: Callable[..., subprocess.CompletedProcess] = run_acw,
     prefix: str | None = None,
+    output_suffix: str = "-output.md",
+    skip_consensus: bool = False,
+    progress: PlannerTTY | None = None,
 ) -> dict[str, StageResult]
 ```
 
@@ -55,10 +58,13 @@ Execute the 5-stage planner pipeline: understander → bold → critique → red
 **Parameters:**
 - `feature_desc`: Feature request description to plan
 - `output_dir`: Directory for artifacts (default: `.tmp`)
-- `backends`: Provider/model mapping per stage (default: all use claude/sonnet)
+- `backends`: Provider/model mapping per stage (default: understander uses claude/sonnet, others claude/opus)
 - `parallel`: Run critique and reducer in parallel (default: True)
 - `runner`: Callable for stage execution (default: `run_acw`, injectable for testing)
 - `prefix`: Artifact filename prefix (default: timestamp-based)
+- `output_suffix`: Suffix appended to stage output filenames (default: `-output.md`)
+- `skip_consensus`: Skip the consensus stage when external synthesis is used (default: False)
+- `progress`: Optional `PlannerTTY` (from `agentize.workflow.planner`) for stage logs/animation
 
 **Returns:** Dict mapping stage names to `StageResult` objects
 

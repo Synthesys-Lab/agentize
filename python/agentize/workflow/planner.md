@@ -1,95 +1,114 @@
 # Planner Pipeline
 
-Python implementation of the 5-stage planner workflow.
+Python implementation of the multi-stage planner workflow and CLI backend used by `lol plan`.
 
-## Design Rationale
+## Purpose
 
-The Python planner pipeline mirrors the shell-based `src/cli/planner/pipeline.sh` implementation while providing Python-native interfaces for scripting and testing. Key design decisions:
+Provide a Python-native pipeline runner that reuses existing prompt templates, preserves artifact naming, and supports the external consensus synthesis step required by the CLI planner.
 
-1. **Prompt Reuse**: Directly reads prompts from `.claude-plugin/agents/*.md` and `.claude-plugin/skills/plan-guideline/SKILL.md` rather than duplicating content. This prevents behavioral drift between shell and Python implementations.
+## External Interface
 
-2. **Dependency Injection**: The `runner` parameter allows injecting a stub executor for testing, eliminating the need for actual LLM calls in unit tests.
+### `run_acw(provider, model, input_file, output_file, *, tools=None, permission_mode=None, extra_flags=None, timeout=900) -> subprocess.CompletedProcess`
 
-3. **Parallel Execution**: Critique and reducer stages are independent and run in parallel by default using `ThreadPoolExecutor`. The `parallel=False` option enforces deterministic ordering for debugging.
+Runs the `acw` shell wrapper with quoted arguments and optional Claude-specific flags.
 
-4. **Artifact Persistence**: All input prompts and outputs are written to `output_dir` with a stable prefix, enabling post-hoc analysis and reproducibility.
+**Parameters:**
+- `provider`: Backend provider (e.g., `"claude"`, `"codex"`)
+- `model`: Model identifier (e.g., `"sonnet"`, `"opus"`)
+- `input_file`: Path to input prompt file
+- `output_file`: Path for stage output
+- `tools`: Tool configuration (Claude provider only)
+- `permission_mode`: Permission mode override (Claude provider only)
+- `extra_flags`: Additional CLI flags
+- `timeout`: Execution timeout in seconds
+
+### `run_planner_pipeline(feature_desc, *, output_dir=".tmp", backends=None, parallel=True, runner=run_acw, prefix=None, output_suffix="-output.md", skip_consensus=False, progress=None) -> dict[str, StageResult]`
+
+Executes the planner stages (understander → bold → critique → reducer → consensus) and returns per-stage results.
+
+**Parameters:**
+- `feature_desc`: Feature request description to plan
+- `output_dir`: Directory for artifacts
+- `backends`: Mapping of stage names to `(provider, model)` tuples
+- `parallel`: Run critique and reducer in parallel
+- `runner`: Callable used to invoke each stage (injectable for tests)
+- `prefix`: Artifact filename prefix (defaults to timestamp)
+- `output_suffix`: Suffix appended to stage output files (e.g., `.txt`)
+- `skip_consensus`: Skip the consensus stage when external synthesis is used
+- `progress`: Optional `PlannerTTY` for stage logs/animation
+
+**Returns:** Dict mapping stage names to `StageResult` objects.
+
+**Raises:**
+- `FileNotFoundError` when required prompt templates are missing
+- `RuntimeError` when a stage fails or produces empty output
+
+### `main(argv: list[str]) -> int`
+
+CLI entrypoint used by `lol plan`. It orchestrates:
+1. Repo root resolution and `.tmp` output setup
+2. Planner backend config loading from `.agentize.local.yaml`
+3. Issue refinement and placeholder creation (when enabled)
+4. Stages 1–4 via `run_planner_pipeline(..., output_suffix=".txt", skip_consensus=True)`
+5. External consensus synthesis via `external-consensus.sh`
+6. Issue publish (title extraction + label application)
+7. Final output paths and optional issue link rendering
+
+**CLI arguments:**
+- `--feature-desc`: Feature description or refine focus
+- `--issue-mode`: `true` or `false`
+- `--verbose`: `true` or `false`
+- `--refine-issue-number`: Issue number to refine (optional)
 
 ## Pipeline Flow
 
 ```
-┌─────────────┐
-│ understander│ ← Base prompt only (no plan-guideline)
-└──────┬──────┘
-       ↓
-┌─────────────┐
-│    bold     │ ← Base prompt + plan-guideline + understander output
-└──────┬──────┘
-       ↓
-┌──────┴──────┐
-│  parallel   │
-├─────────────┤
-│  critique   │ ← Base prompt + plan-guideline + bold output
-│  reducer    │ ← Base prompt + plan-guideline + bold output
-└──────┬──────┘
-       ↓
-┌─────────────┐
-│  consensus  │ ← External review template + all prior outputs
-└─────────────┘
+understander → bold → critique → reducer → consensus (optional)
+                        ↓         ↓
+                    (parallel when enabled)
 ```
 
-## Prompt Rendering
-
-Each stage prompt is constructed by:
-
-1. **Strip YAML Frontmatter**: Remove any `---` delimited frontmatter from base prompts
-2. **Append Plan Guideline**: For bold/critique/reducer stages, append the plan-guideline content
-3. **Append Feature Description**: Add `# Feature Request\n\n{feature_desc}`
-4. **Append Previous Output**: Add `# Previous Stage Output\n\n{output}` when chaining
-
-### Consensus Prompt
-
-The consensus stage uses a different template (`external-review-prompt.md`) with placeholders:
-- `{{FEATURE_DESCRIPTION}}`: The original feature request
-- `{{COMBINED_REPORT}}`: Concatenated bold + critique + reducer outputs
+`skip_consensus=True` allows the CLI to delegate Stage 5 to the external consensus script while still using the same prompt rendering for stages 1–4.
 
 ## Artifact Layout
 
+Stage input prompts are written as `{prefix}-{stage}-input.md` and outputs follow `{prefix}-{stage}{output_suffix}`.
+
+Example with `.txt` output suffix:
+
 ```
-{output_dir}/
-├── {prefix}-understander-input.md
-├── {prefix}-understander-output.md
-├── {prefix}-bold-input.md
-├── {prefix}-bold-output.md
-├── {prefix}-critique-input.md
-├── {prefix}-critique-output.md
-├── {prefix}-reducer-input.md
-├── {prefix}-reducer-output.md
-├── {prefix}-consensus-input.md
-└── {prefix}-consensus-output.md
-```
-
-The prefix defaults to a timestamp (`YYYYMMDD-HHMMSS`) but can be overridden for reproducible artifact names.
-
-## Backend Configuration
-
-The `backends` parameter maps stage names to `(provider, model)` tuples:
-
-```python
-backends = {
-    "understander": ("claude", "haiku"),  # Fast, simple stage
-    "bold": ("claude", "sonnet"),
-    "critique": ("claude", "sonnet"),
-    "reducer": ("claude", "sonnet"),
-    "consensus": ("claude", "opus"),      # Highest quality for synthesis
-}
+.tmp/issue-123-understander-input.md
+.tmp/issue-123-understander.txt
+.tmp/issue-123-bold-input.md
+.tmp/issue-123-bold.txt
+.tmp/issue-123-critique-input.md
+.tmp/issue-123-critique.txt
+.tmp/issue-123-reducer-input.md
+.tmp/issue-123-reducer.txt
 ```
 
-When a stage is not specified, it defaults to `("claude", "sonnet")`.
+The external consensus step produces the final `.md` plan file.
 
-## Error Handling
+## Internal Helpers
 
-- **Missing Prompts**: Raises `FileNotFoundError` with the exact missing path
-- **Stage Failure**: Raises `RuntimeError` with stage name and non-zero exit code
-- **Timeout**: Propagates `subprocess.TimeoutExpired` from the runner
+### `PlannerTTY`
+Formats stage labels, dot animations, and timing logs with the same environment gates as the shell planner (`NO_COLOR`, `PLANNER_NO_COLOR`, `PLANNER_NO_ANIM`).
 
-Partial results are preserved in `output_dir` for debugging even when a stage fails.
+### `_load_planner_backend_config()`
+Loads `planner.*` overrides from `.agentize.local.yaml` via shared YAML helpers.
+
+### `_resolve_stage_backends()`
+Normalizes backend defaults (sonnet for understander, opus for the rest) and validates `provider:model` format.
+
+### `_run_external_consensus()`
+Invokes the external consensus script and returns the consensus file path.
+
+### `_issue_create()` / `_issue_fetch()` / `_issue_publish()`
+Wraps `gh` issue operations for placeholder creation, refinement context, and plan publishing.
+
+## Design Rationale
+
+- **Output suffix control:** Keeps legacy artifact naming for CLI workflows while retaining the default `-output.md` format for library usage.
+- **Consensus delegation:** Supports the external consensus script as the canonical synthesis stage without duplicating its validation logic.
+- **TTY parity:** Mirrors the shell pipeline’s visual feedback without introducing optional dependencies.
+- **Shared config loading:** Reuses `.agentize.local.yaml` discovery to keep planner backends consistent across workflows.

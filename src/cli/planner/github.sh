@@ -21,10 +21,13 @@ _planner_issue_create() {
         return 1
     fi
 
-    local trimmed="${title:0:30}"
+    local trimmed="${title:0:50}"
+    if [ ${#title} -gt 50 ]; then
+        trimmed="${trimmed}..."
+    fi
     local issue_url
     issue_url=$(gh issue create \
-        --title "[plan][placeholder] feat description: ${trimmed}..." \
+        --title "[plan] placeholder: ${trimmed}" \
         --body "$title" 2>&1)
     local exit_code=$?
 

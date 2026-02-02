@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Internal loader for the planner pipeline module used by `lol plan`. Sources modular implementation files from `planner/` directory following the same source-first pattern as `acw.sh`, `wt.sh`, and `lol.sh`.
+Internal loader for the planner pipeline adapter used by `lol plan`. Sources modular implementation files from the `planner/` directory following the same source-first pattern as `acw.sh`, `wt.sh`, and `lol.sh` while delegating orchestration to the Python backend.
 
 ## Public Entry Point
 
@@ -33,24 +33,23 @@ Stage-specific keys override `planner.backend`. Defaults are `claude:sonnet` for
 
 | Function | Location | Purpose |
 |----------|----------|---------|
-| `_planner_run_pipeline` | `planner/pipeline.sh` | Orchestrates the multi-agent debate pipeline (optional issue mode/refine) |
-| `_planner_render_prompt` | `planner/pipeline.sh` | Concatenates agent prompt + plan-guideline + context into a temp file |
-| `_planner_issue_create` | `planner/github.sh` | Creates placeholder GitHub issue (optional) |
-| `_planner_issue_fetch` | `planner/github.sh` | Fetches existing issue body for refine mode |
-| `_planner_issue_publish` | `planner/github.sh` | Updates issue body and adds `agentize:plan` label |
+| `_planner_run_pipeline` | `planner/pipeline.sh` | Forwards planner execution to the Python backend |
+| `_planner_issue_create` | `planner/github.sh` | Legacy GitHub helper (not used by adapter) |
+| `_planner_issue_fetch` | `planner/github.sh` | Legacy GitHub helper (not used by adapter) |
+| `_planner_issue_publish` | `planner/github.sh` | Legacy GitHub helper (not used by adapter) |
 
 ## Module Load Order
 
 ```
 planner.sh           # Loader: determines script dir, sources modules
-planner/pipeline.sh  # Multi-agent pipeline orchestration
-planner/github.sh    # GitHub issue creation/update helpers
+planner/pipeline.sh  # Python backend adapter
+planner/github.sh    # Legacy GitHub helpers
 ```
 
 ## Output Behavior
 
-When stderr is a TTY, `lol plan` prints a colored "Feature:" label, per-stage animated dots, and per-agent elapsed time logs. Set `NO_COLOR=1` to disable color and `PLANNER_NO_ANIM=1` to disable animation.
+When stderr is a TTY, the Python backend prints a colored "Feature:" label, per-stage animated dots, and per-agent elapsed time logs. Set `NO_COLOR=1` to disable color and `PLANNER_NO_ANIM=1` to disable animation.
 
 ## Design Rationale
 
-The planner module separates pipeline logic from the `lol plan` entry point so that the pipeline internals (stage ordering, prompt rendering, parallelism) can evolve independently. The `_planner_render_prompt` helper centralizes prompt assembly to ensure consistent plan-guideline injection across all stages that require it.
+The adapter preserves the `lol plan` shell interface while consolidating pipeline orchestration, consensus synthesis, and issue publishing in Python for easier testing and reuse.

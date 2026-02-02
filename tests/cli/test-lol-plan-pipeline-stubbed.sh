@@ -10,6 +10,7 @@ PLANNER_CLI="$PROJECT_ROOT/src/cli/planner.sh"
 test_info "Pipeline generates all stage artifacts with stubbed acw and consensus"
 
 export AGENTIZE_HOME="$PROJECT_ROOT"
+export PYTHONPATH="$PROJECT_ROOT/python"
 source "$PLANNER_CLI"
 source "$LOL_CLI"
 
@@ -27,26 +28,28 @@ YAMLEOF
 CALL_LOG="$TMP_DIR/acw-calls.log"
 touch "$CALL_LOG"
 
-# Create stub acw that writes fake output and logs calls
+# Create stub acw loader for the Python backend
+STUB_ACW="$TMP_DIR/acw-stub.sh"
+cat > "$STUB_ACW" <<'STUBEOF'
+#!/usr/bin/env bash
 acw() {
-    local cli_name="$1"
-    local model_name="$2"
+    local provider="$1"
+    local model="$2"
     local input_file="$3"
     local output_file="$4"
 
-    echo "acw $cli_name $model_name $input_file $output_file" >> "$CALL_LOG"
+    echo "acw $provider $model $input_file $output_file" >> "${PLANNER_ACW_CALL_LOG:?}"
 
-    # Write stub output based on the input content
-    if grep -q "understander\|context-gathering\|Context Summary" "$input_file" 2>/dev/null; then
+    if echo "$output_file" | grep -q "understander"; then
         echo "# Context Summary: Test Feature" > "$output_file"
         echo "Stub understander output" >> "$output_file"
-    elif grep -q "bold\|innovative\|Bold Proposal" "$input_file" 2>/dev/null; then
+    elif echo "$output_file" | grep -q "bold"; then
         echo "# Bold Proposal: Test Feature" > "$output_file"
         echo "Stub bold proposer output" >> "$output_file"
-    elif grep -q "critique\|Critical\|feasibility" "$input_file" 2>/dev/null; then
+    elif echo "$output_file" | grep -q "critique"; then
         echo "# Proposal Critique: Test Feature" > "$output_file"
         echo "Stub critique output" >> "$output_file"
-    elif grep -q "simplif\|reducer\|less is more" "$input_file" 2>/dev/null; then
+    elif echo "$output_file" | grep -q "reducer"; then
         echo "# Simplified Proposal: Test Feature" > "$output_file"
         echo "Stub reducer output" >> "$output_file"
     else
@@ -55,6 +58,11 @@ acw() {
     fi
     return 0
 }
+STUBEOF
+chmod +x "$STUB_ACW"
+
+export PLANNER_ACW_CALL_LOG="$CALL_LOG"
+export PLANNER_ACW_SCRIPT="$STUB_ACW"
 
 # Create stub consensus script
 STUB_CONSENSUS_DIR="$TMP_DIR/consensus-stub"
@@ -110,7 +118,7 @@ if [ "$CALL_COUNT" -lt 4 ]; then
 fi
 
 # Verify consensus output was referenced
-echo "$output" | grep -q "consensus\|Consensus" || {
+echo "$output" | grep -qi "consensus" || {
     echo "Pipeline output: $output" >&2
     test_fail "Pipeline output should reference consensus plan"
 }
@@ -120,6 +128,18 @@ echo "$output" | grep -qE "agent runs [0-9]+s" || {
     echo "Pipeline output: $output" >&2
     test_fail "Pipeline output should contain per-agent timing logs (e.g., 'agent runs Ns')"
 }
+
+# Verify .txt stage artifacts were created
+LATEST_UNDERSTANDER=$(ls -t "$PROJECT_ROOT/.tmp/"*-understander.txt 2>/dev/null | head -1)
+if [ -z "$LATEST_UNDERSTANDER" ]; then
+    test_fail "Expected a understander .txt artifact"
+fi
+PREFIX="${LATEST_UNDERSTANDER%-understander.txt}"
+for stage in bold critique reducer; do
+    if [ ! -s "${PREFIX}-${stage}.txt" ]; then
+        test_fail "Expected ${PREFIX}-${stage}.txt artifact"
+    fi
+done
 
 # ── Test 2: --verbose mode outputs detailed stage info ──
 > "$CALL_LOG"
