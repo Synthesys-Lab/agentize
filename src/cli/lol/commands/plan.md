@@ -18,8 +18,8 @@ lol plan [--dry-run] [--verbose] [--editor] [--refine <issue-no> [refinement-ins
 **Options**:
 - `--dry-run`: Skip GitHub issue creation and use timestamp artifacts.
 - `--verbose`: Print detailed stage logs.
-- `--editor`: Open `$EDITOR` to compose the feature description.
-- `--refine <issue-no>`: Refine an existing plan issue.
+- `--editor`: Open `$EDITOR` to compose the feature description; when combined with `--refine`, the editor text becomes the refinement focus.
+- `--refine <issue-no>`: Refine an existing plan issue; refinement focus is composed from editor text when `--editor` is used. When both editor text and positional instructions are provided, the editor text appears first.
 
 ## Internal Helpers
 
