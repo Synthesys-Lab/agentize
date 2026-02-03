@@ -1,50 +1,8 @@
 # Module: agentize.workflow.utils
 
-Reusable TTY output helpers and shell invocation utilities for workflow orchestration.
+Reusable shell invocation utilities for workflow orchestration.
 
-## Purpose
-
-This module extracts terminal handling and `acw` shell invocation from the planner pipeline, making them available for reuse across different workflow implementations.
-
-## Exports
-
-### `PlannerTTY`
-
-```python
-class PlannerTTY:
-    def __init__(self, *, verbose: bool = False) -> None: ...
-    def term_label(self, label: str, text: str, style: str = "") -> None: ...
-    def print_feature(self, desc: str) -> None: ...
-    def stage(self, message: str) -> None: ...
-    def log(self, message: str) -> None: ...
-    def timer_start(self) -> float: ...
-    def timer_log(self, stage: str, start_epoch: float, backend: str | None = None) -> None: ...
-    def anim_start(self, label: str) -> None: ...
-    def anim_stop(self) -> None: ...
-```
-
-TTY output helper that provides terminal styling, dot animations, and timing logs with environment-based feature gates.
-
-**Constructor:**
-- `verbose`: When `True`, enables verbose logging via `log()` method
-
-**Environment gates:**
-- `NO_COLOR`: Disables colored output
-- `PLANNER_NO_COLOR`: Disables colored output (planner-specific)
-- `PLANNER_NO_ANIM`: Disables dot animations
-
-**Methods:**
-
-| Method | Description |
-|--------|-------------|
-| `term_label(label, text, style)` | Print styled label with `info` (cyan) or `success` (green) color |
-| `print_feature(desc)` | Print feature description with "Feature:" label |
-| `stage(message)` | Print stage progress message (always shown) |
-| `log(message)` | Print message only when verbose mode enabled |
-| `timer_start()` | Return current epoch time for timing |
-| `timer_log(stage, start_epoch, backend)` | Log elapsed time since `start_epoch` (include backend when provided) |
-| `anim_start(label)` | Start background dot animation with label |
-| `anim_stop()` | Stop any running animation and clear line |
+## External Interfaces
 
 ### `run_acw`
 
@@ -62,10 +20,11 @@ def run_acw(
 ) -> subprocess.CompletedProcess
 ```
 
-Wrapper around the `acw` shell function that builds and executes an ACW command with quoted paths.
+Wrapper around the `acw` shell function that builds and executes an ACW command with
+quoted paths.
 
 **Parameters:**
-- `provider`: Backend provider (`"claude"` or `"codex"`)
+- `provider`: Backend provider (e.g., `"claude"`, `"codex"`)
 - `model`: Model identifier (e.g., `"sonnet"`, `"opus"`)
 - `input_file`: Path to input prompt file
 - `output_file`: Path for stage output
@@ -88,8 +47,8 @@ Wrapper around the `acw` shell function that builds and executes an ACW command 
 def list_acw_providers() -> list[str]
 ```
 
-Fetch the list of supported providers by calling `acw --complete providers`
-using the same script resolution rules as `run_acw`.
+Fetch the list of supported providers by calling `acw --complete providers` using
+`run_acw` script resolution rules.
 
 **Behavior:**
 - Returns the list of non-empty lines from the completion output.
@@ -132,32 +91,30 @@ start/finish timing logs.
 - Emits `agent <name> (<provider>:<model>) is running...` before invoking `run_acw`.
 - Emits `agent <name> (<provider>:<model>) runs <seconds>s` after completion.
 
-The log format matches the planner TTY contract in `docs/cli/planner.md`.
+## Internal Helpers
+
+### `_resolve_acw_script()`
+
+Resolves the `acw.sh` path from `PLANNER_ACW_SCRIPT` or defaults to
+`$AGENTIZE_HOME/src/cli/acw.sh`.
+
+### `_resolve_overrides_cmd()`
+
+Resolves optional shell overrides by sourcing `AGENTIZE_SHELL_OVERRIDES` when present.
 
 ## Example
 
 ```python
-from agentize.workflow.utils import PlannerTTY, run_acw
+from agentize.workflow.utils import ACW
 
-# TTY output with animation
-tty = PlannerTTY(verbose=True)
-tty.print_feature("Add user authentication")
-start = tty.timer_start()
-tty.anim_start("Processing")
-# ... do work ...
-tty.anim_stop()
-tty.timer_log("auth-stage", start, "claude:sonnet")
-
-# Direct acw invocation
-result = run_acw(
-    "claude", "sonnet",
-    "input.md", "output.md",
-    tools="Read,Grep,Glob",
-)
+runner = ACW(name="understander", provider="claude", model="sonnet")
+result = runner.run("input.md", "output.md")
+print(result.returncode)
 ```
 
 ## Design Rationale
 
-- **Extraction point**: These utilities were extracted from `planner.py` to enable reuse without importing the full pipeline orchestration code.
-- **Environment parity**: Uses the same environment gates (`NO_COLOR`, `PLANNER_NO_COLOR`, `PLANNER_NO_ANIM`) as the shell planner for consistent behavior.
-- **Thread safety**: `PlannerTTY` uses daemon threads for animation, ensuring clean shutdown.
+- **Single invocation path**: `run_acw` centralizes shell execution so workflow stages
+  behave consistently across CLI and library usage.
+- **Provider validation**: `ACW` validates provider names once at construction and logs
+  timing so pipeline stages surface progress uniformly.

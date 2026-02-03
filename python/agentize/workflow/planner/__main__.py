@@ -13,7 +13,6 @@ import re
 import shutil
 import subprocess
 import sys
-import time
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -22,7 +21,7 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from agentize.shell import get_agentize_home
-from agentize.workflow.utils import ACW, PlannerTTY, run_acw
+from agentize.workflow.utils import ACW, run_acw
 
 
 @dataclass
@@ -206,7 +205,6 @@ def run_planner_pipeline(
     prefix: str | None = None,
     output_suffix: str = "-output.md",
     skip_consensus: bool = False,
-    progress: Optional[PlannerTTY] = None,
 ) -> dict[str, StageResult]:
     """Execute the 5-stage planner pipeline.
 
@@ -219,8 +217,6 @@ def run_planner_pipeline(
         prefix: Artifact filename prefix (default: timestamp-based)
         output_suffix: Suffix appended to stage output filenames
         skip_consensus: Skip the consensus stage (default: False)
-        progress: Optional TTY progress helper for stage logging/animation
-
     Returns:
         Dict mapping stage names to StageResult objects
 
@@ -245,6 +241,10 @@ def run_planner_pipeline(
     log_lock = threading.Lock()
 
     def _log_writer(message: str) -> None:
+        with log_lock:
+            print(message, file=sys.stderr)
+
+    def _log_stage(message: str) -> None:
         with log_lock:
             print(message, file=sys.stderr)
 
@@ -304,15 +304,8 @@ def run_planner_pipeline(
     understander_prompt = _render_stage_prompt(
         "understander", feature_desc, agentize_home
     )
-    if progress:
-        progress.anim_start(
-            f"Stage 1/5: Running understander ({_backend_label('understander')})"
-        )
-    try:
-        results["understander"] = _run_stage("understander", understander_prompt)
-    finally:
-        if progress:
-            progress.anim_stop()
+    _log_stage(f"Stage 1/5: Running understander ({_backend_label('understander')})")
+    results["understander"] = _run_stage("understander", understander_prompt)
     _check_stage_result(results["understander"])
     understander_output = results["understander"].output_path.read_text()
 
@@ -320,13 +313,8 @@ def run_planner_pipeline(
     bold_prompt = _render_stage_prompt(
         "bold", feature_desc, agentize_home, understander_output
     )
-    if progress:
-        progress.anim_start(f"Stage 2/5: Running bold-proposer ({_backend_label('bold')})")
-    try:
-        results["bold"] = _run_stage("bold", bold_prompt)
-    finally:
-        if progress:
-            progress.anim_stop()
+    _log_stage(f"Stage 2/5: Running bold-proposer ({_backend_label('bold')})")
+    results["bold"] = _run_stage("bold", bold_prompt)
     _check_stage_result(results["bold"])
     bold_output = results["bold"].output_path.read_text()
 
@@ -338,27 +326,23 @@ def run_planner_pipeline(
         "reducer", feature_desc, agentize_home, bold_output
     )
 
-    if progress:
-        progress.anim_start(
-            "Stage 3-4/5: Running critique and reducer in parallel "
-            f"({_backend_label('critique')}, {_backend_label('reducer')})"
-        )
-    try:
-        if parallel:
-            # Run in parallel using ThreadPoolExecutor
-            with ThreadPoolExecutor(max_workers=2) as executor:
-                critique_future = executor.submit(_run_stage, "critique", critique_prompt)
-                reducer_future = executor.submit(_run_stage, "reducer", reducer_prompt)
+    mode_label = "parallel" if parallel else "sequentially"
+    _log_stage(
+        f"Stage 3-4/5: Running critique and reducer {mode_label} "
+        f"({_backend_label('critique')}, {_backend_label('reducer')})"
+    )
+    if parallel:
+        # Run in parallel using ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            critique_future = executor.submit(_run_stage, "critique", critique_prompt)
+            reducer_future = executor.submit(_run_stage, "reducer", reducer_prompt)
 
-                results["critique"] = critique_future.result()
-                results["reducer"] = reducer_future.result()
-        else:
-            # Run sequentially
-            results["critique"] = _run_stage("critique", critique_prompt)
-            results["reducer"] = _run_stage("reducer", reducer_prompt)
-    finally:
-        if progress:
-            progress.anim_stop()
+            results["critique"] = critique_future.result()
+            results["reducer"] = reducer_future.result()
+    else:
+        # Run sequentially
+        results["critique"] = _run_stage("critique", critique_prompt)
+        results["reducer"] = _run_stage("reducer", reducer_prompt)
     _check_stage_result(results["critique"])
     _check_stage_result(results["reducer"])
     critique_output = results["critique"].output_path.read_text()
@@ -371,15 +355,8 @@ def run_planner_pipeline(
     consensus_prompt = _render_consensus_prompt(
         feature_desc, bold_output, critique_output, reducer_output, agentize_home
     )
-    if progress:
-        progress.anim_start(
-            f"Stage 5/5: Running consensus ({_backend_label('consensus')})"
-        )
-    try:
-        results["consensus"] = _run_stage("consensus", consensus_prompt)
-    finally:
-        if progress:
-            progress.anim_stop()
+    _log_stage(f"Stage 5/5: Running consensus ({_backend_label('consensus')})")
+    results["consensus"] = _run_stage("consensus", consensus_prompt)
     _check_stage_result(results["consensus"])
 
     return results
@@ -698,7 +675,12 @@ def main(argv: list[str]) -> int:
     output_dir = repo_root / ".tmp"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    tty = PlannerTTY(verbose=verbose)
+    def _log(message: str) -> None:
+        print(message, file=sys.stderr)
+
+    def _log_verbose(message: str) -> None:
+        if verbose:
+            _log(message)
 
     try:
         backend_config = _load_planner_backend_config(repo_root, Path.cwd())
@@ -733,7 +715,7 @@ def main(argv: list[str]) -> int:
         issue_number, issue_url = _issue_create(feature_desc)
         if issue_number:
             prefix_name = f"issue-{issue_number}"
-            tty.stage(f"Created placeholder issue #{issue_number}")
+            _log(f"Created placeholder issue #{issue_number}")
         else:
             print(
                 "Warning: Issue creation failed, falling back to timestamp artifacts",
@@ -743,10 +725,10 @@ def main(argv: list[str]) -> int:
     else:
         prefix_name = timestamp
 
-    tty.stage("Starting multi-agent debate pipeline...")
-    tty.print_feature(feature_desc)
-    tty.log(f"Artifacts prefix: {prefix_name}")
-    tty.log("")
+    _log("Starting multi-agent debate pipeline...")
+    _log(f"Feature: {feature_desc}")
+    _log_verbose(f"Artifacts prefix: {prefix_name}")
+    _log_verbose("")
 
     try:
         results = run_planner_pipeline(
@@ -757,16 +739,13 @@ def main(argv: list[str]) -> int:
             prefix=prefix_name,
             output_suffix=".txt",
             skip_consensus=True,
-            progress=tty,
         )
     except (FileNotFoundError, RuntimeError, subprocess.TimeoutExpired) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
 
     consensus_backend = stage_backends["consensus"]
-    tty.anim_start(
-        f"Stage 5/5: Running consensus ({consensus_backend[0]}:{consensus_backend[1]})"
-    )
+    _log(f"Stage 5/5: Running consensus ({consensus_backend[0]}:{consensus_backend[1]})")
     log_lock = threading.Lock()
 
     def _log_writer(message: str) -> None:
@@ -785,10 +764,8 @@ def main(argv: list[str]) -> int:
             log_writer=_log_writer,
         )
     except (FileNotFoundError, RuntimeError, subprocess.TimeoutExpired) as exc:
-        tty.anim_stop()
         print(f"Error: {exc}", file=sys.stderr)
         return 2
-    tty.anim_stop()
 
     if consensus_result.process.returncode != 0:
         print(
@@ -809,13 +786,13 @@ def main(argv: list[str]) -> int:
         consensus_display = str(consensus_result.output_path)
     consensus_path = consensus_result.output_path
 
-    tty.log("")
-    tty.stage("Pipeline complete!")
-    tty.log(f"Consensus plan: {consensus_display}")
-    tty.log("")
+    _log_verbose("")
+    _log("Pipeline complete!")
+    _log_verbose(f"Consensus plan: {consensus_display}")
+    _log_verbose("")
 
     if issue_mode and issue_number:
-        tty.stage(f"Publishing plan to issue #{issue_number}...")
+        _log(f"Publishing plan to issue #{issue_number}...")
         plan_title = _extract_plan_title(consensus_path)
         if not plan_title:
             plan_title = _shorten_feature_desc(feature_desc, max_len=50)
@@ -826,9 +803,9 @@ def main(argv: list[str]) -> int:
                 file=sys.stderr,
             )
         if issue_url:
-            tty.term_label("See the full plan at:", issue_url, "success")
+            _log(f"See the full plan at: {issue_url}")
 
-    tty.term_label("See the full plan locally at:", consensus_display, "info")
+    _log(f"See the full plan locally at: {consensus_display}")
     return 0
 
 

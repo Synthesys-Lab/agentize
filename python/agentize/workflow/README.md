@@ -26,8 +26,8 @@ and output suffix.
 
 | Module | Purpose |
 |--------|---------|
-| `__init__.py` | Package exports: `run_acw`, `ACW`, `run_planner_pipeline`, `run_impl_workflow`, `StageResult`, `PlannerTTY`, `ImplError` |
-| `utils.py` | Reusable TTY and shell invocation utilities |
+| `__init__.py` | Package exports: `run_acw`, `ACW`, `run_planner_pipeline`, `run_impl_workflow`, `StageResult`, `ImplError` |
+| `utils.py` | Reusable shell invocation utilities |
 | `planner/` | Standalone planning pipeline package (`python -m agentize.workflow.planner`) |
 | `planner.py` | **DEPRECATED** - Re-exports for backward compatibility (will be removed) |
 | `impl/` | Issue-to-implementation workflow (Python) with file-based prompt |

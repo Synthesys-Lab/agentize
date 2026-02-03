@@ -16,21 +16,19 @@ import pytest
 # Using try/except to allow test file to exist before implementation
 try:
     # Primary imports via backward-compat re-exports in workflow/__init__.py
-    from agentize.workflow import run_planner_pipeline, StageResult, run_acw, PlannerTTY, ACW
+    from agentize.workflow import run_planner_pipeline, StageResult, run_acw, ACW
 except ImportError:
     # Define stubs for test discovery before implementation
     StageResult = None
     run_planner_pipeline = None
     run_acw = None
-    PlannerTTY = None
     ACW = None
 
 # Additional import path tests (these will be exercised in dedicated tests below)
 try:
-    from agentize.workflow.utils import run_acw as utils_run_acw, PlannerTTY as utils_PlannerTTY
+    from agentize.workflow.utils import run_acw as utils_run_acw
 except ImportError:
     utils_run_acw = None
-    utils_PlannerTTY = None
 
 try:
     from agentize.workflow.planner import run_planner_pipeline as planner_run_pipeline, StageResult as planner_StageResult
@@ -514,18 +512,16 @@ class TestImportPaths:
     @pytest.mark.skipif(run_planner_pipeline is None, reason="Implementation not yet available")
     def test_workflow_backward_compat_imports(self):
         """Imports from agentize.workflow work (backward compatibility)."""
-        from agentize.workflow import run_planner_pipeline, StageResult, run_acw, PlannerTTY
+        from agentize.workflow import run_planner_pipeline, StageResult, run_acw
         assert run_planner_pipeline is not None
         assert StageResult is not None
         assert run_acw is not None
-        assert PlannerTTY is not None
 
     @pytest.mark.skipif(utils_run_acw is None, reason="Implementation not yet available")
     def test_utils_direct_imports(self):
         """Imports from agentize.workflow.utils work."""
-        from agentize.workflow.utils import run_acw, PlannerTTY
+        from agentize.workflow.utils import run_acw
         assert run_acw is not None
-        assert PlannerTTY is not None
 
     @pytest.mark.skipif(planner_run_pipeline is None, reason="Implementation not yet available")
     def test_planner_package_imports(self):

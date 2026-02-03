@@ -1,7 +1,6 @@
-"""Reusable TTY and shell invocation utilities for workflow orchestration.
+"""Reusable shell invocation utilities for workflow orchestration.
 
 Provides:
-- PlannerTTY: Terminal output helper with animation and timing support
 - run_acw: Wrapper around the acw shell function
 - list_acw_providers: Provider list resolver via acw completion
 - ACW: Class-based runner with provider validation and timing logs
@@ -15,114 +14,9 @@ import sys
 import threading
 import time
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable
 
 from agentize.shell import get_agentize_home
-
-
-# ============================================================
-# TTY Output Helpers
-# ============================================================
-
-
-class PlannerTTY:
-    """TTY output helper that mirrors planner pipeline styling."""
-
-    def __init__(self, *, verbose: bool = False) -> None:
-        self.verbose = verbose
-        self._anim_thread: Optional[threading.Thread] = None
-        self._anim_stop: Optional[threading.Event] = None
-
-    @staticmethod
-    def _color_enabled() -> bool:
-        return (
-            os.getenv("NO_COLOR") is None
-            and os.getenv("PLANNER_NO_COLOR") is None
-            and sys.stderr.isatty()
-        )
-
-    @staticmethod
-    def _anim_enabled() -> bool:
-        return os.getenv("PLANNER_NO_ANIM") is None and sys.stderr.isatty()
-
-    def _clear_line(self) -> None:
-        sys.stderr.write("\r\033[K")
-        sys.stderr.flush()
-
-    def term_label(self, label: str, text: str, style: str = "") -> None:
-        if not self._color_enabled():
-            print(f"{label} {text}", file=sys.stderr)
-            return
-
-        color_code = ""
-        if style == "info":
-            color_code = "\033[1;36m"
-        elif style == "success":
-            color_code = "\033[1;32m"
-        else:
-            print(f"{label} {text}", file=sys.stderr)
-            return
-
-        sys.stderr.write(f"{color_code}{label}\033[0m {text}\n")
-        sys.stderr.flush()
-
-    def print_feature(self, desc: str) -> None:
-        self.term_label("Feature:", desc, "info")
-
-    def stage(self, message: str) -> None:
-        print(message, file=sys.stderr)
-
-    def log(self, message: str) -> None:
-        if self.verbose:
-            print(message, file=sys.stderr)
-
-    def timer_start(self) -> float:
-        return time.time()
-
-    def timer_log(self, stage: str, start_epoch: float, backend: str | None = None) -> None:
-        elapsed = int(time.time() - start_epoch)
-        if backend:
-            print(f"  agent {stage} ({backend}) runs {elapsed}s", file=sys.stderr)
-        else:
-            print(f"  agent {stage} runs {elapsed}s", file=sys.stderr)
-
-    def anim_start(self, label: str) -> None:
-        if not self._anim_enabled():
-            print(label, file=sys.stderr)
-            return
-
-        self.anim_stop()
-        stop_event = threading.Event()
-
-        def _run() -> None:
-            dots = ".."
-            growing = True
-            while not stop_event.is_set():
-                self._clear_line()
-                sys.stderr.write(f"{label} {dots}")
-                sys.stderr.flush()
-                time.sleep(0.4)
-                if growing:
-                    dots += "."
-                    if len(dots) >= 5:
-                        growing = False
-                else:
-                    dots = dots[:-1]
-                    if len(dots) <= 2:
-                        growing = True
-
-        thread = threading.Thread(target=_run, daemon=True)
-        self._anim_stop = stop_event
-        self._anim_thread = thread
-        thread.start()
-
-    def anim_stop(self) -> None:
-        if self._anim_thread and self._anim_stop:
-            self._anim_stop.set()
-            self._anim_thread.join(timeout=1)
-            self._anim_thread = None
-            self._anim_stop = None
-            self._clear_line()
 
 
 # ============================================================
@@ -319,4 +213,4 @@ class ACW:
         return process
 
 
-__all__ = ["ACW", "PlannerTTY", "list_acw_providers", "run_acw"]
+__all__ = ["ACW", "list_acw_providers", "run_acw"]
