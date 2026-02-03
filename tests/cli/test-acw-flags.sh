@@ -7,6 +7,8 @@
 # Test 5: file mode captures provider stderr to sidecar
 # Test 6: file mode removes empty stderr sidecar
 # Test 7: --stdout rejects output-file positional argument
+# Test 8: --chat --editor --stdout echoes prompt on TTY stdout
+# Test 9: --chat --editor --stdout skips prompt echo on non-TTY stdout
 
 source "$(dirname "$0")/../common.sh"
 
@@ -204,5 +206,79 @@ fi
 if ! echo "$output" | grep -qi "stdout"; then
   test_fail "--stdout mutual exclusion error should mention stdout"
 fi
+
+# Test 8: --chat --editor --stdout echoes prompt on TTY stdout
+TTY_EDITOR="$TEST_HOME/tty-editor.sh"
+cat > "$TTY_EDITOR" << 'STUB'
+#!/usr/bin/env bash
+cat > "$1" << 'EOF'
+TTY prompt content
+EOF
+STUB
+chmod +x "$TTY_EDITOR"
+
+if ! command -v script >/dev/null 2>&1; then
+  test_fail "script command is required for TTY stdout testing"
+fi
+
+ORIGINAL_AGENTIZE_HOME="$AGENTIZE_HOME"
+CHAT_HOME="$TEST_HOME/chat-home"
+mkdir -p "$CHAT_HOME"
+
+export AGENTIZE_HOME="$CHAT_HOME"
+export EDITOR="$TTY_EDITOR"
+export ACW_STUB_STDERR="0"
+
+set +e
+tty_output=$(script -q /dev/null bash -c "source \"$ACW_CLI\"; acw --chat --editor --stdout claude test-model" 2>/dev/null)
+exit_code=$?
+set -e
+
+if [ "$exit_code" -ne 0 ]; then
+  test_fail "--chat --editor --stdout should succeed on TTY stdout"
+fi
+
+clean_tty_output=$(printf "%s\n" "$tty_output" | tr -d '\r')
+
+if ! printf "%s\n" "$clean_tty_output" | grep -q "^User Prompt:"; then
+  test_fail "TTY stdout should include User Prompt header"
+fi
+
+if ! printf "%s\n" "$clean_tty_output" | grep -q "TTY prompt content"; then
+  test_fail "TTY stdout should include editor prompt content"
+fi
+
+prompt_line=$(printf "%s\n" "$clean_tty_output" | awk '/^User Prompt:/{print NR; exit}')
+user_header_line=$(printf "%s\n" "$clean_tty_output" | awk '/^# User/{print NR; exit}')
+
+if [ -z "$prompt_line" ] || [ -z "$user_header_line" ]; then
+  test_fail "TTY stdout should include prompt header and assistant output"
+fi
+
+if [ "$prompt_line" -gt "$user_header_line" ]; then
+  test_fail "TTY stdout should echo prompt before assistant output"
+fi
+
+# Test 9: --chat --editor --stdout skips prompt echo on non-TTY stdout
+set +e
+non_tty_output=$(acw --chat --editor --stdout claude test-model 2>/dev/null)
+exit_code=$?
+set -e
+
+if [ "$exit_code" -ne 0 ]; then
+  test_fail "--chat --editor --stdout should succeed on non-TTY stdout"
+fi
+
+clean_non_tty_output=$(printf "%s\n" "$non_tty_output" | tr -d '\r')
+
+if printf "%s\n" "$clean_non_tty_output" | grep -q "^User Prompt:"; then
+  test_fail "Non-TTY stdout should not include prompt echo"
+fi
+
+if ! printf "%s\n" "$clean_non_tty_output" | grep -q "TTY prompt content"; then
+  test_fail "Non-TTY stdout should still include assistant output"
+fi
+
+export AGENTIZE_HOME="$ORIGINAL_AGENTIZE_HOME"
 
 test_pass "acw --editor/--stdout flags work correctly"

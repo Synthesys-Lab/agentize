@@ -32,7 +32,7 @@ acw --help
 | `--chat [session-id]` | Start or continue a chat session. Creates new session if no ID provided. |
 | `--chat-list` | List available chat sessions and exit. |
 | `--editor` | Use `$EDITOR` to create the input content (mutually exclusive with `input-file`) |
-| `--stdout` | Write output to stdout (mutually exclusive with `output-file`). When not combined with `--chat`, merges provider stderr into stdout. When combined with `--chat`, provider stderr is written to `<session-id>.stderr` sidecar file. |
+| `--stdout` | Write output to stdout (mutually exclusive with `output-file`). When not combined with `--chat`, merges provider stderr into stdout. When combined with `--chat`, provider stderr is written to `<session-id>.stderr` sidecar file, and `--editor` echoes the prompt to stdout when stdout is a TTY. |
 | `--complete <topic>` | Print completion values for the given topic |
 | `--help` | Show help text |
 
@@ -175,6 +175,7 @@ autoload -Uz compinit && compinit
 - `--stdout` behavior:
   - Without `--chat`: merges provider stderr into stdout so progress and output can be piped together.
   - With `--chat`: provider stderr is appended to `.tmp/acw-sessions/<session-id>.stderr` to keep stdout clean for piping. Empty sidecar files created by `acw` are automatically removed.
+  - With `--chat --editor`: when stdout is a TTY, the editor prompt is echoed to stdout before assistant output.
 - In file mode (no `--stdout`), provider stderr is written to `<output-file>.stderr`. Empty sidecar files are removed after the provider exits.
 
 ## See Also

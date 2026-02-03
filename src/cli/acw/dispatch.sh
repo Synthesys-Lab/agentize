@@ -452,6 +452,11 @@ acw() {
             local assistant_response=""
             if [ "$stdout_mode" -eq 1 ]; then
                 assistant_response="$chat_output_capture"
+                if [ "$use_editor" -eq 1 ] && [ -t 1 ]; then
+                    echo "User Prompt:"
+                    cat "$original_input_file"
+                    echo ""
+                fi
                 # Emit captured output to stdout
                 cat "$chat_output_capture"
             else
