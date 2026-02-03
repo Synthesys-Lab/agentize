@@ -22,6 +22,8 @@ top-level flags.
 
 ### _lol_log_version()
 
-Writes a stable version banner to stderr using the git tag (or short hash) and
-full commit hash from `AGENTIZE_HOME`. This keeps diagnostics consistent across
-commands and avoids polluting completion output.
+Writes a stable version banner to stderr in the format
+`[agentize] <branch> @<short-hash>`. The branch and short hash are resolved from
+`AGENTIZE_HOME` (or the current directory when unset) and fall back to
+`unknown` when git metadata is unavailable. This keeps diagnostics consistent
+across commands and avoids polluting completion output.

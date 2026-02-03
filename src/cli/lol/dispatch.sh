@@ -4,20 +4,16 @@
 
 # Log version information to stderr
 _lol_log_version() {
-    # Get version from git describe or short commit hash (from AGENTIZE_HOME)
-    local version="unknown"
-    if [ -n "$AGENTIZE_HOME" ] && command -v git >/dev/null 2>&1; then
-        # Try to get tag, fall back to short commit hash
-        version=$(git -C "$AGENTIZE_HOME" describe --tags --always 2>/dev/null || echo "unknown")
+    local git_dir="${AGENTIZE_HOME:-.}"
+    local branch="unknown"
+    local hash="unknown"
+
+    if command -v git >/dev/null 2>&1; then
+        branch=$(git -C "$git_dir" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+        hash=$(git -C "$git_dir" rev-parse --short=7 HEAD 2>/dev/null || echo "unknown")
     fi
 
-    # Get full commit hash (from AGENTIZE_HOME)
-    local commit="unknown"
-    if [ -n "$AGENTIZE_HOME" ] && command -v git >/dev/null 2>&1; then
-        commit=$(git -C "$AGENTIZE_HOME" rev-parse HEAD 2>/dev/null || echo "unknown")
-    fi
-
-    echo "[agentize] $version @ $commit" >&2
+    echo "[agentize] $branch @$hash" >&2
 }
 
 # Main lol function

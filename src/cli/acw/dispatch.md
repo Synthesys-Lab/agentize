@@ -45,7 +45,16 @@ acw --chat-list
 ## Internal Helpers
 
 ### _acw_usage()
-Prints usage text, options, providers, and examples.
+Prints usage text, options, providers, and examples. Emits the version banner
+to stderr via `_acw_log_version()` so help output always includes the current
+agentize version context.
+
+### _acw_log_version()
+
+Writes the version banner to stderr in the format
+`[agentize] <branch> @<short-hash>`. The branch and short hash are resolved from
+`AGENTIZE_HOME` (or the current directory when unset) and fall back to `unknown`
+when git metadata is unavailable.
 
 ### _acw_validate_no_positional_args()
 Ensures editor/stdout modes do not accept extra positional arguments. Allows
