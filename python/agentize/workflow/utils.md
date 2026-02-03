@@ -4,9 +4,9 @@ Reusable TTY output helpers and shell invocation utilities for workflow orchestr
 
 ## Purpose
 
-This module extracts terminal handling and `acw` shell invocation from the planner pipeline, making them available for reuse across different workflow implementations.
+This module provides terminal handling and `acw` shell invocation utilities for reuse across workflow implementations.
 
-## Exports
+## External Interface
 
 ### `PlannerTTY`
 
@@ -104,8 +104,14 @@ result = run_acw(
 )
 ```
 
+## Internal Helpers
+
+- `PlannerTTY._color_enabled()`: Check whether colored output should be enabled.
+- `PlannerTTY._anim_enabled()`: Check whether dot animation should be enabled.
+- `PlannerTTY._clear_line()`: Clear the current stderr line for animation updates.
+
 ## Design Rationale
 
-- **Extraction point**: These utilities were extracted from `planner.py` to enable reuse without importing the full pipeline orchestration code.
-- **Environment parity**: Uses the same environment gates (`NO_COLOR`, `PLANNER_NO_COLOR`, `PLANNER_NO_ANIM`) as the shell planner for consistent behavior.
-- **Thread safety**: `PlannerTTY` uses daemon threads for animation, ensuring clean shutdown.
+- **Reusable interface**: Centralizes TTY output and `acw` invocation so other workflows can adopt the same conventions.
+- **Environment parity**: Uses `NO_COLOR`, `PLANNER_NO_COLOR`, and `PLANNER_NO_ANIM` to keep behavior predictable in CI and non-interactive sessions.
+- **Non-blocking animation**: Animation runs on a daemon thread to avoid blocking pipeline execution and to shut down cleanly.

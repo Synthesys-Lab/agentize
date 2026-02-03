@@ -58,5 +58,5 @@ for stage, result in results.items():
 ## Design Rationale
 
 - **Runnable package**: Using `__main__.py` enables `python -m` invocation while keeping logic in a single file.
-- **Re-exports**: `PlannerTTY` is re-exported for backward compatibility with code that imported it from the planner module.
+- **Re-exports**: `PlannerTTY` is re-exported to keep planner-related imports cohesive.
 - **Separation**: TTY/shell utilities live in `workflow/utils.py`; pipeline orchestration lives here.

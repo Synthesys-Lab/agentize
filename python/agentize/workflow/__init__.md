@@ -116,6 +116,17 @@ Structured result for a single pipeline stage.
 | `utils.py` | Reusable TTY and shell invocation utilities |
 | `planner/` | Standalone planning pipeline package (`python -m agentize.workflow.planner`) |
 
+## Internal Helpers
+
+### `__getattr__(name: str)`
+
+Lazy-loads planner exports (`run_planner_pipeline`, `StageResult`) to avoid eager
+imports during module initialization.
+
+### `__dir__() -> list[str]`
+
+Returns a sorted list of public exports for tooling and `dir()` support.
+
 ## Error Handling
 
 - Missing prompt templates raise `FileNotFoundError` with the missing path

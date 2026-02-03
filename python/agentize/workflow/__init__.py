@@ -7,7 +7,23 @@ Public interfaces for running the 5-stage planner pipeline:
 - PlannerTTY: Terminal output helper with animation support
 """
 
+from __future__ import annotations
+
+import importlib
+
 from agentize.workflow.utils import run_acw, PlannerTTY
-from agentize.workflow.planner import run_planner_pipeline, StageResult
 
 __all__ = ["run_acw", "run_planner_pipeline", "StageResult", "PlannerTTY"]
+
+
+def __getattr__(name: str):
+    if name in ("run_planner_pipeline", "StageResult"):
+        planner = importlib.import_module("agentize.workflow.planner")
+        return getattr(planner, name)
+    if name in ("run_acw", "PlannerTTY"):
+        return globals()[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    return sorted(__all__)
