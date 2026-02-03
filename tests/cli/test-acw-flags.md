@@ -33,3 +33,11 @@ Validate `acw` flag behavior for `--editor`, `--stdout`, and file-mode stderr ca
 ### stdout_output_file_rejected
 **Purpose**: `--stdout` rejects an output-file positional argument.
 **Expected**: Non-zero exit mentioning stdout.
+
+### chat_editor_stdout_tty_echo
+**Purpose**: `--chat --editor --stdout` echoes the editor prompt when stdout is a TTY.
+**Expected**: Output includes `User Prompt:` and editor content before assistant output.
+
+### chat_editor_stdout_non_tty_no_echo
+**Purpose**: `--chat --editor --stdout` keeps stdout assistant-only when stdout is not a TTY.
+**Expected**: Output includes assistant content without the `User Prompt:` echo.
