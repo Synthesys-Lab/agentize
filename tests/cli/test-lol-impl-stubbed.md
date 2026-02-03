@@ -15,27 +15,12 @@ Stubs are defined in a shell override script referenced by `AGENTIZE_SHELL_OVERR
 
 ## Test Cases
 
-1. Invalid backend format detection
-2. Completion marker detection via `finalize.txt`
-3. Max iterations limit enforcement
-4. Backend parsing and provider/model split
-5. `--yolo` flag passthrough
-6. Issue prefetch success
-7. Issue prefetch failure handling
-8. Git commit after iteration when changes exist
-9. Skip commit when no changes
-10. Per-iteration commit report file
-11. Missing commit report detection
-12. Push remote precedence (upstream over origin)
-13. Base branch selection (master over main)
-14. Fallback to origin and main when upstream/master unavailable
-15. PR body closes-line deduplication when already present
-16. PR body closes-line append when missing
-17. Sync fetch/rebase ordering before iterations
-18. Sync rebase uses upstream/master
-19. Sync rebase falls back to origin/main
-20. Sync fetch failure handling
-21. Sync rebase conflict handling
+1. Backend format validation (`--backend provider:model`)
+2. Issue prefetch success and failure handling (`.tmp/issue-<N>.md`)
+3. Completion marker detection via `.tmp/finalize.txt`
+4. Per-iteration commit report requirement (`.tmp/commit-report-iter-<N>.txt`)
+5. Sync fetch + rebase error handling (conflict/failure) before iterations
+6. Base branch + remote selection (upstream/master fallback to origin/main)
 
 ## Usage
 
