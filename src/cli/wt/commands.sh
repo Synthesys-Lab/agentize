@@ -200,7 +200,7 @@ cmd_spawn() {
 
     # Check if gh is available and validate issue exists
     if command -v gh >/dev/null 2>&1; then
-        if ! gh issue view "$issue_no" >/dev/null 2>&1; then
+        if ! gh issue view "$issue_no" --json number >/dev/null 2>&1; then
             echo "Error: Issue #$issue_no not found" >&2
             return 1
         fi
