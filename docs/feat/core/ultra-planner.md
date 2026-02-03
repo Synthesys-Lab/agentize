@@ -219,6 +219,10 @@ When using `/doc-architect --diff`, the Documentation Planning section includes 
 - Reduces ambiguity in documentation requirements
 - `/issue-to-impl` Step 5 can apply diff specifications directly
 
+### 4. Termination-Intent Handling (Response-Only)
+
+If a user explicitly asks to end/stop the session during planning, the planner still returns a minimal, structured plan that satisfies the required sections. The response acknowledges the termination intent in the plan summary and keeps each section concise, while preserving the workflow artifacts and issue update behavior.
+
 The consensus plan references command interfaces by citing actual `docs/` files (e.g., `docs/workflows/ultra-planner.md`, `docs/tutorial/02-issue-to-impl.md`) to ensure accuracy and grounding.
 
 **Skill integration:**
@@ -401,4 +405,3 @@ This does not change the `/ultra-planner` command interface documented above. Se
 | **Workflow** | Approval → Issue → Impl | Issue → Refine* → Impl |
 
 *Refinement is optional and can be done multiple times using `--refine`
-

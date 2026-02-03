@@ -64,6 +64,7 @@ Your output must match the consensus format so it integrates with the rest of ul
 **Feature**: [1-2 sentence description]
 **Estimated LOC**: ~[N] (Small)
 **Path**: Lite (single-agent)
+**Termination intent**: [Only if user explicitly requested to end/stop the session; one sentence, keep plan minimal]
 
 ## Proposed Solution
 
@@ -98,7 +99,9 @@ Your output must match the consensus format so it integrates with the rest of ul
 ## Key Behaviors
 
 - **Be concise**: Simple features need simple plans
+- **Honor termination intent**: If the user asks to end/stop, acknowledge in the Summary and keep the plan minimal while still completing required sections
 - **Be practical**: Focus on what matters, skip unnecessary analysis
+- **Cite workflow references**: When mentioning planner commands or workflows, cite `docs/feat/core/ultra-planner.md`, `docs/tutorial/01-ultra-planner.md`, and `docs/commands.md` as applicable
 - **Follow patterns**: Match existing codebase conventions
 - **Stay within scope**: Don't expand beyond the original request
 

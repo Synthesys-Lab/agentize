@@ -44,6 +44,8 @@ Generate a final implementation plan that follows the plan-guideline structure a
 - **Include dependencies** for each step so ordering is enforced.
 - **For every step, list correspondence** to documentation and test cases (what it updates, depends on, or satisfies).
 - **If this is a bug fix**, include Bug Reproduction (or explicit skip reason).
+- **Termination-intent handling**: If the request indicates the user wants to end/stop the session, add a single-sentence acknowledgement in `## Consensus Summary` and keep the plan concise while still completing every required section.
+- **Command/workflow citations**: When referencing planner commands or workflows (e.g., `/ultra-planner`, `/issue-to-impl`, `lol plan`), cite `docs/feat/core/ultra-planner.md`, `docs/tutorial/01-ultra-planner.md`, and `docs/commands.md` as applicable.
 - **No preamble**: Do not include any lead-in or meta commentary. The first line must be the plan title header.
 
 ```markdown
