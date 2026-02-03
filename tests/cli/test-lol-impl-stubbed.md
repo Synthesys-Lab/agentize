@@ -8,7 +8,8 @@ Validate `lol impl` behavior with deterministic stubs for external tools.
 
 - `git`: Simulate repository interactions (add, diff, commit, remote, push)
 - `wt`: Return predictable worktree paths
-- `acw`: Return canned planner/impl outputs
+- `python`: Intercept `python -m agentize.workflow.acw_cli` and forward to the local `acw` stub
+- `acw`: Return canned planner/impl outputs for each iteration
 - `gh`: Return mocked issue data and PR creation responses
 
 Stubs are defined in the test shell and used by sourced CLI code to keep behavior shell-neutral. No `export -f` is used since the CLI is sourced (not invoked as a subprocess).

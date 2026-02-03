@@ -21,8 +21,9 @@ Artifacts (input prompts and outputs) are written to `.tmp/` with a configurable
 
 | Module | Purpose |
 |--------|---------|
-| `__init__.py` | Package exports: `run_acw`, `run_planner_pipeline`, `StageResult`, `PlannerTTY` |
-| `utils.py` | Reusable TTY and shell invocation utilities |
+| `__init__.py` | Package exports: `run_acw`, `list_acw_providers`, `ACW`, `run_planner_pipeline`, `StageResult`, `PlannerTTY` |
+| `utils.py` | Reusable TTY and shell invocation utilities, including ACW validation/logging |
+| `acw_cli.py` | Minimal CLI wrapper for running a single ACW execution from shell workflows |
 | `planner/` | Standalone planning pipeline package (`python -m agentize.workflow.planner`) |
 | `planner.py` | **DEPRECATED** - Re-exports for backward compatibility (will be removed) |
 

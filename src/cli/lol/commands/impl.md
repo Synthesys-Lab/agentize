@@ -1,6 +1,6 @@
 # impl.sh
 
-Implements `lol impl`, the issue-to-implementation loop that drives `acw` iterations, git commits, and PR creation.
+Implements `lol impl`, the issue-to-implementation loop that drives ACW runner iterations, git commits, and PR creation.
 
 ## External Interface
 
@@ -19,7 +19,7 @@ lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
 **Behavior**:
 - Ensures a worktree exists for the issue, then switches into it.
 - Prefetches issue content via `gh issue view`; if it fails, the command exits with an error.
-- Iterates `acw` runs, requiring a per-iteration commit report file in `.tmp/commit-report-iter-<iter>.txt`.
+- Iterates ACW runner executions, requiring a per-iteration commit report file in `.tmp/commit-report-iter-<iter>.txt`.
 - Stages and commits changes each iteration when there are staged diffs.
 - Detects completion via `.tmp/finalize.txt` when it contains `Issue <no> resolved`.
 - Pushes the branch to a detected remote and opens a PR using the completion file contents.
@@ -48,7 +48,7 @@ Private entrypoint function for the command implementation. It validates argumen
 
 ### Iteration loop
 - Builds `.tmp/impl-input-<iter>.txt` from the base prompt plus previous output.
-- Invokes `acw` with provider/model plus optional `--yolo`.
+- Invokes the ACW Python runner with provider/model plus optional `--yolo`.
 - Requires `.tmp/commit-report-iter-<iter>.txt` and commits changes when present.
 
 ### Completion detection and PR creation

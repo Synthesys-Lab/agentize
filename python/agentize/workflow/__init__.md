@@ -38,6 +38,36 @@ Wrapper around the `acw` shell function that builds and executes an ACW command 
 
 **Raises:** `subprocess.TimeoutExpired` if execution exceeds timeout
 
+#### `list_acw_providers`
+
+```python
+def list_acw_providers() -> list[str]
+```
+
+Return the provider list from `acw --complete providers`, using the same script resolution as `run_acw`.
+
+#### `ACW`
+
+```python
+class ACW:
+    def __init__(
+        self,
+        name: str,
+        provider: str,
+        model: str,
+        timeout: int = 900,
+        *,
+        tools: str | None = None,
+        permission_mode: str | None = None,
+        extra_flags: list[str] | None = None,
+        log_writer: Callable[[str], None] | None = None,
+    ) -> None: ...
+
+    def run(self, input_file: str | Path, output_file: str | Path) -> subprocess.CompletedProcess: ...
+```
+
+Class-based ACW runner that validates providers and emits start/finish timing logs for each run.
+
 #### `PlannerTTY`
 
 ```python

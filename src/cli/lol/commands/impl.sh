@@ -95,12 +95,6 @@ EOF
         return 1
     fi
 
-    # Build yolo flag for acw
-    local yolo_flag=""
-    if [ "$yolo" = "1" ]; then
-        yolo_flag="--yolo"
-    fi
-
     # Step 2: Iterate until completion or max iterations
     local iter=0
     while [ $iter -lt "$max_iterations" ]; do
@@ -127,16 +121,22 @@ EOF
             } > "$input_file"
         fi
 
-        # Run acw
-        if [ -n "$yolo_flag" ]; then
-            acw "$provider" "$model" "$input_file" "$output_file" $yolo_flag || {
-                echo "Warning: acw exited with non-zero status on iteration $iter" >&2
-            }
-        else
-            acw "$provider" "$model" "$input_file" "$output_file" || {
-                echo "Warning: acw exited with non-zero status on iteration $iter" >&2
-            }
+        # Run ACW via Python wrapper
+        local -a acw_args
+        acw_args=(
+            -m agentize.workflow.acw_cli
+            --name "impl-iter-$iter"
+            --provider "$provider"
+            --model "$model"
+            --input "$input_file"
+            --output "$output_file"
+        )
+        if [ "$yolo" = "1" ]; then
+            acw_args+=(--yolo)
         fi
+        python "${acw_args[@]}" || {
+            echo "Warning: acw exited with non-zero status on iteration $iter" >&2
+        }
 
         # Check for completion marker (finalize.txt)
         local completion_file=""

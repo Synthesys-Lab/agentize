@@ -104,7 +104,7 @@ When stderr is a TTY, `lol plan` emits visual feedback during pipeline execution
 
 - **Colored "Feature:" label** — highlights the feature description at pipeline start.
 - **Animated stage dots** — expanding/contracting dot pattern (`.. ... .... ..... .... ...`) while each stage runs.
-- **Per-agent timing** — logs elapsed seconds after each stage completes (e.g., `agent understander (claude:sonnet) runs 12s`).
+- **ACW start/finish** — each stage logs `Agent <name> (<provider>:<model>) is running...` and `agent <name> (<provider>:<model>) runs <seconds>s` from the ACW runner.
 - **Issue link** — when issue publish succeeds, prints `See the full plan at: <url>`.
 
 ### Environment Toggles

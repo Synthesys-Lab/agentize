@@ -3,17 +3,20 @@
 Provides:
 - PlannerTTY: Terminal output helper with animation and timing support
 - run_acw: Wrapper around the acw shell function
+- list_acw_providers: Provider completion helper
+- ACW: Class-based runner with validation and timing logs
 """
 
 from __future__ import annotations
 
 import os
+import shlex
 import subprocess
 import sys
 import threading
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 from agentize.shell import get_agentize_home
 
@@ -127,6 +130,57 @@ class PlannerTTY:
 # ACW Wrapper
 # ============================================================
 
+_ACW_PROVIDERS_CACHE: list[str] | None = None
+_ACW_LOG_LOCK = threading.Lock()
+
+
+def _resolve_acw_script(agentize_home: str) -> str:
+    acw_script = os.environ.get("PLANNER_ACW_SCRIPT")
+    if not acw_script:
+        acw_script = os.path.join(agentize_home, "src", "cli", "acw.sh")
+    return acw_script
+
+
+def _run_acw_shell(
+    args: list[str],
+    *,
+    timeout: int = 900,
+) -> subprocess.CompletedProcess:
+    agentize_home = get_agentize_home()
+    acw_script = _resolve_acw_script(agentize_home)
+    cmd_args = " ".join(shlex.quote(str(arg)) for arg in args)
+    bash_cmd = f'source "{acw_script}" && acw {cmd_args}'
+
+    env = os.environ.copy()
+    env["AGENTIZE_HOME"] = agentize_home
+
+    return subprocess.run(
+        ["bash", "-c", bash_cmd],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+
+
+def list_acw_providers() -> list[str]:
+    """Return provider list from `acw --complete providers`."""
+    global _ACW_PROVIDERS_CACHE
+    if _ACW_PROVIDERS_CACHE is not None:
+        return list(_ACW_PROVIDERS_CACHE)
+
+    process = _run_acw_shell(["--complete", "providers"], timeout=30)
+    if process.returncode != 0:
+        message = process.stderr.strip() or process.stdout.strip()
+        raise RuntimeError(f"acw --complete providers failed: {message or 'unknown error'}")
+
+    providers = [line.strip() for line in process.stdout.splitlines() if line.strip()]
+    if not providers:
+        raise RuntimeError("acw --complete providers returned no providers")
+
+    _ACW_PROVIDERS_CACHE = providers
+    return list(providers)
+
 
 def run_acw(
     provider: str,
@@ -157,11 +211,6 @@ def run_acw(
     Raises:
         subprocess.TimeoutExpired: If execution exceeds timeout
     """
-    agentize_home = get_agentize_home()
-    acw_script = os.environ.get("PLANNER_ACW_SCRIPT")
-    if not acw_script:
-        acw_script = os.path.join(agentize_home, "src", "cli", "acw.sh")
-
     # Build command arguments
     cmd_parts = [provider, model, str(input_file), str(output_file)]
 
@@ -176,21 +225,73 @@ def run_acw(
     if extra_flags:
         cmd_parts.extend(extra_flags)
 
-    # Quote paths to handle spaces
-    cmd_args = " ".join(f'"{arg}"' for arg in cmd_parts)
-    bash_cmd = f'source "{acw_script}" && acw {cmd_args}'
-
-    # Set up environment
-    env = os.environ.copy()
-    env["AGENTIZE_HOME"] = agentize_home
-
-    return subprocess.run(
-        ["bash", "-c", bash_cmd],
-        env=env,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-    )
+    return _run_acw_shell(cmd_parts, timeout=timeout)
 
 
-__all__ = ["PlannerTTY", "run_acw"]
+class ACW:
+    """Class-based ACW runner with provider validation and timing logs."""
+
+    def __init__(
+        self,
+        name: str,
+        provider: str,
+        model: str,
+        timeout: int = 900,
+        *,
+        tools: str | None = None,
+        permission_mode: str | None = None,
+        extra_flags: list[str] | None = None,
+        log_writer: Callable[[str], None] | None = None,
+    ) -> None:
+        self.name = name
+        self.provider = provider
+        self.model = model
+        self.timeout = timeout
+        self.tools = tools
+        self.permission_mode = permission_mode
+        self.extra_flags = extra_flags
+        self._log_writer = log_writer
+
+        providers = list_acw_providers()
+        if provider not in providers:
+            provider_list = ", ".join(providers)
+            raise ValueError(
+                f"Unknown acw provider '{provider}'. Expected one of: {provider_list}"
+            )
+
+    def _emit(self, message: str) -> None:
+        if self._log_writer is None:
+            with _ACW_LOG_LOCK:
+                print(message, file=sys.stderr)
+            return
+        self._log_writer(message)
+
+    def run(
+        self,
+        input_file: str | Path,
+        output_file: str | Path,
+    ) -> subprocess.CompletedProcess:
+        start = time.monotonic()
+        self._emit(
+            f"Agent {self.name} ({self.provider}:{self.model}) is running..."
+        )
+
+        process = run_acw(
+            self.provider,
+            self.model,
+            input_file,
+            output_file,
+            tools=self.tools,
+            permission_mode=self.permission_mode,
+            extra_flags=self.extra_flags,
+            timeout=self.timeout,
+        )
+
+        elapsed = int(time.monotonic() - start)
+        self._emit(
+            f"agent {self.name} ({self.provider}:{self.model}) runs {elapsed}s"
+        )
+        return process
+
+
+__all__ = ["PlannerTTY", "run_acw", "list_acw_providers", "ACW"]

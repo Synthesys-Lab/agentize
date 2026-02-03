@@ -82,10 +82,60 @@ Wrapper around the `acw` shell function that builds and executes an ACW command 
 - `AGENTIZE_HOME`: Used to locate `acw.sh` script
 - `PLANNER_ACW_SCRIPT`: Override path to `acw.sh` (for testing)
 
+### `list_acw_providers`
+
+```python
+def list_acw_providers() -> list[str]
+```
+
+Returns the supported provider list by invoking `acw --complete providers` through the same script resolution as `run_acw`.
+
+**Returns:** Provider names (e.g., `"claude"`, `"codex"`)
+
+**Raises:** `RuntimeError` if the completion call fails or returns no providers
+
+### `ACW`
+
+```python
+class ACW:
+    def __init__(
+        self,
+        name: str,
+        provider: str,
+        model: str,
+        timeout: int = 900,
+        *,
+        tools: str | None = None,
+        permission_mode: str | None = None,
+        extra_flags: list[str] | None = None,
+        log_writer: Callable[[str], None] | None = None,
+    ) -> None: ...
+
+    def run(self, input_file: str | Path, output_file: str | Path) -> subprocess.CompletedProcess: ...
+```
+
+Class-based runner that validates providers and emits start/finish timing logs for a single ACW execution.
+
+**Constructor parameters:**
+- `name`: Log label (e.g., `"understander"`, `"bold-proposer"`)
+- `provider`: Backend provider to validate against `acw --complete providers`
+- `model`: Model identifier passed to the provider
+- `timeout`: Execution timeout in seconds (default: 900)
+- `tools`: Tool configuration (Claude provider only)
+- `permission_mode`: Permission mode override (Claude provider only)
+- `extra_flags`: Additional CLI flags passed to `acw`
+- `log_writer`: Optional line writer for thread-safe logging (expects one line per call)
+
+**run() behavior:**
+- Emits `Agent <name> (<provider>:<model>) is running...` before invoking `acw`
+- Calls `run_acw()` with the stored configuration
+- Emits `agent <name> (<provider>:<model>) runs <seconds>s` after completion
+- Returns the `subprocess.CompletedProcess`
+
 ## Example
 
 ```python
-from agentize.workflow.utils import PlannerTTY, run_acw
+from agentize.workflow.utils import PlannerTTY, run_acw, ACW
 
 # TTY output with animation
 tty = PlannerTTY(verbose=True)
@@ -102,10 +152,31 @@ result = run_acw(
     "input.md", "output.md",
     tools="Read,Grep,Glob",
 )
+
+# ACW runner with timing logs
+runner = ACW(
+    name="understander",
+    provider="claude",
+    model="sonnet",
+    tools="Read,Grep,Glob",
+)
+runner.run("input.md", "output.md")
 ```
+
+## Internal Helpers
+
+### `_resolve_acw_script()`
+Resolves the `acw.sh` path using `PLANNER_ACW_SCRIPT` or `AGENTIZE_HOME`.
+
+### `_run_acw_shell()`
+Invokes the `acw` shell function via `bash -c`, capturing stdout/stderr for callers.
+
+### `ACW._emit()`
+Writes a single log line to the configured log writer or stderr.
 
 ## Design Rationale
 
 - **Extraction point**: These utilities were extracted from `planner.py` to enable reuse without importing the full pipeline orchestration code.
 - **Environment parity**: Uses the same environment gates (`NO_COLOR`, `PLANNER_NO_COLOR`, `PLANNER_NO_ANIM`) as the shell planner for consistent behavior.
 - **Thread safety**: `PlannerTTY` uses daemon threads for animation, ensuring clean shutdown.
+- **Single runner**: `ACW` centralizes validation and timing logs so planner and impl flows share a consistent execution path.

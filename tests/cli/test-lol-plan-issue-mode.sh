@@ -84,6 +84,14 @@ STUB_ACW="$TMP_DIR/acw-stub.sh"
 cat > "$STUB_ACW" <<'STUBEOF'
 #!/usr/bin/env bash
 acw() {
+    if [ "$1" = "--complete" ]; then
+        if [ "$2" = "providers" ]; then
+            printf "%s\n" claude codex opencode cursor
+            return 0
+        fi
+        return 1
+    fi
+
     local cli_name="$1"
     local model_name="$2"
     local input_file="$3"

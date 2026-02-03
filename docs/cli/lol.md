@@ -195,7 +195,7 @@ See [planner pipeline module](planner.md) for pipeline stage details and artifac
 
 ### lol impl
 
-Automate the issue-to-implementation loop using `wt` + `acw`.
+Automate the issue-to-implementation loop using `wt` + the shared ACW runner.
 
 ```bash
 lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]

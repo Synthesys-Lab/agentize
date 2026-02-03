@@ -5,6 +5,7 @@ Replaces tests/cli/test-workflow-module.sh with pytest equivalents.
 
 import os
 import inspect
+import subprocess
 from pathlib import Path
 from unittest.mock import patch
 
@@ -28,6 +29,8 @@ from lib.workflow import (
     _run_acw,
 )
 from lib.session_utils import get_agentize_home
+from agentize.workflow.utils import ACW
+import agentize.workflow.acw_cli as acw_cli
 
 
 # ============================================================
@@ -258,6 +261,145 @@ class TestWorkflowConstants:
     def test_sync_master_constant(self):
         """SYNC_MASTER constant equals 'sync-master'"""
         assert SYNC_MASTER == 'sync-master'
+
+
+# ============================================================
+# Test ACW runner utilities
+# ============================================================
+
+class TestACWRunner:
+    """Tests for ACW class validation and logging."""
+
+    def test_acw_validates_provider_list(self, monkeypatch):
+        """ACW constructor validates provider using list_acw_providers."""
+        monkeypatch.setattr(
+            "agentize.workflow.utils.list_acw_providers",
+            lambda: ["claude"],
+        )
+        ACW(name="test", provider="claude", model="sonnet")
+        with pytest.raises(ValueError):
+            ACW(name="test", provider="unknown", model="sonnet")
+
+    def test_acw_run_logs_and_calls_run_acw(self, monkeypatch, tmp_path):
+        """ACW.run logs start/finish lines and calls run_acw with stored args."""
+        monkeypatch.setattr(
+            "agentize.workflow.utils.list_acw_providers",
+            lambda: ["claude"],
+        )
+
+        calls = []
+
+        def _fake_run_acw(
+            provider,
+            model,
+            input_file,
+            output_file,
+            *,
+            tools=None,
+            permission_mode=None,
+            extra_flags=None,
+            timeout=900,
+        ):
+            calls.append(
+                {
+                    "provider": provider,
+                    "model": model,
+                    "input_file": str(input_file),
+                    "output_file": str(output_file),
+                    "tools": tools,
+                    "permission_mode": permission_mode,
+                    "extra_flags": extra_flags,
+                    "timeout": timeout,
+                }
+            )
+            return subprocess.CompletedProcess(args=["acw"], returncode=0, stdout="", stderr="")
+
+        monkeypatch.setattr("agentize.workflow.utils.run_acw", _fake_run_acw)
+
+        times = iter([10.0, 12.4])
+        monkeypatch.setattr("agentize.workflow.utils.time.monotonic", lambda: next(times))
+
+        log_lines = []
+        runner = ACW(
+            name="unit",
+            provider="claude",
+            model="sonnet",
+            tools="Read",
+            permission_mode="plan",
+            log_writer=log_lines.append,
+        )
+
+        input_path = tmp_path / "input.md"
+        output_path = tmp_path / "output.md"
+        input_path.write_text("hi")
+        runner.run(input_path, output_path)
+
+        assert log_lines[0] == "Agent unit (claude:sonnet) is running..."
+        assert log_lines[1] == "agent unit (claude:sonnet) runs 2s"
+        assert calls == [
+            {
+                "provider": "claude",
+                "model": "sonnet",
+                "input_file": str(input_path),
+                "output_file": str(output_path),
+                "tools": "Read",
+                "permission_mode": "plan",
+                "extra_flags": None,
+                "timeout": 900,
+            }
+        ]
+
+
+class TestACWCLI:
+    """Tests for acw_cli argument parsing and runner invocation."""
+
+    def test_acw_cli_parses_args_and_invokes_acw(self, monkeypatch):
+        """acw_cli.main() builds ACW and calls run with input/output paths."""
+        created = {}
+
+        class StubACW:
+            def __init__(self, **kwargs):
+                created["kwargs"] = kwargs
+
+            def run(self, input_file, output_file):
+                created["run"] = (input_file, output_file)
+                return subprocess.CompletedProcess(args=["acw"], returncode=0, stdout="", stderr="")
+
+        monkeypatch.setattr(acw_cli, "ACW", StubACW)
+
+        exit_code = acw_cli.main(
+            [
+                "--name",
+                "impl-iter-1",
+                "--provider",
+                "codex",
+                "--model",
+                "gpt",
+                "--input",
+                "/tmp/in.md",
+                "--output",
+                "/tmp/out.md",
+                "--timeout",
+                "120",
+                "--tools",
+                "Read",
+                "--permission-mode",
+                "plan",
+                "--yolo",
+            ]
+        )
+
+        assert exit_code == 0
+        assert created["kwargs"] == {
+            "name": "impl-iter-1",
+            "provider": "codex",
+            "model": "gpt",
+            "timeout": 120,
+            "tools": "Read",
+            "permission_mode": "plan",
+            "extra_flags": ["--yolo"],
+        }
+        assert created["run"] == ("/tmp/in.md", "/tmp/out.md")
 
 
 # ============================================================

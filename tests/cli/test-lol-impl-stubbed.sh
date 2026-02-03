@@ -121,6 +121,62 @@ acw() {
     return 0
 }
 
+# Stub python entrypoint for agentize.workflow.acw_cli
+python() {
+    if [ "$1" = "-m" ] && [ "$2" = "agentize.workflow.acw_cli" ]; then
+        shift 2
+        local provider=""
+        local model=""
+        local input_file=""
+        local output_file=""
+        local yolo_flag=""
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                --provider)
+                    provider="$2"
+                    shift 2
+                    ;;
+                --model)
+                    model="$2"
+                    shift 2
+                    ;;
+                --input)
+                    input_file="$2"
+                    shift 2
+                    ;;
+                --output)
+                    output_file="$2"
+                    shift 2
+                    ;;
+                --yolo)
+                    yolo_flag="--yolo"
+                    shift
+                    ;;
+                --name|--timeout|--tools|--permission-mode)
+                    shift 2
+                    ;;
+                *)
+                    shift
+                    ;;
+            esac
+        done
+
+        if [ -z "$provider" ] || [ -z "$model" ] || [ -z "$input_file" ] || [ -z "$output_file" ]; then
+            echo "Error: stubbed python missing acw_cli args" >&2
+            return 1
+        fi
+
+        if [ -n "$yolo_flag" ]; then
+            acw "$provider" "$model" "$input_file" "$output_file" "$yolo_flag"
+            return $?
+        fi
+        acw "$provider" "$model" "$input_file" "$output_file"
+        return $?
+    fi
+
+    command python "$@"
+}
+
 # Stub gh function
 gh() {
     echo "gh $*" >> "$GH_CALL_LOG"
