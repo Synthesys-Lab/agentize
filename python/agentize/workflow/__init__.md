@@ -131,7 +131,7 @@ automation via shell commands.
 
 **Raises:**
 - `ValueError`: Invalid arguments (issue number, backend format, max iterations).
-- `ImplError`: Missing worktree, prefetch failure, or max-iteration exhaustion.
+- `ImplError`: Missing worktree, sync failure, prefetch failure, or max-iteration exhaustion.
 
 #### `ImplError`
 

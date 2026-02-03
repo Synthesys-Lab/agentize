@@ -194,6 +194,24 @@ def _detect_base_branch(worktree_path: Path, remote: str) -> str:
     raise ImplError(f"Error: No default branch found (need master or main on {remote})")
 
 
+def _sync_branch(worktree_path: Path) -> tuple[str, str]:
+    push_remote = _detect_push_remote(worktree_path)
+    base_branch = _detect_base_branch(worktree_path, push_remote)
+    print(f"Syncing with {push_remote}/{base_branch}...")
+
+    fetch_cmd = _shell_cmd(["git", "fetch", push_remote])
+    fetch_result = run_shell_function(fetch_cmd, cwd=worktree_path)
+    if fetch_result.returncode != 0:
+        raise ImplError(f"Error: Failed to fetch from {push_remote}")
+
+    rebase_cmd = _shell_cmd(["git", "rebase", f"{push_remote}/{base_branch}"])
+    rebase_result = run_shell_function(rebase_cmd, cwd=worktree_path)
+    if rebase_result.returncode != 0:
+        raise ImplError("Error: Rebase conflict detected. Resolve conflicts and rerun.")
+
+    return push_remote, base_branch
+
+
 def _append_closes_line(finalize_file: Path, issue_no: int) -> None:
     content = finalize_file.read_text()
     if re.search(rf"closes\s+#\s*{issue_no}", content, re.IGNORECASE):
@@ -206,9 +224,14 @@ def _push_and_create_pr(
     worktree_path: Path,
     issue_no: int,
     finalize_file: Path,
+    *,
+    push_remote: str | None = None,
+    base_branch: str | None = None,
 ) -> None:
-    push_remote = _detect_push_remote(worktree_path)
-    base_branch = _detect_base_branch(worktree_path, push_remote)
+    if not push_remote:
+        push_remote = _detect_push_remote(worktree_path)
+    if not base_branch:
+        base_branch = _detect_base_branch(worktree_path, push_remote)
 
     branch_result = run_shell_function(
         "git branch --show-current",
@@ -317,6 +340,7 @@ def run_impl_workflow(
         print(f"Using existing worktree for issue {issue_no} at {worktree_path}")
 
     worktree = Path(worktree_path)
+    push_remote, base_branch = _sync_branch(worktree)
     tmp_dir = worktree / ".tmp"
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
@@ -402,5 +426,11 @@ def run_impl_workflow(
             f"'Issue {issue_no} resolved'"
         )
 
-    _push_and_create_pr(worktree, issue_no, finalize_file)
+    _push_and_create_pr(
+        worktree,
+        issue_no,
+        finalize_file,
+        push_remote=push_remote,
+        base_branch=base_branch,
+    )
     print(f"Implementation complete for issue #{issue_no}")

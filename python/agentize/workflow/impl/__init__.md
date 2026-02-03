@@ -27,4 +27,4 @@ class ImplError(RuntimeError):
 ```
 
 Raised for workflow failures such as missing worktrees, prefetch errors, or
-max-iteration exhaustion.
+sync errors, prefetch errors, or max-iteration exhaustion.
