@@ -1,6 +1,6 @@
-# Module: agentize.workflow.planner (Deprecated Shim)
+# Module: agentize.workflow.planner
 
-Backward-compatible re-exports for planner pipeline interfaces.
+Package exports for the planner pipeline package.
 
 ## External Interfaces
 
@@ -35,32 +35,7 @@ class StageResult:
 
 Re-export of the per-stage result dataclass.
 
-### `run_acw`
-
-```python
-def run_acw(
-    provider: str,
-    model: str,
-    input_file: str | Path,
-    output_file: str | Path,
-    *,
-    tools: str | None = None,
-    permission_mode: str | None = None,
-    extra_flags: list[str] | None = None,
-    timeout: int = 900,
-) -> subprocess.CompletedProcess
-```
-
-Re-export of the ACW shell invocation helper.
-
 ## Internal Helpers
 
-This module re-exports interfaces and does not define internal helpers.
-
-## CLI Invocation
-
-Use the runnable package for CLI execution:
-
-```bash
-python -m agentize.workflow.planner --feature-desc "Add dark mode" --issue-mode true
-```
+This module re-exports interfaces from `planner.__main__` and does not define internal
+helpers.

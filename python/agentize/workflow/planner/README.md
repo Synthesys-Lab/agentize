@@ -39,7 +39,7 @@ for stage, result in results.items():
 
 | File | Purpose |
 |------|---------|
-| `__init__.py` | Package exports: `run_planner_pipeline`, `StageResult`, `PlannerTTY` |
+| `__init__.py` | Package exports: `run_planner_pipeline`, `StageResult` |
 | `__main__.py` | Pipeline logic, CLI backend, and entry point |
 | `README.md` | This documentation |
 
@@ -47,16 +47,14 @@ for stage, result in results.items():
 
 - `run_planner_pipeline`: Execute the 5-stage pipeline
 - `StageResult`: Dataclass for per-stage results
-- `PlannerTTY`: Re-exported from `agentize.workflow.utils` for convenience
 
 ## Dependencies
 
-- `agentize.workflow.utils`: TTY helpers and `run_acw` function
+- `agentize.workflow.utils`: `run_acw` function and ACW runner
 - `agentize.shell`: `get_agentize_home()` for path resolution
 - Prompt templates in `.claude-plugin/agents/` and `.claude-plugin/skills/`
 
 ## Design Rationale
 
 - **Runnable package**: Using `__main__.py` enables `python -m` invocation while keeping logic in a single file.
-- **Re-exports**: `PlannerTTY` is re-exported for backward compatibility with code that imported it from the planner module.
-- **Separation**: TTY/shell utilities live in `workflow/utils.py`; pipeline orchestration lives here.
+- **Separation**: Shell invocation utilities live in `workflow/utils.py`; pipeline orchestration lives here.

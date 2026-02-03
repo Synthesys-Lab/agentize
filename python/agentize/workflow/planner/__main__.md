@@ -2,9 +2,9 @@
 
 Planner pipeline orchestration and CLI backend for `python -m agentize.workflow.planner`.
 
-## External Interface
+## External Interfaces
 
-### StageResult
+### `StageResult`
 
 ```python
 @dataclass
@@ -18,7 +18,7 @@ class StageResult:
 Represents a single stage execution result, including the input/output artifact paths and
 subprocess result.
 
-### run_planner_pipeline()
+### `run_planner_pipeline()`
 
 ```python
 def run_planner_pipeline(
@@ -31,23 +31,22 @@ def run_planner_pipeline(
     prefix: str | None = None,
     output_suffix: str = "-output.md",
     skip_consensus: bool = False,
-    progress: PlannerTTY | None = None,
 ) -> dict[str, StageResult]
 ```
 
-Executes the 5-stage planner pipeline. When `runner` is `run_acw`, stages run through the
-`ACW` class (provider validation + start/finish timing logs). When a custom runner is
-provided (tests), it is invoked directly.
+Executes the 5-stage planner pipeline. Stages run through the `ACW` class (provider
+validation + start/finish timing logs). The pipeline prints plain stage-start lines to
+stderr and returns `StageResult` objects for each stage.
 
-### main()
+### `main()`
 
 ```python
 def main(argv: list[str]) -> int
 ```
 
 CLI entrypoint for the planner backend. Parses args, resolves repo root and backend
-configuration, runs stages, publishes plan updates (when enabled), and prints progress
-output. Returns process exit code.
+configuration, runs stages, publishes plan updates (when enabled), and prints plain-text
+progress output. Returns process exit code.
 
 ## Internal Helpers
 
@@ -66,8 +65,8 @@ output. Returns process exit code.
 
 ### Issue/publish helpers
 
-- `_issue_create()`, `_issue_fetch()`, `_update_issue_body()`, `_update_issue_title()`:
-  GitHub issue lifecycle for plan publishing.
+- `_issue_create()`, `_issue_fetch()`, `_issue_publish()`: GitHub issue lifecycle for
+  plan publishing.
 - `_extract_plan_title()`, `_apply_issue_tag()`: Plan title parsing and issue tagging.
 
 ### Backend selection
@@ -77,9 +76,9 @@ output. Returns process exit code.
 
 ## Design Rationale
 
-- **Unified runner path**: The pipeline always uses `ACW` class for stage execution.
-  Custom runners (for testing) are injected via the `ACW.runner` parameter, avoiding
-  identity checks like `runner is run_acw`. This keeps ACW timing logs available
-  regardless of the underlying runner function.
+- **Unified runner path**: The pipeline uses the `ACW` class for stage execution so
+  timing logs and provider validation remain consistent.
+- **Plain progress output**: The CLI prints concise stage lines without TTY-specific
+  rendering to keep logs readable in terminals and CI.
 - **Isolation**: Prompt rendering and issue/publish logic are kept in helpers to reduce
   coupling between orchestration and IO concerns.

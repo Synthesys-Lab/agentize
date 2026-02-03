@@ -48,7 +48,7 @@ planner/github.sh    # Legacy GitHub helpers
 
 ## Output Behavior
 
-When stderr is a TTY, the Python backend prints a colored "Feature:" label, per-stage animated dots, and per-agent elapsed time logs. Set `NO_COLOR=1` to disable color and `PLANNER_NO_ANIM=1` to disable animation.
+The Python backend prints plain-text progress to stderr, including pipeline start, stage progress lines, and final artifact locations. Per-agent elapsed time logs are emitted by the `ACW` class when the default `acw` runner is used.
 
 ## Design Rationale
 
