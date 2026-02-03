@@ -197,6 +197,7 @@ See [planner pipeline module](planner.md) for pipeline stage details and artifac
 ### lol impl
 
 Automate the issue-to-implementation loop using `wt` + the shared ACW runner (invokes `acw` under the hood).
+When `lol` is sourced and `wt` is available, the wrapper ensures the worktree exists (`wt pathto` / `wt spawn`) and enters it (`wt goto`) before running the workflow (see `docs/feat/cli/wt.md`).
 
 ```bash
 lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
