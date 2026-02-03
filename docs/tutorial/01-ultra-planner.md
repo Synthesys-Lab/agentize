@@ -1,14 +1,46 @@
-# Tutorial 01: Ultra Planner (Primary Planning)
+# Tutorial 01: CLI Planning with `lol plan`
 
 **Primary planning tutorial**: Use this as the default entry point for planning features.
 
 **Read time: 5 minutes**
 
-Learn how to use multi-agent debate-based planning for complex features with `/ultra-planner`.
+Learn how to use multi-agent debate-based planning with `lol plan --editor` (CLI-first). If you prefer the Claude UI, `/ultra-planner` provides auto-routing and `--force-full` (see `docs/feat/core/ultra-planner.md`).
 
-## What is `/ultra-planner`?
+## What is `lol plan`?
 
-`/ultra-planner` automatically routes to the optimal planning workflow based on estimated complexity:
+`lol plan` runs the multi-agent debate pipeline to produce a consensus implementation plan. It is the preferred CLI entrypoint for planning and is documented in `docs/cli/lol.md` and `docs/cli/planner.md`.
+
+### Basic usage
+
+Compose the feature description in your editor:
+
+```
+lol plan --editor
+```
+
+`--editor` opens `$EDITOR`. If `$EDITOR` is not set, pass the description directly:
+
+```
+lol plan "Add user authentication with JWT tokens and role-based access control"
+```
+
+### Refinement with `--refine`
+
+Improve an existing plan issue by running the debate again:
+
+```
+lol plan --refine 42
+```
+
+Optional refinement focus:
+
+```
+lol plan --refine 42 "Focus on reducing complexity"
+```
+
+## Claude UI Equivalent: `/ultra-planner`
+
+`/ultra-planner` is the Claude UI interface for planning. It uses auto-routing and supports `--force-full`. See `docs/feat/core/ultra-planner.md` for full behavior details.
 
 ### Automatic Routing
 
@@ -32,10 +64,9 @@ Bold-proposer runs first to generate a concrete proposal, then Critique and Redu
 
 ## When to Use It?
 
-**Use `/ultra-planner`** for all feature planning. It automatically routes:
+**Use `lol plan`** for all feature planning in the CLI. It always runs the multi-agent pipeline documented in `docs/cli/lol.md`.
 
-- **Simple changes** (repo-only, <5 files, <150 LOC) → Lite path (1-2 min, ~$0.30-0.80)
-- **Complex features** (needs research or larger scope) → Full debate (6-12 min, ~$2.50-6)
+**Use `/ultra-planner`** when you want Claude UI convenience or auto-routing.
 
 **Use `/ultra-planner --force-full`** when:
 - You want thorough multi-perspective analysis even for simple changes
@@ -49,7 +80,7 @@ Bold-proposer runs first to generate a concrete proposal, then Critique and Redu
 
 **1. Invoke the command:**
 ```
-User: /ultra-planner Add user authentication with JWT tokens and role-based access control
+lol plan "Add user authentication with JWT tokens and role-based access control"
 ```
 
 **2. Bold-proposer generates proposal (1-2 minutes):**
@@ -81,26 +112,12 @@ Documentation Planning:
 Plan issue #42 updated with consensus plan.
 URL: https://github.com/user/repo/issues/42
 
-To refine: /ultra-planner --refine 42
-To implement: /issue-to-impl 42
+To refine (CLI): lol plan --refine 42
+To refine (Claude UI): /ultra-planner --refine 42
+To implement (CLI): lol impl 42
 ```
 
-## Refinement with `--refine` Mode
-
-Improve an existing plan issue by running the debate again:
-
-```
-/ultra-planner --refine 42
-```
-
-The agents analyze the current plan and propose improvements. Useful when the initial consensus feels over-complicated or you want to explore simpler alternatives.
-
-**Optional refinement focus:**
-```
-/ultra-planner --refine 42 Focus on reducing complexity
-```
-
-### Label-Based Auto Refinement
+## Label-Based Auto Refinement
 
 When running with `lol serve`, you can trigger refinement without invoking the command manually:
 
@@ -109,7 +126,7 @@ When running with `lol serve`, you can trigger refinement without invoking the c
    ```bash
    gh issue edit 42 --add-label agentize:refine
    ```
-3. The server will pick up the issue on the next poll and run refinement automatically
+3. The server will pick up the issue on the next poll and run `/ultra-planner --refine` (current server behavior per `docs/cli/lol.md`)
 4. After refinement completes, the label is removed and status stays `Proposed`
 
 This enables stakeholders to request plan improvements without CLI access.
@@ -119,15 +136,15 @@ This enables stakeholders to request plan improvements without CLI access.
 1. **Provide context**: "Add JWT auth for API access" (not just "Add auth")
 2. **Right-size features**: Don't use for trivial changes, do use for complex ones
 3. **Review all perspectives**: Bold shows innovation, Critique shows risks, Reducer shows simplicity
-4. **Refine when needed**: First consensus not perfect? Use `--refine`
-5. **Trust auto-routing**: `/ultra-planner` automatically uses the lite path for simple changes
+4. **Refine when needed**: First consensus not perfect? Use `lol plan --refine`
+5. **Choose your interface**: `lol plan` for CLI, `/ultra-planner` for auto-routing in Claude UI
 
 ## Dry-Run Mode
 
 Preview what would be created without making GitHub changes:
 
 ```
-/ultra-planner --dry-run Add user authentication with JWT tokens
+lol plan --dry-run "Add user authentication with JWT tokens"
 ```
 
 **What happens:**
@@ -142,9 +159,9 @@ Preview what would be created without making GitHub changes:
 
 **Cost note:** Token costs are similar to regular runs since agents still execute. Use `--dry-run` when you want to review the plan before committing to GitHub.
 
-## Cost & Time
+## Cost & Time (Claude UI Auto-Routing)
 
-**With automatic routing:**
+**With automatic routing in `/ultra-planner`:**
 
 | Path | Conditions | Time | Cost |
 |------|------------|------|------|
@@ -157,10 +174,10 @@ Preview what would be created without making GitHub changes:
 
 ## Next Steps
 
-After `/ultra-planner` creates your GitHub issue:
+After `lol plan` creates your GitHub issue:
 
 1. Review the issue on GitHub
-2. Use `/issue-to-impl <issue-number>` to start implementation (Tutorial 02)
+2. Use `lol impl <issue-number>` to start implementation (Tutorial 02)
 3. Validate and adjust the plan as you implement
 
-**When in doubt**: Use `/ultra-planner` - it auto-routes to the appropriate path based on complexity.
+**When in doubt**: Use `lol plan` - it keeps planning CLI-first while the Claude UI remains available.

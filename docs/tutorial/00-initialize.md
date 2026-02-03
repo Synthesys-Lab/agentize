@@ -38,7 +38,14 @@ claude plugin install agentize@agentize
 
 ## Verify Installation
 
-After setup, verify Claude Code recognizes your configuration:
+After setup, verify the CLI entrypoints are available:
+
+```bash
+lol plan --help
+lol impl --help
+```
+
+Optional Claude UI check (see `docs/feat/core/ultra-planner.md` and `docs/feat/core/issue-to-impl.md`):
 
 ```bash
 # In your project directory with Claude Code
@@ -64,8 +71,8 @@ For example, you might add project-specific tags like:
 ## Next Steps
 
 Once initialized:
-- **Tutorial 01**: Learn how to create implementation plans with `/ultra-planner` (uses the git tags you just customized)
-- **Tutorial 02**: Learn the full development workflow with `/issue-to-impl`
+- **Tutorial 01**: Learn CLI planning with `lol plan --editor` (uses the git tags you just customized)
+- **Tutorial 02**: Learn the CLI implementation loop with `lol impl <issue-no>`
 - **Tutorial 03**: Scale up with parallel development workflows
 
 ## Configuration Options

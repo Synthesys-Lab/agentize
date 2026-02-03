@@ -1,10 +1,52 @@
-# Tutorial 02: Issue to Implementation
+# Tutorial 02: CLI Implementation with `lol impl`
 
 **Read time: 3-5 minutes**
 
-This tutorial covers the complete development cycle from a GitHub issue to merge-ready code.
+This tutorial covers the complete development cycle from a GitHub issue to merge-ready code using the CLI-first workflow.
 
-## What is `/issue-to-impl`?
+## What is `lol impl`?
+
+`lol impl` automates the issue-to-implementation loop using `wt` + `acw` (see `docs/cli/lol.md`). It expects a real GitHub issue and coordinates iterative implementation steps until completion.
+
+### Requirements
+
+- `gh` must be authenticated and able to read the issue
+- The issue number must exist in the current repository
+- Each iteration needs `.tmp/commit-report-iter-<N>.txt` as the commit message
+- Completion requires `.tmp/finalize.txt` (first line is PR title; include `Issue <N> resolved` in the body)
+
+### Workflow Summary
+
+1. Prefetches issue content via `gh issue view` and writes `.tmp/issue-<N>.md`
+2. Exits with an error if the fetch fails or the issue content is empty
+3. Syncs the issue branch by fetching and rebasing onto the default branch
+4. Runs iterative `wt + acw` loops, committing when changes exist
+5. Finishes when `.tmp/finalize.txt` is present and contains `Issue <N> resolved`
+
+## Basic Usage
+
+```
+lol impl 42
+```
+
+Replace `42` with your issue number from Tutorial 01.
+
+## CLI Example (High-Level)
+
+```
+User: lol impl 42
+Agent: Prefetching issue #42 with gh...
+Agent: Syncing branch onto origin/main...
+Agent: Iteration 1 (uses .tmp/commit-report-iter-1.txt)
+...
+Agent: Completion detected in .tmp/finalize.txt
+```
+
+## Claude UI Equivalent: `/issue-to-impl` (Milestones)
+
+`/issue-to-impl` is the Claude UI workflow. It uses a milestone-based implementation loop and is documented in `docs/feat/core/issue-to-impl.md`. Use this if you prefer the Claude UI or want the built-in milestone checkpoints.
+
+### What is `/issue-to-impl`?
 
 `/issue-to-impl` orchestrates the full implementation workflow:
 1. Creates a development branch
@@ -13,7 +55,7 @@ This tutorial covers the complete development cycle from a GitHub issue to merge
 4. Implements the feature incrementally
 5. Tracks progress through milestones
 
-## How It Works
+### How It Works
 
 The command follows a milestone-based approach:
 
@@ -23,15 +65,13 @@ The command follows a milestone-based approach:
 
 This allows large features to span multiple work sessions while maintaining clear context.
 
-## Basic Usage
+### Basic Usage (Claude UI)
 
 ```
 /issue-to-impl 42
 ```
 
-Replace `42` with your issue number from Tutorial 01.
-
-## What Happens Automatically
+### What Happens Automatically
 
 When you run `/issue-to-impl`:
 
@@ -70,7 +110,7 @@ When you run `/issue-to-impl`:
 - Stops at 800 LOC if tests incomplete → creates Milestone 2
 - OR continues until all tests pass → completion
 
-## Example: Complete Flow
+### Example: Milestone-Based Flow (Claude UI)
 
 **Step 1: Start implementation**
 ```
@@ -114,7 +154,7 @@ Implementation complete:
 Next step: Review with /code-review
 ```
 
-## Resuming from Milestones
+## Resuming from Milestones (Claude UI)
 
 If implementation creates a milestone (doesn't complete), resume with natural language:
 
@@ -184,70 +224,7 @@ The PR number is automatically recorded in the session state, enabling the serve
 
 **Note on Commands vs Skills**: Slash commands (like `/code-review`) are pre-defined prompts you invoke directly, while skills (like `open-pr`) are routines implicitly invoked by Claude when you use natural language requests.
 
-## Complete Workflow Example
-
-Here's the full cycle for issue #42:
-
-```
-# 1. Start implementation
-/issue-to-impl 42
-[... Milestone 2 created at 820 LOC ...]
-
-# 2. Resume (next session)
-User: Continue from the latest milestone
-[... All tests pass! ...]
-
-# 3. Review code
-/code-review
-[... ✅ APPROVED ...]
-
-# 4. Sync with main and rebase your branch
-git checkout main
-git pull --rebase origin main
-git checkout issue-42
-git rebase main
-
-# 5. Create PR
-User: Create a pull request
-[... Claude invokes open-pr skill ...]
-[... PR created: https://github.com/your-repo/pull/123 ...]
-
-# 6. Merge (after approval)
-[Merge via GitHub UI or gh pr merge]
-```
-
-## Understanding Milestones
-
-Milestones are checkpoint documents in `.tmp/milestones/`:
-
-```
-.tmp/milestones/
-├── issue-42-milestone-1.md
-├── issue-42-milestone-2.md
-└── issue-42-milestone-3.md
-```
-
-Each milestone contains:
-- **Header**: branch, datetime, LOC, test status
-- **Work Remaining**: incomplete implementation steps
-- **Next File Changes**: files to modify next
-- **Test Status**: passed and failed tests with details
-
-See `docs/milestone-workflow.md` for complete documentation.
-
-## Tips
-
-1. **Let it run**: `/issue-to-impl` works automatically - let it complete or reach a milestone
-2. **Review milestones**: Check `.tmp/milestones/` files to understand progress
-3. **Always sync**: Sync with main and rebase your branch before creating PRs to avoid conflicts
-4. **Fix review issues**: Address `/code-review` findings before merging
-5. **Clean working directory**: Commit changes before syncing or `/issue-to-impl` (requires clean working tree for rebasing)
-
-## Next Steps
-
-- **Tutorial 03**: Learn how to scale up with parallel development (multiple issues at once)
-
-## Dry-Run Mode
+## Dry-Run Mode (Claude UI)
 
 Preview the implementation plan before making changes:
 
@@ -282,3 +259,7 @@ Use dry-run to verify an issue has a complete plan before starting implementatio
 **"Rebase conflict detected"**
 - Your changes conflict with main branch
 - Solution: Manually resolve conflicts, `git add` files, `git rebase --continue`
+
+## Next Steps
+
+- **Tutorial 03**: Learn how to scale up with parallel development (multiple issues at once)

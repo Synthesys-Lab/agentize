@@ -46,7 +46,6 @@ to your Telegram bot.
 
 Once there is:
 - An issue with `agentize:plan` label and project status `Plan Accepted`, a new development session will be started.
-- An issue that with `agentize:dev-req` label, a new `/ultra-planner` session will be started to generate a detailed plan.
+- An issue with `agentize:dev-req` label triggers `/ultra-planner --refine` (current server behavior per `docs/cli/lol.md`).
 - A PR with unmerge-able status, a `/sync-master` session will be started to rebase the PR branch onto master.
 - A permission that is not determined yet, a permission request message will be sent to your Telegram bot for you to click the buttons to approve or reject.
-

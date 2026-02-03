@@ -7,8 +7,8 @@ This directory contains step-by-step tutorials for learning Agentize.
 Complete all tutorials in 15-25 minutes (3-5 minutes each):
 
 1. `00-initialize.md` - Project initialization and setup
-2. `01-ultra-planner.md` - Primary planning tutorial (recommended)
-3. `02-issue-to-impl.md` - Complete development cycle from issue to PR
+2. `01-ultra-planner.md` - CLI planning with `lol plan --editor` (recommended)
+3. `02-issue-to-impl.md` - CLI implementation loop with `lol impl <issue-no>`
 4. `03-advanced-usage.md` - Parallel development workflows with clones or worktrees
 5. `04-project.md` - Configuring project board automation with PAT
 
