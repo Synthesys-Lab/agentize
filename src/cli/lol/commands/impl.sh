@@ -14,6 +14,14 @@ _lol_cmd_impl() {
     local max_iterations="${3:-10}"
     local yolo="${4:-0}"
 
+    # Preflight worktree: ensure worktree exists and navigate before workflow
+    if type wt >/dev/null 2>&1; then
+        if ! wt pathto "$issue_no" >/dev/null 2>&1; then
+            wt spawn "$issue_no" --no-agent || return 1
+        fi
+        wt goto "$issue_no" >/dev/null 2>&1 || cd "$(wt pathto "$issue_no")" || return 1
+    fi
+
     local yolo_flag=""
     if [ "$yolo" = "1" ]; then
         yolo_flag="--yolo"
