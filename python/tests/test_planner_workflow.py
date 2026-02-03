@@ -547,3 +547,134 @@ class TestImportPaths:
         from agentize.workflow import run_planner_pipeline as workflow_pipeline
         from agentize.workflow.planner import run_planner_pipeline as planner_pipeline
         assert workflow_pipeline is planner_pipeline
+
+
+# ============================================================
+# Test ACW transient line clearing (#780)
+# ============================================================
+
+class TestACWTransientLineClear:
+    """Tests for ACW clearing transient 'is running...' line before final log."""
+
+    @pytest.mark.skipif(ACW is None, reason="Implementation not yet available")
+    def test_clear_line_called_before_final_log(self, monkeypatch, tmp_path: Path):
+        """ACW.run clears transient line before logging final 'runs' line."""
+        from agentize.workflow.utils import ACW as utils_ACW
+
+        call_sequence = []
+
+        class MockStderr:
+            """Mock stderr to capture write calls and track call order."""
+            def write(self, text: str) -> None:
+                call_sequence.append(("write", text))
+
+            def flush(self) -> None:
+                call_sequence.append(("flush",))
+
+            def isatty(self) -> bool:
+                return True
+
+        def _fake_runner(
+            provider: str,
+            model: str,
+            input_file,
+            output_file,
+            *,
+            tools=None,
+            permission_mode=None,
+            extra_flags=None,
+            timeout=900,
+        ):
+            return subprocess.CompletedProcess(args=["acw"], returncode=0)
+
+        times = [100.0, 105.0]
+        monkeypatch.setattr("agentize.workflow.utils.time.time", lambda: times.pop(0))
+        monkeypatch.setattr("sys.stderr", MockStderr())
+
+        input_path = tmp_path / "input.md"
+        output_path = tmp_path / "output.md"
+        input_path.write_text("prompt")
+
+        runner = utils_ACW(
+            name="test-stage",
+            provider="claude",
+            model="sonnet",
+            runner=_fake_runner,
+        )
+        runner.run(input_path, output_path)
+
+        # Extract the sequence of outputs
+        writes = [text for op, text in call_sequence if op == "write"]
+
+        # Verify sequence: "is running..." → clear line (\r\033[K) → "runs Ns"
+        assert any("is running..." in w for w in writes), f"Missing 'is running...' in {writes}"
+        assert any("\r\033[K" in w for w in writes), f"Missing line clear in {writes}"
+        assert any("runs 5s" in w for w in writes), f"Missing 'runs 5s' in {writes}"
+
+        # Verify clear line appears AFTER "is running..." and BEFORE "runs"
+        running_idx = next(i for i, w in enumerate(writes) if "is running..." in w)
+        clear_idx = next(i for i, w in enumerate(writes) if "\r\033[K" in w)
+        runs_idx = next(i for i, w in enumerate(writes) if "runs 5s" in w)
+        assert running_idx < clear_idx < runs_idx, (
+            f"Expected order: running({running_idx}) < clear({clear_idx}) < runs({runs_idx})"
+        )
+
+
+# ============================================================
+# Test impl.py worktree chdir (#780)
+# ============================================================
+
+class TestImplWorktreeChdir:
+    """Tests for impl.py changing to worktree directory early."""
+
+    def test_impl_changes_to_worktree_cwd(self, tmp_path, monkeypatch):
+        """run_impl_workflow changes to worktree directory via os.chdir."""
+        from agentize.workflow.impl import impl as impl_module
+
+        chdir_calls = []
+
+        def _mock_chdir(path):
+            chdir_calls.append(str(path))
+
+        monkeypatch.setattr("os.chdir", _mock_chdir)
+
+        # Create a fake worktree path
+        fake_worktree = tmp_path / "trees" / "issue-42"
+        fake_worktree.mkdir(parents=True)
+
+        # Mock run_shell_function to return the fake worktree path
+        def _mock_run_shell(cmd, *, capture_output=False, cwd=None):
+            result = Mock()
+            result.returncode = 0
+            result.stdout = str(fake_worktree) + "\n"
+            result.stderr = ""
+            if "wt pathto" in cmd:
+                return result
+            if "gh issue view" in cmd:
+                result.stdout = "# Test Issue\n\nBody\n"
+                return result
+            if "git remote" in cmd:
+                result.stdout = "origin\n"
+                return result
+            if "git rev-parse --verify" in cmd and "main" in cmd:
+                return result
+            if "git fetch" in cmd:
+                return result
+            if "git rebase" in cmd:
+                return result
+            result.returncode = 1
+            return result
+
+        monkeypatch.setattr(impl_module, "run_shell_function", _mock_run_shell)
+
+        # Attempt to run the workflow (will fail early due to missing deps, but chdir should happen)
+        try:
+            from agentize.workflow.impl.impl import run_impl_workflow
+            run_impl_workflow(42, backend="codex:test", max_iterations=1)
+        except Exception:
+            pass  # We only care that chdir was called
+
+        # Verify os.chdir was called with the worktree path
+        assert any(str(fake_worktree) in call for call in chdir_calls), (
+            f"Expected os.chdir to be called with worktree path. Calls: {chdir_calls}"
+        )
