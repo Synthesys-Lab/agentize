@@ -77,7 +77,9 @@ output. Returns process exit code.
 
 ## Design Rationale
 
-- **Unified ACW runner**: The pipeline uses the `ACW` class when invoking `acw` so
-  provider validation and timing logs are centralized.
+- **Unified runner path**: The pipeline always uses `ACW` class for stage execution.
+  Custom runners (for testing) are injected via the `ACW.runner` parameter, avoiding
+  identity checks like `runner is run_acw`. This keeps ACW timing logs available
+  regardless of the underlying runner function.
 - **Isolation**: Prompt rendering and issue/publish logic are kept in helpers to reduce
   coupling between orchestration and IO concerns.

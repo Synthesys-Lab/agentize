@@ -366,6 +366,46 @@ class TestACWRunner:
             utils_ACW(name="test", provider="codex", model="gpt")
 
     @pytest.mark.skipif(ACW is None, reason="Implementation not yet available")
+    def test_custom_runner_invoked(self, monkeypatch, tmp_path: Path):
+        """ACW with custom runner invokes the custom runner, not run_acw."""
+        from agentize.workflow.utils import ACW as utils_ACW
+
+        invocations = []
+
+        def _custom_runner(
+            provider: str,
+            model: str,
+            input_file: str | Path,
+            output_file: str | Path,
+            *,
+            tools: str | None = None,
+            permission_mode: str | None = None,
+            extra_flags: list[str] | None = None,
+            timeout: int = 900,
+        ) -> subprocess.CompletedProcess:
+            invocations.append({"provider": provider, "model": model})
+            return subprocess.CompletedProcess(args=["custom"], returncode=0)
+
+        monkeypatch.setattr("agentize.workflow.utils.list_acw_providers", lambda: ["claude"])
+
+        input_path = tmp_path / "input.md"
+        output_path = tmp_path / "output.md"
+        input_path.write_text("prompt")
+
+        runner = utils_ACW(
+            name="test",
+            provider="claude",
+            model="sonnet",
+            runner=_custom_runner,
+        )
+        result = runner.run(input_path, output_path)
+
+        assert result.returncode == 0
+        assert len(invocations) == 1
+        assert invocations[0]["provider"] == "claude"
+        assert invocations[0]["model"] == "sonnet"
+
+    @pytest.mark.skipif(ACW is None, reason="Implementation not yet available")
     def test_run_logs_and_invokes_acw(self, monkeypatch, tmp_path: Path):
         """ACW.run logs start/finish lines and calls run_acw with expected args."""
         from agentize.workflow.utils import ACW as utils_ACW

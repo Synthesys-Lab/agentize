@@ -252,7 +252,11 @@ def list_acw_providers() -> list[str]:
 
 
 class ACW:
-    """Class-based runner for ACW with provider validation and timing logs."""
+    """Class-based runner for ACW with provider validation and timing logs.
+
+    Supports injecting a custom runner function for testing while maintaining
+    the same logging and interface behavior.
+    """
 
     def __init__(
         self,
@@ -265,11 +269,14 @@ class ACW:
         permission_mode: str | None = None,
         extra_flags: list[str] | None = None,
         log_writer: Callable[[str], None] | None = None,
+        runner: Callable[..., subprocess.CompletedProcess] | None = None,
     ) -> None:
-        providers = list_acw_providers()
-        if provider not in providers:
-            available = ", ".join(providers)
-            raise ValueError(f"Unsupported provider '{provider}'. Available: {available}")
+        # Skip provider validation when using custom runner (for tests)
+        if runner is None:
+            providers = list_acw_providers()
+            if provider not in providers:
+                available = ", ".join(providers)
+                raise ValueError(f"Unsupported provider '{provider}'. Available: {available}")
 
         self.name = name
         self.provider = provider
@@ -279,6 +286,7 @@ class ACW:
         self.permission_mode = permission_mode
         self.extra_flags = extra_flags
         self._log_writer = log_writer
+        self._runner = runner if runner is not None else run_acw
 
     def _log(self, message: str) -> None:
         if self._log_writer:
@@ -295,7 +303,7 @@ class ACW:
         backend = f"{self.provider}:{self.model}"
         self._log(f"agent {self.name} ({backend}) is running...")
 
-        process = run_acw(
+        process = self._runner(
             self.provider,
             self.model,
             input_file,
