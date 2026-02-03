@@ -2,8 +2,23 @@
 # acw CLI main dispatcher
 # Entry point and help text
 
+# Log version information to stderr
+_acw_log_version() {
+    local git_dir="${AGENTIZE_HOME:-.}"
+    local branch="unknown"
+    local hash="unknown"
+
+    if command -v git >/dev/null 2>&1; then
+        branch=$(git -C "$git_dir" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+        hash=$(git -C "$git_dir" rev-parse --short=7 HEAD 2>/dev/null || echo "unknown")
+    fi
+
+    echo "[agentize] $branch @$hash" >&2
+}
+
 # Print usage information
 _acw_usage() {
+    _acw_log_version
     cat <<'EOF'
 acw: Agent CLI Wrapper
 

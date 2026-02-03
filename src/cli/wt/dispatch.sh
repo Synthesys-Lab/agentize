@@ -9,25 +9,17 @@ _wt_log_version() {
         return 0
     fi
 
-    # Get version from git describe or short commit hash
-    local version="unknown"
+    local git_dir="."
+    local branch="unknown"
+    local hash="unknown"
+
     if command -v git >/dev/null 2>&1; then
-        # Try to get tag, fall back to short commit hash
-        version=$(git describe --tags --always 2>/dev/null || echo "unknown")
+        git_dir=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+        branch=$(git -C "$git_dir" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+        hash=$(git -C "$git_dir" rev-parse --short=7 HEAD 2>/dev/null || echo "unknown")
     fi
 
-    # Get full commit hash
-    local commit="unknown"
-    if command -v git >/dev/null 2>&1; then
-        commit=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
-    fi
-
-    # If AGENTIZE_HOME is not set, log as "standalone"
-    if [ -z "$AGENTIZE_HOME" ]; then
-        version="$version-standalone"
-    fi
-
-    echo "[agentize] $version @ $commit" >&2
+    echo "[agentize] $branch @$hash" >&2
 }
 
 # Main wt function
