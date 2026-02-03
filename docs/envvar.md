@@ -60,6 +60,14 @@ workflows:
     model: sonnet                  # Dev-req planning
   rebase:
     model: haiku                   # PR rebase
+
+# Planner Backends - lol plan stage configuration
+planner:
+  backend: claude:opus             # Default backend for all stages
+  understander: claude:sonnet      # Override understander stage
+  bold: claude:opus                # Override bold-proposer stage
+  critique: claude:opus            # Override critique stage
+  reducer: claude:opus             # Override reducer stage
 ```
 
 ## YAML Settings Reference
@@ -108,6 +116,20 @@ See [Telegram Approval](feat/permissions/telegram.md) for detailed documentation
 | `workflows.refine.model` | string | - | Model for refinement workflows |
 | `workflows.dev_req.model` | string | - | Model for dev-req planning |
 | `workflows.rebase.model` | string | - | Model for PR rebase |
+
+**Note:** `workflows.impl.model` sets the default model for impl workflows; `lol impl --backend <provider:model>` overrides per run (see `docs/cli/lol.md`).
+
+### Planner Backends
+
+| YAML Path | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `planner.backend` | string | `claude:opus` | Default backend for all planner stages |
+| `planner.understander` | string | - | Override understander stage |
+| `planner.bold` | string | - | Override bold-proposer stage |
+| `planner.critique` | string | - | Override critique stage |
+| `planner.reducer` | string | - | Override reducer stage |
+
+Planner backends use the format `<provider>:<model>` (e.g., `claude:opus`, `claude:sonnet`). Per-stage overrides take precedence over `planner.backend`.
 
 ## Environment-Only Variables
 

@@ -172,12 +172,33 @@ lol plan --dry-run "Add user authentication with JWT tokens"
 
 **Value of full path**: Multiple perspectives, thorough validation, balanced plans
 
+## Plan → Impl (End-to-End)
+
+After `lol plan` creates your GitHub issue, continue with `lol impl <issue-number>` (see `docs/tutorial/02-issue-to-impl.md`).
+
+### Backend Configuration
+
+Configure planner backends in `.agentize.local.yaml`:
+
+```yaml
+planner:
+  backend: claude:opus             # Default backend for all stages
+  understander: claude:sonnet      # Override understander stage
+  bold: claude:opus                # Override bold-proposer stage
+  critique: claude:opus            # Override critique stage
+  reducer: claude:opus             # Override reducer stage
+
+workflows:
+  impl:
+    model: opus                    # Default model for lol impl
+```
+
+**Note:** `lol impl --backend <provider:model>` overrides `workflows.impl.model` for a single run (see `docs/cli/lol.md`).
+
 ## Next Steps
 
-After `lol plan` creates your GitHub issue:
-
-1. Review the issue on GitHub
-2. Use `lol impl <issue-number>` to start implementation (Tutorial 02)
-3. Validate and adjust the plan as you implement
+1. Review the plan issue on GitHub
+2. Run `lol impl <issue-number>` to start implementation (Tutorial 02)
+3. Use `lol plan --refine <issue>` if the plan needs adjustments
 
 **When in doubt**: Use `lol plan` - it keeps planning CLI-first while the Claude UI remains available.
