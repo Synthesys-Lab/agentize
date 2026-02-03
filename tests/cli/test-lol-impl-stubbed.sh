@@ -121,6 +121,16 @@ acw() {
     local output_file="$4"
     shift 4
 
+    if [ "$provider" = "--complete" ] && [ "$model" = "providers" ]; then
+        cat <<'EOF'
+claude
+codex
+opencode
+cursor
+EOF
+        return 0
+    fi
+
     log_acw_call "$provider" "$model" "$input_file" "$output_file" "$*"
 
     local iter
