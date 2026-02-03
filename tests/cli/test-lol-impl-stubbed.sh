@@ -26,6 +26,7 @@ ACW_CALL_LOG="$TMP_DIR/acw-calls.log"
 GH_CALL_LOG="$TMP_DIR/gh-calls.log"
 GIT_CALL_LOG="$TMP_DIR/git-calls.log"
 CALL_ORDER_LOG="$TMP_DIR/call-order.log"
+WT_SPAWNED_FLAG="$TMP_DIR/wt-spawned.flag"
 touch "$WT_CALL_LOG" "$ACW_CALL_LOG" "$GH_CALL_LOG" "$GIT_CALL_LOG" "$CALL_ORDER_LOG"
 
 # Track iteration count across subprocesses
@@ -93,6 +94,12 @@ wt() {
     echo "wt $*" >> "$WT_CALL_LOG"
     case "$1" in
         pathto)
+            # WT_PATHTO_FAIL_UNTIL_SPAWN: fail pathto until spawn is called
+            if [ "${WT_PATHTO_FAIL_UNTIL_SPAWN:-0}" = "1" ]; then
+                if [ ! -f "$WT_SPAWNED_FLAG" ]; then
+                    return 1
+                fi
+            fi
             if [ "${WT_PATHTO_FAIL:-0}" = "1" ]; then
                 return 1
             fi
@@ -102,6 +109,10 @@ wt() {
         spawn)
             if [ "${WT_SPAWN_FAIL:-0}" = "1" ]; then
                 return 1
+            fi
+            # Mark spawn as called for WT_PATHTO_FAIL_UNTIL_SPAWN
+            if [ -n "$WT_SPAWNED_FLAG" ]; then
+                touch "$WT_SPAWNED_FLAG"
             fi
             return 0
             ;;
@@ -236,7 +247,10 @@ OVERRIDES_EOF
 
 export AGENTIZE_SHELL_OVERRIDES="$OVERRIDES"
 export STUB_WORKTREE WT_CALL_LOG ACW_CALL_LOG GH_CALL_LOG GIT_CALL_LOG CALL_ORDER_LOG
-export ITERATION_COUNT_FILE
+export ITERATION_COUNT_FILE WT_SPAWNED_FLAG
+
+# Source overrides so shell-level wt calls also use stubs
+source "$OVERRIDES"
 
 reset_iteration() {
     echo 0 > "$ITERATION_COUNT_FILE"
@@ -259,7 +273,9 @@ reset_stub_state() {
     unset ACW_OUTPUT_TEXT
     unset GH_FAIL_ISSUE_VIEW
     unset WT_PATHTO_FAIL
+    unset WT_PATHTO_FAIL_UNTIL_SPAWN
     unset WT_SPAWN_FAIL
+    rm -f "$WT_SPAWNED_FLAG"
     GIT_HAS_CHANGES=1
     GIT_REMOTES="origin"
     GIT_DEFAULT_BRANCH="main"
@@ -825,5 +841,106 @@ if grep -q "^acw " "$ACW_CALL_LOG"; then
     cat "$ACW_CALL_LOG" >&2
     test_fail "Expected no acw calls when rebase fails"
 fi
+
+# ── Test 20: Worktree preflight when wt pathto fails → spawn called → goto before Python ──
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
+WT_PATHTO_FAIL_UNTIL_SPAWN=1
+export WT_PATHTO_FAIL_UNTIL_SPAWN
+ACW_COMPLETION_ITER=1
+export ACW_COMPLETION_ITER
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed with wt preflight (pathto fail → spawn)"
+}
+
+# Verify wt pathto was called first
+if ! grep -q "wt pathto 123" "$WT_CALL_LOG"; then
+    echo "WT call log:" >&2
+    cat "$WT_CALL_LOG" >&2
+    test_fail "Expected wt pathto 123 to be called"
+fi
+
+# Verify wt spawn was called after pathto failed
+if ! grep -q "wt spawn 123" "$WT_CALL_LOG"; then
+    echo "WT call log:" >&2
+    cat "$WT_CALL_LOG" >&2
+    test_fail "Expected wt spawn 123 to be called after pathto failed"
+fi
+
+# Verify wt goto was called before Python (check call order)
+WT_PATHTO_LINE=$(grep -n "wt pathto" "$WT_CALL_LOG" | head -n1 | cut -d: -f1)
+WT_SPAWN_LINE=$(grep -n "wt spawn" "$WT_CALL_LOG" | head -n1 | cut -d: -f1)
+WT_GOTO_LINE=$(grep -n "wt goto" "$WT_CALL_LOG" | head -n1 | cut -d: -f1)
+if [ -n "$WT_PATHTO_LINE" ] && [ -n "$WT_SPAWN_LINE" ] && [ -n "$WT_GOTO_LINE" ]; then
+    if [ "$WT_PATHTO_LINE" -ge "$WT_SPAWN_LINE" ] || [ "$WT_SPAWN_LINE" -ge "$WT_GOTO_LINE" ]; then
+        echo "WT call log:" >&2
+        cat "$WT_CALL_LOG" >&2
+        test_fail "Expected wt call order: pathto → spawn → goto"
+    fi
+fi
+
+# ── Test 21: Worktree preflight when wt pathto succeeds → no spawn → goto before Python ──
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
+ACW_COMPLETION_ITER=1
+export ACW_COMPLETION_ITER
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed with wt preflight (pathto succeeds)"
+}
+
+# Verify wt pathto was called
+if ! grep -q "wt pathto 123" "$WT_CALL_LOG"; then
+    echo "WT call log:" >&2
+    cat "$WT_CALL_LOG" >&2
+    test_fail "Expected wt pathto 123 to be called"
+fi
+
+# Verify wt spawn was NOT called (pathto succeeded)
+if grep -q "wt spawn" "$WT_CALL_LOG"; then
+    echo "WT call log:" >&2
+    cat "$WT_CALL_LOG" >&2
+    test_fail "Expected wt spawn to NOT be called when pathto succeeds"
+fi
+
+# Verify wt goto was called
+if ! grep -q "wt goto 123" "$WT_CALL_LOG"; then
+    echo "WT call log:" >&2
+    cat "$WT_CALL_LOG" >&2
+    test_fail "Expected wt goto 123 to be called"
+fi
+
+# ── Test 22: Missing wt command → wrapper runs Python without failure ──
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
+
+# Create completion marker immediately
+mkdir -p "$STUB_WORKTREE/.tmp"
+echo "PR: Missing wt test" > "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+
+# Unset the wt function to simulate missing wt
+unset -f wt
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed even when wt is unavailable"
+}
+
+# Verify Python workflow was still invoked
+if ! grep -q "^acw " "$ACW_CALL_LOG"; then
+    echo "ACW call log:" >&2
+    cat "$ACW_CALL_LOG" >&2
+    test_fail "Expected acw to be called even without wt"
+fi
+
+# Restore wt function for cleanup
+source "$OVERRIDES"
 
 test_pass "lol impl workflow with stubbed dependencies"
