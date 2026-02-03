@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import sys
 import time
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
@@ -21,7 +22,7 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from agentize.shell import get_agentize_home
-from agentize.workflow.utils import PlannerTTY, run_acw
+from agentize.workflow.utils import ACW, PlannerTTY, run_acw
 
 
 @dataclass
@@ -241,6 +242,19 @@ def run_planner_pipeline(
         stage_backends.update(backends)
 
     results: dict[str, StageResult] = {}
+    use_acw_runner = runner is run_acw
+    log_lock = threading.Lock()
+
+    def _log_writer(message: str) -> None:
+        with log_lock:
+            print(message, file=sys.stderr)
+
+    acw_log_writer = _log_writer if use_acw_runner else None
+
+    def _stage_label(stage: str) -> str:
+        if stage == "bold":
+            return "bold-proposer"
+        return stage
 
     def _backend_label(stage: str) -> str:
         provider, model = stage_backends[stage]
@@ -262,14 +276,25 @@ def run_planner_pipeline(
         provider, model = stage_backends[stage]
 
         # Run stage
-        process = runner(
-            provider,
-            model,
-            input_path,
-            output_file,
-            tools=STAGE_TOOLS.get(stage),
-            permission_mode=STAGE_PERMISSION_MODE.get(stage),
-        )
+        if use_acw_runner:
+            acw_runner = ACW(
+                name=_stage_label(stage),
+                provider=provider,
+                model=model,
+                tools=STAGE_TOOLS.get(stage),
+                permission_mode=STAGE_PERMISSION_MODE.get(stage),
+                log_writer=acw_log_writer,
+            )
+            process = acw_runner.run(input_path, output_file)
+        else:
+            process = runner(
+                provider,
+                model,
+                input_path,
+                output_file,
+                tools=STAGE_TOOLS.get(stage),
+                permission_mode=STAGE_PERMISSION_MODE.get(stage),
+            )
 
         return StageResult(
             stage=stage,
@@ -291,7 +316,7 @@ def run_planner_pipeline(
     understander_prompt = _render_stage_prompt(
         "understander", feature_desc, agentize_home
     )
-    t_understander = progress.timer_start() if progress else None
+    t_understander = progress.timer_start() if progress and not use_acw_runner else None
     if progress:
         progress.anim_start(
             f"Stage 1/5: Running understander ({_backend_label('understander')})"
@@ -304,7 +329,11 @@ def run_planner_pipeline(
     _check_stage_result(results["understander"])
     understander_output = results["understander"].output_path.read_text()
     if progress and t_understander is not None:
-        progress.timer_log("understander", t_understander, _backend_label("understander"))
+        progress.timer_log(
+            _stage_label("understander"),
+            t_understander,
+            _backend_label("understander"),
+        )
         progress.log(f"  Understander complete: {results['understander'].output_path}")
         progress.log("")
 
@@ -312,7 +341,7 @@ def run_planner_pipeline(
     bold_prompt = _render_stage_prompt(
         "bold", feature_desc, agentize_home, understander_output
     )
-    t_bold = progress.timer_start() if progress else None
+    t_bold = progress.timer_start() if progress and not use_acw_runner else None
     if progress:
         progress.anim_start(f"Stage 2/5: Running bold-proposer ({_backend_label('bold')})")
     try:
@@ -323,7 +352,7 @@ def run_planner_pipeline(
     _check_stage_result(results["bold"])
     bold_output = results["bold"].output_path.read_text()
     if progress and t_bold is not None:
-        progress.timer_log("bold-proposer", t_bold, _backend_label("bold"))
+        progress.timer_log(_stage_label("bold"), t_bold, _backend_label("bold"))
         progress.log(f"  Bold-proposer complete: {results['bold'].output_path}")
         progress.log("")
 
@@ -335,7 +364,7 @@ def run_planner_pipeline(
         "reducer", feature_desc, agentize_home, bold_output
     )
 
-    t_parallel = progress.timer_start() if progress else None
+    t_parallel = progress.timer_start() if progress and not use_acw_runner else None
     if progress:
         progress.anim_start(
             "Stage 3-4/5: Running critique and reducer in parallel "
@@ -362,9 +391,17 @@ def run_planner_pipeline(
     critique_output = results["critique"].output_path.read_text()
     reducer_output = results["reducer"].output_path.read_text()
     if progress and t_parallel is not None:
-        progress.timer_log("critique", t_parallel, _backend_label("critique"))
+        progress.timer_log(
+            _stage_label("critique"),
+            t_parallel,
+            _backend_label("critique"),
+        )
         progress.log(f"  Critique complete: {results['critique'].output_path}")
-        progress.timer_log("reducer", t_parallel, _backend_label("reducer"))
+        progress.timer_log(
+            _stage_label("reducer"),
+            t_parallel,
+            _backend_label("reducer"),
+        )
         progress.log(f"  Reducer complete: {results['reducer'].output_path}")
         progress.log("")
 
@@ -375,7 +412,7 @@ def run_planner_pipeline(
     consensus_prompt = _render_consensus_prompt(
         feature_desc, bold_output, critique_output, reducer_output, agentize_home
     )
-    t_consensus = progress.timer_start() if progress else None
+    t_consensus = progress.timer_start() if progress and not use_acw_runner else None
     if progress:
         progress.anim_start(
             f"Stage 5/5: Running consensus ({_backend_label('consensus')})"
@@ -387,7 +424,11 @@ def run_planner_pipeline(
             progress.anim_stop()
     _check_stage_result(results["consensus"])
     if progress and t_consensus is not None:
-        progress.timer_log("consensus", t_consensus, _backend_label("consensus"))
+        progress.timer_log(
+            _stage_label("consensus"),
+            t_consensus,
+            _backend_label("consensus"),
+        )
 
     return results
 
@@ -641,6 +682,7 @@ def _run_consensus_stage(
     stage_backends: dict[str, tuple[str, str]],
     *,
     runner: Callable[..., subprocess.CompletedProcess] = run_acw,
+    log_writer: Callable[[str], None] | None = None,
 ) -> StageResult:
     bold_output = bold_path.read_text()
     critique_output = critique_path.read_text()
@@ -660,14 +702,25 @@ def _run_consensus_stage(
     input_path.write_text(consensus_prompt)
 
     provider, model = stage_backends["consensus"]
-    process = runner(
-        provider,
-        model,
-        input_path,
-        output_path,
-        tools=STAGE_TOOLS.get("consensus"),
-        permission_mode=STAGE_PERMISSION_MODE.get("consensus"),
-    )
+    if runner is run_acw:
+        acw_runner = ACW(
+            name="consensus",
+            provider=provider,
+            model=model,
+            tools=STAGE_TOOLS.get("consensus"),
+            permission_mode=STAGE_PERMISSION_MODE.get("consensus"),
+            log_writer=log_writer,
+        )
+        process = acw_runner.run(input_path, output_path)
+    else:
+        process = runner(
+            provider,
+            model,
+            input_path,
+            output_path,
+            tools=STAGE_TOOLS.get("consensus"),
+            permission_mode=STAGE_PERMISSION_MODE.get("consensus"),
+        )
 
     return StageResult(
         stage="consensus",
@@ -767,8 +820,17 @@ def main(argv: list[str]) -> int:
         return 2
 
     consensus_backend = stage_backends["consensus"]
-    t_consensus = tty.timer_start()
-    tty.anim_start(f"Stage 5/5: Running consensus ({consensus_backend[0]}:{consensus_backend[1]})")
+    runner = run_acw
+    use_acw_runner = runner is run_acw
+    t_consensus = tty.timer_start() if not use_acw_runner else None
+    tty.anim_start(
+        f"Stage 5/5: Running consensus ({consensus_backend[0]}:{consensus_backend[1]})"
+    )
+    log_lock = threading.Lock()
+
+    def _log_writer(message: str) -> None:
+        with log_lock:
+            print(message, file=sys.stderr)
     try:
         consensus_result = _run_consensus_stage(
             feature_desc,
@@ -778,7 +840,8 @@ def main(argv: list[str]) -> int:
             output_dir,
             prefix_name,
             stage_backends,
-            runner=run_acw,
+            runner=runner,
+            log_writer=_log_writer,
         )
     except (FileNotFoundError, RuntimeError, subprocess.TimeoutExpired) as exc:
         tty.anim_stop()
@@ -805,7 +868,12 @@ def main(argv: list[str]) -> int:
         consensus_display = str(consensus_result.output_path)
     consensus_path = consensus_result.output_path
 
-    tty.timer_log("consensus", t_consensus, f"{consensus_backend[0]}:{consensus_backend[1]}")
+    if t_consensus is not None:
+        tty.timer_log(
+            "consensus",
+            t_consensus,
+            f"{consensus_backend[0]}:{consensus_backend[1]}",
+        )
 
     tty.log("")
     tty.stage("Pipeline complete!")

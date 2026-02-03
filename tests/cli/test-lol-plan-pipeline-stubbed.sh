@@ -38,6 +38,16 @@ acw() {
     local input_file="$3"
     local output_file="$4"
 
+    if [ "$provider" = "--complete" ] && [ "$model" = "providers" ]; then
+        cat <<'EOF'
+claude
+codex
+opencode
+cursor
+EOF
+        return 0
+    fi
+
     echo "acw $provider $model $input_file $output_file" >> "${PLANNER_ACW_CALL_LOG:?}"
 
     if echo "$output_file" | grep -q "understander"; then

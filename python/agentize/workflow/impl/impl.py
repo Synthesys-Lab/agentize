@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Iterable
 
 from agentize.shell import run_shell_function
+from agentize.workflow.utils import ACW
 
 
 class ImplError(RuntimeError):
@@ -384,11 +385,19 @@ def run_impl_workflow(
         )
         input_file.write_text(prompt)
 
-        acw_parts = ["acw", provider, model, str(input_file), str(output_file)]
-        if yolo:
-            acw_parts.append("--yolo")
-        acw_cmd = _shell_cmd(acw_parts)
-        acw_result = run_shell_function(acw_cmd, cwd=worktree)
+        extra_flags = ["--yolo"] if yolo else None
+
+        def _log_writer(message: str) -> None:
+            print(message, file=sys.stderr)
+
+        acw_runner = ACW(
+            name=f"impl-iter-{iteration}",
+            provider=provider,
+            model=model,
+            extra_flags=extra_flags,
+            log_writer=_log_writer,
+        )
+        acw_result = acw_runner.run(input_file, output_file)
         if acw_result.returncode != 0:
             print(
                 f"Warning: acw exited with non-zero status on iteration {iteration}",

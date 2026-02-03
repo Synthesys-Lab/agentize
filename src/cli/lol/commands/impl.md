@@ -17,7 +17,7 @@ lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
 - `--yolo`: Pass-through flag to `acw` for autonomous actions.
 
 **Behavior**:
-- Delegates to the Python workflow, which resolves worktrees, syncs the issue branch, runs `acw`, and manages git/PR automation.
+- Delegates to the Python workflow, which resolves worktrees, syncs the issue branch, runs the shared `ACW` runner, and manages git/PR automation.
 - Syncs the issue branch by fetching and rebasing onto the default branch before starting iterations.
 - Prefetches issue content via `gh issue view`; if it fails or returns empty content, the command exits with an error.
 - Iterates `acw` runs, requiring a per-iteration commit report file in `.tmp/commit-report-iter-<iter>.txt`.
@@ -50,7 +50,7 @@ Private entrypoint function for the command implementation. It validates argumen
 
 ### Iteration loop
 - Builds `.tmp/impl-input-<iter>.txt` from the base prompt plus previous output.
-- Invokes `acw` with provider/model plus optional `--yolo`.
+- Invokes the shared `ACW` runner (provider validation + timing logs) with provider/model plus optional `--yolo`.
 - Requires `.tmp/commit-report-iter-<iter>.txt` and commits changes when present.
 
 ### Completion detection and PR creation

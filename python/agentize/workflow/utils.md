@@ -82,6 +82,58 @@ Wrapper around the `acw` shell function that builds and executes an ACW command 
 - `AGENTIZE_HOME`: Used to locate `acw.sh` script
 - `PLANNER_ACW_SCRIPT`: Override path to `acw.sh` (for testing)
 
+### `list_acw_providers`
+
+```python
+def list_acw_providers() -> list[str]
+```
+
+Fetch the list of supported providers by calling `acw --complete providers`
+using the same script resolution rules as `run_acw`.
+
+**Behavior:**
+- Returns the list of non-empty lines from the completion output.
+- Raises `RuntimeError` if completion fails or returns no providers.
+- Caches the result in memory to avoid repeated subprocess calls.
+
+### `ACW`
+
+```python
+class ACW:
+    def __init__(
+        self,
+        name: str,
+        provider: str,
+        model: str,
+        timeout: int = 900,
+        *,
+        tools: str | None = None,
+        permission_mode: str | None = None,
+        extra_flags: list[str] | None = None,
+        log_writer: Callable[[str], None] | None = None,
+    ) -> None: ...
+    def run(self, input_file: str | Path, output_file: str | Path) -> subprocess.CompletedProcess: ...
+```
+
+Class-based runner around `run_acw` that validates providers at construction and emits
+start/finish timing logs.
+
+**Constructor parameters:**
+- `name`: Stage/agent label used in log lines.
+- `provider`: Backend provider (validated via `list_acw_providers`).
+- `model`: Model identifier.
+- `timeout`: Execution timeout in seconds (default: 900).
+- `tools`: Tool configuration (Claude provider only).
+- `permission_mode`: Permission mode override (Claude provider only).
+- `extra_flags`: Additional CLI flags.
+- `log_writer`: Optional callable that receives log lines.
+
+**Run behavior:**
+- Emits `agent <name> (<provider>:<model>) is running...` before invoking `run_acw`.
+- Emits `agent <name> (<provider>:<model>) runs <seconds>s` after completion.
+
+The log format matches the planner TTY contract in `docs/cli/planner.md`.
+
 ## Example
 
 ```python

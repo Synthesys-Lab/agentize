@@ -39,6 +39,28 @@ quoted paths.
 
 **Raises:** `subprocess.TimeoutExpired` if execution exceeds timeout
 
+#### `ACW`
+
+```python
+class ACW:
+    def __init__(
+        self,
+        name: str,
+        provider: str,
+        model: str,
+        timeout: int = 900,
+        *,
+        tools: str | None = None,
+        permission_mode: str | None = None,
+        extra_flags: list[str] | None = None,
+        log_writer: Callable[[str], None] | None = None,
+    ) -> None: ...
+    def run(self, input_file: str | Path, output_file: str | Path) -> subprocess.CompletedProcess: ...
+```
+
+Class-based runner around `run_acw` that validates providers at construction and
+emits start/finish timing logs.
+
 #### `PlannerTTY`
 
 ```python

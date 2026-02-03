@@ -16,13 +16,14 @@ import pytest
 # Using try/except to allow test file to exist before implementation
 try:
     # Primary imports via backward-compat re-exports in workflow/__init__.py
-    from agentize.workflow import run_planner_pipeline, StageResult, run_acw, PlannerTTY
+    from agentize.workflow import run_planner_pipeline, StageResult, run_acw, PlannerTTY, ACW
 except ImportError:
     # Define stubs for test discovery before implementation
     StageResult = None
     run_planner_pipeline = None
     run_acw = None
     PlannerTTY = None
+    ACW = None
 
 # Additional import path tests (these will be exercised in dedicated tests below)
 try:
@@ -345,6 +346,87 @@ class TestPlannerPipelineOptions:
         assert "consensus" not in results
         output_files = [Path(inv["output_file"]).name for inv in stub_runner.invocations]
         assert not any("consensus" in output_file for output_file in output_files)
+
+
+# ============================================================
+# Test ACW runner
+# ============================================================
+
+class TestACWRunner:
+    """Tests for ACW provider validation and logging."""
+
+    @pytest.mark.skipif(ACW is None, reason="Implementation not yet available")
+    def test_invalid_provider_raises(self, monkeypatch):
+        """ACW raises ValueError when provider is not in completion list."""
+        from agentize.workflow.utils import ACW as utils_ACW
+
+        monkeypatch.setattr("agentize.workflow.utils.list_acw_providers", lambda: ["claude"])
+
+        with pytest.raises(ValueError, match="provider"):
+            utils_ACW(name="test", provider="codex", model="gpt")
+
+    @pytest.mark.skipif(ACW is None, reason="Implementation not yet available")
+    def test_run_logs_and_invokes_acw(self, monkeypatch, tmp_path: Path):
+        """ACW.run logs start/finish lines and calls run_acw with expected args."""
+        from agentize.workflow.utils import ACW as utils_ACW
+
+        invocations = []
+
+        def _fake_run_acw(
+            provider: str,
+            model: str,
+            input_file: str | Path,
+            output_file: str | Path,
+            *,
+            tools: str | None = None,
+            permission_mode: str | None = None,
+            extra_flags: list[str] | None = None,
+            timeout: int = 900,
+        ) -> subprocess.CompletedProcess:
+            invocations.append({
+                "provider": provider,
+                "model": model,
+                "input_file": str(input_file),
+                "output_file": str(output_file),
+                "tools": tools,
+                "permission_mode": permission_mode,
+                "extra_flags": extra_flags,
+                "timeout": timeout,
+            })
+            return subprocess.CompletedProcess(args=["acw"], returncode=0, stdout="", stderr="")
+
+        times = [100.0, 112.0]
+
+        def _fake_time() -> float:
+            return times.pop(0)
+
+        monkeypatch.setattr("agentize.workflow.utils.list_acw_providers", lambda: ["claude"])
+        monkeypatch.setattr("agentize.workflow.utils.run_acw", _fake_run_acw)
+        monkeypatch.setattr("agentize.workflow.utils.time.time", _fake_time)
+
+        logs: list[str] = []
+        log_writer = logs.append
+
+        input_path = tmp_path / "input.md"
+        output_path = tmp_path / "output.md"
+        input_path.write_text("prompt")
+
+        runner = utils_ACW(
+            name="understander",
+            provider="claude",
+            model="sonnet",
+            log_writer=log_writer,
+        )
+        result = runner.run(input_path, output_path)
+
+        assert result.returncode == 0
+        assert invocations
+        assert invocations[0]["provider"] == "claude"
+        assert invocations[0]["model"] == "sonnet"
+        assert invocations[0]["input_file"] == str(input_path)
+        assert invocations[0]["output_file"] == str(output_path)
+        assert logs[0] == "agent understander (claude:sonnet) is running..."
+        assert logs[1] == "agent understander (claude:sonnet) runs 12s"
 
 
 # ============================================================

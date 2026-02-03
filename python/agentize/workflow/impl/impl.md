@@ -31,7 +31,7 @@ source of truth.
 - Syncs the issue branch by fetching and rebasing onto the detected default branch before iterations.
 - Prefetches issue content via `gh issue view` into `.tmp/issue-<N>.md`; fails if empty.
 - Renders iteration prompts from `continue-prompt.md` into `.tmp/impl-input-<N>.txt`.
-- Runs `acw` with the selected provider/model and captures output in `.tmp/impl-output.txt`.
+- Runs the shared `ACW` runner (provider validation + timing logs) and captures output in `.tmp/impl-output.txt`.
 - Requires `.tmp/commit-report-iter-<N>.txt` for commits; stages and commits when diffs exist.
 - Detects completion via `.tmp/finalize.txt` containing `Issue <N> resolved`.
 - Pushes the branch and opens a PR using the completion file as title/body.
