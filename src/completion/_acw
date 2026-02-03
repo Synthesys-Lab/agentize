@@ -42,6 +42,11 @@ _acw() {
         '-h[Show help message]' \
         '--editor[Compose input in $EDITOR]' \
         '--stdout[Write output to stdout (merge provider stderr)]' \
+        '--chat[Start or continue chat session]::session-id:' \
+        '--chat-list[List chat sessions]' \
+        '--model[Provider model identifier]:model:' \
+        '--max-tokens[Maximum tokens to generate]:number:' \
+        '--yolo[Enable dangerous mode]' \
         '--complete[Shell completion helper]:topic:(providers cli-options)' \
         '1:provider:->provider' \
         '2:model:' \

@@ -25,13 +25,27 @@ done
 test_info "Checking --complete cli-options"
 options_output=$(acw --complete cli-options)
 
-for option in "--help" "--chat" "--chat-list" "--editor" "--stdout" "--model" "--yolo"; do
+for option in "--help" "--chat" "--chat-list" "--editor" "--stdout" "--model" "--max-tokens" "--yolo"; do
     if ! echo "$options_output" | grep -q "^${option}$"; then
         test_fail "Option '$option' not found in --complete cli-options output"
     fi
 done
 
-# Test 3: acw --complete with unknown topic returns empty (graceful degradation)
+# Test 3: _acw contains all cli-options flags
+test_info "Checking _acw parity with cli-options"
+acw_completion_file="$PROJECT_ROOT/src/completion/_acw"
+while read -r option; do
+    if [ -z "$option" ]; then
+        continue
+    fi
+    if ! grep -F -q -- "${option}[" "$acw_completion_file"; then
+        test_fail "Option '$option' from cli-options missing in _acw"
+    fi
+done <<EOF
+$options_output
+EOF
+
+# Test 4: acw --complete with unknown topic returns empty (graceful degradation)
 test_info "Checking --complete with unknown topic"
 unknown_output=$(acw --complete unknown-topic 2>/dev/null)
 
@@ -39,13 +53,13 @@ if [ -n "$unknown_output" ]; then
     test_fail "Expected empty output for unknown completion topic, got: $unknown_output"
 fi
 
-# Test 4: _acw_complete function is available (private)
+# Test 5: _acw_complete function is available (private)
 test_info "Checking _acw_complete function exists"
 if ! type _acw_complete 2>/dev/null | grep -q "function"; then
     test_fail "_acw_complete function is not defined"
 fi
 
-# Test 5: old acw_complete function is NOT available
+# Test 6: old acw_complete function is NOT available
 test_info "Checking old acw_complete function is removed"
 if type acw_complete 2>/dev/null | grep -q "function"; then
     test_fail "Old acw_complete function should be renamed to _acw_complete"
