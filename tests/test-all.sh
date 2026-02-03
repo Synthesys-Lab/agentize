@@ -96,11 +96,20 @@ run_test() {
     local test_script="$2"
     local test_name=$(basename "$test_script" .sh)
 
-    if "$shell" "$test_script" > /dev/null 2>&1; then
+    local output_dir="$PROJECT_ROOT/.tmp/test-all-outputs"
+    mkdir -p "$output_dir"
+    local output_file=""
+    output_file=$(mktemp "$output_dir/${test_name}.XXXXXX")
+
+    if "$shell" "$test_script" > "$output_file" 2>&1; then
         echo "✓ $test_name"
+        rm -f "$output_file"
         return 0
     else
         echo "✗ $test_name FAILED"
+        echo "----- $test_name output (begin) -----"
+        cat "$output_file"
+        echo "----- $test_name output (end) -----"
         return 1
     fi
 }
