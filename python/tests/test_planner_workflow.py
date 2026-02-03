@@ -603,8 +603,8 @@ class TestACWTransientLineClear:
         )
         runner.run(input_path, output_path)
 
-        # Extract the sequence of outputs
-        writes = [text for op, text in call_sequence if op == "write"]
+        # Extract the sequence of write outputs
+        writes = [item[1] for item in call_sequence if item[0] == "write"]
 
         # Verify sequence: "is running..." → clear line (\r\033[K) → "runs Ns"
         assert any("is running..." in w for w in writes), f"Missing 'is running...' in {writes}"

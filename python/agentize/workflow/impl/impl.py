@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import shlex
 import sys
@@ -341,6 +342,7 @@ def run_impl_workflow(
         print(f"Using existing worktree for issue {issue_no} at {worktree_path}")
 
     worktree = Path(worktree_path)
+    os.chdir(worktree)  # Set process cwd to worktree for correct context
     push_remote, base_branch = _sync_branch(worktree)
     tmp_dir = worktree / ".tmp"
     tmp_dir.mkdir(parents=True, exist_ok=True)

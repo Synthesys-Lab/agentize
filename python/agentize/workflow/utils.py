@@ -294,6 +294,12 @@ class ACW:
             return
         print(message, file=sys.stderr)
 
+    def _clear_line(self) -> None:
+        """Clear the current terminal line (for TTY stderr only)."""
+        if sys.stderr.isatty():
+            sys.stderr.write("\r\033[K")
+            sys.stderr.flush()
+
     def run(
         self,
         input_file: str | Path,
@@ -315,6 +321,7 @@ class ACW:
         )
 
         elapsed = int(time.time() - start_time)
+        self._clear_line()
         self._log(f"agent {self.name} ({backend}) runs {elapsed}s")
         return process
 
