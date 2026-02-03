@@ -24,13 +24,26 @@ WT_CALL_LOG="$TMP_DIR/wt-calls.log"
 ACW_CALL_LOG="$TMP_DIR/acw-calls.log"
 GH_CALL_LOG="$TMP_DIR/gh-calls.log"
 GIT_CALL_LOG="$TMP_DIR/git-calls.log"
-touch "$WT_CALL_LOG" "$ACW_CALL_LOG" "$GH_CALL_LOG" "$GIT_CALL_LOG"
+CALL_ORDER_LOG="$TMP_DIR/call-order.log"
+touch "$WT_CALL_LOG" "$ACW_CALL_LOG" "$GH_CALL_LOG" "$GIT_CALL_LOG" "$CALL_ORDER_LOG"
 
 # Stub git function - by default simulates changes exist
 GIT_HAS_CHANGES=1
 GIT_REMOTES="origin"
 GIT_DEFAULT_BRANCH="main"
-export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH
+GIT_FETCH_FAILS=0
+GIT_REBASE_FAILS=0
+export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH GIT_FETCH_FAILS GIT_REBASE_FAILS
+
+log_git_call() {
+    echo "git $*" >> "$GIT_CALL_LOG"
+    echo "git $*" >> "$CALL_ORDER_LOG"
+}
+
+log_acw_call() {
+    echo "acw $*" >> "$ACW_CALL_LOG"
+    echo "acw $*" >> "$CALL_ORDER_LOG"
+}
 
 write_commit_report() {
     local iter="$1"
@@ -39,7 +52,7 @@ write_commit_report() {
 }
 
 git() {
-    echo "git $*" >> "$GIT_CALL_LOG"
+    log_git_call "$@"
     case "$1" in
         add)
             return 0
@@ -71,6 +84,14 @@ git() {
             return 0
             ;;
         push)
+            return 0
+            ;;
+        fetch)
+            [ "$GIT_FETCH_FAILS" = "1" ] && return 1
+            return 0
+            ;;
+        rebase)
+            [ "$GIT_REBASE_FAILS" = "1" ] && return 1
             return 0
             ;;
         *)
@@ -109,7 +130,7 @@ acw() {
     local output_file="$4"
     shift 4
 
-    echo "acw $cli_name $model_name $input_file $output_file $*" >> "$ACW_CALL_LOG"
+    log_acw_call "$cli_name" "$model_name" "$input_file" "$output_file" "$@"
 
     # Increment iteration count
     ITERATION_COUNT=$((ITERATION_COUNT + 1))
@@ -170,7 +191,7 @@ acw() {
     local output_file="$4"
     shift 4
 
-    echo "acw $cli_name $model_name $input_file $output_file $*" >> "$ACW_CALL_LOG"
+    log_acw_call "$cli_name" "$model_name" "$input_file" "$output_file" "$@"
 
     ITERATION_COUNT=$((ITERATION_COUNT + 1))
     export ITERATION_COUNT
@@ -223,7 +244,7 @@ acw() {
     local input_file="$3"
     local output_file="$4"
 
-    echo "acw $cli_name $model_name $input_file $output_file" >> "$ACW_CALL_LOG"
+    log_acw_call "$cli_name" "$model_name" "$input_file" "$output_file"
 
     ITERATION_COUNT=$((ITERATION_COUNT + 1))
     export ITERATION_COUNT
@@ -267,7 +288,7 @@ echo "PR: Quick fix" > "$STUB_WORKTREE/.tmp/finalize.txt"
 echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
-    echo "acw $1 $2 $3 $4" >> "$ACW_CALL_LOG"
+    log_acw_call "$1" "$2" "$3" "$4"
     ITERATION_COUNT=$((ITERATION_COUNT + 1))
     export ITERATION_COUNT
     write_commit_report "$ITERATION_COUNT"
@@ -293,7 +314,7 @@ ITERATION_COUNT=0
 
 # Redefine acw stub to capture all arguments including flags
 acw() {
-    echo "acw $*" >> "$ACW_CALL_LOG"
+    log_acw_call "$@"
     ITERATION_COUNT=$((ITERATION_COUNT + 1))
     export ITERATION_COUNT
     write_commit_report "$ITERATION_COUNT"
@@ -354,7 +375,7 @@ gh() {
 }
 
 acw() {
-    echo "acw $*" >> "$ACW_CALL_LOG"
+    log_acw_call "$@"
     ITERATION_COUNT=$((ITERATION_COUNT + 1))
     export ITERATION_COUNT
     write_commit_report "$ITERATION_COUNT"
@@ -479,7 +500,7 @@ wt() {
 # Stub acw that creates completion marker on second iteration
 acw() {
     local output_file="$4"
-    echo "acw $*" >> "$ACW_CALL_LOG"
+    log_acw_call "$@"
     ITERATION_COUNT=$((ITERATION_COUNT + 1))
     export ITERATION_COUNT
     write_commit_report "$ITERATION_COUNT"
@@ -544,7 +565,7 @@ echo "PR: No changes test" > "$STUB_WORKTREE/.tmp/finalize.txt"
 echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
-    echo "acw $*" >> "$ACW_CALL_LOG"
+    log_acw_call "$@"
     ITERATION_COUNT=$((ITERATION_COUNT + 1))
     export ITERATION_COUNT
     write_commit_report "$ITERATION_COUNT"
@@ -587,7 +608,7 @@ echo "PR: Commit report test" > "$STUB_WORKTREE/.tmp/finalize.txt"
 echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
-    echo "acw $*" >> "$ACW_CALL_LOG"
+    log_acw_call "$@"
     ITERATION_COUNT=$((ITERATION_COUNT + 1))
     export ITERATION_COUNT
     write_commit_report "$ITERATION_COUNT"
@@ -626,7 +647,7 @@ echo "PR: Missing report test" > "$STUB_WORKTREE/.tmp/finalize.txt"
 echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
-    echo "acw $*" >> "$ACW_CALL_LOG"
+    log_acw_call "$@"
     ITERATION_COUNT=$((ITERATION_COUNT + 1))
     export ITERATION_COUNT
     echo "Stub response" > "$4"
@@ -662,7 +683,7 @@ echo "PR: Remote precedence test" > "$STUB_WORKTREE/.tmp/finalize.txt"
 echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
-    echo "acw $*" >> "$ACW_CALL_LOG"
+    log_acw_call "$@"
     ITERATION_COUNT=$((ITERATION_COUNT + 1))
     export ITERATION_COUNT
     write_commit_report "$ITERATION_COUNT"
@@ -742,7 +763,7 @@ echo "closes #123" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
 
 acw() {
-    echo "acw $*" >> "$ACW_CALL_LOG"
+    log_acw_call "$@"
     ITERATION_COUNT=$((ITERATION_COUNT + 1))
     export ITERATION_COUNT
     write_commit_report "$ITERATION_COUNT"
@@ -793,6 +814,186 @@ if [ "$CLOSES_COUNT" -ne 1 ]; then
     echo "GH call log:" >&2
     cat "$GH_CALL_LOG" >&2
     test_fail "Expected exactly one 'Closes #123' in PR body (got $CLOSES_COUNT)"
+fi
+
+# ── Test 15: Sync fetch runs before iteration loop ──
+ITERATION_COUNT=0
+> "$ACW_CALL_LOG"
+> "$GH_CALL_LOG"
+> "$GIT_CALL_LOG"
+> "$CALL_ORDER_LOG"
+GIT_HAS_CHANGES=1
+GIT_REMOTES="origin"
+GIT_DEFAULT_BRANCH="main"
+GIT_FETCH_FAILS=0
+GIT_REBASE_FAILS=0
+export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH GIT_FETCH_FAILS GIT_REBASE_FAILS
+
+# Create completion marker immediately
+echo "PR: Sync order test" > "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+
+acw() {
+    log_acw_call "$@"
+    ITERATION_COUNT=$((ITERATION_COUNT + 1))
+    export ITERATION_COUNT
+    write_commit_report "$ITERATION_COUNT"
+    echo "Stub response" > "$4"
+    return 0
+}
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed with sync before iterations"
+}
+
+FETCH_LINE=$(grep -n "git fetch" "$CALL_ORDER_LOG" | head -n1 | cut -d: -f1)
+ACW_LINE=$(grep -n "^acw " "$CALL_ORDER_LOG" | head -n1 | cut -d: -f1)
+if [ -z "$FETCH_LINE" ] || [ -z "$ACW_LINE" ]; then
+    echo "Call order log:" >&2
+    cat "$CALL_ORDER_LOG" >&2
+    test_fail "Expected git fetch and acw calls to be logged"
+fi
+if [ "$FETCH_LINE" -gt "$ACW_LINE" ]; then
+    echo "Call order log:" >&2
+    cat "$CALL_ORDER_LOG" >&2
+    test_fail "Expected git fetch before first acw call"
+fi
+
+# ── Test 16: Sync rebase uses upstream/master when available ──
+ITERATION_COUNT=0
+> "$ACW_CALL_LOG"
+> "$GH_CALL_LOG"
+> "$GIT_CALL_LOG"
+> "$CALL_ORDER_LOG"
+GIT_HAS_CHANGES=1
+GIT_REMOTES=$'upstream\norigin'
+GIT_DEFAULT_BRANCH="master"
+GIT_FETCH_FAILS=0
+GIT_REBASE_FAILS=0
+export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH GIT_FETCH_FAILS GIT_REBASE_FAILS
+
+# Create completion marker immediately
+echo "PR: Sync rebase upstream test" > "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+
+acw() {
+    log_acw_call "$@"
+    ITERATION_COUNT=$((ITERATION_COUNT + 1))
+    export ITERATION_COUNT
+    write_commit_report "$ITERATION_COUNT"
+    echo "Stub response" > "$4"
+    return 0
+}
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed with upstream/master sync"
+}
+
+if ! grep -q "git rebase upstream/master" "$GIT_CALL_LOG"; then
+    echo "GIT call log:" >&2
+    cat "$GIT_CALL_LOG" >&2
+    test_fail "Expected git rebase upstream/master for sync"
+fi
+
+# ── Test 17: Sync rebase falls back to origin/main ──
+ITERATION_COUNT=0
+> "$ACW_CALL_LOG"
+> "$GH_CALL_LOG"
+> "$GIT_CALL_LOG"
+> "$CALL_ORDER_LOG"
+GIT_HAS_CHANGES=1
+GIT_REMOTES="origin"
+GIT_DEFAULT_BRANCH="main"
+GIT_FETCH_FAILS=0
+GIT_REBASE_FAILS=0
+export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH GIT_FETCH_FAILS GIT_REBASE_FAILS
+
+# Create completion marker immediately
+echo "PR: Sync rebase origin test" > "$STUB_WORKTREE/.tmp/finalize.txt"
+echo "Issue 123 resolved" >> "$STUB_WORKTREE/.tmp/finalize.txt"
+
+acw() {
+    log_acw_call "$@"
+    ITERATION_COUNT=$((ITERATION_COUNT + 1))
+    export ITERATION_COUNT
+    write_commit_report "$ITERATION_COUNT"
+    echo "Stub response" > "$4"
+    return 0
+}
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed with origin/main sync"
+}
+
+if ! grep -q "git rebase origin/main" "$GIT_CALL_LOG"; then
+    echo "GIT call log:" >&2
+    cat "$GIT_CALL_LOG" >&2
+    test_fail "Expected git rebase origin/main for sync fallback"
+fi
+
+# ── Test 18: Sync fetch failure stops execution ──
+ITERATION_COUNT=0
+> "$ACW_CALL_LOG"
+> "$GH_CALL_LOG"
+> "$GIT_CALL_LOG"
+> "$CALL_ORDER_LOG"
+GIT_HAS_CHANGES=1
+GIT_REMOTES="origin"
+GIT_DEFAULT_BRANCH="main"
+GIT_FETCH_FAILS=1
+GIT_REBASE_FAILS=0
+export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH GIT_FETCH_FAILS GIT_REBASE_FAILS
+
+rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) && {
+    echo "Output: $output" >&2
+    test_fail "lol impl should fail when git fetch fails"
+}
+
+echo "$output" | grep -qi "failed to fetch" || {
+    echo "Output: $output" >&2
+    test_fail "Expected fetch failure error message"
+}
+
+if [ -s "$ACW_CALL_LOG" ]; then
+    echo "ACW call log:" >&2
+    cat "$ACW_CALL_LOG" >&2
+    test_fail "Expected no acw calls when fetch fails"
+fi
+
+# ── Test 19: Sync rebase failure stops execution ──
+ITERATION_COUNT=0
+> "$ACW_CALL_LOG"
+> "$GH_CALL_LOG"
+> "$GIT_CALL_LOG"
+> "$CALL_ORDER_LOG"
+GIT_HAS_CHANGES=1
+GIT_REMOTES="origin"
+GIT_DEFAULT_BRANCH="main"
+GIT_FETCH_FAILS=0
+GIT_REBASE_FAILS=1
+export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH GIT_FETCH_FAILS GIT_REBASE_FAILS
+
+rm -f "$STUB_WORKTREE/.tmp/finalize.txt"
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) && {
+    echo "Output: $output" >&2
+    test_fail "lol impl should fail when git rebase fails"
+}
+
+echo "$output" | grep -qi "rebase conflict" || {
+    echo "Output: $output" >&2
+    test_fail "Expected rebase conflict error message"
+}
+
+if [ -s "$ACW_CALL_LOG" ]; then
+    echo "ACW call log:" >&2
+    cat "$ACW_CALL_LOG" >&2
+    test_fail "Expected no acw calls when rebase fails"
 fi
 
 test_pass "lol impl workflow with stubbed dependencies"

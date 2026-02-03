@@ -6,7 +6,7 @@ Validate `lol impl` behavior with deterministic stubs for external tools.
 
 ## Stubs
 
-- `git`: Simulate repository interactions (add, diff, commit, remote, push)
+- `git`: Simulate repository interactions (add, diff, commit, remote, fetch, rebase, push)
 - `wt`: Return predictable worktree paths
 - `acw`: Return canned planner/impl outputs
 - `gh`: Return mocked issue data and PR creation responses
@@ -30,6 +30,11 @@ Stubs are defined in the test shell and used by sourced CLI code to keep behavio
 13. Base branch selection (master over main)
 14. Fallback to origin and main when upstream/master unavailable
 15. PR body closes-line deduplication and append behavior
+16. Sync fetch ordering before iterations
+17. Sync rebase uses upstream/master
+18. Sync rebase falls back to origin/main
+19. Sync fetch failure handling
+20. Sync rebase conflict handling
 
 ## Usage
 

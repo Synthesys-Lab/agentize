@@ -66,6 +66,41 @@ _lol_cmd_impl() {
 
     echo "Navigated to worktree at $worktree_path"
 
+    # Step 1.5: Detect remote and base branch for sync and PR creation
+    local push_remote=""
+    local base_branch=""
+
+    # Detect push remote: prefer upstream, then origin
+    if (cd "$worktree_path" && git remote | grep -q "^upstream$"); then
+        push_remote="upstream"
+    elif (cd "$worktree_path" && git remote | grep -q "^origin$"); then
+        push_remote="origin"
+    else
+        echo "Error: No remote found (need upstream or origin)" >&2
+        return 1
+    fi
+
+    # Detect base branch: prefer master, then main
+    if (cd "$worktree_path" && git rev-parse --verify "refs/remotes/${push_remote}/master" >/dev/null 2>&1); then
+        base_branch="master"
+    elif (cd "$worktree_path" && git rev-parse --verify "refs/remotes/${push_remote}/main" >/dev/null 2>&1); then
+        base_branch="main"
+    else
+        echo "Error: No default branch found (need master or main on $push_remote)" >&2
+        return 1
+    fi
+
+    # Sync branch with upstream before starting implementation
+    echo "Syncing with $push_remote/$base_branch..."
+    (cd "$worktree_path" && git fetch "$push_remote") || {
+        echo "Error: Failed to fetch from $push_remote" >&2
+        return 1
+    }
+    if ! (cd "$worktree_path" && git rebase "${push_remote}/${base_branch}"); then
+        echo "Error: Rebase conflict detected. Resolve conflicts and rerun." >&2
+        return 1
+    fi
+
     # Ensure .tmp directory exists in worktree
     mkdir -p "$worktree_path/.tmp"
 
@@ -189,31 +224,7 @@ EOF
         return 1
     fi
 
-    # Step 4: Detect remote and base branch
-    local push_remote=""
-    local base_branch=""
-
-    # Detect push remote: prefer upstream, then origin
-    if (cd "$worktree_path" && git remote | grep -q "^upstream$"); then
-        push_remote="upstream"
-    elif (cd "$worktree_path" && git remote | grep -q "^origin$"); then
-        push_remote="origin"
-    else
-        echo "Error: No remote found (need upstream or origin)" >&2
-        return 1
-    fi
-
-    # Detect base branch: prefer master, then main
-    if (cd "$worktree_path" && git rev-parse --verify "refs/remotes/${push_remote}/master" >/dev/null 2>&1); then
-        base_branch="master"
-    elif (cd "$worktree_path" && git rev-parse --verify "refs/remotes/${push_remote}/main" >/dev/null 2>&1); then
-        base_branch="main"
-    else
-        echo "Error: No default branch found (need master or main on $push_remote)" >&2
-        return 1
-    fi
-
-    # Step 5: Push and create PR
+    # Step 4: Push and create PR (uses push_remote and base_branch from sync step)
     echo "Pushing to $push_remote and creating pull request..."
 
     # Get current branch name
