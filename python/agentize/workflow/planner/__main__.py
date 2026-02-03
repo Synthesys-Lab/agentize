@@ -303,6 +303,10 @@ def run_planner_pipeline(
         if not result.output_path.exists() or result.output_path.stat().st_size == 0:
             raise RuntimeError(f"Stage '{result.stage}' produced no output")
 
+    # When progress animation is active, suppress ACW "is running..." logs
+    # since the animation already indicates the stage is running
+    quiet_start = bool(progress)
+
     # ── Stage 1: Understander ──
     understander_prompt = _render_stage_prompt(
         "understander", feature_desc, agentize_home
@@ -312,7 +316,9 @@ def run_planner_pipeline(
             f"Stage 1/5: Running understander ({_backend_label('understander')})"
         )
     try:
-        results["understander"] = _run_stage("understander", understander_prompt)
+        results["understander"] = _run_stage(
+            "understander", understander_prompt, quiet_start=quiet_start
+        )
     finally:
         if progress:
             progress.anim_stop()
@@ -326,7 +332,7 @@ def run_planner_pipeline(
     if progress:
         progress.anim_start(f"Stage 2/5: Running bold-proposer ({_backend_label('bold')})")
     try:
-        results["bold"] = _run_stage("bold", bold_prompt)
+        results["bold"] = _run_stage("bold", bold_prompt, quiet_start=quiet_start)
     finally:
         if progress:
             progress.anim_stop()
@@ -349,21 +355,24 @@ def run_planner_pipeline(
     try:
         if parallel:
             # Run in parallel using ThreadPoolExecutor
-            # Use quiet_start=True to avoid interleaved "is running..." logs
             with ThreadPoolExecutor(max_workers=2) as executor:
                 critique_future = executor.submit(
-                    _run_stage, "critique", critique_prompt, None, quiet_start=True
+                    _run_stage, "critique", critique_prompt, None, quiet_start=quiet_start
                 )
                 reducer_future = executor.submit(
-                    _run_stage, "reducer", reducer_prompt, None, quiet_start=True
+                    _run_stage, "reducer", reducer_prompt, None, quiet_start=quiet_start
                 )
 
                 results["critique"] = critique_future.result()
                 results["reducer"] = reducer_future.result()
         else:
             # Run sequentially
-            results["critique"] = _run_stage("critique", critique_prompt)
-            results["reducer"] = _run_stage("reducer", reducer_prompt)
+            results["critique"] = _run_stage(
+                "critique", critique_prompt, quiet_start=quiet_start
+            )
+            results["reducer"] = _run_stage(
+                "reducer", reducer_prompt, quiet_start=quiet_start
+            )
     finally:
         if progress:
             progress.anim_stop()

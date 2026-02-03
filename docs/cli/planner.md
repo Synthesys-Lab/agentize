@@ -104,7 +104,7 @@ When stderr is a TTY, `lol plan` emits visual feedback during pipeline execution
 
 - **Colored "Feature:" label** — highlights the feature description at pipeline start.
 - **Animated stage dots** — expanding/contracting dot pattern (`.. ... .... ..... .... ...`) while each stage runs.
-- **ACW start/finish** — When using the default `acw` runner, logs `agent <stage> (<provider>:<model>) is running...` at stage start and `agent <stage> (<provider>:<model>) runs <seconds>s` on completion. The transient "is running..." line is cleared before the final "runs" line prints, ensuring only the completion log remains visible. For parallel stages (critique and reducer), the "is running..." log is suppressed to avoid interleaved output; only the completion "runs" log is shown. These logs are emitted via the `ACW` class regardless of runner identity.
+- **ACW start/finish** — When using the default `acw` runner, logs `agent <stage> (<provider>:<model>) runs <seconds>s` on completion. When progress animation is active (the default for TTY), the "is running..." log is suppressed since the animation already indicates the stage is running. When animation is disabled (non-TTY or `PLANNER_NO_ANIM=1`), the full start/finish logs are shown with proper line clearing. These logs are emitted via the `ACW` class regardless of runner identity.
 - **Issue link** — when issue publish succeeds, prints `See the full plan at: <url>`.
 
 ### Environment Toggles
