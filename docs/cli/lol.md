@@ -196,7 +196,7 @@ See [planner pipeline module](planner.md) for pipeline stage details and artifac
 
 ### lol impl
 
-Automate the issue-to-implementation loop using `wt` + the shared ACW runner (invokes `acw` under the hood).
+Automate the issue-to-implementation loop using `wt` + the shared ACW runner (invokes `acw` under the hood). The workflow runs inside the resolved worktree directory (it does not change the caller's shell directory).
 
 ```bash
 lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]

@@ -17,7 +17,7 @@ lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
 - `--yolo`: Pass-through flag to `acw` for autonomous actions.
 
 **Behavior**:
-- Delegates to the Python workflow, which resolves worktrees, syncs the issue branch, runs the shared `ACW` runner, and manages git/PR automation.
+- Delegates to the Python workflow, which resolves worktrees, changes into the worktree directory (`os.chdir`), syncs the issue branch, runs the shared `ACW` runner, and manages git/PR automation. Note: this sets the process working directory, not the caller's shell.
 - Syncs the issue branch by fetching and rebasing onto the default branch before starting iterations.
 - Prefetches issue content via `gh issue view`; if it fails or returns empty content, the command exits with an error.
 - Iterates `acw` runs, requiring a per-iteration commit report file in `.tmp/commit-report-iter-<iter>.txt`.
