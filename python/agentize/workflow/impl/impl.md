@@ -28,6 +28,7 @@ source of truth.
 
 **Behavior**:
 - Resolves the issue worktree via `wt pathto`, spawning with `wt spawn --no-agent` if needed.
+- Syncs the issue branch by fetching and rebasing onto the detected default branch before iterations.
 - Prefetches issue content via `gh issue view` into `.tmp/issue-<N>.md`; fails if empty.
 - Renders iteration prompts from `continue-prompt.md` into `.tmp/impl-input-<N>.txt`.
 - Runs `acw` with the selected provider/model and captures output in `.tmp/impl-output.txt`.
@@ -37,8 +38,8 @@ source of truth.
 
 **Errors**:
 - Raises `ValueError` for invalid arguments (issue number, backend format, max iterations).
-- Raises `ImplError` for prefetch failures, missing commit reports, missing remotes/base branches,
-  or max-iteration exhaustion.
+- Raises `ImplError` for sync failures (missing remote/default branch, fetch failure, or rebase conflict),
+  prefetch failures, missing commit reports, missing remotes/base branches, or max-iteration exhaustion.
 
 ## Prompt Template
 
@@ -75,3 +76,6 @@ Selects `upstream` when available, falling back to `origin`.
 
 ### _detect_base_branch()
 Selects `master` when available on the push remote, falling back to `main`.
+
+### _sync_branch()
+Fetches the detected push remote and rebases onto the detected base branch, failing fast on errors.

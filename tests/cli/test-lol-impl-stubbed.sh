@@ -25,7 +25,8 @@ WT_CALL_LOG="$TMP_DIR/wt-calls.log"
 ACW_CALL_LOG="$TMP_DIR/acw-calls.log"
 GH_CALL_LOG="$TMP_DIR/gh-calls.log"
 GIT_CALL_LOG="$TMP_DIR/git-calls.log"
-touch "$WT_CALL_LOG" "$ACW_CALL_LOG" "$GH_CALL_LOG" "$GIT_CALL_LOG"
+CALL_ORDER_LOG="$TMP_DIR/call-order.log"
+touch "$WT_CALL_LOG" "$ACW_CALL_LOG" "$GH_CALL_LOG" "$GIT_CALL_LOG" "$CALL_ORDER_LOG"
 
 # Track iteration count across subprocesses
 ITERATION_COUNT_FILE="$TMP_DIR/iter-count.txt"
@@ -36,7 +37,10 @@ GIT_HAS_CHANGES=1
 GIT_REMOTES="origin"
 GIT_DEFAULT_BRANCH="main"
 GIT_BRANCH_NAME="test-branch"
+GIT_FETCH_FAILS=0
+GIT_REBASE_FAILS=0
 export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH GIT_BRANCH_NAME
+export GIT_FETCH_FAILS GIT_REBASE_FAILS
 
 # Shell override script for subprocess invocations
 OVERRIDES="$TMP_DIR/shell-overrides.sh"
@@ -75,6 +79,16 @@ _write_finalize() {
     fi
 }
 
+log_git_call() {
+    echo "git $*" >> "$GIT_CALL_LOG"
+    echo "git $*" >> "$CALL_ORDER_LOG"
+}
+
+log_acw_call() {
+    echo "acw $*" >> "$ACW_CALL_LOG"
+    echo "acw $*" >> "$CALL_ORDER_LOG"
+}
+
 wt() {
     echo "wt $*" >> "$WT_CALL_LOG"
     case "$1" in
@@ -107,7 +121,7 @@ acw() {
     local output_file="$4"
     shift 4
 
-    echo "acw $provider $model $input_file $output_file $*" >> "$ACW_CALL_LOG"
+    log_acw_call "$provider" "$model" "$input_file" "$output_file" "$*"
 
     local iter
     iter=$(_next_iter)
@@ -157,7 +171,7 @@ gh() {
 }
 
 git() {
-    echo "git $*" >> "$GIT_CALL_LOG"
+    log_git_call "$@"
     case "$1" in
         add)
             return 0
@@ -195,6 +209,14 @@ git() {
         push)
             return 0
             ;;
+        fetch)
+            [ "$GIT_FETCH_FAILS" = "1" ] && return 1
+            return 0
+            ;;
+        rebase)
+            [ "$GIT_REBASE_FAILS" = "1" ] && return 1
+            return 0
+            ;;
         *)
             return 0
             ;;
@@ -203,7 +225,8 @@ git() {
 OVERRIDES_EOF
 
 export AGENTIZE_SHELL_OVERRIDES="$OVERRIDES"
-export STUB_WORKTREE WT_CALL_LOG ACW_CALL_LOG GH_CALL_LOG GIT_CALL_LOG ITERATION_COUNT_FILE
+export STUB_WORKTREE WT_CALL_LOG ACW_CALL_LOG GH_CALL_LOG GIT_CALL_LOG CALL_ORDER_LOG
+export ITERATION_COUNT_FILE
 
 reset_iteration() {
     echo 0 > "$ITERATION_COUNT_FILE"
@@ -214,6 +237,7 @@ reset_logs() {
     : > "$ACW_CALL_LOG"
     : > "$GH_CALL_LOG"
     : > "$GIT_CALL_LOG"
+    : > "$CALL_ORDER_LOG"
 }
 
 reset_stub_state() {
@@ -226,6 +250,13 @@ reset_stub_state() {
     unset GH_FAIL_ISSUE_VIEW
     unset WT_PATHTO_FAIL
     unset WT_SPAWN_FAIL
+    GIT_HAS_CHANGES=1
+    GIT_REMOTES="origin"
+    GIT_DEFAULT_BRANCH="main"
+    GIT_FETCH_FAILS=0
+    GIT_REBASE_FAILS=0
+    export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH
+    export GIT_FETCH_FAILS GIT_REBASE_FAILS
 }
 
 # ── Test 1: Invalid backend format (missing colon) ──
@@ -659,6 +690,130 @@ if [ "$CLOSES_COUNT" -ne 1 ]; then
     echo "GH call log:" >&2
     cat "$GH_CALL_LOG" >&2
     test_fail "Expected exactly one 'Closes #123' in PR body (got $CLOSES_COUNT)"
+fi
+
+# ── Test 15: Sync fetch/rebase happens before iterations ──
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
+ACW_COMPLETION_ITER=1
+export ACW_COMPLETION_ITER
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed with sync before iterations"
+}
+
+FETCH_LINE=$(grep -n "git fetch" "$CALL_ORDER_LOG" | head -n1 | cut -d: -f1)
+REBASE_LINE=$(grep -n "git rebase" "$CALL_ORDER_LOG" | head -n1 | cut -d: -f1)
+ACW_LINE=$(grep -n "^acw " "$CALL_ORDER_LOG" | head -n1 | cut -d: -f1)
+if [ -z "$FETCH_LINE" ] || [ -z "$REBASE_LINE" ] || [ -z "$ACW_LINE" ]; then
+    echo "Call order log:" >&2
+    cat "$CALL_ORDER_LOG" >&2
+    test_fail "Expected git fetch/rebase and acw calls in order log"
+fi
+if [ "$FETCH_LINE" -ge "$ACW_LINE" ] || [ "$REBASE_LINE" -ge "$ACW_LINE" ]; then
+    echo "Call order log:" >&2
+    cat "$CALL_ORDER_LOG" >&2
+    test_fail "Expected sync to happen before the first acw call"
+fi
+
+# ── Test 16: Sync rebase uses upstream/master ──
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
+GIT_REMOTES=$'upstream\norigin'
+GIT_DEFAULT_BRANCH="master"
+export GIT_REMOTES GIT_DEFAULT_BRANCH
+ACW_COMPLETION_ITER=1
+export ACW_COMPLETION_ITER
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed with upstream/master sync"
+}
+
+if ! grep -q "git fetch upstream" "$GIT_CALL_LOG"; then
+    echo "GIT call log:" >&2
+    cat "$GIT_CALL_LOG" >&2
+    test_fail "Expected git fetch upstream"
+fi
+if ! grep -q "git rebase upstream/master" "$GIT_CALL_LOG"; then
+    echo "GIT call log:" >&2
+    cat "$GIT_CALL_LOG" >&2
+    test_fail "Expected git rebase upstream/master"
+fi
+
+# ── Test 17: Sync rebase falls back to origin/main ──
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
+GIT_REMOTES="origin"
+GIT_DEFAULT_BRANCH="main"
+export GIT_REMOTES GIT_DEFAULT_BRANCH
+ACW_COMPLETION_ITER=1
+export ACW_COMPLETION_ITER
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed with origin/main sync"
+}
+
+if ! grep -q "git fetch origin" "$GIT_CALL_LOG"; then
+    echo "GIT call log:" >&2
+    cat "$GIT_CALL_LOG" >&2
+    test_fail "Expected git fetch origin"
+fi
+if ! grep -q "git rebase origin/main" "$GIT_CALL_LOG"; then
+    echo "GIT call log:" >&2
+    cat "$GIT_CALL_LOG" >&2
+    test_fail "Expected git rebase origin/main"
+fi
+
+# ── Test 18: Sync fetch failure stops execution ──
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
+GIT_FETCH_FAILS=1
+export GIT_FETCH_FAILS
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) && {
+    echo "Output: $output" >&2
+    test_fail "lol impl should fail when git fetch fails"
+}
+
+echo "$output" | grep -qi "failed to fetch" || {
+    echo "Output: $output" >&2
+    test_fail "Expected fetch failure error"
+}
+
+if grep -q "^acw " "$ACW_CALL_LOG"; then
+    echo "ACW call log:" >&2
+    cat "$ACW_CALL_LOG" >&2
+    test_fail "Expected no acw calls when fetch fails"
+fi
+
+# ── Test 19: Sync rebase conflict stops execution ──
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
+GIT_REBASE_FAILS=1
+export GIT_REBASE_FAILS
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex 2>&1) && {
+    echo "Output: $output" >&2
+    test_fail "lol impl should fail when git rebase conflicts"
+}
+
+echo "$output" | grep -qi "rebase conflict" || {
+    echo "Output: $output" >&2
+    test_fail "Expected rebase conflict error"
+}
+
+if grep -q "^acw " "$ACW_CALL_LOG"; then
+    echo "ACW call log:" >&2
+    cat "$ACW_CALL_LOG" >&2
+    test_fail "Expected no acw calls when rebase fails"
 fi
 
 test_pass "lol impl workflow with stubbed dependencies"

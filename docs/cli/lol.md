@@ -220,6 +220,8 @@ The first line of the completion file is used as the PR title.
 
 #### Git workflow
 
+Before the iteration loop, `lol impl` syncs the issue branch by fetching and rebasing onto the default branch (`upstream/master` or `origin/main`). If a rebase conflict occurs, the command exits with an error and expects manual resolution before retrying.
+
 Each iteration stages and commits changes (skipping commits when there are no changes). A `.tmp/commit-report-iter-<N>.txt` file is required for each iteration and is used as the commit message for iteration `<N>`. On completion, the branch is pushed to `upstream` (or `origin`) and the PR targets `master` (or `main`).
 
 #### Example
