@@ -270,6 +270,7 @@ class ACW:
         extra_flags: list[str] | None = None,
         log_writer: Callable[[str], None] | None = None,
         runner: Callable[..., subprocess.CompletedProcess] | None = None,
+        quiet_start: bool = False,
     ) -> None:
         # Skip provider validation when using custom runner (for tests)
         if runner is None:
@@ -287,6 +288,7 @@ class ACW:
         self.extra_flags = extra_flags
         self._log_writer = log_writer
         self._runner = runner if runner is not None else run_acw
+        self._quiet_start = quiet_start
 
     def _log(self, message: str) -> None:
         if self._log_writer:
@@ -307,7 +309,8 @@ class ACW:
     ) -> subprocess.CompletedProcess:
         start_time = time.time()
         backend = f"{self.provider}:{self.model}"
-        self._log(f"agent {self.name} ({backend}) is running...")
+        if not self._quiet_start:
+            self._log(f"agent {self.name} ({backend}) is running...")
 
         process = self._runner(
             self.provider,
@@ -321,7 +324,8 @@ class ACW:
         )
 
         elapsed = int(time.time() - start_time)
-        self._clear_line()
+        if not self._quiet_start:
+            self._clear_line()
         self._log(f"agent {self.name} ({backend}) runs {elapsed}s")
         return process
 

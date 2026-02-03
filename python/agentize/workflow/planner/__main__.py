@@ -261,6 +261,8 @@ def run_planner_pipeline(
         stage: str,
         input_content: str,
         previous_output: str | None = None,
+        *,
+        quiet_start: bool = False,
     ) -> StageResult:
         """Run a single stage and return result."""
         input_path = output_path / f"{prefix}-{stage}-input.md"
@@ -281,6 +283,7 @@ def run_planner_pipeline(
             permission_mode=STAGE_PERMISSION_MODE.get(stage),
             log_writer=_log_writer,
             runner=runner,
+            quiet_start=quiet_start,
         )
         process = acw_runner.run(input_path, output_file)
 
@@ -346,9 +349,14 @@ def run_planner_pipeline(
     try:
         if parallel:
             # Run in parallel using ThreadPoolExecutor
+            # Use quiet_start=True to avoid interleaved "is running..." logs
             with ThreadPoolExecutor(max_workers=2) as executor:
-                critique_future = executor.submit(_run_stage, "critique", critique_prompt)
-                reducer_future = executor.submit(_run_stage, "reducer", reducer_prompt)
+                critique_future = executor.submit(
+                    _run_stage, "critique", critique_prompt, None, quiet_start=True
+                )
+                reducer_future = executor.submit(
+                    _run_stage, "reducer", reducer_prompt, None, quiet_start=True
+                )
 
                 results["critique"] = critique_future.result()
                 results["reducer"] = reducer_future.result()
