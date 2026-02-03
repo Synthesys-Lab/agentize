@@ -221,6 +221,25 @@ if ! command -v script >/dev/null 2>&1; then
   test_fail "script command is required for TTY stdout testing"
 fi
 
+TTY_RUNNER="$TEST_HOME/tty-run.sh"
+cat > "$TTY_RUNNER" << STUB
+#!/usr/bin/env bash
+source "$ACW_CLI"
+acw --chat --editor --stdout claude test-model
+STUB
+chmod +x "$TTY_RUNNER"
+
+script_flavor="bsd"
+if script --version >/dev/null 2>&1; then
+  script_flavor="util-linux"
+fi
+
+test_info "script path: $(command -v script)"
+test_info "script flavor: $script_flavor"
+if [ "$script_flavor" = "util-linux" ]; then
+  test_info "script version: $(script --version 2>&1 | head -n1)"
+fi
+
 ORIGINAL_AGENTIZE_HOME="$AGENTIZE_HOME"
 CHAT_HOME="$TEST_HOME/chat-home"
 mkdir -p "$CHAT_HOME"
@@ -230,11 +249,17 @@ export EDITOR="$TTY_EDITOR"
 export ACW_STUB_STDERR="0"
 
 set +e
-tty_output=$(script -q /dev/null bash -c "source \"$ACW_CLI\"; acw --chat --editor --stdout claude test-model" 2>/dev/null)
+if [ "$script_flavor" = "util-linux" ]; then
+  tty_output=$(script -q -c "bash \"$TTY_RUNNER\"" /dev/null 2>/dev/null)
+else
+  tty_output=$(script -q /dev/null bash "$TTY_RUNNER" 2>/dev/null)
+fi
 exit_code=$?
 set -e
 
 if [ "$exit_code" -ne 0 ]; then
+  test_info "script stdout (first 40 lines):"
+  printf "%s\n" "$tty_output" | sed -n '1,40p'
   test_fail "--chat --editor --stdout should succeed on TTY stdout"
 fi
 
