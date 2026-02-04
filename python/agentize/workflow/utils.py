@@ -157,7 +157,7 @@ class ACW:
         name: str,
         provider: str,
         model: str,
-        timeout: int = 900,
+        timeout: int = 3600,
         *,
         tools: str | None = None,
         permission_mode: str | None = None,
