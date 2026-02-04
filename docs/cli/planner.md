@@ -28,7 +28,7 @@ Skips GitHub issue creation and uses timestamp-based artifact naming. The pipeli
 
 ### `--refine <issue-no> [refinement-instructions]`
 
-Refines an existing plan issue by fetching its body from GitHub and rerunning the debate. Optional refinement instructions are appended to the context to steer the agents. Refinement runs still write artifacts with `issue-refine-<N>` prefixes and update the existing issue unless `--dry-run` is set. Requires authenticated `gh` access to read the issue body.
+Refines an existing plan issue by fetching its body from GitHub and rerunning the debate. Optional refinement instructions are appended to the context to steer the agents. The fetched issue body has the trailing provenance footer stripped before reuse as debate context. Refinement runs still write artifacts with `issue-refine-<N>` prefixes and update the existing issue unless `--dry-run` is set. Requires authenticated `gh` access to read the issue body.
 
 ### `--verbose` (optional flag)
 
@@ -51,7 +51,7 @@ Stage-specific keys override `planner.backend`. Defaults remain `claude:sonnet` 
 
 ### Default Issue Creation
 
-By default, `lol plan` creates a placeholder GitHub issue before the pipeline runs using a truncated placeholder title (`[plan] placeholder: <first 50 chars>...`), and uses `issue-{N}` artifact naming. After the consensus stage completes, the issue body is updated with the final plan, the title is set from the first `Implementation Plan:` or `Consensus Plan:` header in the consensus file (fallback: truncated feature description), and the `agentize:plan` label is applied.
+By default, `lol plan` creates a placeholder GitHub issue before the pipeline runs using a truncated placeholder title (`[plan] placeholder: <first 50 chars>...`), and uses `issue-{N}` artifact naming. After the consensus stage completes, the issue body is updated with the final plan plus a trailing provenance footer (`Plan based on commit <hash>`), the title is set from the first `Implementation Plan:` or `Consensus Plan:` header in the consensus file (fallback: truncated feature description), and the `agentize:plan` label is applied.
 
 When `--refine` is used, no placeholder issue is created. The issue body is fetched and reused as debate context, and the issue is updated in-place after the consensus stage (unless `--dry-run` is set).
 

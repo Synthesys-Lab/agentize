@@ -7,7 +7,7 @@ Planning pipeline entrypoint for multi-agent debate workflows.
 ### lol plan
 
 Runs the debate pipeline for a feature description or refines an existing plan
-issue.
+issue. The generated consensus plan ends with `Plan based on commit <hash>`.
 
 **Usage**:
 ```bash

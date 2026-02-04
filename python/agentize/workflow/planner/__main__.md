@@ -45,8 +45,9 @@ def main(argv: list[str]) -> int
 ```
 
 CLI entrypoint for the planner backend. Parses args, resolves repo root and backend
-configuration, runs stages, publishes plan updates (when enabled), and prints plain-text
-progress output. Returns process exit code.
+configuration, runs stages, publishes plan updates with a trailing commit provenance
+footer (when enabled), and prints plain-text progress output. Refinement fetches strip
+the footer before reuse as debate context. Returns process exit code.
 
 ## Internal Helpers
 
@@ -68,6 +69,9 @@ progress output. Returns process exit code.
 - `_issue_create()`, `_issue_fetch()`, `_issue_publish()`: GitHub issue lifecycle for
   plan publishing.
 - `_extract_plan_title()`, `_apply_issue_tag()`: Plan title parsing and issue tagging.
+- `_resolve_commit_hash()`: Resolves the current repo `HEAD` commit for provenance.
+- `_append_plan_footer()`: Appends `Plan based on commit <hash>` to consensus output.
+- `_strip_plan_footer()`: Removes the trailing provenance footer from issue bodies.
 
 ### Backend selection
 

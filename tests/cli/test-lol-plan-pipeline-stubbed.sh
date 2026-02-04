@@ -135,6 +135,17 @@ for stage in bold critique reducer; do
     fi
 done
 
+# Verify consensus output includes commit provenance footer
+CONSENSUS_PATH="${PREFIX}-consensus.md"
+if [ ! -s "$CONSENSUS_PATH" ]; then
+    test_fail "Expected consensus .md artifact"
+fi
+FOOTER_LINE=$(tail -n 1 "$CONSENSUS_PATH")
+echo "$FOOTER_LINE" | grep -qE "^Plan based on commit ([0-9a-f]+|unknown)$" || {
+    echo "Consensus footer line: $FOOTER_LINE" >&2
+    test_fail "Consensus plan should end with commit provenance footer"
+}
+
 # ── Test 2: --verbose mode outputs detailed stage info ──
 > "$CALL_LOG"
 

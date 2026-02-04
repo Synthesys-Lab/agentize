@@ -139,7 +139,7 @@ lol plan [--dry-run] [--verbose] [--editor] [--refine <issue-no> [refinement-ins
 lol plan --refine <issue-no> [refinement-instructions]
 ```
 
-Runs the full multi-agent debate pipeline for a feature description, producing a consensus implementation plan. This is the preferred entrypoint for the planner pipeline.
+Runs the full multi-agent debate pipeline for a feature description, producing a consensus implementation plan. This is the preferred entrypoint for the planner pipeline. The consensus plan ends with a provenance footer: `Plan based on commit <hash>`.
 
 #### Options
 

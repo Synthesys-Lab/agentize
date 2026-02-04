@@ -369,6 +369,7 @@ def run_planner_pipeline(
 
 _PLAN_HEADER_RE = re.compile(r"^#\s*(Implementation|Consensus) Plan:\s*(.+)$")
 _PLAN_HEADER_HINT_RE = re.compile(r"(Implementation Plan:|Consensus Plan:)", re.IGNORECASE)
+_PLAN_FOOTER_RE = re.compile(r"^Plan based on commit (?:[0-9a-f]+|unknown)$")
 
 
 def _resolve_repo_root() -> Path:
@@ -392,6 +393,70 @@ def _resolve_repo_root() -> Path:
     raise RuntimeError(
         "Could not determine repo root. Set AGENTIZE_HOME or run inside a git repo."
     )
+
+
+def _resolve_commit_hash(repo_root: Path) -> str:
+    """Resolve the current git commit hash for provenance."""
+    result = subprocess.run(
+        ["git", "-C", str(repo_root), "rev-parse", "HEAD"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        message = result.stderr.strip() or result.stdout.strip()
+        if message:
+            print(f"Warning: Failed to resolve git commit: {message}", file=sys.stderr)
+        else:
+            print("Warning: Failed to resolve git commit", file=sys.stderr)
+        return "unknown"
+
+    commit_hash = result.stdout.strip().lower()
+    if not commit_hash or not re.fullmatch(r"[0-9a-f]+", commit_hash):
+        print("Warning: Unable to parse git commit hash, using 'unknown'", file=sys.stderr)
+        return "unknown"
+    return commit_hash
+
+
+def _append_plan_footer(consensus_path: Path, commit_hash: str) -> None:
+    """Append the commit provenance footer to a consensus plan file."""
+    footer_line = f"Plan based on commit {commit_hash}"
+    try:
+        content = consensus_path.read_text()
+    except FileNotFoundError:
+        print(
+            f"Warning: Consensus plan missing, cannot append footer: {consensus_path}",
+            file=sys.stderr,
+        )
+        return
+
+    trimmed = content.rstrip("\n")
+    if trimmed.endswith(footer_line):
+        return
+
+    with consensus_path.open("a") as handle:
+        if content and not content.endswith("\n"):
+            handle.write("\n")
+        handle.write(f"{footer_line}\n")
+
+
+def _strip_plan_footer(text: str) -> str:
+    """Strip the trailing commit provenance footer from a plan body."""
+    if not text:
+        return text
+
+    lines = text.splitlines()
+    had_trailing_newline = text.endswith("\n")
+    while lines and not lines[-1].strip():
+        lines.pop()
+    if not lines:
+        return ""
+    if not _PLAN_FOOTER_RE.match(lines[-1].strip()):
+        return text
+    lines.pop()
+    result = "\n".join(lines)
+    if had_trailing_newline and result:
+        result += "\n"
+    return result
 
 
 def _load_planner_backend_config(repo_root: Path, start_dir: Path) -> dict[str, str]:
@@ -548,7 +613,7 @@ def _issue_fetch(issue_number: str) -> tuple[str, Optional[str]]:
     )
     issue_url = url_proc.stdout.strip() if url_proc.returncode == 0 else None
 
-    return body_proc.stdout, issue_url
+    return _strip_plan_footer(body_proc.stdout), issue_url
 
 
 def _issue_publish(issue_number: str, title: str, body_file: Path) -> bool:
@@ -785,6 +850,8 @@ def main(argv: list[str]) -> int:
     except ValueError:
         consensus_display = str(consensus_result.output_path)
     consensus_path = consensus_result.output_path
+    commit_hash = _resolve_commit_hash(repo_root)
+    _append_plan_footer(consensus_path, commit_hash)
 
     _log_verbose("")
     _log("Pipeline complete!")
