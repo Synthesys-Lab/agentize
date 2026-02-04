@@ -273,15 +273,20 @@ if ! printf "%s\n" "$clean_tty_output" | grep -q "TTY prompt content"; then
   test_fail "TTY stdout should include editor prompt content"
 fi
 
-prompt_line=$(printf "%s\n" "$clean_tty_output" | awk '/^User Prompt:/{print NR; exit}')
-user_header_line=$(printf "%s\n" "$clean_tty_output" | awk '/^# User/{print NR; exit}')
-
-if [ -z "$prompt_line" ] || [ -z "$user_header_line" ]; then
-  test_fail "TTY stdout should include prompt header and assistant output"
+if ! printf "%s\n" "$clean_tty_output" | grep -q "^Response:"; then
+  test_fail "TTY stdout should include Response header"
 fi
 
-if [ "$prompt_line" -gt "$user_header_line" ]; then
-  test_fail "TTY stdout should echo prompt before assistant output"
+prompt_line=$(printf "%s\n" "$clean_tty_output" | awk '/^User Prompt:/{print NR; exit}')
+response_line=$(printf "%s\n" "$clean_tty_output" | awk '/^Response:/{print NR; exit}')
+user_header_line=$(printf "%s\n" "$clean_tty_output" | awk '/^# User/{print NR; exit}')
+
+if [ -z "$prompt_line" ] || [ -z "$response_line" ] || [ -z "$user_header_line" ]; then
+  test_fail "TTY stdout should include prompt, response headers, and assistant output"
+fi
+
+if [ "$prompt_line" -gt "$response_line" ] || [ "$response_line" -gt "$user_header_line" ]; then
+  test_fail "TTY stdout should echo prompt and response headers before assistant output"
 fi
 
 # Test 9: --chat --editor --stdout skips prompt echo on non-TTY stdout
@@ -298,6 +303,10 @@ clean_non_tty_output=$(printf "%s\n" "$non_tty_output" | tr -d '\r')
 
 if printf "%s\n" "$clean_non_tty_output" | grep -q "^User Prompt:"; then
   test_fail "Non-TTY stdout should not include prompt echo"
+fi
+
+if printf "%s\n" "$clean_non_tty_output" | grep -q "^Response:"; then
+  test_fail "Non-TTY stdout should not include response header"
 fi
 
 if ! printf "%s\n" "$clean_non_tty_output" | grep -q "TTY prompt content"; then
