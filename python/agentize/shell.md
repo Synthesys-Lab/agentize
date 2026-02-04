@@ -9,6 +9,11 @@ Python utilities for invoking shell functions with `AGENTIZE_HOME` set.
 Returns the agentize repository root from the environment or by locating the
 project root relative to `python/agentize/shell.py`.
 
+### resolve_repo_root()
+
+Resolves the repository root using `AGENTIZE_HOME` semantics, falling back to
+`git rev-parse --show-toplevel` when environment-based discovery fails.
+
 ### run_shell_function(cmd, capture_output=False, agentize_home=None, cwd=None, overrides_path=None)
 
 Runs a shell command via `bash -c` after sourcing `setup.sh`.
