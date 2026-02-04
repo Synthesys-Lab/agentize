@@ -10,7 +10,7 @@ export AGENTIZE_HOME="$PROJECT_ROOT"
 export PYTHONPATH="$PROJECT_ROOT/python"
 
 # Test 1: --complete commands returns expected list (apply command removed)
-output=$(python3 -m agentize.cli --complete commands 2>&1)
+output=$(python -m agentize.cli --complete commands 2>&1)
 echo "$output" | grep -q "^upgrade$" || test_fail "--complete commands missing: upgrade"
 echo "$output" | grep -q "^project$" || test_fail "--complete commands missing: project"
 echo "$output" | grep -q "^claude-clean$" || test_fail "--complete commands missing: claude-clean"
@@ -21,7 +21,7 @@ if echo "$output" | grep -q "^apply$"; then
 fi
 
 # Test 2: --version exits 0 and prints expected labels
-output=$(python3 -m agentize.cli --version 2>&1)
+output=$(python -m agentize.cli --version 2>&1)
 exit_code=$?
 if [ $exit_code -ne 0 ]; then
   test_fail "--version exited with code $exit_code"
