@@ -111,8 +111,16 @@ _planner_issue_publish() {
     local label_exit=$?
 
     if [ $label_exit -ne 0 ]; then
-        echo "Warning: Failed to add agentize:plan label to issue #$issue_number" >&2
-        # Non-fatal: body was already updated
+        gh label create "agentize:plan" \
+            --color "1d76db" \
+            --description "Agentize plan placeholder" >/dev/null 2>&1
+        gh issue edit "$issue_number" \
+            --add-label "agentize:plan" >/dev/null 2>&1
+        label_exit=$?
+        if [ $label_exit -ne 0 ]; then
+            echo "Warning: Failed to add agentize:plan label to issue #$issue_number" >&2
+            # Non-fatal: body was already updated
+        fi
     fi
 
     return 0

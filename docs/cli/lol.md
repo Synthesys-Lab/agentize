@@ -150,7 +150,7 @@ Runs the full multi-agent debate pipeline for a feature description, producing a
 | `--editor` | No | - | Open $EDITOR to compose feature description; when combined with `--refine`, the editor text becomes the refinement focus |
 | `--refine <issue-no> [refinement-instructions]` | No | - | Refine an existing plan issue; if positional instructions are provided with `--editor`, they are appended after the editor text |
 
-By default, `lol plan` creates a GitHub issue when `gh` is available. Use `--dry-run` to skip issue creation and use timestamp-based artifact naming instead.
+By default, `lol plan` creates a GitHub issue when `gh` is available and applies the `agentize:plan` label (creating it on demand if missing). Use `--dry-run` to skip issue creation and use timestamp-based artifact naming instead.
 `--editor` requires `$EDITOR` to be set; if it is not, pass the description directly (for example, `lol plan "Add JWT auth"`).
 
 When `--refine` is set, the issue body is fetched from GitHub and used as the debate context. Optional refinement instructions are appended to the context to guide the agents. Refinement runs write artifacts prefixed with `issue-refine-<N>` and update the existing issue unless `--dry-run` is provided. This mode requires authenticated `gh` access to read the issue body.
