@@ -143,7 +143,6 @@ def run_planner_pipeline(
     *,
     output_dir: str | Path = ".tmp",
     backends: dict[str, tuple[str, str]] | None = None,
-    parallel: bool = True,
     runner: Callable[..., subprocess.CompletedProcess] = run_acw,
     prefix: str | None = None,
     output_suffix: str = "-output.md",
@@ -210,47 +209,30 @@ def run_planner_pipeline(
         "reducer", feature_desc, agentize_home, bold_output
     )
 
-    mode_label = "parallel" if parallel else "sequentially"
     _log_stage(
-        f"Stage 3-4/5: Running critique and reducer {mode_label} "
+        "Stage 3-4/5: Running critique and reducer in parallel "
         f"({_backend_label('critique')}, {_backend_label('reducer')})"
     )
 
-    if parallel:
-        parallel_results = session.run_parallel(
-            [
-                session.stage(
-                    "critique",
-                    critique_prompt,
-                    stage_backends["critique"],
-                    tools=STAGE_TOOLS.get("critique"),
-                    permission_mode=STAGE_PERMISSION_MODE.get("critique"),
-                ),
-                session.stage(
-                    "reducer",
-                    reducer_prompt,
-                    stage_backends["reducer"],
-                    tools=STAGE_TOOLS.get("reducer"),
-                    permission_mode=STAGE_PERMISSION_MODE.get("reducer"),
-                ),
-            ]
-        )
-        results.update(parallel_results)
-    else:
-        results["critique"] = session.run_prompt(
-            "critique",
-            critique_prompt,
-            stage_backends["critique"],
-            tools=STAGE_TOOLS.get("critique"),
-            permission_mode=STAGE_PERMISSION_MODE.get("critique"),
-        )
-        results["reducer"] = session.run_prompt(
-            "reducer",
-            reducer_prompt,
-            stage_backends["reducer"],
-            tools=STAGE_TOOLS.get("reducer"),
-            permission_mode=STAGE_PERMISSION_MODE.get("reducer"),
-        )
+    parallel_results = session.run_parallel(
+        [
+            session.stage(
+                "critique",
+                critique_prompt,
+                stage_backends["critique"],
+                tools=STAGE_TOOLS.get("critique"),
+                permission_mode=STAGE_PERMISSION_MODE.get("critique"),
+            ),
+            session.stage(
+                "reducer",
+                reducer_prompt,
+                stage_backends["reducer"],
+                tools=STAGE_TOOLS.get("reducer"),
+                permission_mode=STAGE_PERMISSION_MODE.get("reducer"),
+            ),
+        ]
+    )
+    results.update(parallel_results)
 
     critique_output = results["critique"].text()
     reducer_output = results["reducer"].text()

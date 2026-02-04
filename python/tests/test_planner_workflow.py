@@ -168,37 +168,43 @@ class TestPlannerPipelineExecutionOrder:
     """Tests for correct stage execution order."""
 
     @pytest.mark.skipif(run_planner_pipeline is None, reason="Implementation not yet available")
-    def test_sequential_order_when_parallel_disabled(self, tmp_output_dir: Path, stub_runner: Callable):
-        """With parallel=False, stages run in deterministic order."""
+    def test_critique_reducer_run_parallel(self, tmp_output_dir: Path, stub_runner: Callable, monkeypatch):
+        """Critique and reducer are dispatched through the parallel runner."""
+        from agentize.workflow.planner import pipeline as planner_pipeline
+
+        recorded = {}
+
+        def _run_parallel(self, calls, *, max_workers: int = 2, retry: int = 0, retry_delay: float = 0):
+            call_list = list(calls)
+            recorded["stages"] = [call.stage for call in call_list]
+            results = {}
+            for call in call_list:
+                results[call.stage] = self.run_prompt(
+                    call.stage,
+                    call.prompt,
+                    call.backend,
+                    **call.options,
+                )
+            return results
+
+        monkeypatch.setattr(planner_pipeline.Session, "run_parallel", _run_parallel)
+
         run_planner_pipeline(
             "Add feature X",
             output_dir=tmp_output_dir,
             runner=stub_runner,
-            parallel=False,
             prefix="test",
         )
 
-        invocations = stub_runner.invocations
-        # Extract stage names from output file paths
-        stages = []
-        for inv in invocations:
-            output_path = inv["output_file"]
-            for stage in ["understander", "bold", "critique", "reducer", "consensus"]:
-                if stage in output_path:
-                    stages.append(stage)
-                    break
-
-        expected_order = ["understander", "bold", "critique", "reducer", "consensus"]
-        assert stages == expected_order
+        assert recorded.get("stages") == ["critique", "reducer"]
 
     @pytest.mark.skipif(run_planner_pipeline is None, reason="Implementation not yet available")
     def test_understander_runs_before_bold(self, tmp_output_dir: Path, stub_runner: Callable):
-        """Understander always runs before bold (even with parallel=True)."""
+        """Understander always runs before bold."""
         run_planner_pipeline(
             "Add feature Y",
             output_dir=tmp_output_dir,
             runner=stub_runner,
-            parallel=True,
             prefix="test",
         )
 

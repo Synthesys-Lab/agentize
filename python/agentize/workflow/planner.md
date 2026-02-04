@@ -12,7 +12,6 @@ def run_planner_pipeline(
     *,
     output_dir: str | Path = ".tmp",
     backends: dict[str, tuple[str, str]] | None = None,
-    parallel: bool = True,
     runner: Callable[..., subprocess.CompletedProcess] = run_acw,
     prefix: str | None = None,
     output_suffix: str = "-output.md",

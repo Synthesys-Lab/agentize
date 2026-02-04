@@ -65,7 +65,7 @@ graph TD
     U --> R{Lite conditions met?}
     R -->|yes: repo-only, <5 files, <150 LOC| L[Planner-lite: Single-agent plan]
     R -->|no: needs research or complex| C[Bold-proposer: Research SOTA]
-    C --> D[Critique + Reducer in parallel]
+    C --> D[Critique + Reducer (parallel-only)]
     D --> F[Combined 3-perspective report]
     L --> H[Update issue with plan]
     F --> G[External consensus: Synthesize plan]
@@ -258,7 +258,7 @@ After reviewing a plan issue:
 **Breakdown:**
 - Understander agent: 1-2 minutes (codebase exploration + complexity estimation)
 - Bold-proposer agent: 2-3 minutes (research + proposal, with context)
-- Critique + Reducer agents (parallel): 2-3 minutes
+- Critique + Reducer agents (parallel-only): 2-3 minutes
 - External consensus review: 1-2 minutes
 - Draft issue creation: <10 seconds
 
@@ -401,4 +401,3 @@ This does not change the `/ultra-planner` command interface documented above. Se
 | **Workflow** | Approval → Issue → Impl | Issue → Refine* → Impl |
 
 *Refinement is optional and can be done multiple times using `--refine`
-

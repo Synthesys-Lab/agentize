@@ -12,7 +12,6 @@ def run_planner_pipeline(
     *,
     output_dir: str | Path = ".tmp",
     backends: dict[str, tuple[str, str]] | None = None,
-    parallel: bool = True,
     runner: Callable[..., subprocess.CompletedProcess] = run_acw,
     prefix: str | None = None,
     output_suffix: str = "-output.md",
@@ -64,7 +63,7 @@ artifacts (`*-consensus-input.md`, `*-consensus.md`).
 ## Design Rationale
 
 - **Session DSL as baseline**: The planner pipeline demonstrates the imperative Session API
-  with both sequential and parallel stages.
+  with a parallel-only critique/reducer stage.
 - **Explicit artifacts**: Stage-specific input/output files remain predictable and
   match CLI documentation.
 - **Reusable consensus stage**: Running consensus separately preserves the `.txt`

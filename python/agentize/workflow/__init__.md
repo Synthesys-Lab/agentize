@@ -59,7 +59,6 @@ def run_planner_pipeline(
     *,
     output_dir: str | Path = ".tmp",
     backends: dict[str, tuple[str, str]] | None = None,
-    parallel: bool = True,
     runner: Callable[..., subprocess.CompletedProcess] = run_acw,
     prefix: str | None = None,
     output_suffix: str = "-output.md",
@@ -68,12 +67,12 @@ def run_planner_pipeline(
 ```
 
 Execute the 5-stage planner pipeline: understander → bold → critique → reducer → consensus.
+Critique and reducer are always executed in parallel.
 
 **Parameters:**
 - `feature_desc`: Feature request description to plan
 - `output_dir`: Directory for artifacts (default: `.tmp`)
 - `backends`: Provider/model mapping per stage (default: understander uses claude/sonnet, others claude/opus)
-- `parallel`: Run critique and reducer in parallel (default: True)
 - `runner`: Callable for stage execution (default: `run_acw`, injectable for testing)
 - `prefix`: Artifact filename prefix (default: timestamp-based)
 - `output_suffix`: Suffix appended to stage output filenames (default: `-output.md`)
@@ -162,7 +161,6 @@ from agentize.workflow import run_planner_pipeline
 results = run_planner_pipeline(
     "Implement dark mode toggle",
     backends={"consensus": ("claude", "opus")},
-    parallel=False,
 )
 
 for stage, result in results.items():

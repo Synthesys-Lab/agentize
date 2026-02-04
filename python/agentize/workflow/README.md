@@ -37,7 +37,7 @@ and output suffix.
 ```
 understander → bold → critique → reducer → consensus (optional)
                       ↓           ↓
-                    (parallel when enabled)
+                     (parallel-only)
 ```
 
 1. **Understander**: Gathers codebase context and constraints
@@ -45,6 +45,8 @@ understander → bold → critique → reducer → consensus (optional)
 3. **Critique**: Validates assumptions and analyzes feasibility
 4. **Reducer**: Simplifies proposals following "less is more" philosophy
 5. **Consensus**: Synthesizes a unified implementation plan (optional for library use; CLI delegates to the external consensus script)
+
+Critique and reducer are always executed in parallel.
 
 ## Usage
 
@@ -54,7 +56,6 @@ from agentize.workflow import run_planner_pipeline
 results = run_planner_pipeline(
     "Add user authentication with JWT tokens",
     output_dir=".tmp",
-    parallel=True,
     output_suffix="-output.md",
     skip_consensus=True,
 )

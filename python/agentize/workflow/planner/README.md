@@ -4,7 +4,7 @@ Runnable package for the multi-stage planner pipeline. Provides both library int
 
 ## Purpose
 
-This package contains the 5-stage planner pipeline (understander → bold → critique → reducer → consensus) that powers `lol plan`. It is structured as a runnable package to support `python -m agentize.workflow.planner` invocation, with the pipeline implemented as a Session DSL example.
+This package contains the 5-stage planner pipeline (understander → bold → critique → reducer → consensus) that powers `lol plan`. Critique and reducer are always executed in parallel. It is structured as a runnable package to support `python -m agentize.workflow.planner` invocation, with the pipeline implemented as a Session DSL example.
 
 ## Invocation
 
@@ -28,7 +28,6 @@ from agentize.workflow.planner import run_planner_pipeline, StageResult
 results = run_planner_pipeline(
     "Implement JWT authentication",
     output_dir=".tmp",
-    parallel=True,
 )
 
 for stage, result in results.items():
