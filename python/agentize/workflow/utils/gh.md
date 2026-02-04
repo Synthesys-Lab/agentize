@@ -78,6 +78,15 @@ Checks that `gh` is installed and authenticated.
 
 Runs the `gh` CLI with `capture_output=True`, raising a `RuntimeError` on failure.
 
+### `_resolve_overrides()`
+
+Resolves `AGENTIZE_SHELL_OVERRIDES` when a workflow provides shell stubs for `gh`.
+
+### `_body_args()`
+
+Chooses between `--body` and `--body-file` based on whether the body includes
+multiline content.
+
 ### `issue_body()`
 
 Fetches the issue body for a numeric issue identifier.
@@ -96,3 +105,7 @@ Edits issue fields (title/body/labels) via `gh issue edit`.
   runtime error so the caller can surface workflow failures early.
 - **Portable repository context**: Every helper accepts `cwd` to ensure the correct
   repository context without relying on global state.
+- **Stub-friendly execution**: When `AGENTIZE_SHELL_OVERRIDES` is present, `gh` calls
+  are executed via a shell wrapper so workflow stubs can intercept CLI traffic.
+- **Multiline-safe payloads**: Issue and PR bodies are passed via `--body-file` when
+  content includes newlines to preserve formatting and avoid shell splitting.
