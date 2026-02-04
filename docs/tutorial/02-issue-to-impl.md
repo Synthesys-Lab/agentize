@@ -14,6 +14,7 @@ This tutorial covers the complete development cycle from a GitHub issue to merge
 - The issue number must exist in the current repository
 - Each iteration needs `.tmp/commit-report-iter-<N>.txt` as the commit message
 - Completion requires `.tmp/finalize.txt` (first line is PR title; include `Issue <N> resolved` in the body)
+- Prompt templates accept both `{{TOKEN}}` and `{#TOKEN#}` placeholders during rendering
 
 ### Workflow Summary
 

@@ -29,8 +29,9 @@ source of truth.
 **Behavior**:
 - Resolves the issue worktree via `wt pathto`, spawning with `wt spawn --no-agent` if needed.
 - Syncs the issue branch by fetching and rebasing onto the detected default branch before iterations.
-- Prefetches issue content via `gh issue view` into `.tmp/issue-<N>.md`; fails if empty.
-- Renders iteration prompts from `continue-prompt.md` into `.tmp/impl-input-<N>.txt`.
+- Prefetches issue content via `agentize.workflow.utils.gh` into `.tmp/issue-<N>.md`; fails if empty.
+- Renders iteration prompts from `continue-prompt.md` into `.tmp/impl-input-<N>.txt`
+  via `agentize.workflow.utils.prompt.render`.
 - Runs the shared `ACW` runner (provider validation + timing logs) and captures output in `.tmp/impl-output.txt`.
 - Requires `.tmp/commit-report-iter-<N>.txt` for commits; stages and commits when diffs exist.
 - Detects completion via `.tmp/finalize.txt` containing `Issue <N> resolved`.
@@ -46,13 +47,13 @@ source of truth.
 `continue-prompt.md` is a file-based prompt template. The renderer replaces
 placeholder tokens and splices optional sections.
 
-**Required placeholders**:
-- `{{issue_no}}`
-- `{{issue_file}}`
-- `{{finalize_file}}`
-- `{{iteration_section}}`
-- `{{previous_output_section}}`
-- `{{previous_commit_report_section}}`
+**Required placeholders** (both `{{TOKEN}}` and `{#TOKEN#}` forms are accepted):
+- `issue_no`
+- `issue_file`
+- `finalize_file`
+- `iteration_section`
+- `previous_output_section`
+- `previous_commit_report_section`
 
 ## Outputs
 
@@ -65,11 +66,11 @@ placeholder tokens and splices optional sections.
 ## Internal Helpers
 
 ### rel_path()
-Resolves template files relative to `impl.py` for portability.
+Resolves template files relative to `impl.py` for portability using `utils.path.relpath`.
 
 ### render_prompt()
 Builds the iteration prompt by filling placeholders and conditionally inserting
-previous output and commit summaries.
+previous output and commit summaries, delegating token replacement to `prompt.render`.
 
 ### _detect_push_remote()
 Selects `upstream` when available, falling back to `origin`.

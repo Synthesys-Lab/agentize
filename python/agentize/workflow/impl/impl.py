@@ -10,42 +10,46 @@ from typing import Iterable
 
 from agentize.shell import run_shell_function
 from agentize.workflow.utils import ACW
+from agentize.workflow.utils import gh as gh_utils
+from agentize.workflow.utils import path as path_utils
+from agentize.workflow.utils import prompt as prompt_utils
 
 
 class ImplError(RuntimeError):
     """Workflow error for the impl loop."""
 
 
-_REQUIRED_PLACEHOLDERS = {
-    "{{issue_no}}",
-    "{{issue_file}}",
-    "{{finalize_file}}",
-    "{{iteration_section}}",
-    "{{previous_output_section}}",
-    "{{previous_commit_report_section}}",
+_REQUIRED_TOKENS = {
+    "issue_no",
+    "issue_file",
+    "finalize_file",
+    "iteration_section",
+    "previous_output_section",
+    "previous_commit_report_section",
 }
 
 
 def rel_path(path: str | Path) -> Path:
     """Resolve a path relative to this module's directory."""
-    base_dir = Path(__file__).resolve().parent
-    candidate = Path(path)
-    return candidate if candidate.is_absolute() else base_dir / candidate
+    return path_utils.relpath(__file__, path)
 
 
 def _shell_cmd(parts: Iterable[str | Path]) -> str:
     return " ".join(shlex.quote(str(part)) for part in parts)
 
 
-def _read_template() -> str:
-    template_path = rel_path("continue-prompt.md")
+def _read_template(template_path: Path) -> str:
     if not template_path.exists():
         raise ImplError(f"Error: Missing prompt template at {template_path}")
-    return template_path.read_text()
+    return prompt_utils.read_prompt(template_path)
 
 
 def _validate_placeholders(template: str) -> None:
-    missing = sorted(p for p in _REQUIRED_PLACEHOLDERS if p not in template)
+    missing = sorted(
+        token
+        for token in _REQUIRED_TOKENS
+        if f"{{{{{token}}}}}" not in template and f"{{#{token}#}}" not in template
+    )
     if missing:
         missing_list = ", ".join(missing)
         raise ImplError(f"Error: Prompt template missing placeholders: {missing_list}")
@@ -67,7 +71,7 @@ def _section(title: str, content: str | None) -> str:
 
 
 def render_prompt(
-    template: str,
+    template_path: Path,
     *,
     issue_no: int,
     issue_file: Path,
@@ -75,30 +79,25 @@ def render_prompt(
     iteration: int | None = None,
     previous_output: str | None = None,
     previous_commit_report: str | None = None,
+    dest_path: Path,
 ) -> str:
     """Render an iteration prompt from the template."""
-    _validate_placeholders(template)
-
     replacements = {
-        "{{issue_no}}": str(issue_no),
-        "{{issue_file}}": str(issue_file),
-        "{{finalize_file}}": str(finalize_file),
-        "{{iteration_section}}": _iteration_section(iteration),
-        "{{previous_output_section}}": _section(
+        "issue_no": str(issue_no),
+        "issue_file": str(issue_file),
+        "finalize_file": str(finalize_file),
+        "iteration_section": _iteration_section(iteration),
+        "previous_output_section": _section(
             "Output from last iteration:",
             previous_output,
         ),
-        "{{previous_commit_report_section}}": _section(
+        "previous_commit_report_section": _section(
             "Previous iteration summary (commit report):",
             previous_commit_report,
         ),
     }
 
-    rendered = template
-    for key, value in replacements.items():
-        rendered = rendered.replace(key, value)
-
-    return rendered
+    return prompt_utils.render(template_path, replacements, dest_path)
 
 
 def _read_optional(path: Path) -> str | None:
@@ -116,23 +115,19 @@ def _prefetch_issue(issue_no: int, issue_file: Path, *, cwd: Path) -> None:
         '(.labels|map(.name)|join(", ")) + "\\n\\n" else "" end) + '
         '.body + "\\n")'
     )
-    cmd = _shell_cmd([
-        "gh",
-        "issue",
-        "view",
-        str(issue_no),
-        "--json",
-        "title,body,labels",
-        "-q",
-        query,
-    ])
-    result = run_shell_function(cmd, capture_output=True, cwd=cwd)
-    if result.returncode != 0 or not result.stdout.strip():
+    try:
+        output = gh_utils.issue_view(issue_no, query, cwd=cwd)
+    except RuntimeError as exc:
+        if issue_file.exists():
+            issue_file.unlink()
+        raise ImplError(f"Error: Failed to fetch issue content for issue #{issue_no}") from exc
+
+    if not output.strip():
         if issue_file.exists():
             issue_file.unlink()
         raise ImplError(f"Error: Failed to fetch issue content for issue #{issue_no}")
 
-    issue_file.write_text(result.stdout)
+    issue_file.write_text(output)
 
 
 def _completion_marker_present(finalize_file: Path, issue_no: int) -> bool:
@@ -259,14 +254,16 @@ def _push_and_create_pr(
         pr_title = f"Implement issue #{issue_no}"
 
     _append_closes_line(finalize_file, issue_no)
-    body_file = shlex.quote(str(finalize_file))
-    pr_cmd = (
-        f"gh pr create --base {shlex.quote(base_branch)} "
-        f"--title {shlex.quote(pr_title)} "
-        f"--body \"$(cat {body_file})\""
-    )
-    pr_result = run_shell_function(pr_cmd, cwd=worktree_path)
-    if pr_result.returncode != 0:
+    pr_body = finalize_file.read_text() if finalize_file.exists() else ""
+    try:
+        gh_utils.pr_create(
+            pr_title,
+            pr_body,
+            base=base_branch,
+            head=branch_name,
+            cwd=worktree_path,
+        )
+    except RuntimeError:
         print(
             "Warning: Failed to create PR. You may need to create it manually.",
             file=sys.stderr,
@@ -352,14 +349,16 @@ def run_impl_workflow(
 
     _prefetch_issue(issue_no, issue_file, cwd=worktree)
 
-    template = _read_template()
-    base_prompt = render_prompt(
-        template,
+    template_path = rel_path("continue-prompt.md")
+    template = _read_template(template_path)
+    _validate_placeholders(template)
+    render_prompt(
+        template_path,
         issue_no=issue_no,
         issue_file=issue_file,
         finalize_file=finalize_file,
+        dest_path=base_input_file,
     )
-    base_input_file.write_text(base_prompt)
 
     completion_found = False
 
@@ -374,16 +373,16 @@ def run_impl_workflow(
                 tmp_dir / f"commit-report-iter-{iteration - 1}.txt"
             )
 
-        prompt = render_prompt(
-            template,
+        render_prompt(
+            template_path,
             issue_no=issue_no,
             issue_file=issue_file,
             finalize_file=finalize_file,
             iteration=iteration,
             previous_output=previous_output,
             previous_commit_report=prev_commit_report,
+            dest_path=input_file,
         )
-        input_file.write_text(prompt)
 
         extra_flags = ["--yolo"] if yolo else None
 

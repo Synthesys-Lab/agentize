@@ -1,10 +1,4 @@
-"""Reusable shell invocation utilities for workflow orchestration.
-
-Provides:
-- run_acw: Wrapper around the acw shell function
-- list_acw_providers: Provider list resolver via acw completion
-- ACW: Class-based runner with provider validation and timing logs
-"""
+"""Reusable shell invocation utilities for workflow orchestration."""
 
 from __future__ import annotations
 
@@ -18,10 +12,40 @@ from typing import Callable
 
 from agentize.shell import get_agentize_home
 
+_ACW_PROVIDERS_CACHE: list[str] | None = None
+_ACW_PROVIDERS_LOCK = threading.Lock()
+
 
 # ============================================================
 # ACW Wrapper
 # ============================================================
+
+
+def _resolve_acw_script(agentize_home: str, env: dict[str, str] | None = None) -> str:
+    env_vars = env or os.environ
+    acw_script = env_vars.get("PLANNER_ACW_SCRIPT")
+    if not acw_script:
+        acw_script = os.path.join(agentize_home, "src", "cli", "acw.sh")
+    return acw_script
+
+
+def _resolve_overrides_cmd(env: dict[str, str] | None = None) -> str:
+    env_vars = env or os.environ
+    overrides_path = env_vars.get("AGENTIZE_SHELL_OVERRIDES")
+    if overrides_path:
+        override_path = Path(overrides_path).expanduser()
+        if override_path.exists():
+            return f' && source "{override_path}"'
+    return ""
+
+
+def _merge_env(env: dict[str, str] | None) -> dict[str, str]:
+    merged = os.environ.copy()
+    if env:
+        merged.update(env)
+    agentize_home = merged.get("AGENTIZE_HOME") or get_agentize_home()
+    merged["AGENTIZE_HOME"] = agentize_home
+    return merged
 
 
 def run_acw(
@@ -34,27 +58,13 @@ def run_acw(
     permission_mode: str | None = None,
     extra_flags: list[str] | None = None,
     timeout: int = 3600,
+    cwd: str | Path | None = None,
+    env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess:
-    """Run acw shell function for a single stage.
-
-    Args:
-        provider: Backend provider (e.g., "claude", "codex")
-        model: Model identifier (e.g., "sonnet", "opus")
-        input_file: Path to input prompt file
-        output_file: Path for stage output
-        tools: Tool configuration (Claude provider only)
-        permission_mode: Permission mode override (Claude provider only)
-        extra_flags: Additional CLI flags
-        timeout: Execution timeout in seconds (default: 900)
-
-    Returns:
-        subprocess.CompletedProcess with stdout/stderr captured
-
-    Raises:
-        subprocess.TimeoutExpired: If execution exceeds timeout
-    """
-    agentize_home = get_agentize_home()
-    acw_script = _resolve_acw_script(agentize_home)
+    """Run acw shell function for a single stage."""
+    merged_env = _merge_env(env)
+    agentize_home = merged_env["AGENTIZE_HOME"]
+    acw_script = _resolve_acw_script(agentize_home, merged_env)
 
     # Build command arguments
     cmd_parts = [provider, model, str(input_file), str(output_file)]
@@ -72,39 +82,17 @@ def run_acw(
 
     # Quote paths to handle spaces
     cmd_args = " ".join(f'"{arg}"' for arg in cmd_parts)
-    overrides_cmd = _resolve_overrides_cmd()
+    overrides_cmd = _resolve_overrides_cmd(merged_env)
     bash_cmd = f'source "{acw_script}"{overrides_cmd} && acw {cmd_args}'
-
-    # Set up environment
-    env = os.environ.copy()
-    env["AGENTIZE_HOME"] = agentize_home
 
     return subprocess.run(
         ["bash", "-c", bash_cmd],
-        env=env,
+        env=merged_env,
         capture_output=True,
         text=True,
         timeout=timeout,
+        cwd=str(cwd) if cwd else None,
     )
-
-_ACW_PROVIDERS_CACHE: list[str] | None = None
-_ACW_PROVIDERS_LOCK = threading.Lock()
-
-
-def _resolve_acw_script(agentize_home: str) -> str:
-    acw_script = os.environ.get("PLANNER_ACW_SCRIPT")
-    if not acw_script:
-        acw_script = os.path.join(agentize_home, "src", "cli", "acw.sh")
-    return acw_script
-
-
-def _resolve_overrides_cmd() -> str:
-    overrides_path = os.environ.get("AGENTIZE_SHELL_OVERRIDES")
-    if overrides_path:
-        override_path = Path(overrides_path).expanduser()
-        if override_path.exists():
-            return f' && source "{override_path}"'
-    return ""
 
 
 def list_acw_providers() -> list[str]:
@@ -118,17 +106,15 @@ def list_acw_providers() -> list[str]:
         if _ACW_PROVIDERS_CACHE is not None:
             return list(_ACW_PROVIDERS_CACHE)
 
-        agentize_home = get_agentize_home()
-        acw_script = _resolve_acw_script(agentize_home)
-        overrides_cmd = _resolve_overrides_cmd()
+        merged_env = _merge_env(None)
+        agentize_home = merged_env["AGENTIZE_HOME"]
+        acw_script = _resolve_acw_script(agentize_home, merged_env)
+        overrides_cmd = _resolve_overrides_cmd(merged_env)
         bash_cmd = f'source "{acw_script}"{overrides_cmd} && acw --complete providers'
-
-        env = os.environ.copy()
-        env["AGENTIZE_HOME"] = agentize_home
 
         result = subprocess.run(
             ["bash", "-c", bash_cmd],
-            env=env,
+            env=merged_env,
             capture_output=True,
             text=True,
         )
@@ -146,11 +132,7 @@ def list_acw_providers() -> list[str]:
 
 
 class ACW:
-    """Class-based runner for ACW with provider validation and timing logs.
-
-    Supports injecting a custom runner function for testing while maintaining
-    the same logging and interface behavior.
-    """
+    """Class-based runner for ACW with provider validation and timing logs."""
 
     def __init__(
         self,
@@ -213,4 +195,59 @@ class ACW:
         return process
 
 
-__all__ = ["ACW", "list_acw_providers", "run_acw"]
+def run(
+    input_file: str | Path,
+    output_file: str | Path,
+    *,
+    name: str,
+    provider: str,
+    model: str,
+    tools: str | None = None,
+    permission_mode: str | None = None,
+    extra_flags: list[str] | None = None,
+    timeout: int = 900,
+    cwd: str | Path | None = None,
+    env: dict[str, str] | None = None,
+    log_writer: Callable[[str], None] | None = None,
+) -> subprocess.CompletedProcess:
+    """Run a single ACW stage with timing logs."""
+
+    def _runner(
+        provider: str,
+        model: str,
+        input_file: str | Path,
+        output_file: str | Path,
+        *,
+        tools: str | None = None,
+        permission_mode: str | None = None,
+        extra_flags: list[str] | None = None,
+        timeout: int = 900,
+    ) -> subprocess.CompletedProcess:
+        return run_acw(
+            provider,
+            model,
+            input_file,
+            output_file,
+            tools=tools,
+            permission_mode=permission_mode,
+            extra_flags=extra_flags,
+            timeout=timeout,
+            cwd=cwd,
+            env=env,
+        )
+
+    runner = ACW(
+        name=name,
+        provider=provider,
+        model=model,
+        timeout=timeout,
+        tools=tools,
+        permission_mode=permission_mode,
+        extra_flags=extra_flags,
+        log_writer=log_writer,
+        runner=_runner,
+    )
+    return runner.run(input_file, output_file)
+
+
+__all__ = ["ACW", "list_acw_providers", "run", "run_acw"]

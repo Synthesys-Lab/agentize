@@ -50,11 +50,11 @@ for stage, result in results.items():
 
 ## Dependencies
 
-- `agentize.workflow.utils`: `run_acw` function and ACW runner
+- `agentize.workflow.utils`: ACW runner, prompt rendering, and GitHub helpers
 - `agentize.shell`: `get_agentize_home()` for path resolution
 - Prompt templates in `.claude-plugin/agents/` and `.claude-plugin/skills/`
 
 ## Design Rationale
 
 - **Runnable package**: Using `__main__.py` enables `python -m` invocation while keeping logic in a single file.
-- **Separation**: Shell invocation utilities live in `workflow/utils.py`; pipeline orchestration lives here.
+- **Separation**: Helper utilities live in `workflow/utils/`; pipeline orchestration lives here.

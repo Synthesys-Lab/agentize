@@ -4,7 +4,7 @@ Public interfaces for Python planner and impl workflow orchestration.
 
 ## External Interfaces
 
-### From `utils.py`
+### From `utils/`
 
 #### `run_acw`
 
@@ -18,7 +18,9 @@ def run_acw(
     tools: str | None = None,
     permission_mode: str | None = None,
     extra_flags: list[str] | None = None,
-    timeout: int = 900,
+    timeout: int = 3600,
+    cwd: str | Path | None = None,
+    env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess
 ```
 
@@ -141,7 +143,7 @@ This module re-exports interfaces from submodules and does not define internal h
 
 | Module | Purpose |
 |--------|---------|
-| `utils.py` | Reusable shell invocation utilities |
+| `utils/` | Helper package for ACW invocation, GitHub operations, prompt rendering, and path resolution |
 | `planner/` | Standalone planning pipeline package (`python -m agentize.workflow.planner`) |
 | `planner.py` | Backward-compatible re-exports (deprecated) |
 | `impl/` | Issue-to-implementation workflow (Python) with file-based prompt |

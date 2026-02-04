@@ -35,8 +35,10 @@ def run_planner_pipeline(
 ```
 
 Executes the 5-stage planner pipeline. Stages run through the `ACW` class (provider
-validation + start/finish timing logs). The pipeline prints plain stage-start lines to
-stderr and returns `StageResult` objects for each stage.
+validation + start/finish timing logs). Prompt templates are rendered via
+`agentize.workflow.utils.prompt` to support both `{{TOKEN}}` and `{#TOKEN#}` placeholders.
+The pipeline prints plain stage-start lines to stderr and returns `StageResult` objects
+for each stage.
 
 ### `main()`
 
@@ -54,9 +56,9 @@ the footer before reuse as debate context. Returns process exit code.
 ### Prompt rendering
 
 - `_render_stage_prompt()`: Builds each stage prompt from agent template, plan-guideline
-  content, feature description, and previous outputs.
+  content, feature description, and previous outputs using `prompt.read_prompt()`.
 - `_render_consensus_prompt()`: Builds the consensus prompt by embedding bold/critique/
-  reducer outputs into the external-consensus template.
+  reducer outputs into the external-consensus template using `prompt.render()`.
 
 ### Stage execution
 
@@ -67,7 +69,7 @@ the footer before reuse as debate context. Returns process exit code.
 ### Issue/publish helpers
 
 - `_issue_create()`, `_issue_fetch()`, `_issue_publish()`: GitHub issue lifecycle for
-  plan publishing.
+  plan publishing backed by `agentize.workflow.utils.gh`.
 - `_extract_plan_title()`, `_apply_issue_tag()`: Plan title parsing and issue tagging.
 - `_resolve_commit_hash()`: Resolves the current repo `HEAD` commit for provenance.
 - `_append_plan_footer()`: Appends `Plan based on commit <hash>` to consensus output.

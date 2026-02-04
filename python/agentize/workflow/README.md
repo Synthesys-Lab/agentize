@@ -27,10 +27,10 @@ and output suffix.
 | Module | Purpose |
 |--------|---------|
 | `__init__.py` | Package exports: `run_acw`, `ACW`, `run_planner_pipeline`, `run_impl_workflow`, `StageResult`, `ImplError` |
-| `utils.py` | Reusable shell invocation utilities |
+| `utils/` | Helper package for ACW invocation, GitHub operations, prompt rendering, and path resolution |
 | `planner/` | Standalone planning pipeline package (`python -m agentize.workflow.planner`) |
 | `planner.py` | **DEPRECATED** - Re-exports for backward compatibility (will be removed) |
-| `impl/` | Issue-to-implementation workflow (Python) with file-based prompt |
+| `impl/` | Issue-to-implementation workflow (Python) with file-based prompt and `python -m agentize.workflow.impl` entrypoint |
 
 ## Pipeline Stages
 

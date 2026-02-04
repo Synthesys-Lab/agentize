@@ -1,6 +1,6 @@
 # Planner Pipeline (Internal)
 
-Internal pipeline module used by `lol plan` to run the multi-agent debate workflow via the Python backend. The standalone `planner` command has been removed.
+Internal pipeline module used by `lol plan` to run the multi-agent debate workflow via the Python backend. The standalone `planner` command has been removed. The backend uses workflow helpers to keep prompt rendering, ACW invocation, and GitHub publishing consistent across planner and implementation workflows.
 
 ## Usage
 
@@ -63,6 +63,8 @@ Each stage uses `acw` for file-based CLI invocation. Prompts are rendered at run
 - Agent base prompt (from `.claude-plugin/agents/*.md`)
 - Plan-guideline content (from `.claude-plugin/skills/plan-guideline/SKILL.md`, YAML frontmatter stripped)
 - Feature description and previous stage output
+
+Prompt templates are rendered via `agentize.workflow.utils.prompt.render`, which replaces both `{{TOKEN}}` and `{#TOKEN#}` placeholders without requiring template format changes.
 
 The consensus stage renders a dedicated prompt from `.claude-plugin/skills/external-consensus/external-review-prompt.md` with the three report outputs embedded.
 

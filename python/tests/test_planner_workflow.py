@@ -358,7 +358,7 @@ class TestACWRunner:
         """ACW raises ValueError when provider is not in completion list."""
         from agentize.workflow.utils import ACW as utils_ACW
 
-        monkeypatch.setattr("agentize.workflow.utils.list_acw_providers", lambda: ["claude"])
+        monkeypatch.setattr("agentize.workflow.utils.acw.list_acw_providers", lambda: ["claude"])
 
         with pytest.raises(ValueError, match="provider"):
             utils_ACW(name="test", provider="codex", model="gpt")
@@ -384,7 +384,7 @@ class TestACWRunner:
             invocations.append({"provider": provider, "model": model})
             return subprocess.CompletedProcess(args=["custom"], returncode=0)
 
-        monkeypatch.setattr("agentize.workflow.utils.list_acw_providers", lambda: ["claude"])
+        monkeypatch.setattr("agentize.workflow.utils.acw.list_acw_providers", lambda: ["claude"])
 
         input_path = tmp_path / "input.md"
         output_path = tmp_path / "output.md"
@@ -438,9 +438,9 @@ class TestACWRunner:
         def _fake_time() -> float:
             return times.pop(0)
 
-        monkeypatch.setattr("agentize.workflow.utils.list_acw_providers", lambda: ["claude"])
-        monkeypatch.setattr("agentize.workflow.utils.run_acw", _fake_run_acw)
-        monkeypatch.setattr("agentize.workflow.utils.time.time", _fake_time)
+        monkeypatch.setattr("agentize.workflow.utils.acw.list_acw_providers", lambda: ["claude"])
+        monkeypatch.setattr("agentize.workflow.utils.acw.run_acw", _fake_run_acw)
+        monkeypatch.setattr("agentize.workflow.utils.acw.time.time", _fake_time)
 
         logs: list[str] = []
         log_writer = logs.append
