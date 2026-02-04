@@ -255,25 +255,8 @@ def main(argv: list[str]) -> int:
 
     if refine_issue_number:
         refine_instructions = feature_desc
-        if not gh_utils._gh_available():
-            print(
-                f"Error: gh CLI not available or not authenticated; "
-                f"cannot refine issue #{refine_issue_number}",
-                file=sys.stderr,
-            )
-            return 1
-        try:
-            issue_body = gh_utils.issue_body(refine_issue_number, cwd=repo_root)
-        except RuntimeError:
-            print(
-                f"Error: Failed to fetch issue #{refine_issue_number} body",
-                file=sys.stderr,
-            )
-            return 1
-        try:
-            issue_url = gh_utils.issue_url(refine_issue_number, cwd=repo_root)
-        except RuntimeError:
-            issue_url = None
+        issue_body = gh_utils.issue_body(refine_issue_number, cwd=repo_root)
+        issue_url = gh_utils.issue_url(refine_issue_number, cwd=repo_root)
         issue_body = _strip_plan_footer(issue_body)
         if not _PLAN_HEADER_HINT_RE.search(issue_body):
             print(
@@ -287,28 +270,18 @@ def main(argv: list[str]) -> int:
         issue_number = refine_issue_number
         prefix_name = f"issue-refine-{refine_issue_number}"
     elif issue_mode:
-        if not gh_utils._gh_available():
+        short_desc = _shorten_feature_desc(feature_desc, max_len=50)
+        title = f"[plan] placeholder: {short_desc}"
+        issue_number, issue_url = gh_utils.issue_create(
+            title,
+            feature_desc,
+            cwd=repo_root,
+        )
+        if not issue_number:
             print(
-                "Warning: gh CLI not available or not authenticated, skipping issue creation",
+                f"Warning: Could not parse issue number from URL: {issue_url}",
                 file=sys.stderr,
             )
-        else:
-            short_desc = _shorten_feature_desc(feature_desc, max_len=50)
-            title = f"[plan] placeholder: {short_desc}"
-            try:
-                issue_number, issue_url = gh_utils.issue_create(
-                    title,
-                    feature_desc,
-                    cwd=repo_root,
-                )
-            except RuntimeError as exc:
-                print(f"Warning: Failed to create GitHub issue: {exc}", file=sys.stderr)
-            else:
-                if not issue_number:
-                    print(
-                        f"Warning: Could not parse issue number from URL: {issue_url}",
-                        file=sys.stderr,
-                    )
         if issue_number:
             prefix_name = f"issue-{issue_number}"
             _log(f"Created placeholder issue #{issue_number}")
@@ -390,38 +363,13 @@ def main(argv: list[str]) -> int:
         if not plan_title:
             plan_title = _shorten_feature_desc(feature_desc, max_len=50)
         plan_title = _apply_issue_tag(plan_title, issue_number)
-        published = True
-        if not gh_utils._gh_available():
-            print("Warning: gh CLI not available, skipping issue publish", file=sys.stderr)
-            published = False
-        else:
-            try:
-                gh_utils.issue_edit(
-                    issue_number,
-                    title=f"[plan] {plan_title}",
-                    body_file=consensus_path,
-                    cwd=repo_root,
-                )
-            except RuntimeError as exc:
-                print(
-                    f"Warning: Failed to update issue #{issue_number} body ({exc})",
-                    file=sys.stderr,
-                )
-                published = False
-            else:
-                try:
-                    gh_utils.label_add(issue_number, ["agentize:plan"], cwd=repo_root)
-                except RuntimeError as exc:
-                    print(
-                        "Warning: Failed to add agentize:plan label to issue "
-                        f"#{issue_number} ({exc})",
-                        file=sys.stderr,
-                    )
-        if not published:
-            print(
-                f"Warning: Failed to publish plan to issue #{issue_number}",
-                file=sys.stderr,
-            )
+        gh_utils.issue_edit(
+            issue_number,
+            title=f"[plan] {plan_title}",
+            body_file=consensus_path,
+            cwd=repo_root,
+        )
+        gh_utils.label_add(issue_number, ["agentize:plan"], cwd=repo_root)
         if issue_url:
             _log(f"See the full plan at: {issue_url}")
 

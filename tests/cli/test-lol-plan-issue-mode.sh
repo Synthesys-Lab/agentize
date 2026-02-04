@@ -257,28 +257,22 @@ grep -q "gh issue view" "$GH_CALL_LOG" || {
     test_fail "--dry-run --refine should still fetch the issue body"
 }
 
-# ── Test 5: Fallback when gh fails (default mode) ──
+# ── Test 5: gh failure surfaces as error (default mode) ──
 # Reset logs
 > "$GH_CALL_LOG"
 > "$ACW_CALL_LOG"
 
 export GH_STUB_MODE="fail"
-output=$(lol plan "Add fallback test feature" 2>&1) || {
+if output=$(lol plan "Add fallback test feature" 2>&1); then
     echo "Pipeline output: $output" >&2
-    test_fail "lol plan should not fail when gh fails (fallback to timestamp)"
-}
+    test_fail "lol plan should fail when gh issue creation fails"
+fi
 export GH_STUB_MODE="ok"
 
-# Verify fallback warning was emitted
-echo "$output" | grep -qi "warn\|fallback\|falling back" || {
+# Verify gh failure bubbled up
+echo "$output" | grep -qi "gh issue create" || {
     echo "Output: $output" >&2
-    test_fail "Expected warning about gh failure and timestamp fallback"
-}
-
-# Verify pipeline still completed (consensus referenced)
-echo "$output" | grep -q "consensus\|Consensus" || {
-    echo "Output: $output" >&2
-    test_fail "Pipeline should still complete with timestamp fallback"
+    test_fail "Expected gh issue create failure to surface in output"
 }
 
 test_pass "lol plan default creates issue, --dry-run skips issue creation"

@@ -15,7 +15,7 @@ Validate `lol plan` issue-mode flow with stubbed `gh` and `acw` responses via th
 2. `--dry-run` skips issue creation.
 3. `--refine` uses issue-refine prefix and publishes.
 4. `--dry-run --refine` skips publish but keeps issue-refine prefix.
-5. Fallback when `gh` fails (default mode).
+5. `gh` failure surfaces as an error (default mode).
 
 ## Usage
 
