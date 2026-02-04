@@ -16,6 +16,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+from agentize.shell import resolve_repo_root
 from agentize.workflow.api import run_acw
 from agentize.workflow.api import gh as gh_utils
 from agentize.workflow.planner.pipeline import run_consensus_stage, run_planner_pipeline
@@ -29,29 +30,6 @@ from agentize.workflow.planner.pipeline import run_consensus_stage, run_planner_
 _PLAN_HEADER_RE = re.compile(r"^#\s*(Implementation|Consensus) Plan:\s*(.+)$")
 _PLAN_HEADER_HINT_RE = re.compile(r"(Implementation Plan:|Consensus Plan:)", re.IGNORECASE)
 _PLAN_FOOTER_RE = re.compile(r"^Plan based on commit (?:[0-9a-f]+|unknown)$")
-
-
-def _resolve_repo_root() -> Path:
-    """Resolve repo root using AGENTIZE_HOME or git rev-parse."""
-    env_home = os.environ.get("AGENTIZE_HOME")
-    if env_home:
-        repo_root = Path(env_home).expanduser()
-        if repo_root.is_dir():
-            return repo_root
-
-    result = subprocess.run(
-        ["git", "rev-parse", "--show-toplevel"],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode == 0:
-        root = result.stdout.strip()
-        if root:
-            return Path(root)
-
-    raise RuntimeError(
-        "Could not determine repo root. Set AGENTIZE_HOME or run inside a git repo."
-    )
 
 
 def _resolve_commit_hash(repo_root: Path) -> str:
@@ -211,86 +189,6 @@ def _shorten_feature_desc(desc: str, max_len: int = 50) -> str:
     return f"{normalized[:max_len]}..."
 
 
-def _gh_available() -> bool:
-    return gh_utils._gh_available()
-
-
-def _issue_create(feature_desc: str, repo_root: Path) -> tuple[Optional[str], Optional[str]]:
-    if not _gh_available():
-        print(
-            "Warning: gh CLI not available or not authenticated, skipping issue creation",
-            file=sys.stderr,
-        )
-        return None, None
-
-    short_desc = _shorten_feature_desc(feature_desc, max_len=50)
-    title = f"[plan] placeholder: {short_desc}"
-    try:
-        issue_number, issue_url = gh_utils.issue_create(
-            title,
-            feature_desc,
-            cwd=repo_root,
-        )
-    except RuntimeError as exc:
-        print(f"Warning: Failed to create GitHub issue: {exc}", file=sys.stderr)
-        return None, None
-
-    if not issue_number:
-        print(
-            f"Warning: Could not parse issue number from URL: {issue_url}",
-            file=sys.stderr,
-        )
-        return None, issue_url
-
-    return issue_number, issue_url
-
-
-def _issue_fetch(issue_number: str, repo_root: Path) -> tuple[str, Optional[str]]:
-    if not _gh_available():
-        raise RuntimeError(
-            f"gh CLI not available or not authenticated; cannot refine issue #{issue_number}"
-        )
-
-    try:
-        body = gh_utils.issue_body(issue_number, cwd=repo_root)
-    except RuntimeError as exc:
-        raise RuntimeError(f"Failed to fetch issue #{issue_number} body") from exc
-
-    try:
-        issue_url = gh_utils.issue_url(issue_number, cwd=repo_root)
-    except RuntimeError:
-        issue_url = None
-
-    return _strip_plan_footer(body), issue_url
-
-
-def _issue_publish(issue_number: str, title: str, body_file: Path, repo_root: Path) -> bool:
-    if not _gh_available():
-        print("Warning: gh CLI not available, skipping issue publish", file=sys.stderr)
-        return False
-
-    try:
-        gh_utils.issue_edit(
-            issue_number,
-            title=f"[plan] {title}",
-            body_file=body_file,
-            cwd=repo_root,
-        )
-    except RuntimeError as exc:
-        print(f"Warning: Failed to update issue #{issue_number} body ({exc})", file=sys.stderr)
-        return False
-
-    try:
-        gh_utils.label_add(issue_number, ["agentize:plan"], cwd=repo_root)
-    except RuntimeError as exc:
-        print(
-            f"Warning: Failed to add agentize:plan label to issue #{issue_number} ({exc})",
-            file=sys.stderr,
-        )
-
-    return True
-
-
 def _extract_plan_title(consensus_path: Path) -> str:
     try:
         for line in consensus_path.read_text().splitlines():
@@ -328,7 +226,7 @@ def main(argv: list[str]) -> int:
     feature_desc = args.feature_desc
 
     try:
-        repo_root = _resolve_repo_root()
+        repo_root = resolve_repo_root()
     except RuntimeError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
@@ -357,11 +255,26 @@ def main(argv: list[str]) -> int:
 
     if refine_issue_number:
         refine_instructions = feature_desc
-        try:
-            issue_body, issue_url = _issue_fetch(refine_issue_number, repo_root)
-        except RuntimeError as exc:
-            print(f"Error: {exc}", file=sys.stderr)
+        if not gh_utils._gh_available():
+            print(
+                f"Error: gh CLI not available or not authenticated; "
+                f"cannot refine issue #{refine_issue_number}",
+                file=sys.stderr,
+            )
             return 1
+        try:
+            issue_body = gh_utils.issue_body(refine_issue_number, cwd=repo_root)
+        except RuntimeError:
+            print(
+                f"Error: Failed to fetch issue #{refine_issue_number} body",
+                file=sys.stderr,
+            )
+            return 1
+        try:
+            issue_url = gh_utils.issue_url(refine_issue_number, cwd=repo_root)
+        except RuntimeError:
+            issue_url = None
+        issue_body = _strip_plan_footer(issue_body)
         if not _PLAN_HEADER_HINT_RE.search(issue_body):
             print(
                 f"Warning: Issue #{refine_issue_number} does not look like a plan "
@@ -374,7 +287,28 @@ def main(argv: list[str]) -> int:
         issue_number = refine_issue_number
         prefix_name = f"issue-refine-{refine_issue_number}"
     elif issue_mode:
-        issue_number, issue_url = _issue_create(feature_desc, repo_root)
+        if not gh_utils._gh_available():
+            print(
+                "Warning: gh CLI not available or not authenticated, skipping issue creation",
+                file=sys.stderr,
+            )
+        else:
+            short_desc = _shorten_feature_desc(feature_desc, max_len=50)
+            title = f"[plan] placeholder: {short_desc}"
+            try:
+                issue_number, issue_url = gh_utils.issue_create(
+                    title,
+                    feature_desc,
+                    cwd=repo_root,
+                )
+            except RuntimeError as exc:
+                print(f"Warning: Failed to create GitHub issue: {exc}", file=sys.stderr)
+            else:
+                if not issue_number:
+                    print(
+                        f"Warning: Could not parse issue number from URL: {issue_url}",
+                        file=sys.stderr,
+                    )
         if issue_number:
             prefix_name = f"issue-{issue_number}"
             _log(f"Created placeholder issue #{issue_number}")
@@ -456,7 +390,34 @@ def main(argv: list[str]) -> int:
         if not plan_title:
             plan_title = _shorten_feature_desc(feature_desc, max_len=50)
         plan_title = _apply_issue_tag(plan_title, issue_number)
-        if not _issue_publish(issue_number, plan_title, consensus_path, repo_root):
+        published = True
+        if not gh_utils._gh_available():
+            print("Warning: gh CLI not available, skipping issue publish", file=sys.stderr)
+            published = False
+        else:
+            try:
+                gh_utils.issue_edit(
+                    issue_number,
+                    title=f"[plan] {plan_title}",
+                    body_file=consensus_path,
+                    cwd=repo_root,
+                )
+            except RuntimeError as exc:
+                print(
+                    f"Warning: Failed to update issue #{issue_number} body ({exc})",
+                    file=sys.stderr,
+                )
+                published = False
+            else:
+                try:
+                    gh_utils.label_add(issue_number, ["agentize:plan"], cwd=repo_root)
+                except RuntimeError as exc:
+                    print(
+                        "Warning: Failed to add agentize:plan label to issue "
+                        f"#{issue_number} ({exc})",
+                        file=sys.stderr,
+                    )
+        if not published:
             print(
                 f"Warning: Failed to publish plan to issue #{issue_number}",
                 file=sys.stderr,
