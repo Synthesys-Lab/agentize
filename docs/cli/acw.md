@@ -175,7 +175,7 @@ autoload -Uz compinit && compinit
 - `--stdout` behavior:
   - Without `--chat`: merges provider stderr into stdout so progress and output can be piped together.
   - With `--chat`: provider stderr is appended to `.tmp/acw-sessions/<session-id>.stderr` to keep stdout clean for piping. Empty sidecar files created by `acw` are automatically removed.
-  - With `--chat --editor`: when stdout is a TTY, the editor prompt is echoed to stdout before assistant output.
+  - With `--chat --editor`: when stdout is a TTY, the user prompt is echoed immediately before provider invocation, so it appears before assistant output.
 - In file mode (no `--stdout`), provider stderr is written to `<output-file>.stderr`. Empty sidecar files are removed after the provider exits.
 
 ## See Also

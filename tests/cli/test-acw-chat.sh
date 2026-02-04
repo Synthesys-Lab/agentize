@@ -18,6 +18,18 @@ mkdir -p "$TEST_TMP/.tmp/acw-sessions"
 
 source "$ACW_CLI"
 
+TEST_BIN="$TEST_TMP/bin"
+mkdir -p "$TEST_BIN"
+
+# Stub claude provider binary for chat stdout coverage
+cat > "$TEST_BIN/claude" << 'STUB'
+#!/usr/bin/env bash
+echo "Stub assistant output"
+STUB
+chmod +x "$TEST_BIN/claude"
+
+export PATH="$TEST_BIN:$PATH"
+
 # ============================================================
 # Test 1: Chat helper functions exist
 # ============================================================
@@ -383,6 +395,79 @@ fi
 
 if [ ! -f "$preexist_stderr" ]; then
     test_fail "Pre-existing empty stderr sidecar should have been preserved"
+fi
+
+# ============================================================
+# Test 16: TTY prompt echo appears before assistant output in chat stdout
+# ============================================================
+test_info "Checking chat stdout TTY prompt echo ordering"
+
+TTY_EDITOR="$TEST_TMP/tty-editor.sh"
+cat > "$TTY_EDITOR" << 'STUB'
+#!/usr/bin/env bash
+cat > "$1" << 'EOF'
+TTY prompt content
+EOF
+STUB
+chmod +x "$TTY_EDITOR"
+
+if ! command -v script >/dev/null 2>&1; then
+    test_fail "script command is required for TTY stdout testing"
+fi
+
+TTY_RUNNER="$TEST_TMP/tty-run.sh"
+cat > "$TTY_RUNNER" << STUB
+#!/usr/bin/env bash
+source "$ACW_CLI"
+acw --chat --editor --stdout claude test-model
+STUB
+chmod +x "$TTY_RUNNER"
+
+script_flavor="bsd"
+if script --version >/dev/null 2>&1; then
+    script_flavor="util-linux"
+fi
+
+export EDITOR="$TTY_EDITOR"
+
+set +e
+if [ "$script_flavor" = "util-linux" ]; then
+    tty_output=$(script -q -c "bash \"$TTY_RUNNER\"" /dev/null 2>/dev/null)
+else
+    tty_output=$(script -q /dev/null bash "$TTY_RUNNER" 2>/dev/null)
+fi
+exit_code=$?
+set -e
+
+if [ "$exit_code" -ne 0 ]; then
+    test_info "script stdout (first 40 lines):"
+    printf "%s\n" "$tty_output" | sed -n '1,40p'
+    test_fail "--chat --editor --stdout should succeed on TTY stdout"
+fi
+
+clean_tty_output=$(printf "%s\n" "$tty_output" | tr -d '\r')
+
+if ! printf "%s\n" "$clean_tty_output" | grep -q "^User Prompt:"; then
+    test_fail "TTY stdout should include User Prompt header"
+fi
+
+if ! printf "%s\n" "$clean_tty_output" | grep -q "TTY prompt content"; then
+    test_fail "TTY stdout should include editor prompt content"
+fi
+
+if ! printf "%s\n" "$clean_tty_output" | grep -q "Stub assistant output"; then
+    test_fail "TTY stdout should include assistant output"
+fi
+
+prompt_line=$(printf "%s\n" "$clean_tty_output" | awk '/^User Prompt:/{print NR; exit}')
+assistant_line=$(printf "%s\n" "$clean_tty_output" | awk '/Stub assistant output/{print NR; exit}')
+
+if [ -z "$prompt_line" ] || [ -z "$assistant_line" ]; then
+    test_fail "TTY stdout should include prompt and assistant output"
+fi
+
+if [ "$prompt_line" -gt "$assistant_line" ]; then
+    test_fail "TTY stdout should echo prompt before assistant output"
 fi
 
 test_pass "All chat session tests passed"

@@ -74,7 +74,8 @@ and turn appending:
 output is captured to a temp file. After the provider exits, the captured
 content is emitted to stdout and the assistant response is appended to the
 session file. If `--editor` is used and stdout is a TTY, the editor prompt
-is echoed to stdout before the assistant output.
+is echoed to stdout before provider invocation so it appears before assistant
+output.
 
 **Stderr sidecar**: When `--stdout` is combined with `--chat`, provider stderr
 is appended to `<session-id>.stderr` beside the session file rather than

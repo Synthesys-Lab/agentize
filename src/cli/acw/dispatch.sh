@@ -368,6 +368,12 @@ acw() {
         fi
     fi
 
+    if [ "$chat_mode" -eq 1 ] && [ "$stdout_mode" -eq 1 ] && [ "$use_editor" -eq 1 ] && [ -t 1 ]; then
+        echo "User Prompt:"
+        cat "$original_input_file"
+        echo ""
+    fi
+
     # Remaining arguments are provider options
     local provider_exit=0
     local stderr_file=""
@@ -452,11 +458,6 @@ acw() {
             local assistant_response=""
             if [ "$stdout_mode" -eq 1 ]; then
                 assistant_response="$chat_output_capture"
-                if [ "$use_editor" -eq 1 ] && [ -t 1 ]; then
-                    echo "User Prompt:"
-                    cat "$original_input_file"
-                    echo ""
-                fi
                 # Emit captured output to stdout
                 cat "$chat_output_capture"
             else

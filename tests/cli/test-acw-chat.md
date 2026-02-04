@@ -24,6 +24,7 @@ End-to-end tests for `acw` chat session functionality (`--chat` and `--chat-list
 ### Stdout Capture
 - `--chat --stdout` captures and emits assistant output
 - Captured output is also appended to session file
+- `--chat --editor --stdout` on TTY echoes the user prompt before assistant output
 
 ### Stderr Sidecar (--chat --stdout)
 - Provider stderr is written to `<session-id>.stderr` sidecar file
