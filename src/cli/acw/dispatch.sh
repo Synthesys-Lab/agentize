@@ -372,6 +372,7 @@ acw() {
         echo "User Prompt:"
         cat "$original_input_file"
         echo ""
+        echo "Response:"
     fi
 
     # Remaining arguments are provider options
