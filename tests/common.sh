@@ -64,7 +64,7 @@ export PYTHON_BIN
 
 # Wrapper function stays local to the test shell to avoid shell-specific export behavior.
 # Uses command to bypass function lookup and call the binary directly.
-python3() {
+python() {
   command "$PYTHON_BIN" "$@"
 }
 

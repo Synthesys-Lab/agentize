@@ -25,10 +25,10 @@ EOF
 )
 
     if [ -n "$agentize_home" ]; then
-        HANDSOFF_MODE=1 AGENTIZE_HOME="$agentize_home" python3 "$HOOK_SCRIPT" <<< "$input"
+        HANDSOFF_MODE=1 AGENTIZE_HOME="$agentize_home" python "$HOOK_SCRIPT" <<< "$input"
     else
         # Run without AGENTIZE_HOME (in local directory context)
-        (cd "$LOCAL_HOME" && unset AGENTIZE_HOME && HANDSOFF_MODE=1 python3 "$HOOK_SCRIPT" <<< "$input")
+        (cd "$LOCAL_HOME" && unset AGENTIZE_HOME && HANDSOFF_MODE=1 python "$HOOK_SCRIPT" <<< "$input")
     fi
 }
 

@@ -63,7 +63,7 @@ added to `test-all.sh` or executed directly. They provide shared functionality f
 
 ## Avoiding Embedded Python Blocks
 
-When writing shell tests, avoid embedding `python3 -c` blocks for testing Python logic. Instead:
+When writing shell tests, avoid embedding `python -c` blocks for testing Python logic. Instead:
 
 1. **Test Python logic in pytest**: Add test cases to `python/tests/test_*.py` files
 2. **Shell tests for CLI/integration**: Keep shell tests focused on CLI invocation, environment handling, and end-to-end workflows
@@ -72,7 +72,7 @@ When writing shell tests, avoid embedding `python3 -c` blocks for testing Python
 **Example - Avoid this in shell tests:**
 ```bash
 # BAD: Embedded Python block
-result=$(python3 -c "
+result=$(python -c "
 def some_function():
     return 'result'
 print(some_function())

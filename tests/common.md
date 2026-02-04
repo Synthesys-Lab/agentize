@@ -16,7 +16,7 @@ Prefer `python` when it satisfies the minimum runtime requirement (Python 3.10+)
 
 If neither interpreter provides Python 3.10+, the tests exit early with a clear error so failures do not appear as unrelated runtime errors.
 
-The `python3()` wrapper function delegates to `PYTHON_BIN` using the `command` builtin to bypass function lookup and call the binary directly. The wrapper remains local to the test shell to avoid shell-specific export behavior (`export -f` is bash-only).
+The `python()` wrapper function delegates to `PYTHON_BIN` using the `command` builtin to bypass function lookup and call the binary directly. The wrapper remains local to the test shell to avoid shell-specific export behavior (`export -f` is bash-only).
 
 ## Test Result Helpers
 

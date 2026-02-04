@@ -33,7 +33,7 @@ run_hook_with_fixture() {
     local input=$(jq -c ".$fixture_key" "$FIXTURE_FILE")
 
     # Run hook and extract permissionDecision (isolated from external services)
-    decision=$(unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION; echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision')
+    decision=$(unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION; echo "$input" | python "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision')
 
     echo "$decision"
 }
@@ -72,7 +72,7 @@ decision=$(run_hook_with_fixture "bash_git_push")
 test_info "Test 7: Unknown tool → ask (default)"
 input='{"tool_name":"UnknownTool","tool_input":{},"session_id":"test"}'
 # Unset Telegram to ensure test isolation
-decision=$(unset AGENTIZE_USE_TG; echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision')
+decision=$(unset AGENTIZE_USE_TG; echo "$input" | python "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision')
 [ "$decision" = "ask" ] || test_fail "Expected 'ask' for unknown tool, got '$decision'"
 
 # Test 8: Malformed pattern falls back to ask (fail-safe)
@@ -80,7 +80,7 @@ test_info "Test 8: Hook errors fall back to ask"
 # This test verifies fail-safe behavior when hook encounters errors
 # If the hook has malformed patterns, it should return 'ask' instead of crashing
 input='{"tool_name":"Bash","tool_input":{"command":"test-command"},"session_id":"test"}'
-decision=$(echo "$input" | python3 "$HOOK_SCRIPT" 2>/dev/null | jq -r '.hookSpecificOutput.permissionDecision')
+decision=$(echo "$input" | python "$HOOK_SCRIPT" 2>/dev/null | jq -r '.hookSpecificOutput.permissionDecision')
 # Should get a valid decision (not empty/null)
 [ -n "$decision" ] || test_fail "Hook should return a decision even on errors"
 [ "$decision" = "allow" ] || [ "$decision" = "deny" ] || [ "$decision" = "ask" ] || \
@@ -183,7 +183,7 @@ input=$(jq -c '.setup_viewboard_gh_auth_status' "$FIXTURE_FILE")
 decision=$(
     export AGENTIZE_HOME="$TMP_DIR"
     unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
-    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+    echo "$input" | python "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
 )
 [ "$decision" = "allow" ] || test_fail "Expected 'allow' for gh auth status in setup-viewboard workflow, got '$decision'"
 
@@ -193,7 +193,7 @@ input=$(jq -c '.setup_viewboard_gh_repo_view' "$FIXTURE_FILE")
 decision=$(
     export AGENTIZE_HOME="$TMP_DIR"
     unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
-    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+    echo "$input" | python "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
 )
 [ "$decision" = "allow" ] || test_fail "Expected 'allow' for gh repo view in setup-viewboard workflow, got '$decision'"
 
@@ -203,7 +203,7 @@ input=$(jq -c '.setup_viewboard_gh_api_graphql' "$FIXTURE_FILE")
 decision=$(
     export AGENTIZE_HOME="$TMP_DIR"
     unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
-    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+    echo "$input" | python "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
 )
 [ "$decision" = "allow" ] || test_fail "Expected 'allow' for gh api graphql in setup-viewboard workflow, got '$decision'"
 
@@ -213,7 +213,7 @@ input=$(jq -c '.setup_viewboard_gh_label_create' "$FIXTURE_FILE")
 decision=$(
     export AGENTIZE_HOME="$TMP_DIR"
     unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
-    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+    echo "$input" | python "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
 )
 [ "$decision" = "allow" ] || test_fail "Expected 'allow' for gh label create in setup-viewboard workflow, got '$decision'"
 
@@ -225,7 +225,7 @@ input=$(jq -c '.setup_viewboard_gh_api_graphql' "$FIXTURE_FILE")
 decision=$(
     export AGENTIZE_HOME="$TMP_DIR"
     unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
-    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+    echo "$input" | python "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
 )
 [ "$decision" = "ask" ] || test_fail "Expected 'ask' for gh api graphql outside workflow, got '$decision'"
 
@@ -251,7 +251,7 @@ input=$(jq -c '.order_test_global_deny_vs_workflow_allow' "$FIXTURE_FILE")
 decision=$(
     export AGENTIZE_HOME="$ORDER_TMP_DIR"
     unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
-    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+    echo "$input" | python "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
 )
 [ "$decision" = "deny" ] || test_fail "Expected 'deny' for rm -rf even with workflow session, got '$decision' (global deny must override workflow)"
 
@@ -270,7 +270,7 @@ decision=$(
     export AGENTIZE_HOME="$ORDER_TMP_DIR"
     unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
     # Use the setup-viewboard session
-    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+    echo "$input" | python "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
 )
 [ "$decision" = "allow" ] || test_fail "Expected 'allow' for gh api graphql after ask falls through to workflow, got '$decision'"
 
@@ -297,7 +297,7 @@ input=$(jq -c '.session_state_update_done' "$FIXTURE_FILE")
 decision=$(
     export AGENTIZE_HOME="$TMP_DIR"
     unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
-    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+    echo "$input" | python "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
 )
 [ "$decision" = "allow" ] || test_fail "Expected 'allow' for session state update to 'done', got '$decision'"
 
@@ -310,7 +310,7 @@ input=$(jq -c '.session_state_update_completed' "$FIXTURE_FILE")
 decision=$(
     export AGENTIZE_HOME="$TMP_DIR"
     unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
-    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+    echo "$input" | python "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
 )
 [ "$decision" = "allow" ] || test_fail "Expected 'allow' for session state update to 'completed', got '$decision'"
 
@@ -323,7 +323,7 @@ input=$(jq -c '.session_state_update_error' "$FIXTURE_FILE")
 decision=$(
     export AGENTIZE_HOME="$TMP_DIR"
     unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
-    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+    echo "$input" | python "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
 )
 [ "$decision" = "allow" ] || test_fail "Expected 'allow' for session state update to 'error', got '$decision'"
 
@@ -336,7 +336,7 @@ input=$(jq -c '.session_state_update_failed' "$FIXTURE_FILE")
 decision=$(
     export AGENTIZE_HOME="$TMP_DIR"
     unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
-    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+    echo "$input" | python "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
 )
 [ "$decision" = "allow" ] || test_fail "Expected 'allow' for session state update to 'failed', got '$decision'"
 
@@ -349,7 +349,7 @@ input=$(jq -c '.session_state_with_quotes' "$FIXTURE_FILE")
 decision=$(
     export AGENTIZE_HOME="$TMP_DIR"
     unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
-    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+    echo "$input" | python "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
 )
 [ "$decision" = "allow" ] || test_fail "Expected 'allow' for session state update with relative path, got '$decision'"
 
@@ -359,7 +359,7 @@ input=$(jq -c '.session_state_invalid_path' "$FIXTURE_FILE")
 decision=$(
     export AGENTIZE_HOME="$TMP_DIR"
     unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
-    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+    echo "$input" | python "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
 )
 [ "$decision" = "ask" ] || test_fail "Expected 'ask' for session state update with invalid path (missing .tmp), got '$decision'"
 
@@ -369,7 +369,7 @@ input=$(jq -c '.session_state_path_traversal' "$FIXTURE_FILE")
 decision=$(
     export AGENTIZE_HOME="$TMP_DIR"
     unset AGENTIZE_USE_TG HANDSOFF_AUTO_PERMISSION
-    echo "$input" | python3 "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
+    echo "$input" | python "$HOOK_SCRIPT" | jq -r '.hookSpecificOutput.permissionDecision'
 )
 [ "$decision" = "ask" ] || test_fail "Expected 'ask' for path traversal attempt, got '$decision'"
 
