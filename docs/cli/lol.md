@@ -15,7 +15,7 @@ lol <command> [options]
 python -m agentize.cli <command> [options]
 ```
 
-The Python entrypoint delegates to shell functions for most commands. `lol impl` runs the Python workflow implementation, and the shell `impl.sh` delegates to it. `lol` is the only public shell entrypoint; helper functions are private implementation details. Use the Python entrypoint for non-sourced environments or scripting contexts where argparse-style parsing is preferred.
+The Python entrypoint delegates to shell functions for most commands. `lol impl` runs the Python workflow implementation (via `agentize.workflow.api`), and the shell `impl.sh` delegates to it. `lol` is the only public shell entrypoint; helper functions are private implementation details. Use the Python entrypoint for non-sourced environments or scripting contexts where argparse-style parsing is preferred.
 
 ## Commands
 

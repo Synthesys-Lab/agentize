@@ -51,7 +51,7 @@ def run_acw(
 ) -> subprocess.CompletedProcess
 ```
 
-Re-export of the ACW shell invocation helper.
+Re-export of the ACW shell invocation helper from `agentize.workflow.api`.
 
 ## Internal Helpers
 

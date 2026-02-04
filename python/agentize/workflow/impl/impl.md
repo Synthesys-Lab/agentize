@@ -29,10 +29,11 @@ source of truth.
 **Behavior**:
 - Resolves the issue worktree via `wt pathto`, spawning with `wt spawn --no-agent` if needed.
 - Syncs the issue branch by fetching and rebasing onto the detected default branch before iterations.
-- Prefetches issue content via `agentize.workflow.utils.gh` into `.tmp/issue-<N>.md`; fails if empty.
+- Prefetches issue content via `agentize.workflow.api.gh` into `.tmp/issue-<N>.md`; fails if empty.
 - Renders iteration prompts from `continue-prompt.md` into `.tmp/impl-input-<N>.txt`
-  via `agentize.workflow.utils.prompt.render`.
-- Runs the shared `ACW` runner (provider validation + timing logs) and captures output in `.tmp/impl-output.txt`.
+  via `agentize.workflow.api.prompt.render`.
+- Runs iterations through `Session.run_prompt()` with input/output path overrides to reuse
+  `.tmp/impl-output.txt` across iterations.
 - Requires `.tmp/commit-report-iter-<N>.txt` for commits; stages and commits when diffs exist.
 - Detects completion via `.tmp/finalize.txt` containing `Issue <N> resolved`.
 - Pushes the branch and opens a PR using the completion file as title/body.
@@ -66,7 +67,7 @@ placeholder tokens and splices optional sections.
 ## Internal Helpers
 
 ### rel_path()
-Resolves template files relative to `impl.py` for portability using `utils.path.relpath`.
+Resolves template files relative to `impl.py` for portability using `api.path.relpath`.
 
 ### render_prompt()
 Builds the iteration prompt by filling placeholders and conditionally inserting

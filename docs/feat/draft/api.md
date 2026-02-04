@@ -25,6 +25,7 @@ Define a lightweight, imperative workflow API for coordinating agent sessions, w
   - output validation
   - retry with configurable attempts
   - consistent errors
+  - optional input/output path overrides for workflows that reuse fixed artifacts
 - `Session.run_parallel(...)` runs multiple sessions concurrently with the **same retry policy**.
 - `Session.stage(...)` builds a lightweight call object for `run_parallel(...)`.
 - `StageResult` exposes `stage`, `input_path`, `output_path`, and `process` with a `.text()` helper.
@@ -72,7 +73,7 @@ python/agentize/workflow/api/
 
 - **Constructor**: `Session(output_dir, prefix, *, runner=run_acw, input_suffix="-input.md", output_suffix="-output.md")`
 - **run_prompt**:
-  - `run_prompt(name, prompt, backend, *, tools=None, permission_mode=None, timeout=3600, extra_flags=None, retry=0, retry_delay=0) -> StageResult`
+  - `run_prompt(name, prompt, backend, *, tools=None, permission_mode=None, timeout=3600, extra_flags=None, retry=0, retry_delay=0, input_path=None, output_path=None) -> StageResult`
   - Writes input file, runs ACW, validates output, retries on failure.
 - **stage**:
   - `stage(name, prompt, backend, **opts) -> StageCall`

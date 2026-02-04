@@ -1,44 +1,8 @@
 # __main__.py
 
-Planner pipeline orchestration and CLI backend for `python -m agentize.workflow.planner`.
+CLI backend for `python -m agentize.workflow.planner`, delegating pipeline execution to `pipeline.py`.
 
 ## External Interfaces
-
-### `StageResult`
-
-```python
-@dataclass
-class StageResult:
-    stage: str
-    input_path: Path
-    output_path: Path
-    process: subprocess.CompletedProcess
-```
-
-Represents a single stage execution result, including the input/output artifact paths and
-subprocess result.
-
-### `run_planner_pipeline()`
-
-```python
-def run_planner_pipeline(
-    feature_desc: str,
-    *,
-    output_dir: str | Path = ".tmp",
-    backends: dict[str, tuple[str, str]] | None = None,
-    parallel: bool = True,
-    runner: Callable[..., subprocess.CompletedProcess] = run_acw,
-    prefix: str | None = None,
-    output_suffix: str = "-output.md",
-    skip_consensus: bool = False,
-) -> dict[str, StageResult]
-```
-
-Executes the 5-stage planner pipeline. Stages run through the `ACW` class (provider
-validation + start/finish timing logs). Prompt templates are rendered via
-`agentize.workflow.utils.prompt` to support both `{{TOKEN}}` and `{#TOKEN#}` placeholders.
-The pipeline prints plain stage-start lines to stderr and returns `StageResult` objects
-for each stage.
 
 ### `main()`
 
@@ -53,23 +17,16 @@ the footer before reuse as debate context. Returns process exit code.
 
 ## Internal Helpers
 
-### Prompt rendering
-
-- `_render_stage_prompt()`: Builds each stage prompt from agent template, plan-guideline
-  content, feature description, and previous outputs using `prompt.read_prompt()`.
-- `_render_consensus_prompt()`: Builds the consensus prompt by embedding bold/critique/
-  reducer outputs into the external-consensus template using `prompt.render()`.
-
 ### Stage execution
 
-- `_run_consensus_stage()`: Runs the consensus stage and returns a `StageResult`.
-  Uses `ACW` when the default `run_acw` runner is in use, accepting an optional
-  `log_writer` for serialized log output.
+The CLI delegates stage execution to `pipeline.run_planner_pipeline()` and
+`pipeline.run_consensus_stage()`, which use the Session DSL and the workflow API
+helpers for prompt rendering and ACW invocation.
 
 ### Issue/publish helpers
 
 - `_issue_create()`, `_issue_fetch()`, `_issue_publish()`: GitHub issue lifecycle for
-  plan publishing backed by `agentize.workflow.utils.gh`.
+  plan publishing backed by `agentize.workflow.api.gh`.
 - `_extract_plan_title()`, `_apply_issue_tag()`: Plan title parsing and issue tagging.
 - `_resolve_commit_hash()`: Resolves the current repo `HEAD` commit for provenance.
 - `_append_plan_footer()`: Appends `Plan based on commit <hash>` to consensus output.
@@ -82,9 +39,9 @@ the footer before reuse as debate context. Returns process exit code.
 
 ## Design Rationale
 
-- **Unified runner path**: The pipeline uses the `ACW` class for stage execution so
-  timing logs and provider validation remain consistent.
+- **Pipeline separation**: CLI orchestration lives here while the Session-based pipeline
+  stays in `pipeline.py`.
 - **Plain progress output**: The CLI prints concise stage lines without TTY-specific
   rendering to keep logs readable in terminals and CI.
-- **Isolation**: Prompt rendering and issue/publish logic are kept in helpers to reduce
-  coupling between orchestration and IO concerns.
+- **Isolation**: Issue/publish logic is kept in helpers to reduce coupling between CLI
+  glue and workflow execution.

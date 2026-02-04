@@ -8,7 +8,7 @@ Exports:
 - StageResult: Dataclass for per-stage results
 """
 
-from agentize.workflow.planner.__main__ import (
+from agentize.workflow.planner.pipeline import (
     run_planner_pipeline,
     StageResult,
 )

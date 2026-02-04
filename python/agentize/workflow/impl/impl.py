@@ -9,10 +9,11 @@ from pathlib import Path
 from typing import Iterable
 
 from agentize.shell import run_shell_function
-from agentize.workflow.utils import ACW
-from agentize.workflow.utils import gh as gh_utils
-from agentize.workflow.utils import path as path_utils
-from agentize.workflow.utils import prompt as prompt_utils
+from agentize.workflow.api import Session
+from agentize.workflow.api import gh as gh_utils
+from agentize.workflow.api import path as path_utils
+from agentize.workflow.api import prompt as prompt_utils
+from agentize.workflow.api.session import PipelineError
 
 
 class ImplError(RuntimeError):
@@ -347,6 +348,8 @@ def run_impl_workflow(
     output_file = tmp_dir / "impl-output.txt"
     finalize_file = tmp_dir / "finalize.txt"
 
+    session = Session(output_dir=tmp_dir, prefix=f"impl-{issue_no}")
+
     _prefetch_issue(issue_no, issue_file, cwd=worktree)
 
     template_path = rel_path("continue-prompt.md")
@@ -373,7 +376,7 @@ def run_impl_workflow(
                 tmp_dir / f"commit-report-iter-{iteration - 1}.txt"
             )
 
-        render_prompt(
+        prompt_text = render_prompt(
             template_path,
             issue_no=issue_no,
             issue_file=issue_file,
@@ -385,21 +388,18 @@ def run_impl_workflow(
         )
 
         extra_flags = ["--yolo"] if yolo else None
-
-        def _log_writer(message: str) -> None:
-            print(message, file=sys.stderr)
-
-        acw_runner = ACW(
-            name=f"impl-iter-{iteration}",
-            provider=provider,
-            model=model,
-            extra_flags=extra_flags,
-            log_writer=_log_writer,
-        )
-        acw_result = acw_runner.run(input_file, output_file)
-        if acw_result.returncode != 0:
+        try:
+            session.run_prompt(
+                f"impl-iter-{iteration}",
+                prompt_text,
+                (provider, model),
+                extra_flags=extra_flags,
+                input_path=input_file,
+                output_path=output_file,
+            )
+        except PipelineError as exc:
             print(
-                f"Warning: acw exited with non-zero status on iteration {iteration}",
+                f"Warning: acw failed on iteration {iteration} ({exc})",
                 file=sys.stderr,
             )
 

@@ -20,7 +20,7 @@ def run_planner_pipeline(
 ) -> dict[str, StageResult]
 ```
 
-Re-export of the planner pipeline execution entry point.
+Re-export of the planner pipeline execution entry point from `pipeline.py`.
 
 ### `StageResult`
 
@@ -37,5 +37,5 @@ Re-export of the per-stage result dataclass.
 
 ## Internal Helpers
 
-This module re-exports interfaces from `planner.__main__` and does not define internal
+This module re-exports interfaces from `planner.pipeline` and does not define internal
 helpers.

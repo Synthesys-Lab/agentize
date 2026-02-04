@@ -13,7 +13,7 @@ acw --help
 
 ## Description
 
-`acw` provides a consistent interface for invoking different AI CLI tools (claude, codex, opencode, cursor/agent) with file-based input/output. Optional flags allow editor-based input and stdout output while preserving the default file-based workflow. Python workflows wrap `acw` through `agentize.workflow.utils.acw` to preserve the same invocation semantics and timing logs.
+`acw` provides a consistent interface for invoking different AI CLI tools (claude, codex, opencode, cursor/agent) with file-based input/output. Optional flags allow editor-based input and stdout output while preserving the default file-based workflow. Python workflows wrap `acw` through `agentize.workflow.api.acw` to preserve the same invocation semantics and timing logs.
 
 ## Arguments
 

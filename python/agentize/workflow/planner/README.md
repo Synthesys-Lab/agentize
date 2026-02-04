@@ -4,7 +4,7 @@ Runnable package for the multi-stage planner pipeline. Provides both library int
 
 ## Purpose
 
-This package contains the 5-stage planner pipeline (understander → bold → critique → reducer → consensus) that powers `lol plan`. It is structured as a runnable package to support `python -m agentize.workflow.planner` invocation.
+This package contains the 5-stage planner pipeline (understander → bold → critique → reducer → consensus) that powers `lol plan`. It is structured as a runnable package to support `python -m agentize.workflow.planner` invocation, with the pipeline implemented as a Session DSL example.
 
 ## Invocation
 
@@ -40,7 +40,8 @@ for stage, result in results.items():
 | File | Purpose |
 |------|---------|
 | `__init__.py` | Package exports: `run_planner_pipeline`, `StageResult` |
-| `__main__.py` | Pipeline logic, CLI backend, and entry point |
+| `pipeline.py` | Planner pipeline implemented with the Session DSL |
+| `__main__.py` | CLI backend and entry point |
 | `README.md` | This documentation |
 
 ## Exports
@@ -50,11 +51,11 @@ for stage, result in results.items():
 
 ## Dependencies
 
-- `agentize.workflow.utils`: ACW runner, prompt rendering, and GitHub helpers
+- `agentize.workflow.api`: Session DSL, ACW runner, prompt rendering, and GitHub helpers
 - `agentize.shell`: `get_agentize_home()` for path resolution
 - Prompt templates in `.claude-plugin/agents/` and `.claude-plugin/skills/`
 
 ## Design Rationale
 
 - **Runnable package**: Using `__main__.py` enables `python -m` invocation while keeping logic in a single file.
-- **Separation**: Helper utilities live in `workflow/utils/`; pipeline orchestration lives here.
+- **Separation**: Workflow helpers live in `workflow/api/`; pipeline orchestration lives here.

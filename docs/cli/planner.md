@@ -64,7 +64,7 @@ Each stage uses `acw` for file-based CLI invocation. Prompts are rendered at run
 - Plan-guideline content (from `.claude-plugin/skills/plan-guideline/SKILL.md`, YAML frontmatter stripped)
 - Feature description and previous stage output
 
-Prompt templates are rendered via `agentize.workflow.utils.prompt.render`, which replaces both `{{TOKEN}}` and `{#TOKEN#}` placeholders without requiring template format changes.
+Prompt templates are rendered via `agentize.workflow.api.prompt.render`, which replaces both `{{TOKEN}}` and `{#TOKEN#}` placeholders without requiring template format changes.
 
 The consensus stage renders a dedicated prompt from `.claude-plugin/skills/external-consensus/external-review-prompt.md` with the three report outputs embedded.
 

@@ -26,9 +26,9 @@ except ImportError:
 
 # Additional import path tests (these will be exercised in dedicated tests below)
 try:
-    from agentize.workflow.utils import run_acw as utils_run_acw
+    from agentize.workflow.api import run_acw as api_run_acw
 except ImportError:
-    utils_run_acw = None
+    api_run_acw = None
 
 try:
     from agentize.workflow.planner import run_planner_pipeline as planner_run_pipeline, StageResult as planner_StageResult
@@ -356,17 +356,17 @@ class TestACWRunner:
     @pytest.mark.skipif(ACW is None, reason="Implementation not yet available")
     def test_invalid_provider_raises(self, monkeypatch):
         """ACW raises ValueError when provider is not in completion list."""
-        from agentize.workflow.utils import ACW as utils_ACW
+        from agentize.workflow.api import ACW as api_ACW
 
-        monkeypatch.setattr("agentize.workflow.utils.acw.list_acw_providers", lambda: ["claude"])
+        monkeypatch.setattr("agentize.workflow.api.acw.list_acw_providers", lambda: ["claude"])
 
         with pytest.raises(ValueError, match="provider"):
-            utils_ACW(name="test", provider="codex", model="gpt")
+            api_ACW(name="test", provider="codex", model="gpt")
 
     @pytest.mark.skipif(ACW is None, reason="Implementation not yet available")
     def test_custom_runner_invoked(self, monkeypatch, tmp_path: Path):
         """ACW with custom runner invokes the custom runner, not run_acw."""
-        from agentize.workflow.utils import ACW as utils_ACW
+        from agentize.workflow.api import ACW as api_ACW
 
         invocations = []
 
@@ -384,13 +384,13 @@ class TestACWRunner:
             invocations.append({"provider": provider, "model": model})
             return subprocess.CompletedProcess(args=["custom"], returncode=0)
 
-        monkeypatch.setattr("agentize.workflow.utils.acw.list_acw_providers", lambda: ["claude"])
+        monkeypatch.setattr("agentize.workflow.api.acw.list_acw_providers", lambda: ["claude"])
 
         input_path = tmp_path / "input.md"
         output_path = tmp_path / "output.md"
         input_path.write_text("prompt")
 
-        runner = utils_ACW(
+        runner = api_ACW(
             name="test",
             provider="claude",
             model="sonnet",
@@ -406,7 +406,7 @@ class TestACWRunner:
     @pytest.mark.skipif(ACW is None, reason="Implementation not yet available")
     def test_run_logs_and_invokes_acw(self, monkeypatch, tmp_path: Path):
         """ACW.run logs start/finish lines and calls run_acw with expected args."""
-        from agentize.workflow.utils import ACW as utils_ACW
+        from agentize.workflow.api import ACW as api_ACW
 
         invocations = []
 
@@ -438,9 +438,9 @@ class TestACWRunner:
         def _fake_time() -> float:
             return times.pop(0)
 
-        monkeypatch.setattr("agentize.workflow.utils.acw.list_acw_providers", lambda: ["claude"])
-        monkeypatch.setattr("agentize.workflow.utils.acw.run_acw", _fake_run_acw)
-        monkeypatch.setattr("agentize.workflow.utils.acw.time.time", _fake_time)
+        monkeypatch.setattr("agentize.workflow.api.acw.list_acw_providers", lambda: ["claude"])
+        monkeypatch.setattr("agentize.workflow.api.acw.run_acw", _fake_run_acw)
+        monkeypatch.setattr("agentize.workflow.api.acw.time.time", _fake_time)
 
         logs: list[str] = []
         log_writer = logs.append
@@ -449,7 +449,7 @@ class TestACWRunner:
         output_path = tmp_path / "output.md"
         input_path.write_text("prompt")
 
-        runner = utils_ACW(
+        runner = api_ACW(
             name="understander",
             provider="claude",
             model="sonnet",
@@ -517,10 +517,10 @@ class TestImportPaths:
         assert StageResult is not None
         assert run_acw is not None
 
-    @pytest.mark.skipif(utils_run_acw is None, reason="Implementation not yet available")
-    def test_utils_direct_imports(self):
-        """Imports from agentize.workflow.utils work."""
-        from agentize.workflow.utils import run_acw
+    @pytest.mark.skipif(api_run_acw is None, reason="Implementation not yet available")
+    def test_api_direct_imports(self):
+        """Imports from agentize.workflow.api work."""
+        from agentize.workflow.api import run_acw
         assert run_acw is not None
 
     @pytest.mark.skipif(planner_run_pipeline is None, reason="Implementation not yet available")
@@ -530,12 +530,12 @@ class TestImportPaths:
         assert run_planner_pipeline is not None
         assert StageResult is not None
 
-    @pytest.mark.skipif(run_acw is None or utils_run_acw is None, reason="Implementation not yet available")
+    @pytest.mark.skipif(run_acw is None or api_run_acw is None, reason="Implementation not yet available")
     def test_run_acw_same_function(self):
-        """run_acw from workflow and workflow.utils is the same function."""
+        """run_acw from workflow and workflow.api is the same function."""
         from agentize.workflow import run_acw as workflow_run_acw
-        from agentize.workflow.utils import run_acw as utils_run_acw
-        assert workflow_run_acw is utils_run_acw
+        from agentize.workflow.api import run_acw as api_run_acw
+        assert workflow_run_acw is api_run_acw
 
     @pytest.mark.skipif(run_planner_pipeline is None or planner_run_pipeline is None, reason="Implementation not yet available")
     def test_run_planner_pipeline_same_function(self):

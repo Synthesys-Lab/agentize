@@ -10,7 +10,7 @@ Public interfaces for running the 5-stage planner pipeline and impl workflow:
 
 from agentize.workflow.impl import ImplError, run_impl_workflow
 from agentize.workflow.planner import StageResult, run_planner_pipeline
-from agentize.workflow.utils import ACW, run_acw
+from agentize.workflow.api import ACW, run_acw
 
 __all__ = [
     "ImplError",
