@@ -38,16 +38,28 @@ TESTS_DIR="$PROJECT_ROOT/tests"
 # ============================================================
 # Python runtime selection for tests
 # ============================================================
-# Prefer python3 when available; fall back to python for portability.
+# Prefer python when it meets the minimum version; fall back to python3.
 PYTHON_BIN=""
-if command -v python3 >/dev/null 2>&1; then
-  PYTHON_BIN="python3"
-elif command -v python >/dev/null 2>&1; then
-  PYTHON_BIN="python"
-else
-  echo "Error: Python runtime not found" >&2
+select_python_bin() {
+  local candidate
+  for candidate in python python3; do
+    if ! command -v "$candidate" >/dev/null 2>&1; then
+      continue
+    fi
+    if "$candidate" - <<'PY' >/dev/null 2>&1
+import sys
+sys.exit(0 if sys.version_info >= (3, 10) else 1)
+PY
+    then
+      PYTHON_BIN="$candidate"
+      return 0
+    fi
+  done
+  echo "Error: Python 3.10+ runtime not found. Install python 3.10+ and retry." >&2
   exit 1
-fi
+}
+
+select_python_bin
 export PYTHON_BIN
 
 # Wrapper function stays local to the test shell to avoid shell-specific export behavior.
