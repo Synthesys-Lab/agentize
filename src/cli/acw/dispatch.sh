@@ -104,6 +104,116 @@ _acw_validate_no_positional_args() {
     return 0
 }
 
+# Strip Kimi stream-json output into plain assistant text.
+# Usage: _acw_kimi_strip_output <input> <output>
+_acw_kimi_strip_output() {
+    local input="$1"
+    local output="$2"
+
+    if ! command -v python >/dev/null 2>&1; then
+        echo "Error: python is required to strip Kimi output." >&2
+        /bin/cat "$input" > "$output"
+        return 1
+    fi
+
+    if ! python - "$input" "$output" <<'PY'
+import json
+import sys
+
+
+def extract_from_content_list(content):
+    parts = []
+    for item in content:
+        if not isinstance(item, dict):
+            continue
+        if item.get("type") != "text":
+            continue
+        text = item.get("text")
+        if text is None:
+            text = item.get("content") or item.get("value")
+        if isinstance(text, str):
+            parts.append(text)
+    return parts
+
+
+def extract_text(obj):
+    parts = []
+    if isinstance(obj, dict):
+        if "content" in obj and isinstance(obj["content"], list):
+            parts.extend(extract_from_content_list(obj["content"]))
+            for key, value in obj.items():
+                if key == "content":
+                    continue
+                parts.extend(extract_text(value))
+        else:
+            for value in obj.values():
+                parts.extend(extract_text(value))
+    elif isinstance(obj, list):
+        for item in obj:
+            parts.extend(extract_text(item))
+    return parts
+
+
+def parse_json_blob(text):
+    try:
+        obj = json.loads(text)
+    except Exception:
+        return [], False
+    return extract_text(obj), True
+
+
+def parse_ndjson(text):
+    parts = []
+    parsed_any = False
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+        except Exception:
+            continue
+        parsed_any = True
+        parts.extend(extract_text(obj))
+    return parts, parsed_any
+
+
+def main():
+    if len(sys.argv) < 3:
+        return 1
+    input_path = sys.argv[1]
+    output_path = sys.argv[2]
+    try:
+        with open(input_path, "r", encoding="utf-8", errors="replace") as handle:
+            raw = handle.read()
+    except Exception:
+        return 1
+
+    parts, parsed = parse_json_blob(raw.strip())
+    if not parsed:
+        parts, parsed = parse_ndjson(raw)
+
+    if parsed and parts:
+        with open(output_path, "w", encoding="utf-8") as handle:
+            handle.write("".join(parts))
+        return 0
+
+    with open(output_path, "w", encoding="utf-8") as handle:
+        handle.write(raw)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+PY
+    then
+        /bin/cat "$input" > "$output"
+        return 1
+    fi
+
+    return 0
+}
+
 # Main acw function
 acw() {
     local use_editor=0
@@ -380,13 +490,39 @@ acw() {
         echo "Response:"
     fi
 
+    # Kimi writes stream-json; capture raw output and strip to plain text afterward.
+    local final_output_file="$output_file"
+    local provider_output_file="$output_file"
+    local kimi_raw_output=""
+    local kimi_strip=0
+
+    if [ "$cli_name" = "kimi" ]; then
+        kimi_strip=1
+        kimi_raw_output=$(mktemp)
+        if [ -z "$kimi_raw_output" ]; then
+            echo "Error: Failed to create temporary output file for Kimi." >&2
+            if [ -n "$combined_input" ]; then
+                rm -f "$combined_input"
+            fi
+            if [ -n "$chat_output_capture" ]; then
+                rm -f "$chat_output_capture"
+            fi
+            if [ -n "$editor_tmp" ]; then
+                rm -f "$editor_tmp"
+                trap - EXIT INT TERM
+            fi
+            return 1
+        fi
+        provider_output_file="$kimi_raw_output"
+    fi
+
     # Remaining arguments are provider options
     local provider_exit=0
     local stderr_file=""
     local stderr_preexist=0
 
     if [ "$stdout_mode" -eq 0 ]; then
-        stderr_file="${output_file}.stderr"
+        stderr_file="${final_output_file}.stderr"
     elif [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 1 ]; then
         stderr_file="${session_file%.md}.stderr"
         [ -e "$stderr_file" ] && stderr_preexist=1
@@ -396,70 +532,70 @@ acw() {
     case "$cli_name" in
         claude)
             if [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 0 ]; then
-                _acw_invoke_claude "$model_name" "$input_file" "$output_file" "$@" 2>&1
+                _acw_invoke_claude "$model_name" "$input_file" "$provider_output_file" "$@" 2>&1
             elif [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 1 ]; then
-                _acw_invoke_claude "$model_name" "$input_file" "$output_file" "$@" 2>>"$stderr_file"
+                _acw_invoke_claude "$model_name" "$input_file" "$provider_output_file" "$@" 2>>"$stderr_file"
             else
                 if [ -n "$stderr_file" ]; then
-                    _acw_invoke_claude "$model_name" "$input_file" "$output_file" "$@" 2>"$stderr_file"
+                    _acw_invoke_claude "$model_name" "$input_file" "$provider_output_file" "$@" 2>"$stderr_file"
                 else
-                    _acw_invoke_claude "$model_name" "$input_file" "$output_file" "$@"
+                    _acw_invoke_claude "$model_name" "$input_file" "$provider_output_file" "$@"
                 fi
             fi
             provider_exit=$?
             ;;
         codex)
             if [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 0 ]; then
-                _acw_invoke_codex "$model_name" "$input_file" "$output_file" "$@" 2>&1
+                _acw_invoke_codex "$model_name" "$input_file" "$provider_output_file" "$@" 2>&1
             elif [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 1 ]; then
-                _acw_invoke_codex "$model_name" "$input_file" "$output_file" "$@" 2>>"$stderr_file"
+                _acw_invoke_codex "$model_name" "$input_file" "$provider_output_file" "$@" 2>>"$stderr_file"
             else
                 if [ -n "$stderr_file" ]; then
-                    _acw_invoke_codex "$model_name" "$input_file" "$output_file" "$@" 2>"$stderr_file"
+                    _acw_invoke_codex "$model_name" "$input_file" "$provider_output_file" "$@" 2>"$stderr_file"
                 else
-                    _acw_invoke_codex "$model_name" "$input_file" "$output_file" "$@"
+                    _acw_invoke_codex "$model_name" "$input_file" "$provider_output_file" "$@"
                 fi
             fi
             provider_exit=$?
             ;;
         opencode)
             if [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 0 ]; then
-                _acw_invoke_opencode "$model_name" "$input_file" "$output_file" "$@" 2>&1
+                _acw_invoke_opencode "$model_name" "$input_file" "$provider_output_file" "$@" 2>&1
             elif [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 1 ]; then
-                _acw_invoke_opencode "$model_name" "$input_file" "$output_file" "$@" 2>>"$stderr_file"
+                _acw_invoke_opencode "$model_name" "$input_file" "$provider_output_file" "$@" 2>>"$stderr_file"
             else
                 if [ -n "$stderr_file" ]; then
-                    _acw_invoke_opencode "$model_name" "$input_file" "$output_file" "$@" 2>"$stderr_file"
+                    _acw_invoke_opencode "$model_name" "$input_file" "$provider_output_file" "$@" 2>"$stderr_file"
                 else
-                    _acw_invoke_opencode "$model_name" "$input_file" "$output_file" "$@"
+                    _acw_invoke_opencode "$model_name" "$input_file" "$provider_output_file" "$@"
                 fi
             fi
             provider_exit=$?
             ;;
         cursor)
             if [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 0 ]; then
-                _acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@" 2>&1
+                _acw_invoke_cursor "$model_name" "$input_file" "$provider_output_file" "$@" 2>&1
             elif [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 1 ]; then
-                _acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@" 2>>"$stderr_file"
+                _acw_invoke_cursor "$model_name" "$input_file" "$provider_output_file" "$@" 2>>"$stderr_file"
             else
                 if [ -n "$stderr_file" ]; then
-                    _acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@" 2>"$stderr_file"
+                    _acw_invoke_cursor "$model_name" "$input_file" "$provider_output_file" "$@" 2>"$stderr_file"
                 else
-                    _acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@"
+                    _acw_invoke_cursor "$model_name" "$input_file" "$provider_output_file" "$@"
                 fi
             fi
             provider_exit=$?
             ;;
         kimi)
             if [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 0 ]; then
-                _acw_invoke_kimi "$model_name" "$input_file" "$output_file" "$@" 2>&1
+                _acw_invoke_kimi "$model_name" "$input_file" "$provider_output_file" "$@" 2>&1
             elif [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 1 ]; then
-                _acw_invoke_kimi "$model_name" "$input_file" "$output_file" "$@" 2>>"$stderr_file"
+                _acw_invoke_kimi "$model_name" "$input_file" "$provider_output_file" "$@" 2>>"$stderr_file"
             else
                 if [ -n "$stderr_file" ]; then
-                    _acw_invoke_kimi "$model_name" "$input_file" "$output_file" "$@" 2>"$stderr_file"
+                    _acw_invoke_kimi "$model_name" "$input_file" "$provider_output_file" "$@" 2>"$stderr_file"
                 else
-                    _acw_invoke_kimi "$model_name" "$input_file" "$output_file" "$@"
+                    _acw_invoke_kimi "$model_name" "$input_file" "$provider_output_file" "$@"
                 fi
             fi
             provider_exit=$?
@@ -471,17 +607,21 @@ acw() {
         rm -f "$stderr_file"
     fi
 
+    if [ "$kimi_strip" -eq 1 ]; then
+        _acw_kimi_strip_output "$provider_output_file" "$final_output_file"
+    fi
+
     # Chat mode cleanup and append turn
     if [ "$chat_mode" -eq 1 ]; then
         if [ "$provider_exit" -eq 0 ]; then
             # Determine assistant response file
             local assistant_response=""
             if [ "$stdout_mode" -eq 1 ]; then
-                assistant_response="$chat_output_capture"
+                assistant_response="$final_output_file"
                 # Emit captured output to stdout
-                cat "$chat_output_capture"
+                cat "$final_output_file"
             else
-                assistant_response="$output_file"
+                assistant_response="$final_output_file"
             fi
 
             # Append turn to session
@@ -500,6 +640,10 @@ acw() {
     if [ -n "$editor_tmp" ]; then
         rm -f "$editor_tmp"
         trap - EXIT INT TERM
+    fi
+
+    if [ -n "$kimi_raw_output" ]; then
+        rm -f "$kimi_raw_output"
     fi
 
     return "$provider_exit"

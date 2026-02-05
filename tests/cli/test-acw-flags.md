@@ -30,6 +30,10 @@ Validate `acw` flag behavior for `--editor`, `--stdout`, and file-mode stderr ca
 **Purpose**: Empty stderr does not leave a sidecar file.
 **Expected**: `<output-file>.stderr` is removed when provider writes no stderr.
 
+### kimi_forces_stream_json
+**Purpose**: Kimi invocation always forces stream-json output format.
+**Expected**: Stub captures `--output-format stream-json` in the Kimi arguments.
+
 ### stdout_output_file_rejected
 **Purpose**: `--stdout` rejects an output-file positional argument.
 **Expected**: Non-zero exit mentioning stdout.

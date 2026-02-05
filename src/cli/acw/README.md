@@ -65,7 +65,11 @@ acw.sh (thin loader)
 | codex | `codex` | `< file` | `> file` | Full |
 | opencode | `opencode` | TBD | TBD | Best-effort |
 | cursor | `agent` | TBD | TBD | Best-effort |
-| kimi | `kimi` | `< file` (`--print`) | `> file` | Best-effort |
+| kimi | `kimi` | `< file` (`--print`) | `> file` (stream-json stripped) | Best-effort |
+
+## Runtime Dependencies
+
+- Kimi output normalization uses `python` (stdlib JSON) to strip stream-json into plain text.
 
 ## Conventions
 
