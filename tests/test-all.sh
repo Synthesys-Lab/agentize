@@ -132,7 +132,8 @@ for shell in $TEST_SHELLS; do
 
     # Auto-discover and run tests in categorical subdirectories
     # Notable CLI additions: test-acw-logging.sh, test-lol-use-branch.sh,
-    # test-lol-upgrade.sh, test-lol-plan-github-stubbed.sh
+    # test-lol-upgrade.sh, test-lol-plan-github-stubbed.sh,
+    # test-lol-simp-args.sh
     for category in $CATEGORIES; do
         category_dir="$SCRIPT_DIR/$category"
 

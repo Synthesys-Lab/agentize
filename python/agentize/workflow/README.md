@@ -1,13 +1,16 @@
 # Workflow Module
 
-Python-native orchestration for multi-stage LLM planner workflows and the `lol impl` loop.
+Python-native orchestration for multi-stage LLM planner workflows, the `lol impl` loop,
+and the `lol simp` simplifier workflow.
 
 ## Purpose
 
 This module provides a Python entrypoint for running the 5-stage planner flow that powers
-`lol plan`, plus the issue-to-implementation loop for `lol impl`. It reuses established
-prompt templates from `.claude-plugin/agents/` to maintain behavioral consistency while
-enabling Python scripting integration and external consensus synthesis.
+`lol plan`, the issue-to-implementation loop for `lol impl`, and the simplifier workflow
+for `lol simp`. The planner pipeline reuses established prompt templates from
+`.claude-plugin/agents/` to maintain behavioral consistency while enabling Python
+scripting integration and external consensus synthesis. Standalone workflows like
+`impl` and `simp` keep their prompt templates alongside the module for clarity.
 
 ## Architecture
 
@@ -31,6 +34,7 @@ and output suffix.
 | `planner/` | Standalone planning pipeline package (`python -m agentize.workflow.planner`) |
 | `planner.py` | **DEPRECATED** - Re-exports for backward compatibility (will be removed) |
 | `impl/` | Issue-to-implementation workflow (Python) with file-based prompt and `python -m agentize.workflow.impl` entrypoint |
+| `simp/` | Semantic-preserving simplifier workflow with a module-local prompt and `python -m agentize.workflow.simp` entrypoint |
 
 ## Pipeline Stages
 

@@ -35,6 +35,9 @@ echo "$output" | grep -q "lol plan" || test_fail "Usage text missing 'lol plan' 
 # Verify usage text includes lol impl command
 echo "$output" | grep -q "lol impl" || test_fail "Usage text missing 'lol impl' command"
 
+# Verify usage text includes lol simp command
+echo "$output" | grep -q "lol simp" || test_fail "Usage text missing 'lol simp' command"
+
 # Verify lol plan --help includes --refine
 plan_help=$(lol plan --help 2>&1)
 echo "$plan_help" | grep -q "\-\-refine" || test_fail "lol plan --help missing '--refine' option"

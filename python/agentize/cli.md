@@ -21,6 +21,7 @@ The Python CLI supports the same commands as the shell implementation:
 | `claude-clean` | Remove stale project entries from `~/.claude.json` |
 | `version` | Display version information |
 | `impl` | Issue-to-implementation loop (Python workflow) |
+| `simp` | Simplify code without changing semantics |
 
 ## Top-level Flags
 

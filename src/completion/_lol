@@ -2,7 +2,7 @@
 
 # Zsh completion for lol (AI-powered SDK CLI)
 # Provides interactive command-line hints for lol subcommands and flags
-# Supports: upgrade, use-branch, version, project, usage, serve, claude-clean, plan, impl
+# Supports: upgrade, use-branch, version, project, usage, serve, claude-clean, plan, impl, simp
 
 _lol() {
     local curcontext="$curcontext" state line
@@ -27,6 +27,7 @@ _lol() {
             'claude-clean:Remove stale Claude config entries'
             'plan:Run multi-agent debate pipeline'
             'impl:Automate the issue-to-implementation loop using wt + acw'
+            'simp:Simplify code without changing semantics'
         )
     else
         # Add descriptions to dynamically fetched commands
@@ -42,6 +43,7 @@ _lol() {
                 claude-clean) commands_with_desc+=('claude-clean:Remove stale Claude config entries') ;;
                 plan) commands_with_desc+=('plan:Run multi-agent debate pipeline') ;;
                 impl) commands_with_desc+=('impl:Automate the issue-to-implementation loop using wt + acw') ;;
+                simp) commands_with_desc+=('simp:Simplify code without changing semantics') ;;
             esac
         done
         commands=( $commands_with_desc )
@@ -65,6 +67,9 @@ _lol() {
                     ;;
                 impl)
                     _lol_impl
+                    ;;
+                simp)
+                    _lol_simp
                     ;;
                 upgrade)
                     _lol_upgrade
@@ -125,6 +130,12 @@ _lol_impl() {
     _arguments \
         ${impl_flags_with_desc[@]} \
         ':issue-number:'
+}
+
+# Completion for 'lol simp' subcommand
+_lol_simp() {
+    _arguments \
+        '::file:_files'
 }
 
 # Completion for 'lol upgrade' subcommand

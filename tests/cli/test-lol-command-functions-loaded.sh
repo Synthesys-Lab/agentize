@@ -21,6 +21,7 @@ EXPECTED_FUNCTIONS=(
     "_lol_cmd_usage"
     "_lol_cmd_plan"
     "_lol_cmd_impl"
+    "_lol_cmd_simp"
     "_lol_complete"
     "_lol_detect_lang"
 )
@@ -43,6 +44,7 @@ DISALLOWED_FUNCTIONS=(
     "lol_cmd_usage"
     "lol_cmd_plan"
     "lol_cmd_impl"
+    "lol_cmd_simp"
     "lol_complete"
     "lol_detect_lang"
 )
