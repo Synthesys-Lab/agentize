@@ -43,6 +43,21 @@ acw --chat-list
 - Emits argument or validation errors to stderr with non-zero exit codes as
   documented in `acw.md`.
 
+## Kimi Output Normalization
+
+Kimi is forced to stream JSON. The dispatcher captures raw output, extracts
+`content[].type == "text"` segments, and writes clean assistant text to the
+final output destination (file or stdout).
+
+Normalization flow:
+1. Attempt to parse the full payload as JSON.
+2. If that fails, parse each line as NDJSON.
+3. Concatenate all `text` fragments in order.
+4. If nothing parses, fall back to the raw payload.
+
+In non-chat `--stdout` mode, stderr is merged into the stream before stripping,
+so non-JSON stderr lines may be dropped when Kimi output is normalized.
+
 ## Internal Helpers
 
 ### _acw_usage()
@@ -60,6 +75,11 @@ when git metadata is unavailable.
 ### _acw_validate_no_positional_args()
 Ensures editor/stdout modes do not accept extra positional arguments. Allows
 values following flags and allows positional values after `--`.
+
+### _acw_kimi_strip_output()
+Strips Kimi stream-json output into plain assistant text. Uses Python to parse
+either a full JSON payload or NDJSON and falls back to raw output when parsing
+fails or yields no text segments.
 
 ## Chat Mode
 

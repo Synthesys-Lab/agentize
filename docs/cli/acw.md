@@ -183,6 +183,7 @@ autoload -Uz compinit && compinit
   - With `--chat`: provider stderr is appended to `.tmp/acw-sessions/<session-id>.stderr` to keep stdout clean for piping. Empty sidecar files created by `acw` are automatically removed.
   - With `--chat --editor`: when stdout is a TTY, the user prompt is echoed immediately before provider invocation, followed by a `Response:` header before assistant output.
 - In file mode (no `--stdout`), provider stderr is written to `<output-file>.stderr`. Empty sidecar files are removed after the provider exits.
+- Kimi output is forced to `--output-format stream-json` and stripped to plain assistant text. In non-chat `--stdout` mode, merged stderr lines that are not JSON may be dropped during stripping.
 
 ## See Also
 

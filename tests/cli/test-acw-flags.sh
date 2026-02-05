@@ -6,9 +6,10 @@
 # Test 4: --stdout merges provider stderr into stdout
 # Test 5: file mode captures provider stderr to sidecar
 # Test 6: file mode removes empty stderr sidecar
-# Test 7: --stdout rejects output-file positional argument
-# Test 8: --chat --editor --stdout echoes prompt on TTY stdout
-# Test 9: --chat --editor --stdout skips prompt echo on non-TTY stdout
+# Test 7: Kimi invocation forces stream-json output
+# Test 8: --stdout rejects output-file positional argument
+# Test 9: --chat --editor --stdout echoes prompt on TTY stdout
+# Test 10: --chat --editor --stdout skips prompt echo on non-TTY stdout
 
 source "$(dirname "$0")/../common.sh"
 
@@ -55,6 +56,16 @@ if [ "${ACW_STUB_STDERR:-1}" != "0" ]; then
 fi
 STUB
 chmod +x "$TEST_BIN/claude"
+
+# Stub kimi provider binary
+cat > "$TEST_BIN/kimi" << 'STUB'
+#!/usr/bin/env bash
+if [ -n "$KIMI_ARGS_FILE" ]; then
+  printf "%s\n" "$@" > "$KIMI_ARGS_FILE"
+fi
+cat
+STUB
+chmod +x "$TEST_BIN/kimi"
 
 export PATH="$TEST_BIN:$PATH"
 
@@ -193,7 +204,29 @@ fi
 
 export ACW_STUB_STDERR="1"
 
-# Test 7: --stdout rejects output-file positional argument
+# Test 7: Kimi invocation forces stream-json output
+KIMI_ARGS_FILE="$TEST_HOME/kimi-args.txt"
+export KIMI_ARGS_FILE
+rm -f "$KIMI_ARGS_FILE"
+
+set +e
+acw kimi default "$input_file" "$TEST_HOME/kimi-output.txt" >/dev/null 2>&1
+exit_code=$?
+set -e
+
+if [ "$exit_code" -ne 0 ]; then
+  test_fail "Kimi invocation should succeed with valid input"
+fi
+
+if ! grep -q -- "--output-format" "$KIMI_ARGS_FILE"; then
+  test_fail "Kimi invocation should include --output-format flag"
+fi
+
+if ! grep -q "stream-json" "$KIMI_ARGS_FILE"; then
+  test_fail "Kimi invocation should force stream-json output format"
+fi
+
+# Test 8: --stdout rejects output-file positional argument
 set +e
 output=$(acw --stdout claude test-model "$input_file" "$TEST_HOME/out.txt" 2>&1)
 exit_code=$?
@@ -207,7 +240,7 @@ if ! echo "$output" | grep -qi "stdout"; then
   test_fail "--stdout mutual exclusion error should mention stdout"
 fi
 
-# Test 8: --chat --editor --stdout echoes prompt on TTY stdout
+# Test 9: --chat --editor --stdout echoes prompt on TTY stdout
 TTY_EDITOR="$TEST_HOME/tty-editor.sh"
 cat > "$TTY_EDITOR" << 'STUB'
 #!/usr/bin/env bash
@@ -289,7 +322,7 @@ if [ "$prompt_line" -gt "$response_line" ] || [ "$response_line" -gt "$user_head
   test_fail "TTY stdout should echo prompt and response headers before assistant output"
 fi
 
-# Test 9: --chat --editor --stdout skips prompt echo on non-TTY stdout
+# Test 10: --chat --editor --stdout skips prompt echo on non-TTY stdout
 set +e
 non_tty_output=$(acw --chat --editor --stdout claude test-model 2>/dev/null)
 exit_code=$?
