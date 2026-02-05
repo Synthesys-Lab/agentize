@@ -23,6 +23,9 @@ echo "$output" | grep -q "claude" || test_fail "Usage text missing 'claude' prov
 # Verify usage text includes codex provider
 echo "$output" | grep -q "codex" || test_fail "Usage text missing 'codex' provider"
 
+# Verify usage text includes kimi provider
+echo "$output" | grep -q "kimi" || test_fail "Usage text missing 'kimi' provider"
+
 # Verify usage text includes --help flag
 echo "$output" | grep -q "\-\-help" || test_fail "Usage text missing '--help' flag"
 

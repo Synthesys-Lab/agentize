@@ -13,13 +13,13 @@ acw --help
 
 ## Description
 
-`acw` provides a consistent interface for invoking different AI CLI tools (claude, codex, opencode, cursor/agent) with file-based input/output. Optional flags allow editor-based input and stdout output while preserving the default file-based workflow. Python workflows wrap `acw` through `agentize.workflow.api.acw` to preserve the same invocation semantics and timing logs.
+`acw` provides a consistent interface for invoking different AI CLI tools (claude, codex, opencode, cursor/agent, kimi) with file-based input/output. Optional flags allow editor-based input and stdout output while preserving the default file-based workflow. Python workflows wrap `acw` through `agentize.workflow.api.acw` to preserve the same invocation semantics and timing logs.
 
 ## Arguments
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `cli-name` | Yes | Provider name: `claude`, `codex`, `opencode`, `cursor` |
+| `cli-name` | Yes | Provider name: `claude`, `codex`, `opencode`, `cursor`, `kimi` |
 | `model-name` | Yes | Model identifier passed to the provider |
 | `input-file` | Conditional | Path to file containing the prompt (required unless `--editor` is used) |
 | `output-file` | Conditional | Path where response will be written (required unless `--stdout` is used) |
@@ -44,6 +44,7 @@ acw --help
 | `codex` | `codex` | Full support |
 | `opencode` | `opencode` | Best-effort |
 | `cursor` | `agent` | Best-effort |
+| `kimi` | `kimi` | Best-effort |
 
 ## Exit Codes
 
@@ -68,6 +69,9 @@ acw claude claude-sonnet-4-20250514 prompt.txt response.txt
 
 # Invoke Codex
 acw codex gpt-4o prompt.txt response.txt
+
+# Invoke Kimi
+acw kimi kimi-model prompt.txt response.txt
 
 # Pass additional options to the provider
 acw claude claude-sonnet-4-20250514 prompt.txt response.txt --max-tokens 4096
@@ -152,7 +156,7 @@ Use `acw --complete <topic>` to get completion values programmatically:
 
 | Topic | Description |
 |-------|-------------|
-| `providers` | List of supported providers (claude, codex, opencode, cursor) |
+| `providers` | List of supported providers (claude, codex, opencode, cursor, kimi) |
 | `cli-options` | Common CLI options (e.g., --help, --editor, --stdout, --model, --max-tokens, --yolo) |
 
 ### Setup
@@ -169,7 +173,7 @@ autoload -Uz compinit && compinit
 - The output directory is created automatically if it doesn't exist (skipped when `--stdout` is used)
 - Provider-specific options are passed through unchanged, except `--yolo` is normalized to Claude's `--dangerously-skip-permissions`
 - The wrapper returns the provider's exit code on successful execution
-- Best-effort providers (opencode, cursor) may have limited functionality
+- Best-effort providers (opencode, cursor, kimi) may have limited functionality
 - Only `acw` is the public function; all helper functions (provider invocation, completion, validation) are internal (prefixed with `_acw_`) and won't appear in tab completion
 - `acw` flags must appear before `cli-name`. Use `--` to pass provider options that collide with `acw` flags.
 - `--stdout` behavior:

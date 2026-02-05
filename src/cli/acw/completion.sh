@@ -13,6 +13,7 @@ _acw_complete() {
             echo "codex"
             echo "opencode"
             echo "cursor"
+            echo "kimi"
             ;;
         cli-options)
             echo "--help"

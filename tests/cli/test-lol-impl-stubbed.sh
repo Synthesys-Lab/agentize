@@ -116,6 +116,7 @@ claude
 codex
 opencode
 cursor
+kimi
 EOF
         return 0
     fi

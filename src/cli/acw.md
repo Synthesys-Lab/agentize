@@ -50,6 +50,7 @@ All helper functions are prefixed with `_acw_` to prevent tab-completion polluti
 - `_acw_invoke_codex` - Invokes Codex CLI
 - `_acw_invoke_opencode` - Invokes Opencode CLI
 - `_acw_invoke_cursor` - Invokes Cursor/Agent CLI
+- `_acw_invoke_kimi` - Invokes Kimi CLI
 
 **Completion function:**
 - `_acw_complete` - Returns completion values for shell integration

@@ -31,7 +31,7 @@ Usage:
   acw --help
 
 Arguments:
-  cli-name      Provider: claude, codex, opencode, cursor
+  cli-name      Provider: claude, codex, opencode, cursor, kimi
   model-name    Model identifier for the provider
   input-file    Path to file containing the prompt (unless --editor is used)
   output-file   Path where response will be written (unless --stdout is used)
@@ -50,6 +50,7 @@ Providers:
   codex         OpenAI Codex CLI (full support)
   opencode      Opencode CLI (best-effort)
   cursor        Cursor Agent CLI (best-effort)
+  kimi          Kimi CLI (best-effort)
 
 Exit Codes:
   0   Success
@@ -131,7 +132,7 @@ acw() {
                 # Check if next arg looks like a session ID (not a flag, not a known provider)
                 if [ $# -gt 0 ] && [ "${1:0:1}" != "-" ]; then
                     case "$1" in
-                        claude|codex|opencode|cursor)
+                        claude|codex|opencode|cursor|kimi)
                             # This is the cli-name, not a session ID
                             ;;
                         *)
@@ -227,12 +228,12 @@ acw() {
 
     # Check if provider is known
     case "$cli_name" in
-        claude|codex|opencode|cursor)
+        claude|codex|opencode|cursor|kimi)
             # Valid provider
             ;;
         *)
             echo "Error: Unknown provider '$cli_name'" >&2
-            echo "Supported providers: claude, codex, opencode, cursor" >&2
+            echo "Supported providers: claude, codex, opencode, cursor, kimi" >&2
             return 2
             ;;
     esac
@@ -441,6 +442,20 @@ acw() {
                     _acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@" 2>"$stderr_file"
                 else
                     _acw_invoke_cursor "$model_name" "$input_file" "$output_file" "$@"
+                fi
+            fi
+            provider_exit=$?
+            ;;
+        kimi)
+            if [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 0 ]; then
+                _acw_invoke_kimi "$model_name" "$input_file" "$output_file" "$@" 2>&1
+            elif [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 1 ]; then
+                _acw_invoke_kimi "$model_name" "$input_file" "$output_file" "$@" 2>>"$stderr_file"
+            else
+                if [ -n "$stderr_file" ]; then
+                    _acw_invoke_kimi "$model_name" "$input_file" "$output_file" "$@" 2>"$stderr_file"
+                else
+                    _acw_invoke_kimi "$model_name" "$input_file" "$output_file" "$@"
                 fi
             fi
             provider_exit=$?

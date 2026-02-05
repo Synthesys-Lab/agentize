@@ -26,6 +26,7 @@ EXPECTED_PRIVATE_FUNCTIONS=(
     "_acw_invoke_codex"
     "_acw_invoke_opencode"
     "_acw_invoke_cursor"
+    "_acw_invoke_kimi"
     "_acw_complete"
 )
 
@@ -56,6 +57,7 @@ OLD_HELPER_NAMES=(
     "acw_invoke_codex"
     "acw_invoke_opencode"
     "acw_invoke_cursor"
+    "acw_invoke_kimi"
     "acw_complete"
 )
 

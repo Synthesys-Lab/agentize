@@ -78,3 +78,18 @@ _acw_invoke_cursor() {
     # stderr passes through for progress messages
     agent --model "$model" "$@" < "$input" > "$output"
 }
+
+# Invoke Kimi CLI (best-effort)
+# Usage: _acw_invoke_kimi <model> <input> <output> [options...]
+# I/O: stdout -> output file, stderr -> passthrough (progress messages visible)
+# Returns: kimi exit code
+_acw_invoke_kimi() {
+    local model="$1"
+    local input="$2"
+    local output="$3"
+    shift 3
+
+    # Kimi uses print mode for non-interactive runs; prompt is read from stdin.
+    # stderr passes through for progress messages
+    kimi --print --model "$model" "$@" < "$input" > "$output"
+}

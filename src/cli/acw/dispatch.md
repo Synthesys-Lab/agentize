@@ -14,7 +14,7 @@ acw --chat-list
 ```
 
 **Parameters**:
-- `cli-name`: Provider identifier (`claude`, `codex`, `opencode`, `cursor`)
+- `cli-name`: Provider identifier (`claude`, `codex`, `opencode`, `cursor`, `kimi`)
 - `model-name`: Model identifier passed to the provider
 - `input-file`: Prompt file path (required unless `--editor` is used)
 - `output-file`: Response file path (required unless `--stdout` is used)

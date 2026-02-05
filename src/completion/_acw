@@ -21,6 +21,7 @@ _acw() {
             'codex:OpenAI Codex CLI (full support)'
             'opencode:Opencode CLI (best-effort)'
             'cursor:Cursor Agent CLI (best-effort)'
+            'kimi:Kimi CLI (best-effort)'
         )
     else
         # Add descriptions to dynamically fetched providers
@@ -31,6 +32,7 @@ _acw() {
                 codex) providers_with_desc+=('codex:OpenAI Codex CLI (full support)') ;;
                 opencode) providers_with_desc+=('opencode:Opencode CLI (best-effort)') ;;
                 cursor) providers_with_desc+=('cursor:Cursor Agent CLI (best-effort)') ;;
+                kimi) providers_with_desc+=('kimi:Kimi CLI (best-effort)') ;;
                 *) providers_with_desc+=("$provider") ;;
             esac
         done

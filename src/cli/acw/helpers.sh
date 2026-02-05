@@ -55,6 +55,9 @@ _acw_check_cli() {
         cursor)
             binary="agent"
             ;;
+        kimi)
+            binary="kimi"
+            ;;
         *)
             echo "Error: Unknown provider '$cli_name'" >&2
             return 2

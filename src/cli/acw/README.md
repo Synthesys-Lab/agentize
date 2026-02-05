@@ -9,7 +9,7 @@ Modular implementation of the Agent CLI Wrapper (`acw`) command.
 | File | Dependencies | Exports |
 |------|--------------|---------|
 | `helpers.sh` | None | Validation helpers (`_acw_validate_args`, `_acw_check_cli`, `_acw_ensure_output_dir`, `_acw_check_input_file`) and chat session helpers (`_acw_chat_*`) (private) |
-| `providers.sh` | `helpers.sh` | `_acw_invoke_claude`, `_acw_invoke_codex`, `_acw_invoke_opencode`, `_acw_invoke_cursor` (private) |
+| `providers.sh` | `helpers.sh` | `_acw_invoke_claude`, `_acw_invoke_codex`, `_acw_invoke_opencode`, `_acw_invoke_cursor`, `_acw_invoke_kimi` (private) |
 | `completion.sh` | None | `_acw_complete` (private) |
 | `dispatch.sh` | `helpers.sh`, `providers.sh`, `completion.sh` | `acw` (public); orchestrates chat session creation, continuation, and history prepending |
 
@@ -47,6 +47,7 @@ acw.sh (thin loader)
     |     +-- _acw_invoke_codex()
     |     +-- _acw_invoke_opencode()
     |     +-- _acw_invoke_cursor()
+    |     +-- _acw_invoke_kimi()
     |
     +-- completion.sh (private)
     |     +-- _acw_complete()
@@ -64,6 +65,7 @@ acw.sh (thin loader)
 | codex | `codex` | `< file` | `> file` | Full |
 | opencode | `opencode` | TBD | TBD | Best-effort |
 | cursor | `agent` | TBD | TBD | Best-effort |
+| kimi | `kimi` | `< file` (`--print`) | `> file` | Best-effort |
 
 ## Conventions
 

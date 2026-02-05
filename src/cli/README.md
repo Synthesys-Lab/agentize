@@ -11,7 +11,7 @@ Source-first libraries for Agentize CLI commands. These files are the canonical 
 - `acw.sh` - Agent CLI Wrapper library (canonical source, thin loader)
   - Sources modular files from `acw/` directory
   - Exports `acw` command for unified AI CLI invocation
-  - Handles providers: `claude`, `codex`, `opencode`, `cursor`
+  - Handles providers: `claude`, `codex`, `opencode`, `cursor`, `kimi`
   - Interface documentation: `acw.md`
 
 - `planner.sh` - Planner pipeline library (internal; used by `lol plan`)

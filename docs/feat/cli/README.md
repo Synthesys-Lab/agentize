@@ -11,7 +11,7 @@ These documents provide comprehensive command-line interface specifications, inc
 ## Files
 
 ### acw.md
-The `acw` command for unified AI CLI invocation. See [docs/cli/acw.md](../../cli/acw.md) for interface documentation. Provides file-based input/output for claude, codex, opencode, and cursor CLIs.
+The `acw` command for unified AI CLI invocation. See [docs/cli/acw.md](../../cli/acw.md) for interface documentation. Provides file-based input/output for claude, codex, opencode, cursor, and kimi CLIs.
 
 ### install.md
 The `install` script for one-command Agentize installation. Documents installation flow (clone, worktree init, setup), command-line options (--dir, --repo, --help), post-install shell RC integration, and troubleshooting.

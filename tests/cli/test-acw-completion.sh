@@ -15,7 +15,7 @@ source "$ACW_CLI"
 test_info "Checking --complete providers"
 providers_output=$(acw --complete providers)
 
-for provider in claude codex opencode cursor; do
+for provider in claude codex opencode cursor kimi; do
     if ! echo "$providers_output" | grep -q "^${provider}$"; then
         test_fail "Provider '$provider' not found in --complete providers output"
     fi

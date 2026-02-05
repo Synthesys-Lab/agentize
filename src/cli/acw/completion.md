@@ -10,7 +10,7 @@ completion systems.
 ### _acw_complete <topic>
 
 **Topics**:
-- `providers`: Lists supported providers (`claude`, `codex`, `opencode`, `cursor`).
+- `providers`: Lists supported providers (`claude`, `codex`, `opencode`, `cursor`, `kimi`).
 - `cli-options`: Lists common CLI options (`--help`, `--chat`, `--chat-list`,
   `--editor`, `--stdout`, `--model`, `--max-tokens`, `--yolo`).
 
