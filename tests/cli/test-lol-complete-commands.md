@@ -6,4 +6,5 @@ Verifies `lol --complete commands` returns the documented subcommand list.
 
 - Core command names appear in newline-delimited output.
 - `use-branch` is included in the completion list.
+- `simp` is included in the completion list.
 - Removed commands are excluded.

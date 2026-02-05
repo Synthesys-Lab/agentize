@@ -460,3 +460,40 @@ _lol_parse_impl() {
 
     _lol_cmd_impl "$issue_no" "$backend" "$max_iterations" "$yolo"
 }
+
+# Parse simp command arguments and call _lol_cmd_simp
+_lol_parse_simp() {
+    local file_path=""
+
+    # Handle --help
+    if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+        echo "lol simp: Simplify code without changing semantics"
+        echo ""
+        echo "Usage: lol simp [file]"
+        echo ""
+        echo "Options:"
+        echo "  --help    Show this help message"
+        return 0
+    fi
+
+    if [ $# -gt 1 ]; then
+        echo "Error: Too many arguments" >&2
+        echo "Usage: lol simp [file]" >&2
+        return 1
+    fi
+
+    if [ $# -eq 1 ]; then
+        case "$1" in
+            -*)
+                echo "Error: Unknown option '$1'" >&2
+                echo "Usage: lol simp [file]" >&2
+                return 1
+                ;;
+            *)
+                file_path="$1"
+                ;;
+        esac
+    fi
+
+    _lol_cmd_simp "$file_path"
+}

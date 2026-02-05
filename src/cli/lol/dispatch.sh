@@ -82,6 +82,9 @@ lol() {
         plan)
             _lol_parse_plan "$@"
             ;;
+        simp)
+            _lol_parse_simp "$@"
+            ;;
         impl)
             _lol_parse_impl "$@"
             ;;
@@ -106,6 +109,7 @@ lol() {
             echo "  lol project --automation [--write <path>]"
             echo "  lol serve"
             echo "  lol plan [--dry-run] [--verbose] [--editor] [--refine <issue-no> [refinement-instructions]] [<feature-description>]"
+            echo "  lol simp [file]"
             echo "  lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]"
             echo "  lol usage [--today | --week] [--cache] [--cost]"
             echo "  lol claude-clean [--dry-run]"
@@ -150,6 +154,7 @@ lol() {
             echo "  lol plan \"Add JWT auth\"        # Run planning pipeline"
             echo "  lol plan --dry-run \"Refactor\"  # Plan without creating issue"
             echo "  lol plan --refine 42 \"Tighten scope\""
+            echo "  lol simp README.md              # Simplify a single file"
             echo "  lol plan --editor --dry-run     # Compose description in your editor"
             return 1
             ;;

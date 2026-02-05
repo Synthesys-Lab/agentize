@@ -194,6 +194,23 @@ lol plan --editor --dry-run
 
 See [planner pipeline module](planner.md) for pipeline stage details and artifact naming.
 
+### lol simp
+
+Simplify code without changing semantics.
+
+```bash
+lol simp [file]
+```
+
+If `file` is provided, the workflow focuses on that file. When omitted, the
+workflow selects a small random set of tracked files (`git ls-files`) and
+records the selection in `.tmp/simp-targets.txt` for reproducibility.
+
+Artifacts are written under `.tmp/`:
+- `.tmp/simp-input.md` - Rendered prompt with selected file contents
+- `.tmp/simp-output.md` - Simplification output
+- `.tmp/simp-targets.txt` - Selected file list
+
 ### lol impl
 
 Automate the issue-to-implementation loop using `wt` + the shared ACW runner (invokes `acw` under the hood).

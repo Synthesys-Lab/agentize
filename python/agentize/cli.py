@@ -14,7 +14,7 @@ import os
 import sys
 
 from agentize.shell import get_agentize_home, run_shell_function
-from agentize.workflow import ImplError, run_impl_workflow
+from agentize.workflow import ImplError, SimpError, run_impl_workflow, run_simp_workflow
 from agentize.usage import count_usage, format_output
 
 
@@ -92,6 +92,16 @@ def handle_impl(args: argparse.Namespace) -> int:
         )
         return 0
     except (ImplError, ValueError) as e:
+        print(str(e), file=sys.stderr)
+        return 1
+
+
+def handle_simp(args: argparse.Namespace) -> int:
+    """Handle simp command."""
+    try:
+        run_simp_workflow(args.file)
+        return 0
+    except (SimpError, ValueError) as e:
         print(str(e), file=sys.stderr)
         return 1
 
@@ -222,6 +232,12 @@ def main() -> int:
         help="Pass through to provider CLI options",
     )
 
+    # simp command
+    simp_parser = subparsers.add_parser(
+        "simp", help="Simplify code without changing semantics"
+    )
+    simp_parser.add_argument("file", nargs="?", help="Optional file to simplify")
+
     # version command
     subparsers.add_parser("version", help="Display version information")
 
@@ -249,6 +265,8 @@ def main() -> int:
         return handle_claude_clean(args, agentize_home)
     elif args.command == "impl":
         return handle_impl(args)
+    elif args.command == "simp":
+        return handle_simp(args)
     elif args.command == "version":
         return handle_version(agentize_home)
     else:

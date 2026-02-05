@@ -1,6 +1,6 @@
 # Module: agentize.workflow
 
-Public interfaces for Python planner and impl workflow orchestration.
+Public interfaces for Python planner, impl, and simp workflow orchestration.
 
 ## External Interfaces
 
@@ -134,6 +134,43 @@ class ImplError(RuntimeError):
 
 Raised for workflow failures in `run_impl_workflow`.
 
+### From `simp/`
+
+#### `run_simp_workflow`
+
+```python
+def run_simp_workflow(
+    file_path: str | None,
+    *,
+    backend: str = "codex:gpt-5.2-codex",
+    max_files: int = 3,
+    seed: int | None = None,
+) -> None
+```
+
+Run the semantic-preserving simplifier workflow. The workflow renders a prompt
+from `workflow/simp/prompt.md`, selects target files (explicit or random), and
+executes a single `acw` run via `Session.run_prompt`.
+
+**Parameters:**
+- `file_path`: Optional path to a specific file to simplify.
+- `backend`: Backend in `provider:model` form.
+- `max_files`: Maximum number of files to pick when no file is provided.
+- `seed`: Optional random seed for file selection.
+
+**Raises:**
+- `ValueError`: Invalid arguments (backend format, max files, seed).
+- `SimpError`: Missing files, git listing failures, or prompt execution errors.
+
+#### `SimpError`
+
+```python
+class SimpError(RuntimeError):
+    ...
+```
+
+Raised for workflow failures in `run_simp_workflow`.
+
 ## Internal Helpers
 
 This module re-exports interfaces from submodules and does not define internal helpers.
@@ -146,6 +183,7 @@ This module re-exports interfaces from submodules and does not define internal h
 | `planner/` | Standalone planning pipeline package (`python -m agentize.workflow.planner`) |
 | `planner.py` | Backward-compatible re-exports (deprecated) |
 | `impl/` | Issue-to-implementation workflow (Python) with file-based prompt |
+| `simp/` | Semantic-preserving simplifier workflow with module-local prompt |
 
 ## Error Handling
 

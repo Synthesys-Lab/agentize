@@ -5,5 +5,5 @@ public `lol_cmd_*` helpers remain unavailable.
 
 ## Coverage
 
-- `_lol_cmd_use_branch` and other command handlers are defined.
+- `_lol_cmd_use_branch`, `_lol_cmd_simp`, and other command handlers are defined.
 - Public `lol_cmd_*` aliases are not exported.

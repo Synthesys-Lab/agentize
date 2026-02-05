@@ -39,3 +39,6 @@ and `refine_instructions` are present, they are concatenated with a blank line
 
 ### _lol_parse_impl()
 Validates positional arguments and flags for `lol impl`, then calls `_lol_cmd_impl`.
+
+### _lol_parse_simp()
+Accepts zero or one positional file path and delegates to `_lol_cmd_simp`.

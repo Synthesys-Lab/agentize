@@ -18,6 +18,7 @@ _lol_complete() {
             echo "claude-clean"
             echo "plan"
             echo "impl"
+            echo "simp"
             ;;
         upgrade-flags)
             echo "--keep-branch"
