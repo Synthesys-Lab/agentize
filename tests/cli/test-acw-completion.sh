@@ -25,6 +25,7 @@ done
 test_info "Checking --complete cli-options"
 options_output=$(acw --complete cli-options)
 
+# --model remains in completions for providers that accept it; Kimi ignores the model name.
 for option in "--help" "--chat" "--chat-list" "--editor" "--stdout" "--model" "--max-tokens" "--yolo"; do
     if ! echo "$options_output" | grep -q "^${option}$"; then
         test_fail "Option '$option' not found in --complete cli-options output"

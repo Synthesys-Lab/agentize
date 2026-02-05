@@ -15,7 +15,8 @@ acw --chat-list
 
 **Parameters**:
 - `cli-name`: Provider identifier (`claude`, `codex`, `opencode`, `cursor`, `kimi`)
-- `model-name`: Model identifier passed to the provider
+- `model-name`: Model identifier passed to the provider (Kimi ignores this and
+  uses its default model)
 - `input-file`: Prompt file path (required unless `--editor` is used)
 - `output-file`: Response file path (required unless `--stdout` is used)
 - `options...`: Provider-specific options passed through unchanged
@@ -65,8 +66,9 @@ values following flags and allows positional values after `--`.
 In chat mode, the dispatcher orchestrates session creation, history prepending,
 and turn appending:
 
-1. **New session**: Creates a session file with YAML front matter, prepends an
-   empty history, runs the provider, and appends the first turn.
+1. **New session**: Creates a session file with YAML front matter (Kimi stores
+   `model: default`), prepends an empty history, runs the provider, and appends
+   the first turn.
 2. **Continue session**: Validates the session file, prepends existing history
    to a combined temp file, runs the provider, and appends the new turn.
 
