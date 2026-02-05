@@ -12,7 +12,8 @@ completion systems.
 **Topics**:
 - `providers`: Lists supported providers (`claude`, `codex`, `opencode`, `cursor`, `kimi`).
 - `cli-options`: Lists common CLI options (`--help`, `--chat`, `--chat-list`,
-  `--editor`, `--stdout`, `--model`, `--max-tokens`, `--yolo`).
+  `--editor`, `--stdout`, `--model`, `--max-tokens`, `--yolo`). Kimi ignores the
+  model name and does not receive `--model` during invocation.
 
 **Output**:
 - Prints one value per line to stdout.

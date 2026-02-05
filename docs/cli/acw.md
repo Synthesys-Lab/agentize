@@ -20,7 +20,7 @@ acw --help
 | Argument | Required | Description |
 |----------|----------|-------------|
 | `cli-name` | Yes | Provider name: `claude`, `codex`, `opencode`, `cursor`, `kimi` |
-| `model-name` | Yes | Model identifier passed to the provider |
+| `model-name` | Yes | Model identifier passed to the provider (Kimi ignores this and uses its default model) |
 | `input-file` | Conditional | Path to file containing the prompt (required unless `--editor` is used) |
 | `output-file` | Conditional | Path where response will be written (required unless `--stdout` is used) |
 | `cli-options` | No | Additional options passed to the provider CLI |
@@ -70,8 +70,8 @@ acw claude claude-sonnet-4-20250514 prompt.txt response.txt
 # Invoke Codex
 acw codex gpt-4o prompt.txt response.txt
 
-# Invoke Kimi
-acw kimi kimi-model prompt.txt response.txt
+# Invoke Kimi (model-name is ignored; Kimi uses its default)
+acw kimi default prompt.txt response.txt
 
 # Pass additional options to the provider
 acw claude claude-sonnet-4-20250514 prompt.txt response.txt --max-tokens 4096
@@ -137,7 +137,7 @@ The capital of France is Paris.
 
 1. **New session**: `acw --chat` creates a session file, prints its ID, and runs the first turn.
 2. **Continue session**: `acw --chat <id>` prepends the session history to the current input and appends the new turn after the provider responds.
-3. **List sessions**: `acw --chat-list` lists session IDs with provider, model, and creation date.
+3. **List sessions**: `acw --chat-list` lists session IDs with provider, model label, and creation date. Kimi sessions store `model: default` to reflect provider defaults.
 
 ## Environment Variables
 
@@ -158,6 +158,8 @@ Use `acw --complete <topic>` to get completion values programmatically:
 |-------|-------------|
 | `providers` | List of supported providers (claude, codex, opencode, cursor, kimi) |
 | `cli-options` | Common CLI options (e.g., --help, --editor, --stdout, --model, --max-tokens, --yolo) |
+
+Kimi ignores `<model-name>`, so provider completions still include `--model` for other CLIs while Kimi uses its default model.
 
 ### Setup
 

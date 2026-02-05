@@ -31,6 +31,7 @@ serve as the provider invocation surface for the dispatcher.
 ### _acw_invoke_kimi <model> <input> <output> [options...]
 - Runs Kimi in print mode for non-interactive execution.
 - Reads the prompt from `input` via stdin and writes the response to `output`.
+- Ignores the `model` argument and lets Kimi select its default model.
 - Returns the Kimi CLI exit code.
 
 ## Internal Helpers

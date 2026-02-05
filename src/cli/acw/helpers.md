@@ -36,7 +36,9 @@ Validates base62 characters (a-z, A-Z, 0-9) and length 8-12. Returns non-zero
 on failure.
 
 ### _acw_chat_create_session <path> <provider> <model>
-Writes YAML front matter with `provider`, `model`, and `created` (UTC ISO-8601).
+Writes YAML front matter with `provider`, a model label, and `created` (UTC
+ISO-8601). For Kimi sessions, the model label should be `default` because the
+provider ignores the user-supplied model name.
 
 ### _acw_chat_validate_session_file <path>
 Checks that file exists, begins with `---`, ends header with `---`, and contains
@@ -58,5 +60,5 @@ Appends a turn to the session file:
 5. Ensure trailing newline.
 
 ### _acw_chat_list_sessions()
-Lists `*.md` files in session dir and prints `id`, `provider`, `model`, `created`
-(best-effort from header).
+Lists `*.md` files in session dir and prints `id`, `provider`, model label, and
+`created` (best-effort from header).

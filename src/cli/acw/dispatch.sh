@@ -351,7 +351,11 @@ acw() {
             fi
 
             session_file=$(_acw_chat_session_path "$chat_session_id")
-            _acw_chat_create_session "$session_file" "$cli_name" "$model_name"
+            local session_model="$model_name"
+            if [ "$cli_name" = "kimi" ]; then
+                session_model="default"
+            fi
+            _acw_chat_create_session "$session_file" "$cli_name" "$session_model"
 
             # Print session ID to stderr
             echo "Session: $chat_session_id" >&2

@@ -90,6 +90,7 @@ _acw_invoke_kimi() {
     shift 3
 
     # Kimi uses print mode for non-interactive runs; prompt is read from stdin.
+    # The model argument is ignored so Kimi uses its default model.
     # stderr passes through for progress messages
-    kimi --print --model "$model" "$@" < "$input" > "$output"
+    kimi --print "$@" < "$input" > "$output"
 }
