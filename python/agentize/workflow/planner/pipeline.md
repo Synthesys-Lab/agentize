@@ -1,6 +1,7 @@
 # pipeline.py
 
-Planner pipeline implementation built on the Session DSL. Provides the canonical example of the imperative workflow API.
+Planner pipeline implementation built on the Session DSL. Provides the canonical example of the imperative workflow API,
+including planner-specific command/dump logging.
 
 ## External Interfaces
 
@@ -36,11 +37,13 @@ def run_consensus_stage(
     prefix: str,
     stage_backends: dict[str, tuple[str, str]],
     runner: Callable[..., subprocess.CompletedProcess] = run_acw,
+    log_output_dump: bool = True,
 ) -> StageResult
 ```
 
 Runs the consensus stage independently, writing the consensus prompt and output
-artifacts (`*-consensus-input.md`, `*-consensus.md`).
+artifacts (`*-consensus-input.md`, `*-consensus.md`). Dump logging can be
+coordinated by callers that append a footer after the stage completes.
 
 ### `StageResult`
 

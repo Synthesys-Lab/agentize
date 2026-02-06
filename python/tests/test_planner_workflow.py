@@ -353,6 +353,47 @@ class TestPlannerPipelineOptions:
 
 
 # ============================================================
+# Test run_planner_pipeline - Logging
+# ============================================================
+
+class TestPlannerPipelineLogging:
+    """Tests for planner logging output."""
+
+    @pytest.mark.skipif(run_planner_pipeline is None, reason="Implementation not yet available")
+    def test_logs_command_and_dump_lines(self, tmp_output_dir: Path, stub_runner: Callable, capsys):
+        """Planner logs command lines and dump paths for each stage."""
+        results = run_planner_pipeline(
+            "Add planner logging",
+            output_dir=tmp_output_dir,
+            runner=stub_runner,
+            prefix="test",
+        )
+
+        stderr = capsys.readouterr().err
+        understander = results["understander"]
+        bold = results["bold"]
+
+        expected_understander_cmd = (
+            f"Command: acw claude sonnet {understander.input_path} {understander.output_path}"
+            " --tools Read,Grep,Glob"
+        )
+        expected_bold_cmd = (
+            f"Command: acw claude opus {bold.input_path} {bold.output_path}"
+            " --tools Read,Grep,Glob,WebSearch,WebFetch --permission-mode plan"
+        )
+
+        assert expected_understander_cmd in stderr
+        assert expected_bold_cmd in stderr
+        assert f"understander dumped to {understander.output_path}" in stderr
+        assert f"consensus dumped to {results['consensus'].output_path}" in stderr
+
+        lines = stderr.splitlines()
+        command_idx = lines.index(expected_understander_cmd)
+        running_idx = lines.index("agent understander (claude:sonnet) is running...")
+        assert command_idx < running_idx
+
+
+# ============================================================
 # Test ACW runner
 # ============================================================
 
@@ -471,6 +512,61 @@ class TestACWRunner:
         assert invocations[0]["output_file"] == str(output_path)
         assert logs[0] == "agent understander (claude:sonnet) is running..."
         assert logs[1] == "agent understander (claude:sonnet) runs 12s"
+
+    @pytest.mark.skipif(ACW is None, reason="Implementation not yet available")
+    def test_run_logs_command_when_enabled(self, monkeypatch, tmp_path: Path):
+        """ACW.run logs the command line before timing output when enabled."""
+        from agentize.workflow.api import ACW as api_ACW
+
+        def _fake_run_acw(
+            provider: str,
+            model: str,
+            input_file: str | Path,
+            output_file: str | Path,
+            *,
+            tools: str | None = None,
+            permission_mode: str | None = None,
+            extra_flags: list[str] | None = None,
+            timeout: int = 900,
+        ) -> subprocess.CompletedProcess:
+            return subprocess.CompletedProcess(args=["acw"], returncode=0, stdout="", stderr="")
+
+        times = [100.0, 105.0]
+
+        def _fake_time() -> float:
+            return times.pop(0)
+
+        monkeypatch.setattr("agentize.workflow.api.acw.list_acw_providers", lambda: ["claude"])
+        monkeypatch.setattr("agentize.workflow.api.acw.run_acw", _fake_run_acw)
+        monkeypatch.setattr("agentize.workflow.api.acw.time.time", _fake_time)
+
+        logs: list[str] = []
+        log_writer = logs.append
+
+        input_path = tmp_path / "input.md"
+        output_path = tmp_path / "output.md"
+        input_path.write_text("prompt")
+
+        runner = api_ACW(
+            name="understander",
+            provider="claude",
+            model="sonnet",
+            tools="Read,Grep",
+            permission_mode="plan",
+            extra_flags=["--max-tokens", "256"],
+            log_writer=log_writer,
+            log_command=True,
+        )
+        runner.run(input_path, output_path)
+
+        expected_command = (
+            f"Command: acw claude sonnet {input_path} {output_path}"
+            " --tools Read,Grep --permission-mode plan --max-tokens 256"
+        )
+
+        assert logs[0] == expected_command
+        assert logs[1] == "agent understander (claude:sonnet) is running..."
+        assert logs[2] == "agent understander (claude:sonnet) runs 5s"
 
 
 # ============================================================

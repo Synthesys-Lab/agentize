@@ -165,6 +165,8 @@ def run_planner_pipeline(
         prefix=prefix,
         runner=runner,
         output_suffix=output_suffix,
+        log_acw_command=True,
+        log_output_dump=True,
     )
 
     def _log_stage(message: str) -> None:
@@ -274,6 +276,7 @@ def run_consensus_stage(
     prefix: str,
     stage_backends: dict[str, tuple[str, str]],
     runner: Callable[..., subprocess.CompletedProcess] = run_acw,
+    log_output_dump: bool = True,
 ) -> StageResult:
     """Run the consensus stage independently."""
     bold_output = bold_path.read_text()
@@ -298,7 +301,13 @@ def run_consensus_stage(
             path,
         )
 
-    session = Session(output_dir=output_dir, prefix=prefix, runner=runner)
+    session = Session(
+        output_dir=output_dir,
+        prefix=prefix,
+        runner=runner,
+        log_acw_command=True,
+        log_output_dump=log_output_dump,
+    )
     return session.run_prompt(
         "consensus",
         _write_consensus_prompt,

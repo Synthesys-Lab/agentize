@@ -61,6 +61,8 @@ class Session:
         runner: Callable[..., subprocess.CompletedProcess] = run_acw,
         input_suffix: str = "-input.md",
         output_suffix: str = "-output.md",
+        log_acw_command: bool = False,
+        log_output_dump: bool = False,
     ) -> None:
         self._output_dir = Path(output_dir)
         self._output_dir.mkdir(parents=True, exist_ok=True)
@@ -68,6 +70,8 @@ class Session:
         self._runner = runner
         self._input_suffix = input_suffix
         self._output_suffix = output_suffix
+        self._log_acw_command = log_acw_command
+        self._log_output_dump = log_output_dump
         self._log_lock = threading.Lock()
 
     def _log(self, message: str) -> None:
@@ -134,6 +138,7 @@ class Session:
             permission_mode=permission_mode,
             extra_flags=extra_flags,
             log_writer=self._log,
+            log_command=self._log_acw_command,
             runner=self._runner,
         )
         return acw_runner.run(input_path, output_path)
@@ -183,6 +188,8 @@ class Session:
                     extra_flags=extra_flags,
                 )
                 self._validate_output(name, output_path_resolved, process)
+                if self._log_output_dump:
+                    self._log(f"{name} dumped to {output_path_resolved}")
                 return StageResult(
                     stage=name,
                     input_path=input_path_resolved,

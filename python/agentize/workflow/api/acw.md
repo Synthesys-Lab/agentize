@@ -67,6 +67,7 @@ class ACW:
         permission_mode: str | None = None,
         extra_flags: list[str] | None = None,
         log_writer: Callable[[str], None] | None = None,
+        log_command: bool = False,
         runner: Callable[..., subprocess.CompletedProcess] | None = None,
     ) -> None: ...
     def run(self, input_file: str | Path, output_file: str | Path) -> subprocess.CompletedProcess: ...
@@ -74,6 +75,7 @@ class ACW:
 
 Class-based runner that validates providers (unless a custom runner is supplied) and
 emits start/finish timing logs in the format:
+- `Command: acw <provider> <model> <input> <output> [cli-options...]` (when `log_command` is enabled)
 - `agent <name> (<provider>:<model>) is running...`
 - `agent <name> (<provider>:<model>) runs <seconds>s`
 
@@ -94,10 +96,13 @@ def run(
     cwd: str | Path | None = None,
     env: dict[str, str] | None = None,
     log_writer: Callable[[str], None] | None = None,
+    log_command: bool = False,
 ) -> subprocess.CompletedProcess
 ```
 
 Convenience helper that wraps `ACW` to execute a single stage with timing logs.
+When `log_command` is enabled, the `Command: acw ...` line is logged before the
+timing messages.
 
 ## Internal Helpers
 
