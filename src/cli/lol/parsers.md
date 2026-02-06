@@ -41,4 +41,4 @@ and `refine_instructions` are present, they are concatenated with a blank line
 Validates positional arguments and flags for `lol impl`, then calls `_lol_cmd_impl`.
 
 ### _lol_parse_simp()
-Accepts zero or one positional file path and delegates to `_lol_cmd_simp`.
+Accepts an optional file path plus `--issue <issue-no>` and delegates to `_lol_cmd_simp`.

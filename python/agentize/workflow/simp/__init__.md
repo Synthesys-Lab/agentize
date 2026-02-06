@@ -13,6 +13,7 @@ def run_simp_workflow(
     backend: str = "codex:gpt-5.2-codex",
     max_files: int = 3,
     seed: int | None = None,
+    issue_number: int | None = None,
 ) -> None
 ```
 

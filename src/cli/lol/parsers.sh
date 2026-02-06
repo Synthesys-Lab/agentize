@@ -464,36 +464,61 @@ _lol_parse_impl() {
 # Parse simp command arguments and call _lol_cmd_simp
 _lol_parse_simp() {
     local file_path=""
+    local issue_number=""
 
     # Handle --help
     if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
         echo "lol simp: Simplify code without changing semantics"
         echo ""
-        echo "Usage: lol simp [file]"
+        echo "Usage: lol simp [file] [--issue <issue-no>]"
         echo ""
         echo "Options:"
+        echo "  --issue   Publish report to issue when approved"
         echo "  --help    Show this help message"
         return 0
     fi
 
-    if [ $# -gt 1 ]; then
-        echo "Error: Too many arguments" >&2
-        echo "Usage: lol simp [file]" >&2
-        return 1
-    fi
-
-    if [ $# -eq 1 ]; then
+    while [ $# -gt 0 ]; do
         case "$1" in
+            --issue)
+                shift
+                if [ -z "$1" ]; then
+                    echo "Error: Issue number is required" >&2
+                    echo "Usage: lol simp [file] [--issue <issue-no>]" >&2
+                    return 1
+                fi
+                if [ -n "$issue_number" ]; then
+                    echo "Error: Duplicate --issue flag" >&2
+                    echo "Usage: lol simp [file] [--issue <issue-no>]" >&2
+                    return 1
+                fi
+                case "$1" in
+                    *[!0-9]*)
+                        echo "Error: Issue number must be numeric" >&2
+                        echo "Usage: lol simp [file] [--issue <issue-no>]" >&2
+                        return 1
+                        ;;
+                esac
+                issue_number="$1"
+                shift
+                ;;
             -*)
                 echo "Error: Unknown option '$1'" >&2
-                echo "Usage: lol simp [file]" >&2
+                echo "Usage: lol simp [file] [--issue <issue-no>]" >&2
                 return 1
                 ;;
             *)
-                file_path="$1"
+                if [ -z "$file_path" ]; then
+                    file_path="$1"
+                else
+                    echo "Error: Too many arguments" >&2
+                    echo "Usage: lol simp [file] [--issue <issue-no>]" >&2
+                    return 1
+                fi
+                shift
                 ;;
         esac
-    fi
+    done
 
-    _lol_cmd_simp "$file_path"
+    _lol_cmd_simp "$file_path" "$issue_number"
 }

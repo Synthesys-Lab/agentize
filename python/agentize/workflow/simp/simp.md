@@ -13,6 +13,7 @@ def run_simp_workflow(
     backend: str = "codex:gpt-5.2-codex",
     max_files: int = 3,
     seed: int | None = None,
+    issue_number: int | None = None,
 ) -> None
 ```
 
@@ -24,6 +25,7 @@ files using a prompt-driven workflow.
 - `backend`: Backend in `provider:model` form.
 - `max_files`: Maximum number of files to pick when `file_path` is omitted.
 - `seed`: Optional random seed for file selection.
+- `issue_number`: Optional issue number to publish the report when approved.
 
 **Behavior**:
 - Resolves the repo root and `.tmp/` output directory.
@@ -33,9 +35,13 @@ files using a prompt-driven workflow.
 - Writes the selected file list to `.tmp/simp-targets.txt`.
 - Renders `prompt.md` with the selected file list and file contents.
 - Executes a single `Session.run_prompt()` call to produce `.tmp/simp-output.md`.
+- Validates the report starts with `Yes.` or `No.` and logs the local report path.
+- When the report starts with `Yes.` and `issue_number` is provided, publishes
+  the report body to the matching GitHub issue.
 
 **Errors**:
-- Raises `ValueError` for invalid backend format, max file count, or seed values.
+- Raises `ValueError` for invalid backend format, max file count, seed values,
+  or issue number.
 - Raises `SimpError` for missing files, git listing failures, or prompt execution errors.
 
 ## Prompt Template
@@ -47,7 +53,7 @@ files using a prompt-driven workflow.
 ## Outputs
 
 - `.tmp/simp-input.md`: Rendered prompt input
-- `.tmp/simp-output.md`: Simplification output
+- `.tmp/simp-output.md`: Simplification report (starts with `Yes.` or `No.`)
 - `.tmp/simp-targets.txt`: Selected file list for reproducibility
 
 ## Internal Helpers
