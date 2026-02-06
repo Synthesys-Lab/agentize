@@ -99,7 +99,7 @@ def handle_impl(args: argparse.Namespace) -> int:
 def handle_simp(args: argparse.Namespace) -> int:
     """Handle simp command."""
     try:
-        run_simp_workflow(args.file)
+        run_simp_workflow(args.file, issue_number=args.issue)
         return 0
     except (SimpError, ValueError) as e:
         print(str(e), file=sys.stderr)
@@ -237,6 +237,11 @@ def main() -> int:
         "simp", help="Simplify code without changing semantics"
     )
     simp_parser.add_argument("file", nargs="?", help="Optional file to simplify")
+    simp_parser.add_argument(
+        "--issue",
+        type=int,
+        help="Issue number to publish the report when approved",
+    )
 
     # version command
     subparsers.add_parser("version", help="Display version information")

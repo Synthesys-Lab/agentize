@@ -53,14 +53,58 @@ if ! grep -q "python -m agentize.cli simp README.md" "$PYTHON_LOG"; then
   test_fail "Expected file path to be forwarded to python -m agentize.cli simp"
 fi
 
-# Test 3: lol simp rejects extra args
+# Test 3: lol simp with issue only
+: > "$PYTHON_LOG"
+output=$(lol simp --issue 123 2>&1) || {
+  echo "Output: $output" >&2
+  test_fail "lol simp should accept --issue without a file"
+}
+
+if ! grep -q "python -m agentize.cli simp --issue 123" "$PYTHON_LOG"; then
+  echo "Python log:" >&2
+  cat "$PYTHON_LOG" >&2
+  test_fail "Expected --issue to be forwarded to python -m agentize.cli simp"
+fi
+
+# Test 4: lol simp with file and issue
+: > "$PYTHON_LOG"
+output=$(lol simp README.md --issue 123 2>&1) || {
+  echo "Output: $output" >&2
+  test_fail "lol simp should accept file path with --issue"
+}
+
+if ! grep -q "python -m agentize.cli simp README.md --issue 123" "$PYTHON_LOG"; then
+  echo "Python log:" >&2
+  cat "$PYTHON_LOG" >&2
+  test_fail "Expected file path and --issue to be forwarded to python -m agentize.cli simp"
+fi
+
+# Test 5: lol simp rejects missing issue value
+: > "$PYTHON_LOG"
+output=$(lol simp --issue 2>&1) && {
+  echo "Output: $output" >&2
+  test_fail "lol simp should fail when --issue has no value"
+}
+
+echo "$output" | grep -q "Usage: lol simp \[file\] \[--issue <issue-no>\]" || {
+  echo "Output: $output" >&2
+  test_fail "Expected usage message for lol simp"
+}
+
+if [ -s "$PYTHON_LOG" ]; then
+  echo "Python log:" >&2
+  cat "$PYTHON_LOG" >&2
+  test_fail "lol simp should not invoke python when args are invalid"
+fi
+
+# Test 6: lol simp rejects extra args
 : > "$PYTHON_LOG"
 output=$(lol simp README.md docs/cli/lol.md 2>&1) && {
   echo "Output: $output" >&2
   test_fail "lol simp should fail with more than one argument"
 }
 
-echo "$output" | grep -q "Usage: lol simp \[file\]" || {
+echo "$output" | grep -q "Usage: lol simp \[file\] \[--issue <issue-no>\]" || {
   echo "Output: $output" >&2
   test_fail "Expected usage message for lol simp"
 }

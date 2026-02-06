@@ -145,21 +145,25 @@ def run_simp_workflow(
     backend: str = "codex:gpt-5.2-codex",
     max_files: int = 3,
     seed: int | None = None,
+    issue_number: int | None = None,
 ) -> None
 ```
 
 Run the semantic-preserving simplifier workflow. The workflow renders a prompt
 from `workflow/simp/prompt.md`, selects target files (explicit or random), and
-executes a single `acw` run via `Session.run_prompt`.
+executes a single `acw` run via `Session.run_prompt`. Reports must start with
+`Yes.` or `No.`; when the report starts with `Yes.` and an issue number is
+provided, the report is published to the issue.
 
 **Parameters:**
 - `file_path`: Optional path to a specific file to simplify.
 - `backend`: Backend in `provider:model` form.
 - `max_files`: Maximum number of files to pick when no file is provided.
 - `seed`: Optional random seed for file selection.
+- `issue_number`: Optional issue number to publish the report when approved.
 
 **Raises:**
-- `ValueError`: Invalid arguments (backend format, max files, seed).
+- `ValueError`: Invalid arguments (backend format, max files, seed, issue number).
 - `SimpError`: Missing files, git listing failures, or prompt execution errors.
 
 #### `SimpError`

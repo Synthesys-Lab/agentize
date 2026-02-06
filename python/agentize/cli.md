@@ -21,7 +21,7 @@ The Python CLI supports the same commands as the shell implementation:
 | `claude-clean` | Remove stale project entries from `~/.claude.json` |
 | `version` | Display version information |
 | `impl` | Issue-to-implementation loop (Python workflow) |
-| `simp` | Simplify code without changing semantics |
+| `simp` | Simplify code without changing semantics (optional issue publish) |
 
 ## Top-level Flags
 
@@ -72,6 +72,10 @@ python -m agentize.cli claude-clean
 python -m agentize.cli usage --cache
 python -m agentize.cli usage --cost
 python -m agentize.cli usage --week --cache --cost
+
+# Simplify and publish to an issue when the report starts with Yes.
+python -m agentize.cli simp --issue 123
+python -m agentize.cli simp README.md --issue 123
 ```
 
 ## Related Documentation

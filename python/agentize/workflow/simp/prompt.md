@@ -21,6 +21,10 @@ File contents:
 {{file_contents}}
 
 Output format:
-- Start with a short summary of safe simplifications.
+- The very first token must be `Yes.` or `No.`.
+- Use `Yes.` only if you provide at least one safe simplification.
+- Use `No.` if no safe simplifications exist.
+- After the leading token, add a short summary of safe simplifications (or explain
+  why none are safe).
 - For each file, provide a unified diff in a fenced code block with `diff`.
 - If no safe simplifications exist, say "No safe simplifications found" and explain.

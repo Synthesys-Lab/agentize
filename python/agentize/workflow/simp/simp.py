@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import random
+import sys
 from pathlib import Path
 
 from agentize.shell import get_agentize_home, resolve_repo_root, run_shell_function
 from agentize.workflow.api import Session
+from agentize.workflow.api import gh as gh_utils
 from agentize.workflow.api import path as path_utils
 from agentize.workflow.api import prompt as prompt_utils
 from agentize.workflow.api.session import PipelineError
@@ -53,6 +55,14 @@ def _parse_seed(value: int | str | None) -> int | None:
     if isinstance(value, str) and value.isdigit():
         return int(value)
     raise ValueError("Error: --seed must be a number")
+
+
+def _parse_issue_number(value: int | None) -> int | None:
+    if value is None:
+        return None
+    if value <= 0:
+        raise ValueError("Error: --issue must be a positive number")
+    return value
 
 
 def _normalize_file_path(file_path: str, repo_root: Path) -> Path:
@@ -137,17 +147,40 @@ def _resolve_repo_root() -> Path:
         return resolve_repo_root()
 
 
+def _display_path(path: Path, repo_root: Path) -> str:
+    try:
+        return str(path.relative_to(repo_root))
+    except ValueError:
+        return str(path)
+
+
+def _first_token(text: str) -> str | None:
+    stripped = text.lstrip()
+    if not stripped:
+        return None
+    return stripped.split(None, 1)[0]
+
+
+def _validate_report(report_text: str) -> str:
+    token = _first_token(report_text)
+    if token not in {"Yes.", "No."}:
+        raise SimpError("Error: simp report must start with 'Yes.' or 'No.'")
+    return token
+
+
 def run_simp_workflow(
     file_path: str | None,
     *,
     backend: str = "codex:gpt-5.2-codex",
     max_files: int = 3,
     seed: int | None = None,
+    issue_number: int | None = None,
 ) -> None:
     """Run the semantic-preserving simplifier workflow."""
     provider, model = _parse_backend(backend)
     max_files = _parse_max_files(max_files)
     seed = _parse_seed(seed)
+    issue_number = _parse_issue_number(issue_number)
 
     repo_root = _resolve_repo_root()
     tmp_dir = repo_root / ".tmp"
@@ -189,3 +222,31 @@ def run_simp_workflow(
         )
     except PipelineError as exc:
         raise SimpError(f"Error: simp workflow failed ({exc})") from exc
+
+    if not output_path.exists():
+        raise SimpError("Error: simp report output is missing")
+
+    report_text = output_path.read_text(encoding="utf-8", errors="replace")
+    report_display = _display_path(output_path, repo_root)
+    print(f"Simp report saved to: {report_display}")
+
+    if not report_text.strip():
+        raise SimpError("Error: simp report is empty")
+
+    token = _validate_report(report_text)
+    if issue_number is not None and token == "Yes.":
+        print(f"Publishing simp report to issue #{issue_number}...")
+        try:
+            gh_utils.issue_edit(
+                issue_number,
+                body_file=output_path,
+                cwd=repo_root,
+            )
+            issue_url = gh_utils.issue_url(issue_number, cwd=repo_root)
+            if issue_url:
+                print(f"See the issue at: {issue_url}")
+        except RuntimeError as exc:
+            print(
+                f"Warning: Failed to publish simp report ({exc})",
+                file=sys.stderr,
+            )
