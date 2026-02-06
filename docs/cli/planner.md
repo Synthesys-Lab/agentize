@@ -109,7 +109,11 @@ Planner progress is printed to stderr as plain text:
 - Pipeline completion and artifact locations
 - Issue publish status and URLs (when issue publishing is enabled)
 
-When the default `acw` runner is used, the `ACW` class also emits start/finish timing logs for each stage.
+When the default `acw` runner is used, the planner logs the exact `acw` command (per
+`docs/cli/acw.md`) before each stage run, followed by the ACW timing logs. After output
+validation, the planner logs `<stage> dumped to <output-path>` using the actual `.txt`
+or `.md` artifact path. For the consensus stage, the dump log is emitted after the
+provenance footer is appended so the path reflects the final output.
 
 ## Exit Codes
 

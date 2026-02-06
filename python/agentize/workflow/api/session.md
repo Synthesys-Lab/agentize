@@ -15,6 +15,8 @@ def __init__(
     runner: Callable[..., subprocess.CompletedProcess] = run_acw,
     input_suffix: str = "-input.md",
     output_suffix: str = "-output.md",
+    log_acw_command: bool = False,
+    log_output_dump: bool = False,
 ) -> None
 ```
 
@@ -26,6 +28,8 @@ def __init__(
 - `runner`: ACW-compatible callable (defaults to `run_acw`).
 - `input_suffix`: Default suffix for generated input filenames.
 - `output_suffix`: Default suffix for generated output filenames.
+- `log_acw_command`: When enabled, logs `Command: acw ...` before each stage run.
+- `log_output_dump`: When enabled, logs `<stage> dumped to <output-path>` after validation.
 
 ### `Session.run_prompt()`
 
@@ -54,6 +58,7 @@ Runs a single stage with retries and output validation.
 - Writes the prompt to the input path (string content or a writer callable).
 - Executes the runner with stage-level tools and permission mode.
 - Validates output (non-zero exit, missing output, or empty output triggers retry).
+- When `log_output_dump` is enabled, logs `<stage> dumped to <output-path>` after validation.
 - Retries up to `1 + retry` attempts; raises `PipelineError` on failure.
 
 ### `Session.stage()`

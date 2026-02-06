@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shlex
 import subprocess
 import sys
 import threading
@@ -48,6 +49,52 @@ def _merge_env(env: dict[str, str] | None) -> dict[str, str]:
     return merged
 
 
+def _build_acw_args(
+    provider: str,
+    model: str,
+    input_file: str | Path,
+    output_file: str | Path,
+    *,
+    tools: str | None = None,
+    permission_mode: str | None = None,
+    extra_flags: list[str] | None = None,
+) -> list[str]:
+    cmd_parts = [provider, model, str(input_file), str(output_file)]
+
+    if provider == "claude":
+        if tools:
+            cmd_parts.extend(["--tools", tools])
+        if permission_mode:
+            cmd_parts.extend(["--permission-mode", permission_mode])
+
+    if extra_flags:
+        cmd_parts.extend(extra_flags)
+
+    return cmd_parts
+
+
+def _format_acw_command(
+    provider: str,
+    model: str,
+    input_file: str | Path,
+    output_file: str | Path,
+    *,
+    tools: str | None = None,
+    permission_mode: str | None = None,
+    extra_flags: list[str] | None = None,
+) -> str:
+    cmd_parts = _build_acw_args(
+        provider,
+        model,
+        input_file,
+        output_file,
+        tools=tools,
+        permission_mode=permission_mode,
+        extra_flags=extra_flags,
+    )
+    return "acw " + " ".join(shlex.quote(arg) for arg in cmd_parts)
+
+
 def run_acw(
     provider: str,
     model: str,
@@ -66,19 +113,15 @@ def run_acw(
     agentize_home = merged_env["AGENTIZE_HOME"]
     acw_script = _resolve_acw_script(agentize_home, merged_env)
 
-    # Build command arguments
-    cmd_parts = [provider, model, str(input_file), str(output_file)]
-
-    # Add Claude-specific flags
-    if provider == "claude":
-        if tools:
-            cmd_parts.extend(["--tools", tools])
-        if permission_mode:
-            cmd_parts.extend(["--permission-mode", permission_mode])
-
-    # Add extra flags
-    if extra_flags:
-        cmd_parts.extend(extra_flags)
+    cmd_parts = _build_acw_args(
+        provider,
+        model,
+        input_file,
+        output_file,
+        tools=tools,
+        permission_mode=permission_mode,
+        extra_flags=extra_flags,
+    )
 
     # Quote paths to handle spaces
     cmd_args = " ".join(f'"{arg}"' for arg in cmd_parts)
@@ -145,6 +188,7 @@ class ACW:
         permission_mode: str | None = None,
         extra_flags: list[str] | None = None,
         log_writer: Callable[[str], None] | None = None,
+        log_command: bool = False,
         runner: Callable[..., subprocess.CompletedProcess] | None = None,
     ) -> None:
         # Skip provider validation when using custom runner (for tests)
@@ -162,6 +206,7 @@ class ACW:
         self.permission_mode = permission_mode
         self.extra_flags = extra_flags
         self._log_writer = log_writer
+        self._log_command = log_command
         self._runner = runner if runner is not None else run_acw
 
     def _log(self, message: str) -> None:
@@ -177,6 +222,17 @@ class ACW:
     ) -> subprocess.CompletedProcess:
         start_time = time.time()
         backend = f"{self.provider}:{self.model}"
+        if self._log_command:
+            command = _format_acw_command(
+                self.provider,
+                self.model,
+                input_file,
+                output_file,
+                tools=self.tools,
+                permission_mode=self.permission_mode,
+                extra_flags=self.extra_flags,
+            )
+            self._log(f"Command: {command}")
         self._log(f"agent {self.name} ({backend}) is running...")
 
         process = self._runner(
@@ -209,6 +265,7 @@ def run(
     cwd: str | Path | None = None,
     env: dict[str, str] | None = None,
     log_writer: Callable[[str], None] | None = None,
+    log_command: bool = False,
 ) -> subprocess.CompletedProcess:
     """Run a single ACW stage with timing logs."""
 
@@ -245,6 +302,7 @@ def run(
         permission_mode=permission_mode,
         extra_flags=extra_flags,
         log_writer=log_writer,
+        log_command=log_command,
         runner=_runner,
     )
     return runner.run(input_file, output_file)

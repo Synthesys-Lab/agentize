@@ -326,6 +326,7 @@ def main(argv: list[str]) -> int:
             prefix=prefix_name,
             stage_backends=stage_backends,
             runner=run_acw,
+            log_output_dump=False,
         )
     except (FileNotFoundError, RuntimeError, subprocess.TimeoutExpired) as exc:
         print(f"Error: {exc}", file=sys.stderr)
@@ -351,6 +352,7 @@ def main(argv: list[str]) -> int:
     consensus_path = consensus_result.output_path
     commit_hash = _resolve_commit_hash(repo_root)
     _append_plan_footer(consensus_path, commit_hash)
+    _log(f"consensus dumped to {consensus_path}")
 
     _log_verbose("")
     _log("Pipeline complete!")

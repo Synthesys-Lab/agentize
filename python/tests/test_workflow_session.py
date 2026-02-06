@@ -127,3 +127,73 @@ def test_run_parallel_returns_mapping(tmp_path: Path):
     assert results["critique"].text().startswith("done:")
     assert results["reducer"].text().startswith("done:")
     assert len(seen) == 2
+
+
+@pytest.mark.skipif(Session is None, reason="Implementation not yet available")
+def test_log_output_dump_after_validation(tmp_path: Path, capsys):
+    """log_output_dump emits a single dump line after successful validation."""
+    calls: list[int] = []
+
+    def _runner(
+        provider: str,
+        model: str,
+        input_file: str | Path,
+        output_file: str | Path,
+        *,
+        tools: str | None = None,
+        permission_mode: str | None = None,
+        extra_flags: list[str] | None = None,
+        timeout: int = 900,
+    ) -> subprocess.CompletedProcess:
+        calls.append(1)
+        if len(calls) == 1:
+            return subprocess.CompletedProcess(args=["stub"], returncode=0)
+        Path(output_file).write_text("ok")
+        return subprocess.CompletedProcess(args=["stub"], returncode=0)
+
+    session = Session(
+        output_dir=tmp_path,
+        prefix="dump",
+        runner=_runner,
+        log_output_dump=True,
+    )
+    result = session.run_prompt(
+        "stage",
+        "hello",
+        ("claude", "sonnet"),
+        retry=1,
+        retry_delay=0,
+    )
+
+    stderr = capsys.readouterr().err
+    assert f"stage dumped to {result.output_path}" in stderr
+    assert stderr.count("dumped to") == 1
+
+
+@pytest.mark.skipif(Session is None, reason="Implementation not yet available")
+def test_log_output_dump_disabled(tmp_path: Path, capsys):
+    """log_output_dump disabled omits dump lines."""
+    def _runner(
+        provider: str,
+        model: str,
+        input_file: str | Path,
+        output_file: str | Path,
+        *,
+        tools: str | None = None,
+        permission_mode: str | None = None,
+        extra_flags: list[str] | None = None,
+        timeout: int = 900,
+    ) -> subprocess.CompletedProcess:
+        Path(output_file).write_text("ok")
+        return subprocess.CompletedProcess(args=["stub"], returncode=0)
+
+    session = Session(
+        output_dir=tmp_path,
+        prefix="dump",
+        runner=_runner,
+        log_output_dump=False,
+    )
+    session.run_prompt("stage", "hello", ("claude", "sonnet"))
+
+    stderr = capsys.readouterr().err
+    assert "dumped to" not in stderr
