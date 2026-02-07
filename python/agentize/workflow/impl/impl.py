@@ -20,6 +20,27 @@ class ImplError(RuntimeError):
     """Workflow error for the impl loop."""
 
 
+def _validate_pr_title(title: str, issue_no: int) -> None:
+    """Validate PR title matches required format [tag][#N] description.
+    
+    Args:
+        title: The PR title to validate.
+        issue_no: The issue number for error messages.
+        
+    Raises:
+        ImplError: If title doesn't match required format [tag][#N] description.
+    """
+    # Pattern matches [tag][#N] description where tag can be nested like agent.skill
+    # Description must start with non-whitespace character
+    pattern = r'^\[(feat|bugfix|docs|test|refactor|chore|agent\.skill|agent\.command|agent\.settings|agent\.workflow|review|sdk|cli)\]\s*\[#\d+\]\s+\S'
+    if not re.match(pattern, title):
+        raise ImplError(
+            f"Error: PR title '{title}' doesn't match required format [tag][#N] description\n"
+            f"Expected format: [feat][#{issue_no}] Brief description\n"
+            f"See docs/git-msg-tags.md for available tags"
+        )
+
+
 _REQUIRED_TOKENS = {
     "issue_no",
     "issue_file",
@@ -252,7 +273,10 @@ def _push_and_create_pr(
     if finalize_file.exists():
         pr_title = finalize_file.read_text().splitlines()[0].strip()
     if not pr_title:
-        pr_title = f"Implement issue #{issue_no}"
+        pr_title = f"[feat][#{issue_no}] Implementation"
+    
+    # Validate format
+    _validate_pr_title(pr_title, issue_no)
 
     _append_closes_line(finalize_file, issue_no)
     pr_body = finalize_file.read_text() if finalize_file.exists() else ""
