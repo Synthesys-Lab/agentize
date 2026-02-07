@@ -71,7 +71,7 @@ _write_finalize() {
     if [ -n "$ACW_FINALIZE_CONTENT" ]; then
         printf "%s\n" "$ACW_FINALIZE_CONTENT" > "$finalize_file"
     else
-        echo "PR: Stub finalize" > "$finalize_file"
+        echo "[feat][#${issue_no}] Stub finalize" > "$finalize_file"
         echo "" >> "$finalize_file"
         echo "Issue ${issue_no} resolved" >> "$finalize_file"
     fi
