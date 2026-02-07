@@ -79,7 +79,16 @@ and checkpoint recovery.
 - Validates implementation through `review_kernel()` with feedback loop.
 - Optionally simplifies through `simp_kernel()`.
 - Creates PR through `pr_kernel()` with title validation.
-- Optionally monitors CI and re-implements on failures.
+- Optionally monitors CI and re-implements on failures when `wait_for_ci=True`.
+
+**CI Monitoring** (`wait_for_ci=True`):
+After PR creation, monitors mergeability and CI checks:
+1. Polls PR merge state via `gh pr view` until mergeable
+2. If `CONFLICTING`, auto-rebases and force-pushes
+3. Waits for CI checks via `gh pr checks --watch`
+4. On CI failure, runs additional implementation iteration with failure context
+5. Pushes fix and repeats monitoring
+6. Stops after `max_iterations` total iterations (including CI fix iterations)
 
 **Errors**:
 - Raises `ValueError` for invalid arguments.
