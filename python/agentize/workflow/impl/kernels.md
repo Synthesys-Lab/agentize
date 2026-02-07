@@ -153,7 +153,7 @@ def pr_kernel(
     *,
     push_remote: str | None = None,
     base_branch: str | None = None,
-) -> tuple[bool, str]
+) -> tuple[bool, str, str | None, str | None]
 ```
 
 Create pull request for the implementation.
@@ -167,16 +167,19 @@ Create pull request for the implementation.
 **Returns**:
 - `success`: Whether PR was created successfully
 - `message`: PR URL on success, error message on failure
+- `pr_number`: PR number as string if created, None otherwise
+- `pr_url`: Full PR URL if created, None otherwise
 
 **Behavior**:
 - Validates PR title format using `_validate_pr_title()`
 - Pushes branch to remote
 - Creates PR using finalize file content
 - Appends "Closes #N" line if not present
+- Returns PR number and URL for downstream CI monitoring
 
 **Errors**:
 - Raises `ImplError` if PR title format is invalid
-- Returns `(False, message)` for non-fatal failures (e.g., PR already exists)
+- Returns `(False, message, None, None)` for non-fatal failures (e.g., PR already exists)
 
 ## Helper Functions
 

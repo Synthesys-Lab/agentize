@@ -24,6 +24,8 @@ class ImplState:
     last_feedback: str
     last_score: int
     history: list[dict]
+    pr_number: str | None = None
+    pr_url: str | None = None
 
     def to_dict(self) -> dict:
         """Convert state to dictionary for serialization."""
@@ -36,6 +38,8 @@ class ImplState:
             "last_feedback": self.last_feedback,
             "last_score": self.last_score,
             "history": self.history,
+            "pr_number": self.pr_number,
+            "pr_url": self.pr_url,
         }
 
     @classmethod
@@ -50,6 +54,8 @@ class ImplState:
             last_feedback=data.get("last_feedback", ""),
             last_score=data.get("last_score", 0),
             history=data.get("history", []),
+            pr_number=data.get("pr_number"),
+            pr_url=data.get("pr_url"),
         )
 
     def save(self, path: Path) -> None:

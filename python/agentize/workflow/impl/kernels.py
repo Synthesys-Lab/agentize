@@ -576,7 +576,7 @@ def pr_kernel(
     *,
     push_remote: str | None = None,
     base_branch: str | None = None,
-) -> tuple[bool, str]:
+) -> tuple[bool, str, str | None, str | None]:
     """Create pull request for the implementation.
 
     Args:
@@ -586,9 +586,11 @@ def pr_kernel(
         base_branch: Base branch for PR (auto-detected if None).
 
     Returns:
-        Tuple of (success, message) where:
+        Tuple of (success, message, pr_number, pr_url) where:
         - success: True if PR was created successfully
         - message: PR URL on success, error message on failure
+        - pr_number: PR number as string if created, None otherwise
+        - pr_url: Full PR URL if created, None otherwise
     """
     from agentize.workflow.impl.impl import ImplError, _validate_pr_title
 
@@ -625,7 +627,7 @@ def pr_kernel(
     try:
         _validate_pr_title(pr_title, state.issue_no)
     except ImplError as exc:
-        return False, str(exc)
+        return False, str(exc), None, None
 
     # Append closes line
     _append_closes_line(finalize_file, state.issue_no)
@@ -640,6 +642,6 @@ def pr_kernel(
             head=branch_name,
             cwd=state.worktree,
         )
-        return True, pr_url or f"PR #{pr_number} created"
+        return True, pr_url or f"PR #{pr_number} created", pr_number, pr_url
     except RuntimeError as exc:
-        return False, f"Failed to create PR: {exc}"
+        return False, f"Failed to create PR: {exc}", None, None

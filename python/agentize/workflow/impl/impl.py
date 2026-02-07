@@ -845,7 +845,7 @@ def run_impl_workflow(
         elif state.current_stage == "pr":
             finalize_file = tmp_dir / "finalize.txt"
 
-            success, message = pr_kernel(
+            success, message, pr_number, pr_url = pr_kernel(
                 state,
                 None,  # Session not needed for PR creation
                 push_remote=push_remote,
@@ -869,16 +869,91 @@ def run_impl_workflow(
                 # Continue anyway - user can create manually
                 state.current_stage = "done"
 
+            # Save checkpoint with PR info for CI monitoring
+            state.pr_number = pr_number
+            state.pr_url = pr_url
+            save_checkpoint(state, checkpoint_path)
+
         else:
             raise ImplError(f"Unknown stage: {state.current_stage}")
 
-    # Final checkpoint save
-    save_checkpoint(state, checkpoint_path)
-
     # Handle wait_for_ci if enabled
     if wait_for_ci and state.current_stage == "done":
-        # Find PR number from history or query git
-        print("CI monitoring not yet implemented in kernel-based workflow")
+        pr_number = getattr(state, "pr_number", None)
+        pr_url = getattr(state, "pr_url", None)
+
+        if not pr_number:
+            raise ImplError("Error: Failed to determine PR number for CI monitoring")
+
+        branch_name = _current_branch(worktree)
+        next_iteration = state.iteration + 1
+
+        while True:
+            # Check mergeability and handle conflicts
+            _wait_for_pr_mergeable(
+                worktree,
+                str(pr_number),
+                push_remote=push_remote,
+            )
+
+            print("Waiting for PR CI...")
+            exit_code, checks = gh_utils.pr_checks(
+                pr_number,
+                watch=True,
+                interval=30,
+                cwd=worktree,
+            )
+
+            if exit_code == 0:
+                print("All CI checks passed!")
+                break
+
+            # CI failed - check iteration limit
+            if next_iteration > max_iterations:
+                raise ImplError(
+                    f"Error: Max iteration limit ({max_iterations}) reached while fixing CI\n"
+                    f"Last PR status: failing checks"
+                )
+
+            # Format failure context and run fix iteration
+            ci_failure = _format_ci_failure_context(pr_url, checks)
+            print("CI checks failed. Running fix iteration...")
+
+            # Run implementation iteration with CI failure context
+            score, feedback, result = impl_kernel(
+                state,
+                session,
+                template_path=template_path,
+                provider=impl_provider,
+                model=impl_model_name,
+                yolo=yolo,
+                ci_failure=ci_failure,
+            )
+
+            state.last_feedback = feedback
+            state.last_score = score
+            state.iteration = next_iteration
+            state.history.append({
+                "stage": "impl",
+                "iteration": next_iteration,
+                "timestamp": datetime.now().isoformat(),
+                "result": "ci_fix",
+                "score": score,
+            })
+
+            save_checkpoint(state, checkpoint_path)
+
+            # Push the fix
+            _push_branch(
+                worktree,
+                push_remote=push_remote,
+                branch_name=branch_name,
+            )
+
+            next_iteration += 1
+
+    # Final checkpoint save
+    save_checkpoint(state, checkpoint_path)
 
 
 # Import at end to avoid circular imports
