@@ -98,7 +98,9 @@ def _strip_plan_footer(text: str) -> str:
 
 def _load_planner_backend_config(repo_root: Path, start_dir: Path) -> dict[str, str]:
     """Load planner backend overrides from .agentize.local.yaml."""
-    plugin_dir = repo_root / ".claude-plugin"
+    from agentize.shell import get_agentize_home
+
+    plugin_dir = Path(get_agentize_home()) / ".claude-plugin"
     if str(plugin_dir) not in sys.path:
         sys.path.insert(0, str(plugin_dir))
 
@@ -231,7 +233,7 @@ def main(argv: list[str]) -> int:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 
-    os.environ["AGENTIZE_HOME"] = str(repo_root)
+    # Use current repo for output, NOT for AGENTIZE_HOME (which should be set by setup.sh)
     output_dir = repo_root / ".tmp"
     output_dir.mkdir(parents=True, exist_ok=True)
 
