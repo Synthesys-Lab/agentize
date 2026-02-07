@@ -13,7 +13,7 @@ agentize environment.
 
 **Parameters**:
 - `topic`: Completion category (e.g., `commands`, `project-modes`, `plan-flags`,
-  `upgrade-flags`).
+  `simp-flags`, `upgrade-flags`).
 
 **Output**:
 - Newline-delimited tokens to stdout.

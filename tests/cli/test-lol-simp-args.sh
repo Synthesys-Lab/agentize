@@ -86,7 +86,7 @@ output=$(lol simp --issue 2>&1) && {
   test_fail "lol simp should fail when --issue has no value"
 }
 
-echo "$output" | grep -q "Usage: lol simp \[file\] \[--issue <issue-no>\]" || {
+echo "$output" | grep -q "Usage: lol simp" || {
   echo "Output: $output" >&2
   test_fail "Expected usage message for lol simp"
 }
@@ -97,14 +97,14 @@ if [ -s "$PYTHON_LOG" ]; then
   test_fail "lol simp should not invoke python when args are invalid"
 fi
 
-# Test 6: lol simp rejects extra args
+# Test 6: lol simp rejects extra args (more than file + focus)
 : > "$PYTHON_LOG"
-output=$(lol simp README.md docs/cli/lol.md 2>&1) && {
+output=$(lol simp README.md "focus text" extra-arg 2>&1) && {
   echo "Output: $output" >&2
-  test_fail "lol simp should fail with more than one argument"
+  test_fail "lol simp should fail with more than two positional arguments"
 }
 
-echo "$output" | grep -q "Usage: lol simp \[file\] \[--issue <issue-no>\]" || {
+echo "$output" | grep -q "Usage: lol simp" || {
   echo "Output: $output" >&2
   test_fail "Expected usage message for lol simp"
 }
@@ -113,6 +113,118 @@ if [ -s "$PYTHON_LOG" ]; then
   echo "Python log:" >&2
   cat "$PYTHON_LOG" >&2
   test_fail "lol simp should not invoke python when args are invalid"
+fi
+
+# Test 7: lol simp with positional focus description (treated as file if exists)
+: > "$PYTHON_LOG"
+output=$(lol simp "nonexistent-file-that-is-focus" 2>&1) || {
+  echo "Output: $output" >&2
+  test_fail "lol simp should accept positional description when not a file"
+}
+
+if ! grep -q 'python -m agentize.cli simp --focus nonexistent-file-that-is-focus' "$PYTHON_LOG"; then
+  echo "Python log:" >&2
+  cat "$PYTHON_LOG" >&2
+  test_fail "Expected positional description to be forwarded as --focus"
+fi
+
+# Test 8: lol simp with --focus flag
+: > "$PYTHON_LOG"
+output=$(lol simp --focus "Refactor for clarity" 2>&1) || {
+  echo "Output: $output" >&2
+  test_fail "lol simp should accept --focus flag"
+}
+
+if ! grep -q 'python -m agentize.cli simp --focus Refactor for clarity' "$PYTHON_LOG"; then
+  echo "Python log:" >&2
+  cat "$PYTHON_LOG" >&2
+  test_fail "Expected --focus to be forwarded to python -m agentize.cli simp"
+fi
+
+# Test 9: lol simp with file and --focus
+: > "$PYTHON_LOG"
+output=$(lol simp README.md --focus "Refactor for clarity" 2>&1) || {
+  echo "Output: $output" >&2
+  test_fail "lol simp should accept file with --focus"
+}
+
+if ! grep -q 'python -m agentize.cli simp README.md --focus Refactor for clarity' "$PYTHON_LOG"; then
+  echo "Python log:" >&2
+  cat "$PYTHON_LOG" >&2
+  test_fail "Expected file and --focus to be forwarded to python -m agentize.cli simp"
+fi
+
+# Test 10: lol simp with --editor
+# Create a fake editor that writes focus text
+FAKE_EDITOR="$TMP_DIR/fake-editor"
+cat <<'FAKEEDITOR_EOF' > "$FAKE_EDITOR"
+#!/usr/bin/env bash
+echo "Editor focus text" > "$1"
+FAKEEDITOR_EOF
+chmod +x "$FAKE_EDITOR"
+
+: > "$PYTHON_LOG"
+output=$(EDITOR="$FAKE_EDITOR" lol simp --editor 2>&1) || {
+  echo "Output: $output" >&2
+  test_fail "lol simp should accept --editor flag"
+}
+
+if ! grep -q 'python -m agentize.cli simp --focus Editor focus text' "$PYTHON_LOG"; then
+  echo "Python log:" >&2
+  cat "$PYTHON_LOG" >&2
+  test_fail "Expected --editor to invoke fake editor and forward focus text"
+fi
+
+# Test 11: lol simp --editor fails without EDITOR
+: > "$PYTHON_LOG"
+output=$(EDITOR="" lol simp --editor 2>&1) && {
+  echo "Output: $output" >&2
+  test_fail "lol simp --editor should fail when EDITOR is not set"
+}
+
+if [ -s "$PYTHON_LOG" ]; then
+  echo "Python log:" >&2
+  cat "$PYTHON_LOG" >&2
+  test_fail "lol simp should not invoke python when EDITOR is not set"
+fi
+
+# Test 12: lol simp rejects --editor and --focus together
+: > "$PYTHON_LOG"
+output=$(EDITOR="$FAKE_EDITOR" lol simp --editor --focus "test" 2>&1) && {
+  echo "Output: $output" >&2
+  test_fail "lol simp should reject --editor and --focus together"
+}
+
+if [ -s "$PYTHON_LOG" ]; then
+  echo "Python log:" >&2
+  cat "$PYTHON_LOG" >&2
+  test_fail "lol simp should not invoke python when --editor and --focus are both used"
+fi
+
+# Test 13: lol simp rejects --editor and positional focus together
+: > "$PYTHON_LOG"
+output=$(EDITOR="$FAKE_EDITOR" lol simp --editor "positional focus" 2>&1) && {
+  echo "Output: $output" >&2
+  test_fail "lol simp should reject --editor with positional focus"
+}
+
+if [ -s "$PYTHON_LOG" ]; then
+  echo "Python log:" >&2
+  cat "$PYTHON_LOG" >&2
+  test_fail "lol simp should not invoke python when --editor with positional focus"
+fi
+
+# Test 14: lol simp rejects multiple --focus
+: > "$PYTHON_LOG"
+output=$(lol simp --focus "first" --focus "second" 2>&1) && {
+  echo "Output: $output" >&2
+  test_fail "lol simp should reject multiple --focus flags"
+}
+
+if [ -s "$PYTHON_LOG" ]; then
+  echo "Python log:" >&2
+  cat "$PYTHON_LOG" >&2
+  test_fail "lol simp should not invoke python when multiple --focus flags"
 fi
 
 test_pass "lol simp argument handling and delegation"

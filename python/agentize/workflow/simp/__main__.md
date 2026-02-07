@@ -10,9 +10,9 @@ CLI entrypoint for `python -m agentize.workflow.simp`.
 def main(argv: list[str]) -> int
 ```
 
-Parses CLI arguments and runs `run_simp_workflow()` with the selected backend,
-max file count, optional random seed, and optional target file. Returns a
-process exit code.
+Parses CLI arguments and runs `run_simp_workflow()` with backend, max file count,
+optional random seed, optional target file, and optional focus description.
+Returns a process exit code.
 
 ## Internal Helpers
 

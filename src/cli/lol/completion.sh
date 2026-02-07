@@ -58,6 +58,11 @@ _lol_complete() {
             echo "--max-iterations"
             echo "--yolo"
             ;;
+        simp-flags)
+            echo "--editor"
+            echo "--focus"
+            echo "--issue"
+            ;;
         *)
             # Unknown topic, return empty
             return 0

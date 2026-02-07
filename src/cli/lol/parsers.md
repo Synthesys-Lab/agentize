@@ -41,4 +41,9 @@ and `refine_instructions` are present, they are concatenated with a blank line
 Validates positional arguments and flags for `lol impl`, then calls `_lol_cmd_impl`.
 
 ### _lol_parse_simp()
-Accepts an optional file path plus `--issue <issue-no>` and delegates to `_lol_cmd_simp`.
+Accepts an optional file path plus optional focus description via `--editor`,
+`--focus`, or a single positional description, then delegates to `_lol_cmd_simp`.
+
+- `--editor` and `--focus` (or positional description) are mutually exclusive.
+- When a single positional argument is provided and it exists as a file, it is
+  treated as the file path; otherwise it is treated as the focus description.

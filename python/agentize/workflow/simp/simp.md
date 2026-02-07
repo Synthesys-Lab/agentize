@@ -14,6 +14,7 @@ def run_simp_workflow(
     max_files: int = 3,
     seed: int | None = None,
     issue_number: int | None = None,
+    focus: str | None = None,
 ) -> None
 ```
 
@@ -26,6 +27,7 @@ files using a prompt-driven workflow.
 - `max_files`: Maximum number of files to pick when `file_path` is omitted.
 - `seed`: Optional random seed for file selection.
 - `issue_number`: Optional issue number to publish the report when approved.
+- `focus`: Optional focus description to guide simplification.
 
 **Behavior**:
 - Resolves the repo root and `.tmp/` output directory.
@@ -47,6 +49,7 @@ files using a prompt-driven workflow.
 ## Prompt Template
 
 `prompt.md` is a file-based prompt template. The renderer replaces:
+- `{{focus_block}}`: Optional focus section (includes "Focus:" header and description when provided, empty string otherwise).
 - `{{selected_files}}`: Newline list of the selected repo-relative file paths.
 - `{{file_contents}}`: Markdown-formatted code blocks for each selected file.
 

@@ -14,6 +14,7 @@ Rules (0-7):
 6. Avoid stylistic churn; do not reformat unrelated code.
 7. If unsure about safety, leave the code unchanged and explain why.
 
+{{focus_block}}
 Selected files:
 {{selected_files}}
 

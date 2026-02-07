@@ -22,7 +22,7 @@ Zsh completion entrypoint registered by `#compdef lol`.
 Each handler provides completion for a specific `lol` subcommand:
 - `_lol_plan()` completes flags and the free-form feature description.
 - `_lol_impl()` completes flags and the required issue number.
-- `_lol_simp()` completes the optional target file.
+- `_lol_simp()` completes `--editor`, `--focus`, `--issue`, and the optional target file.
 - `_lol_project()` completes project modes and flags.
 - `_lol_usage()` completes usage-reporting flags.
 - `_lol_claude_clean()` completes cleanup flags.

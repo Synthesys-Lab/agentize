@@ -30,6 +30,11 @@ def main(argv: list[str]) -> int:
         default=None,
         help="Random seed for file selection",
     )
+    parser.add_argument(
+        "--focus",
+        default=None,
+        help="Optional focus description to guide simplification",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -38,6 +43,7 @@ def main(argv: list[str]) -> int:
             backend=args.backend,
             max_files=args.max_files,
             seed=args.seed,
+            focus=args.focus,
         )
     except (SimpError, ValueError) as exc:
         print(str(exc), file=sys.stderr)

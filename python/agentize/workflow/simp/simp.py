@@ -125,14 +125,23 @@ def _render_prompt(
     *,
     repo_root: Path,
     dest_path: Path,
+    focus: str | None = None,
 ) -> str:
     selected_list = "\n".join(f"- {path}" for path in selected_files)
     file_blocks = "\n\n".join(
         _format_file_block(path, repo_root) for path in selected_files
     )
+
+    # Build focus block if focus is provided
+    if focus:
+        focus_block = f"Focus:\n{focus}\n"
+    else:
+        focus_block = ""
+
     return prompt_utils.render(
         prompt_path,
         {
+            "focus_block": focus_block,
             "selected_files": selected_list,
             "file_contents": file_blocks,
         },
@@ -175,6 +184,7 @@ def run_simp_workflow(
     max_files: int = 3,
     seed: int | None = None,
     issue_number: int | None = None,
+    focus: str | None = None,
 ) -> None:
     """Run the semantic-preserving simplifier workflow."""
     provider, model = _parse_backend(backend)
@@ -208,6 +218,7 @@ def run_simp_workflow(
         selected_files,
         repo_root=repo_root,
         dest_path=input_path,
+        focus=focus,
     )
 
     session = Session(output_dir=tmp_dir, prefix="simp")

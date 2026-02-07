@@ -134,7 +134,29 @@ _lol_impl() {
 
 # Completion for 'lol simp' subcommand
 _lol_simp() {
+    local -a simp_flags simp_flags_with_desc
+
+    # Try dynamic fetch first
+    if (( $+commands[lol] )); then
+        simp_flags=( ${(f)"$(lol --complete simp-flags 2>/dev/null)"} )
+    fi
+
+    # Fallback to static flags
+    if (( ${#simp_flags} == 0 )); then
+        simp_flags=( '--editor' '--focus' '--issue' )
+    fi
+
+    for flag in $simp_flags; do
+        case $flag in
+            --editor) simp_flags_with_desc+=( '--editor[Open $EDITOR to compose focus description]' ) ;;
+            --focus) simp_flags_with_desc+=( '--focus[Focus description to guide simplification]:description:' ) ;;
+            --issue) simp_flags_with_desc+=( '--issue[Publish report to issue when approved]:issue-number:' ) ;;
+            *) simp_flags_with_desc+=( "$flag" ) ;;
+        esac
+    done
+
     _arguments \
+        ${simp_flags_with_desc[@]} \
         '::file:_files'
 }
 

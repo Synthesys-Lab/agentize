@@ -465,14 +465,20 @@ _lol_parse_impl() {
 _lol_parse_simp() {
     local file_path=""
     local issue_number=""
+    local focus=""
+    local use_editor="false"
 
     # Handle --help
     if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
         echo "lol simp: Simplify code without changing semantics"
         echo ""
-        echo "Usage: lol simp [file] [--issue <issue-no>]"
+        echo "Usage: lol simp [file] [<description>]"
+        echo "       lol simp [file] --focus \"<description>\""
+        echo "       lol simp [file] --editor"
         echo ""
         echo "Options:"
+        echo "  --focus   Focus description to guide simplification"
+        echo "  --editor  Open \$EDITOR to compose focus description"
         echo "  --issue   Publish report to issue when approved"
         echo "  --help    Show this help message"
         return 0
@@ -484,35 +490,67 @@ _lol_parse_simp() {
                 shift
                 if [ -z "$1" ]; then
                     echo "Error: Issue number is required" >&2
-                    echo "Usage: lol simp [file] [--issue <issue-no>]" >&2
+                    echo "Usage: lol simp [file] [<description>]" >&2
                     return 1
                 fi
                 if [ -n "$issue_number" ]; then
                     echo "Error: Duplicate --issue flag" >&2
-                    echo "Usage: lol simp [file] [--issue <issue-no>]" >&2
+                    echo "Usage: lol simp [file] [<description>]" >&2
                     return 1
                 fi
                 case "$1" in
                     *[!0-9]*)
                         echo "Error: Issue number must be numeric" >&2
-                        echo "Usage: lol simp [file] [--issue <issue-no>]" >&2
+                        echo "Usage: lol simp [file] [<description>]" >&2
                         return 1
                         ;;
                 esac
                 issue_number="$1"
                 shift
                 ;;
+            --focus)
+                shift
+                if [ -z "$1" ]; then
+                    echo "Error: --focus requires a description" >&2
+                    echo "Usage: lol simp [file] --focus \"<description>\"" >&2
+                    return 1
+                fi
+                if [ -n "$focus" ]; then
+                    echo "Error: Cannot specify multiple focus descriptions" >&2
+                    echo "Use either --focus, --editor, or a positional description, not multiple." >&2
+                    return 1
+                fi
+                focus="$1"
+                shift
+                ;;
+            --editor)
+                use_editor="true"
+                shift
+                ;;
             -*)
                 echo "Error: Unknown option '$1'" >&2
-                echo "Usage: lol simp [file] [--issue <issue-no>]" >&2
+                echo "Usage: lol simp [file] [<description>]" >&2
                 return 1
                 ;;
             *)
                 if [ -z "$file_path" ]; then
-                    file_path="$1"
+                    # Check if this is a file path or a focus description
+                    if [ -e "$1" ]; then
+                        file_path="$1"
+                    else
+                        # Treat as focus description
+                        if [ -n "$focus" ]; then
+                            echo "Error: Cannot specify multiple focus descriptions" >&2
+                            echo "Use either --focus, --editor, or a positional description, not multiple." >&2
+                            return 1
+                        fi
+                        focus="$1"
+                    fi
+                elif [ -z "$focus" ]; then
+                    focus="$1"
                 else
                     echo "Error: Too many arguments" >&2
-                    echo "Usage: lol simp [file] [--issue <issue-no>]" >&2
+                    echo "Usage: lol simp [file] [<description>]" >&2
                     return 1
                 fi
                 shift
@@ -520,5 +558,54 @@ _lol_parse_simp() {
         esac
     done
 
-    _lol_cmd_simp "$file_path" "$issue_number"
+    # Handle --editor flag
+    if [ "$use_editor" = "true" ]; then
+        # Check mutual exclusion with focus
+        if [ -n "$focus" ]; then
+            echo "Error: Cannot use --editor with --focus or a positional description." >&2
+            echo "Use either --editor OR provide a description, not both." >&2
+            return 1
+        fi
+
+        # Resolve editor command: EDITOR only
+        local editor_cmd=""
+        if [ -z "$EDITOR" ]; then
+            echo "Error: \$EDITOR is not set." >&2
+            echo "Set the EDITOR environment variable to use --editor." >&2
+            return 1
+        fi
+        editor_cmd="$EDITOR"
+
+        # Create temp file and set up cleanup trap
+        local tmp_file
+        tmp_file=$(mktemp)
+        trap 'rm -f "$tmp_file"' EXIT INT TERM
+
+        # Invoke editor
+        if ! "$editor_cmd" "$tmp_file"; then
+            echo "Error: Editor exited with non-zero status." >&2
+            rm -f "$tmp_file"
+            trap - EXIT INT TERM
+            return 1
+        fi
+
+        # Read content and validate
+        focus=$(cat "$tmp_file")
+        rm -f "$tmp_file"
+        trap - EXIT INT TERM
+
+        # Check for empty/whitespace-only content
+        local trimmed
+        trimmed=$(echo "$focus" | tr -d '[:space:]')
+        if [ -z "$trimmed" ]; then
+            echo "Error: Focus description is empty." >&2
+            echo "Write content in the editor to provide a description." >&2
+            return 1
+        fi
+
+        # Trim trailing newlines
+        focus=$(echo "$focus" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')
+    fi
+
+    _lol_cmd_simp "$file_path" "$issue_number" "$focus"
 }

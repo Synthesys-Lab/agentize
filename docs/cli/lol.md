@@ -199,17 +199,52 @@ See [planner pipeline module](planner.md) for pipeline stage details and artifac
 Simplify code without changing semantics.
 
 ```bash
-lol simp [file] [--issue <issue-no>]
+lol simp [file] [<description>]
+lol simp [file] --focus "<description>"
+lol simp [file] --editor
 ```
 
 If `file` is provided, the workflow focuses on that file. When omitted, the
 workflow selects a small random set of tracked files (`git ls-files`) and
 records the selection in `.tmp/simp-targets.txt` for reproducibility.
 
+When a single positional argument is provided, it is treated as a file if it
+exists; otherwise it is treated as the focus description.
+
 The simplification report must start with `Yes.` or `No.`. The report is always
 written to `.tmp/simp-output.md` and the local path is logged. When the report
 starts with `Yes.` and `--issue` is provided, the report is published to the
 specified issue.
+
+#### Options
+
+| Option | Required | Default | Description |
+|--------|----------|---------|-------------|
+| `--focus` | No | - | Focus description to guide simplification |
+| `--editor` | No | - | Open `$EDITOR` to compose focus description |
+| `--issue` | No | - | Publish report to issue when approved (requires `Yes.` prefix) |
+
+#### Examples
+
+```bash
+# Simplify a random selection of files
+lol simp
+
+# Simplify a specific file
+lol simp README.md
+
+# Simplify with a focus description
+lol simp "Refactor for clarity"
+
+# Simplify a file with focus description
+lol simp src/main.py --focus "Reduce nesting in error handling"
+
+# Compose focus in your editor
+lol simp --editor
+
+# Simplify and publish result to issue when approved
+lol simp --issue 42
+```
 
 Artifacts are written under `.tmp/`:
 - `.tmp/simp-input.md` - Rendered prompt with selected file contents
