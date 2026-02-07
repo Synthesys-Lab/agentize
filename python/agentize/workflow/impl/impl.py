@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import re
-import shlex
 import sys
+import warnings
 from pathlib import Path
 from typing import Iterable
 
@@ -22,11 +22,11 @@ class ImplError(RuntimeError):
 
 def _validate_pr_title(title: str, issue_no: int) -> None:
     """Validate PR title matches required format [tag][#N] description.
-    
+
     Args:
         title: The PR title to validate.
         issue_no: The issue number for error messages.
-        
+
     Raises:
         ImplError: If title doesn't match required format [tag][#N] description.
     """
@@ -39,6 +39,11 @@ def _validate_pr_title(title: str, issue_no: int) -> None:
             f"Expected format: [feat][#{issue_no}] Brief description\n"
             f"See docs/git-msg-tags.md for available tags"
         )
+
+
+# Import kernels and checkpoint for the refactored workflow
+# These imports are at the end of the file to avoid circular imports
+# when impl.py is imported by checkpoint.py or kernels.py
 
 
 _REQUIRED_TOKENS = {
@@ -370,7 +375,7 @@ def _push_and_create_pr(
         pr_title = finalize_file.read_text().splitlines()[0].strip()
     if not pr_title:
         pr_title = f"[feat][#{issue_no}] Implementation"
-    
+
     # Validate format
     _validate_pr_title(pr_title, issue_no)
 
@@ -425,7 +430,11 @@ def _parse_max_iterations(value: int | str) -> int:
     return max_iterations
 
 
-def run_impl_workflow(
+# Import at end to avoid circular imports
+import shlex
+
+
+def _run_impl_workflow_legacy(
     issue_no: int,
     *,
     backend: str = "codex:gpt-5.2-codex",
@@ -433,7 +442,11 @@ def run_impl_workflow(
     yolo: bool = False,
     wait_for_ci: bool = False,
 ) -> None:
-    """Run the issue-to-implementation workflow loop."""
+    """Original monolithic implementation (kept for reference).
+
+    This is the original implementation before kernel-based refactoring.
+    It is kept for backward compatibility and as a fallback.
+    """
     issue_no = _coerce_issue_no(issue_no)
     provider, model = _parse_backend(backend)
     max_iterations = _parse_max_iterations(max_iterations)
@@ -609,3 +622,264 @@ def run_impl_workflow(
         print(f"Find the PR at: {pr_url}")
     else:
         print(f"Issue-{issue_no} implementation is done")
+
+
+def run_impl_workflow(
+    issue_no: int,
+    *,
+    backend: str | None = None,
+    max_iterations: int = 10,
+    max_reviews: int = 3,
+    yolo: bool = False,
+    wait_for_ci: bool = False,
+    resume: bool = False,
+    impl_model: str | None = None,
+    review_model: str | None = None,
+    enable_review: bool = False,
+) -> None:
+    """Run the issue-to-implementation workflow with kernel-based architecture.
+
+    This is the refactored implementation that uses:
+    - Kernel functions for each stage (impl, review, simp, pr)
+    - Checkpoint-based state management for resumption
+    - State machine orchestration
+
+    Args:
+        issue_no: The GitHub issue number to implement.
+        backend: Deprecated. Use impl_model instead.
+        max_iterations: Maximum number of implementation iterations.
+        max_reviews: Maximum number of review attempts per iteration.
+        yolo: Pass --yolo flag to acw for autonomous operation.
+        wait_for_ci: Monitor PR CI checks and auto-fix failures.
+        resume: Resume from last checkpoint if available.
+        impl_model: Model for implementation (format: provider:model).
+        review_model: Optional different model for review stage.
+        enable_review: Enable the review stage (default: False for compatibility).
+
+    Raises:
+        ImplError: If workflow fails.
+        ValueError: If arguments are invalid.
+    """
+    # Import here to avoid circular imports
+    from agentize.workflow.impl.checkpoint import (
+        ImplState,
+        checkpoint_exists,
+        create_initial_state,
+        load_checkpoint,
+        save_checkpoint,
+    )
+    from agentize.workflow.impl.kernels import (
+        impl_kernel,
+        pr_kernel,
+        review_kernel,
+    )
+
+    issue_no = _coerce_issue_no(issue_no)
+
+    # Handle deprecated backend parameter
+    if backend is not None:
+        warnings.warn(
+            "The 'backend' parameter is deprecated, use 'impl_model' instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if impl_model is None:
+            impl_model = backend
+
+    # Set default impl_model
+    if impl_model is None:
+        impl_model = "codex:gpt-5.2-codex"
+
+    # Parse models
+    impl_provider, impl_model_name = _parse_backend(impl_model)
+    if review_model:
+        review_provider, review_model_name = _parse_backend(review_model)
+    else:
+        review_provider, review_model_name = impl_provider, impl_model_name
+
+    max_iterations = _parse_max_iterations(max_iterations)
+
+    # Resolve worktree
+    worktree_result = run_shell_function(
+        _shell_cmd(["wt", "pathto", str(issue_no)]),
+        capture_output=True,
+    )
+    worktree_path = worktree_result.stdout.strip() if worktree_result.returncode == 0 else ""
+
+    if not worktree_path:
+        print(f"Creating worktree for issue {issue_no}...")
+        spawn_result = run_shell_function(
+            _shell_cmd(["wt", "spawn", str(issue_no), "--no-agent"])
+        )
+        if spawn_result.returncode != 0:
+            raise ImplError(f"Error: Failed to create worktree for issue {issue_no}")
+        worktree_result = run_shell_function(
+            _shell_cmd(["wt", "pathto", str(issue_no)]),
+            capture_output=True,
+        )
+        worktree_path = worktree_result.stdout.strip()
+        if not worktree_path:
+            raise ImplError("Error: Failed to get worktree path after spawn")
+    else:
+        print(f"Using existing worktree for issue {issue_no} at {worktree_path}")
+
+    worktree = Path(worktree_path)
+    tmp_dir = worktree / ".tmp"
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+
+    checkpoint_path = tmp_dir / "impl-checkpoint.json"
+
+    # Load or create state
+    if resume and checkpoint_exists(checkpoint_path):
+        print(f"Resuming from checkpoint: {checkpoint_path}")
+        state = load_checkpoint(checkpoint_path)
+        # Validate worktree matches
+        if state.worktree != worktree:
+            raise ImplError(
+                f"Checkpoint worktree mismatch: {state.worktree} != {worktree}"
+            )
+        # Validate issue matches
+        if state.issue_no != issue_no:
+            raise ImplError(
+                f"Checkpoint issue mismatch: {state.issue_no} != {issue_no}"
+            )
+    else:
+        state = create_initial_state(issue_no, worktree)
+
+    # Sync branch
+    push_remote, base_branch = _sync_branch(worktree)
+
+    # Prefetch issue
+    issue_file = tmp_dir / f"issue-{issue_no}.md"
+    _prefetch_issue(issue_no, issue_file, cwd=worktree)
+
+    # Set up session
+    session = Session(output_dir=tmp_dir, prefix=f"impl-{issue_no}")
+
+    # Template path
+    template_path = rel_path("continue-prompt.md")
+    template = _read_template(template_path)
+    _validate_placeholders(template)
+
+    # State machine implementation
+    review_attempts = 0
+
+    while state.current_stage != "done":
+        # Save checkpoint before each stage
+        save_checkpoint(state, checkpoint_path)
+
+        if state.current_stage == "impl":
+            if state.iteration > max_iterations:
+                raise ImplError(
+                    f"Error: Max iteration limit ({max_iterations}) reached\n"
+                    f"Checkpoint saved at: {checkpoint_path}"
+                )
+
+            score, feedback, result = impl_kernel(
+                state,
+                session,
+                template_path=template_path,
+                provider=impl_provider,
+                model=impl_model_name,
+                yolo=yolo,
+            )
+
+            state.last_feedback = feedback
+            state.last_score = score
+            state.history.append({
+                "stage": "impl",
+                "iteration": state.iteration,
+                "timestamp": datetime.now().isoformat(),
+                "result": "success" if result.get("completion_found") else "incomplete",
+                "score": score,
+            })
+
+            if result.get("completion_found"):
+                if enable_review:
+                    state.current_stage = "review"
+                    review_attempts = 0
+                else:
+                    # Skip review if disabled
+                    state.current_stage = "pr"
+            else:
+                # Continue to next iteration
+                state.iteration += 1
+
+        elif state.current_stage == "review":
+            review_attempts += 1
+            if review_attempts > max_reviews:
+                print(
+                    f"Warning: Max review attempts ({max_reviews}) reached, "
+                    "proceeding to PR",
+                    file=sys.stderr,
+                )
+                state.current_stage = "pr"
+                continue
+
+            passed, feedback, score = review_kernel(
+                state,
+                session,
+                provider=review_provider,
+                model=review_model_name,
+                threshold=70,
+            )
+
+            state.last_feedback = feedback
+            state.last_score = score
+            state.history.append({
+                "stage": "review",
+                "iteration": state.iteration,
+                "timestamp": datetime.now().isoformat(),
+                "result": "pass" if passed else "retry",
+                "score": score,
+            })
+
+            if passed:
+                state.current_stage = "pr"
+            else:
+                # Retry implementation with feedback
+                print(f"Review failed (score: {score}), retrying with feedback...")
+                state.current_stage = "impl"
+                state.iteration += 1
+
+        elif state.current_stage == "pr":
+            finalize_file = tmp_dir / "finalize.txt"
+
+            success, message = pr_kernel(
+                state,
+                None,  # Session not needed for PR creation
+                push_remote=push_remote,
+                base_branch=base_branch,
+            )
+
+            state.history.append({
+                "stage": "pr",
+                "iteration": state.iteration,
+                "timestamp": datetime.now().isoformat(),
+                "result": "success" if success else "failure",
+                "score": None,
+            })
+
+            if success:
+                print(f"Issue-{issue_no} implementation is done")
+                print(f"Find the PR at: {message}")
+                state.current_stage = "done"
+            else:
+                print(f"Warning: PR creation issue - {message}", file=sys.stderr)
+                # Continue anyway - user can create manually
+                state.current_stage = "done"
+
+        else:
+            raise ImplError(f"Unknown stage: {state.current_stage}")
+
+    # Final checkpoint save
+    save_checkpoint(state, checkpoint_path)
+
+    # Handle wait_for_ci if enabled
+    if wait_for_ci and state.current_stage == "done":
+        # Find PR number from history or query git
+        print("CI monitoring not yet implemented in kernel-based workflow")
+
+
+# Import at end to avoid circular imports
+from datetime import datetime

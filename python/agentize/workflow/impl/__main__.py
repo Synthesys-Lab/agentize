@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import warnings
 
 from agentize.workflow.impl.impl import ImplError, run_impl_workflow
 
@@ -15,14 +16,36 @@ def main(argv: list[str]) -> int:
     parser.add_argument("issue_no", type=int, help="Issue number to implement")
     parser.add_argument(
         "--backend",
-        default="codex:gpt-5.2-codex",
-        help="Backend in provider:model format",
+        default=None,
+        help="Backend in provider:model format (deprecated, use --impl-model)",
     )
     parser.add_argument(
         "--max-iterations",
         type=int,
+        default=None,
+        help="Maximum iteration count (deprecated, use --max-iter)",
+    )
+    parser.add_argument(
+        "--max-iter",
+        type=int,
         default=10,
-        help="Maximum iteration count",
+        help="Maximum implementation iterations (default: 10)",
+    )
+    parser.add_argument(
+        "--max-reviews",
+        type=int,
+        default=3,
+        help="Maximum review attempts per iteration (default: 3)",
+    )
+    parser.add_argument(
+        "--impl-model",
+        default=None,
+        help="Model for implementation stage (format: provider:model)",
+    )
+    parser.add_argument(
+        "--review-model",
+        default=None,
+        help="Model for review stage (format: provider:model, defaults to impl-model)",
     )
     parser.add_argument(
         "--yolo",
@@ -34,15 +57,49 @@ def main(argv: list[str]) -> int:
         action="store_true",
         help="Monitor PR mergeability and CI after creation",
     )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume from checkpoint if available",
+    )
+    parser.add_argument(
+        "--enable-review",
+        action="store_true",
+        help="Enable the review stage (experimental)",
+    )
     args = parser.parse_args(argv)
+
+    # Handle deprecated arguments
+    max_iter = args.max_iter
+    if args.max_iterations is not None:
+        warnings.warn(
+            "--max-iterations is deprecated, use --max-iter instead",
+            DeprecationWarning,
+        )
+        max_iter = args.max_iterations
+
+    backend = args.backend
+    impl_model = args.impl_model
+    if backend is not None:
+        warnings.warn(
+            "--backend is deprecated, use --impl-model instead",
+            DeprecationWarning,
+        )
+        if impl_model is None:
+            impl_model = backend
 
     try:
         run_impl_workflow(
             args.issue_no,
-            backend=args.backend,
-            max_iterations=args.max_iterations,
+            backend=backend,
+            max_iterations=max_iter,
+            max_reviews=args.max_reviews,
             yolo=args.yolo,
             wait_for_ci=args.wait_for_ci,
+            resume=args.resume,
+            impl_model=impl_model,
+            review_model=args.review_model,
+            enable_review=args.enable_review,
         )
     except (ImplError, ValueError) as exc:
         print(str(exc), file=sys.stderr)
