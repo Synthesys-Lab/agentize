@@ -145,8 +145,12 @@ def extract_from_content_list(content):
 
 
 def extract_text(obj):
+    """Extract text from assistant messages, skip tool messages."""
     parts = []
     if isinstance(obj, dict):
+        # Skip tool/skill messages entirely
+        if obj.get("role") == "tool":
+            return parts
         if "content" in obj and isinstance(obj["content"], list):
             parts.extend(extract_from_content_list(obj["content"]))
             for key, value in obj.items():

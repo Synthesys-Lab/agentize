@@ -21,3 +21,7 @@ Validate Kimi stream-json output is stripped into plain assistant text for file 
 ### chat_session_stripping
 **Purpose**: Chat sessions store stripped assistant text for Kimi turns.
 **Expected**: Session file and output file contain plain text without raw JSON.
+
+### skill_usage_stripping
+**Purpose**: Skill/tool messages (role=tool) are filtered out, only assistant text is kept.
+**Expected**: Output contains assistant text before and after skill usage, but not tool results or system tags.

@@ -36,6 +36,12 @@ case "$KIMI_MODE" in
   chat)
     printf '%s\n' '{"content":[{"type":"text","text":"Chat reply"}]}'
     ;;
+  skill)
+    printf '%s\n' '{"role":"assistant","content":[{"type":"text","text":"Before skill"}]}'
+    printf '%s\n' '{"role":"assistant","content":[{"type":"text","text":"<system>Skill: test-skill</system>"},{"type":"text","text":"Skill guidance"}]}'
+    printf '%s\n' '{"role":"tool","content":[{"type":"text","text":"skill tool result"}],"tool_call_id":"call_123"}'
+    printf '%s\n' '{"role":"assistant","content":[{"type":"text","text":"After skill"}]}'
+    ;;
   *)
     printf '%s\n' '{"content":[{"type":"text","text":"Default"}]}'
     ;;
@@ -139,5 +145,38 @@ if ! grep -q "Chat reply" "$chat_output"; then
 fi
 
 export AGENTIZE_HOME="$ORIGINAL_AGENTIZE_HOME"
+
+# Test 5: Skill usage messages are filtered out
+export KIMI_MODE="skill"
+skill_output_file="$TEST_HOME/skill.txt"
+set +e
+acw kimi default "$input_file" "$skill_output_file" >/dev/null 2>&1
+exit_code=$?
+set -e
+
+if [ "$exit_code" -ne 0 ]; then
+  test_fail "Kimi skill stripping should succeed"
+fi
+
+skill_output=$(cat "$skill_output_file")
+
+# Should contain assistant text before and after skill
+if ! echo "$skill_output" | grep -q "Before skill"; then
+  test_fail "Output should contain text before skill usage"
+fi
+
+if ! echo "$skill_output" | grep -q "After skill"; then
+  test_fail "Output should contain text after skill usage"
+fi
+
+# Should NOT contain skill tool result
+if echo "$skill_output" | grep -q "skill tool result"; then
+  test_fail "Output should NOT contain tool/skill result content"
+fi
+
+# Should NOT contain system tags
+if echo "$skill_output" | grep -q "<system>"; then
+  test_fail "Output should NOT contain system tags"
+fi
 
 test_pass "acw Kimi stream-json stripping works correctly"

@@ -81,6 +81,12 @@ Strips Kimi stream-json output into plain assistant text. Uses Python to parse
 either a full JSON payload or NDJSON and falls back to raw output when parsing
 fails or yields no text segments.
 
+Filtering rules:
+- Only extracts text from `role=assistant` messages
+- Skips `role=tool` messages (skill/tool execution results)
+- Only processes `type=text` content parts (skips thinking, images, etc.)
+- Removes `<system>...</system>` tags from text content
+
 ## Chat Mode
 
 In chat mode, the dispatcher orchestrates session creation, history prepending,
