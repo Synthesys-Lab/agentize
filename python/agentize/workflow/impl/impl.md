@@ -58,12 +58,14 @@ and checkpoint recovery.
 
 **State Machine**:
 
-```
-┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐
-│  setup  │ -> │  impl   │ -> │ review  │ -> │  simp   │ -> │   pr    │
-└─────────┘    └─────────┘    └────┬────┘    └─────────┘    └────┬────┘
-                                   │                              │
-                                   └──── (retry if failed) -----> └──── done
+```mermaid
+flowchart LR
+    setup[setup] --> impl[impl]
+    impl --> review[review]
+    review -->|passed| simp[simp]
+    review -->|failed| impl
+    simp --> pr[pr]
+    pr --> done[done]
 ```
 
 **Checkpointing**:
@@ -180,17 +182,20 @@ Fetches issue content via GitHub CLI and caches to file.
 
 ## Module Organization
 
-```
-python/agentize/workflow/impl/
-├── __init__.py        # Public exports
-├── __main__.py        # CLI entrypoint
-├── impl.py            # Orchestrator and main workflow
-├── impl.md            # This file
-├── kernels.py         # Stage kernel functions
-├── kernels.md         # Kernel documentation
-├── checkpoint.py      # State management
-├── checkpoint.md      # Checkpoint documentation
-└── continue-prompt.md # Prompt template
+```mermaid
+flowchart LR
+    subgraph ModuleStructure["python/agentize/workflow/impl/"]
+        direction TB
+        init["__init__.py<br/>Public exports"]
+        main["__main__.py<br/>CLI entrypoint"]
+        impl["impl.py<br/>Orchestrator"]
+        impl_md["impl.md<br/>Documentation"]
+        kernels["kernels.py<br/>Stage kernels"]
+        kernels_md["kernels.md<br/>Kernel docs"]
+        chk["checkpoint.py<br/>State management"]
+        chk_md["checkpoint.md<br/>Checkpoint docs"]
+        prompt["continue-prompt.md<br/>Prompt template"]
+    end
 ```
 
 See `kernels.md` for kernel function documentation.

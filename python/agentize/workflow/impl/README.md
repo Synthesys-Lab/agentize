@@ -7,25 +7,40 @@ translating GitHub issues into implementation PRs.
 
 The implementation follows a modular kernel-based architecture:
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Orchestrator (impl.py)                   │
-│  - State machine coordination                               │
-│  - Checkpoint management                                    │
-│  - Stage transitions                                        │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-       ┌───────────────┼───────────────┐
-       ▼               ▼               ▼
-┌────────────┐  ┌────────────┐  ┌────────────┐
-│   Kernels  │  │ Checkpoint │  │   Legacy   │
-│  (kernels) │  │(checkpoint)│  │  (impl.py) │
-├────────────┤  ├────────────┤  ├────────────┤
-│impl_kernel │  │ ImplState  │  │_validate_* │
-│review_ker..│  │ save/load  │  │render_prom.│
-│simp_kernel │  │ versioning │  │ _sync_...  │
-│pr_kernel   │  └────────────┘  └────────────┘
-└────────────┘
+```mermaid
+flowchart TB
+    subgraph Orchestrator["Orchestrator (impl.py)"]
+        direction TB
+        coord["State machine coordination"]
+        chk["Checkpoint management"]
+        trans["Stage transitions"]
+    end
+
+    subgraph Kernels["Kernels (kernels.py)"]
+        direction TB
+        impl_k["impl_kernel"]
+        review_k["review_kernel"]
+        simp_k["simp_kernel"]
+        pr_k["pr_kernel"]
+    end
+
+    subgraph Checkpoint["Checkpoint (checkpoint.py)"]
+        direction TB
+        state["ImplState"]
+        save_load["save/load"]
+        version["versioning"]
+    end
+
+    subgraph Legacy["Legacy (impl.py)"]
+        direction TB
+        validate["_validate_*"]
+        render["render_prompt"]
+        sync["_sync_*"]
+    end
+
+    Orchestrator --> Kernels
+    Orchestrator --> Checkpoint
+    Orchestrator --> Legacy
 ```
 
 ### Module Organization
@@ -98,11 +113,12 @@ The implementation follows these stages:
 
 ### State Machine
 
-```
-impl -> review -> pr -> done
- |       |
- +-------+
-(feedback loop on review failure)
+```mermaid
+flowchart LR
+    impl --> review
+    review -->|passed| pr
+    review -->|failed| impl
+    pr --> done[done]
 ```
 
 ## Checkpointing
