@@ -77,18 +77,25 @@ For further help, please visit our [troubleshooting guide](./docs/troubleshoot.m
 
 ## Core Philosophy
 
-1. Plan first, code later: Use AI to generate a detailed plan before writing any code.
-   - Plan is put on Github Issues for tracking.
-2. Build [skills](https://agentskills.io/).
-   - Skills are modular reusable, formal, and lightweighted flow definitions.
-   - This is something like C-style declaration and implementation separation.
-     - `/commands` are declarations and interfaces for users to invoke skills.
-     - `/skills` are implementations of the skills.
-3. Bootstrapping via self-improvement: We use `.claude/` as our canonical rules
-   directory. We use these rules to develop these rules further.
-   - Top-down design: Start with a high-level view of the development flow.
-   - Bottom-up implementation: Implement each aspect of the flow from bottom, and finally
-     integrate them together.
+Minimizing human intervention by artifact centric.
+- Session-centric: People tell AI what to do, and wait until it ends.
+  Then give feedback until they are satisfied. Human looping in too much
+  limits the scalability.
+- Artifact-centric: People tell AI what to do, and AI produces a plan first.
+  Plan is the ONLY phase that human can intervene. After the plan is approved,
+  AI will execute the plan and produce the code merge for human to review.
+
+A clear separation between human, AI, and formal language.
+- Humans are for the intention of development, including providing feature requirements,
+  approving plans, and code merges.
+- AI is the worker of software development for both making the plan, and maintaining the codebase,
+  including tests, documentation, and code quality.
+- Formal language is for the coordination and orchestration between AI, and other systems,
+  e.g. Github Issues, Pull Requests, and CI/CD pipelines.
+  - I (@were) found that skills are promising for AI to synthesize fixed code to interact with such
+    systems, but these flows are more fixed and formal than I expected --- putting them in formal
+    language (e.g. Python scripts, or YAML configuration) is more transparent and faster to execute
+    the whole workflow.
 
 ### Workflow:
 
