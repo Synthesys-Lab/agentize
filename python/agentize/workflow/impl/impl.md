@@ -2,6 +2,19 @@
 
 Python workflow implementation for `lol impl`.
 
+## Architecture Overview
+
+The implementation follows a modular kernel-based architecture with:
+
+1. **Orchestrator** (`run_impl_workflow()`): State machine that coordinates stages
+2. **Kernels** (`kernels.py`): Pure functions for each workflow stage
+3. **Checkpoint** (`checkpoint.py`): Serializable state for resumption
+
+This design separates concerns:
+- Orchestrator handles flow control and state transitions
+- Kernels encapsulate stage-specific logic and are testable in isolation
+- Checkpoint enables recovery from interruptions
+
 ## External Interface
 
 ### run_impl_workflow()
@@ -12,44 +25,94 @@ def run_impl_workflow(
     *,
     backend: str = "codex:gpt-5.2-codex",
     max_iterations: int = 10,
+    max_reviews: int = 3,
     yolo: bool = False,
     wait_for_ci: bool = False,
+    resume: bool = False,
+    impl_model: str | None = None,
+    review_model: str | None = None,
 ) -> None
 ```
 
-**Purpose**: Execute the issue-to-implementation loop for a GitHub issue, driving
-`acw` iterations and automating git/PR steps while keeping shell tools as the
-source of truth.
+**Purpose**: Execute the issue-to-implementation workflow with review loop
+and checkpoint recovery.
 
 **Parameters**:
 - `issue_no`: Numeric issue identifier.
-- `backend`: Backend in `provider:model` form.
-- `max_iterations`: Maximum number of iterations before failing.
+- `backend`: Deprecated, use `impl_model` instead.
+- `max_iterations`: Maximum implementation iterations before failing.
+- `max_reviews`: Maximum review attempts per iteration (prevents infinite loops).
 - `yolo`: Pass-through flag for `acw` autonomy.
 - `wait_for_ci`: When true, monitor PR mergeability and CI checks after creation.
+- `resume`: When true, resume from last checkpoint if available.
+- `impl_model`: Model for implementation stage (`provider:model` format).
+- `review_model`: Optional different model for review stage.
+
+**Workflow Stages**:
+
+1. **Setup**: Resolve/create worktree, sync branch, prefetch issue
+2. **Impl**: Generate implementation using AI
+3. **Review**: Validate implementation quality (feedback loop on failure)
+4. **Simp**: Optional simplification stage
+5. **PR**: Create pull request
+
+**State Machine**:
+
+```
+┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐
+│  setup  │ -> │  impl   │ -> │ review  │ -> │  simp   │ -> │   pr    │
+└─────────┘    └─────────┘    └────┬────┘    └─────────┘    └────┬────┘
+                                   │                              │
+                                   └──── (retry if failed) -----> └──── done
+```
+
+**Checkpointing**:
+- State is saved after each stage completion
+- Use `--resume` to continue from last checkpoint
+- Checkpoints stored in `.tmp/impl-checkpoint.json`
 
 **Behavior**:
 - Resolves the issue worktree via `wt pathto`, spawning with `wt spawn --no-agent` if needed.
-- Syncs the issue branch by fetching and rebasing onto the detected default branch before iterations.
-- Prefetches issue content via `agentize.workflow.api.gh` into `.tmp/issue-<N>.md`; fails if empty.
-- Renders iteration prompts from `continue-prompt.md` into `.tmp/impl-input-<N>.txt`
-  via `agentize.workflow.api.prompt.render`.
-- Runs iterations through `Session.run_prompt()` with input/output path overrides to reuse
-  `.tmp/impl-output.txt` across iterations.
-- Requires `.tmp/commit-report-iter-<N>.txt` for commits; stages and commits when diffs exist.
-- Detects completion via `.tmp/finalize.txt` containing `Issue <N> resolved`.
-- Pushes the branch and opens a PR using the completion file as title/body.
-- Optionally waits for PR mergeability and CI completion, reusing the iteration loop to fix failures.
-
-**Post-PR phase** (when `wait_for_ci` is enabled):
-- Checks PR mergeability and rebases the branch when conflicts are detected.
-- Runs `gh pr checks --watch` to stream CI progress.
-- On CI failures, reruns an iteration with CI context injected into the prompt and pushes updates.
+- Syncs the issue branch by fetching and rebasing onto the detected default branch.
+- Prefetches issue content via `agentize.workflow.api.gh` into `.tmp/issue-<N>.md`.
+- Runs implementation iterations through `impl_kernel()`.
+- Validates implementation through `review_kernel()` with feedback loop.
+- Optionally simplifies through `simp_kernel()`.
+- Creates PR through `pr_kernel()` with title validation.
+- Optionally monitors CI and re-implements on failures.
 
 **Errors**:
-- Raises `ValueError` for invalid arguments (issue number, backend format, max iterations).
-- Raises `ImplError` for sync failures (missing remote/default branch, fetch failure, or rebase conflict),
-  prefetch failures, missing commit reports, missing remotes/base branches, or max-iteration exhaustion.
+- Raises `ValueError` for invalid arguments.
+- Raises `ImplError` for workflow failures (sync, checkpoint, kernel errors).
+
+## Internal Architecture
+
+### State Management
+
+The orchestrator uses `ImplState` from `checkpoint.py` to track:
+- Current stage and iteration
+- Last feedback and score
+- Execution history
+
+### Kernel Integration
+
+Kernels are called by the orchestrator based on current stage:
+
+```python
+if state.current_stage == "impl":
+    score, feedback, result = impl_kernel(state, session, ...)
+    # Update state, save checkpoint
+elif state.current_stage == "review":
+    passed, feedback, score = review_kernel(state, session, ...)
+    # Update state, retry or continue, save checkpoint
+```
+
+### Backward Compatibility
+
+The refactored implementation maintains backward compatibility:
+- `_validate_pr_title()` remains at original location for imports
+- CLI arguments `--backend` and `--max-iterations` work with deprecation warnings
+- Return values and error types unchanged
 
 ## Prompt Template
 
@@ -77,21 +140,49 @@ of `finalize_file` is used as the PR title and must follow the format:
 - `.tmp/impl-input-<N>.txt`: Iteration-specific prompt
 - `.tmp/impl-output.txt`: Latest `acw` output
 - `.tmp/finalize.txt`: Completion marker and PR title/body
+- `.tmp/impl-checkpoint.json`: Workflow state for resumption
 
 ## Internal Helpers
 
+### _validate_pr_title()
+
+Validates PR title format `[tag][#N] description`.
+
+**Location**: Kept in `impl.py` for backward compatibility with imports.
+
+**Raises**: `ImplError` if format is invalid.
+
 ### rel_path()
-Resolves template files relative to `impl.py` for portability using `api.path.relpath`.
+
+Resolves template files relative to `impl.py` for portability.
 
 ### render_prompt()
+
 Builds the iteration prompt by filling placeholders and conditionally inserting
-previous output and commit summaries, delegating token replacement to `prompt.render`.
-
-### _detect_push_remote()
-Selects `upstream` when available, falling back to `origin`.
-
-### _detect_base_branch()
-Selects `master` when available on the push remote, falling back to `main`.
+previous output and commit summaries.
 
 ### _sync_branch()
-Fetches the detected push remote and rebases onto the detected base branch, failing fast on errors.
+
+Fetches the detected push remote and rebases onto the detected base branch.
+
+### _prefetch_issue()
+
+Fetches issue content via GitHub CLI and caches to file.
+
+## Module Organization
+
+```
+python/agentize/workflow/impl/
+├── __init__.py        # Public exports
+├── __main__.py        # CLI entrypoint
+├── impl.py            # Orchestrator and main workflow
+├── impl.md            # This file
+├── kernels.py         # Stage kernel functions
+├── kernels.md         # Kernel documentation
+├── checkpoint.py      # State management
+├── checkpoint.md      # Checkpoint documentation
+└── continue-prompt.md # Prompt template
+```
+
+See `kernels.md` for kernel function documentation.
+See `checkpoint.md` for state and checkpoint documentation.
