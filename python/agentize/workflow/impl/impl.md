@@ -48,6 +48,11 @@ source of truth.
 `continue-prompt.md` is a file-based prompt template. The renderer replaces
 placeholder tokens and splices optional sections.
 
+The prompt includes explicit instructions for PR title format. The first line
+of `finalize_file` is used as the PR title and must follow the format:
+`[tag][#issue-number] Brief description`. Available tags are defined in
+`docs/git-msg-tags.md`.
+
 **Required placeholders** (both `{{TOKEN}}` and `{#TOKEN#}` forms are accepted):
 - `issue_no`
 - `issue_file`
