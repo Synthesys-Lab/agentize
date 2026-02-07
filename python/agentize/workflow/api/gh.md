@@ -34,12 +34,42 @@ def pr_create(
     base: str | None = None,
     head: str | None = None,
     cwd: str | Path | None = None,
-) -> str
+) -> tuple[str | None, str]
 ```
 
-Creates a pull request from the current branch and returns the PR URL.
+Creates a pull request from the current branch and returns `(pr_number, pr_url)`.
+`pr_number` is `None` when the URL cannot be parsed.
 
 **Raises**: `RuntimeError` when `gh` is unavailable or the CLI returns a failure.
+
+### `pr_view`
+
+```python
+def pr_view(
+    pr_number: str | int,
+    fields: str = "mergeStateStatus,mergeable,url",
+    *,
+    cwd: str | Path | None = None,
+) -> dict[str, Any]
+```
+
+Fetches PR fields via `gh pr view --json` and returns parsed JSON.
+
+### `pr_checks`
+
+```python
+def pr_checks(
+    pr_number: str | int,
+    *,
+    watch: bool = False,
+    interval: int = 30,
+    cwd: str | Path | None = None,
+) -> tuple[int, list[dict]]
+```
+
+Runs `gh pr checks` and returns `(exit_code, checks_list)`. When `watch=True`, the
+command streams progress until completion. The exit code follows `gh` conventions:
+`0` for success, `1` for failure, and `8` when checks are pending (watch disabled).
 
 ### `label_create`
 

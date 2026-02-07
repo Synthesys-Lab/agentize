@@ -26,6 +26,12 @@ GH_CALL_LOG="$TMP_DIR/gh-calls.log"
 GIT_CALL_LOG="$TMP_DIR/git-calls.log"
 touch "$ACW_CALL_LOG" "$GH_CALL_LOG" "$GIT_CALL_LOG"
 
+# Track PR view/checks calls for sequencing
+PR_VIEW_COUNT_FILE="$TMP_DIR/pr-view-count.txt"
+PR_CHECKS_COUNT_FILE="$TMP_DIR/pr-checks-count.txt"
+echo 0 > "$PR_VIEW_COUNT_FILE"
+echo 0 > "$PR_CHECKS_COUNT_FILE"
+
 # Track iteration count across subprocesses
 ITERATION_COUNT_FILE="$TMP_DIR/iter-count.txt"
 echo 0 > "$ITERATION_COUNT_FILE"
@@ -56,6 +62,34 @@ _next_iter() {
     count=$((count + 1))
     echo "$count" > "$ITERATION_COUNT_FILE"
     echo "$count"
+}
+
+_next_sequence_value() {
+    local sequence="$1"
+    local count_file="$2"
+    local fallback="$3"
+    local count=0
+
+    if [ -f "$count_file" ]; then
+        count=$(cat "$count_file")
+    fi
+    if ! [[ "$count" =~ ^[0-9]+$ ]]; then
+        count=0
+    fi
+
+    local value="$fallback"
+    local IFS=","
+    read -r -a parts <<< "$sequence"
+    if [ "${#parts[@]}" -gt 0 ]; then
+        if [ "$count" -lt "${#parts[@]}" ]; then
+            value="${parts[$count]}"
+        else
+            value="${parts[-1]}"
+        fi
+    fi
+
+    echo $((count + 1)) > "$count_file"
+    echo "$value"
 }
 
 write_commit_report() {
@@ -159,9 +193,50 @@ gh() {
             return 0
             ;;
         pr)
-            if [ "$2" = "create" ]; then
-                echo "https://github.com/test/repo/pull/1"
-            fi
+            case "$2" in
+                create)
+                    echo "${GH_PR_CREATE_URL:-https://github.com/test/repo/pull/1}"
+                    return 0
+                    ;;
+                view)
+                    if echo "$*" | grep -q -- "--json"; then
+                        local merge_state_seq="${GH_PR_MERGE_STATE_SEQUENCE:-MERGEABLE}"
+                        local merge_state
+                        merge_state=$(
+                            _next_sequence_value \
+                                "$merge_state_seq" \
+                                "$PR_VIEW_COUNT_FILE" \
+                                "MERGEABLE"
+                        )
+                        local mergeable_value="${GH_PR_MERGEABLE:-$merge_state}"
+                        local pr_url="${GH_PR_VIEW_URL:-https://github.com/test/repo/pull/1}"
+                        printf '{"mergeStateStatus":"%s","mergeable":"%s","url":"%s"}\n' \
+                            "$merge_state" \
+                            "$mergeable_value" \
+                            "$pr_url"
+                    fi
+                    return 0
+                    ;;
+                checks)
+                    if echo "$*" | grep -q -- "--json"; then
+                        if [ -n "$GH_PR_CHECKS_JSON" ]; then
+                            echo "$GH_PR_CHECKS_JSON"
+                        else
+                            echo "[]"
+                        fi
+                        return 0
+                    fi
+                    local checks_seq="${GH_PR_CHECKS_SEQUENCE:-0}"
+                    local exit_code
+                    exit_code=$(
+                        _next_sequence_value \
+                            "$checks_seq" \
+                            "$PR_CHECKS_COUNT_FILE" \
+                            "0"
+                    )
+                    return "$exit_code"
+                    ;;
+            esac
             return 0
             ;;
         *)
@@ -226,7 +301,7 @@ OVERRIDES_EOF
 
 export AGENTIZE_SHELL_OVERRIDES="$OVERRIDES"
 export STUB_WORKTREE ACW_CALL_LOG GH_CALL_LOG GIT_CALL_LOG
-export ITERATION_COUNT_FILE
+export ITERATION_COUNT_FILE PR_VIEW_COUNT_FILE PR_CHECKS_COUNT_FILE
 
 # Source overrides so shell-level wt calls also use stubs
 source "$OVERRIDES"
@@ -244,11 +319,19 @@ reset_logs() {
 reset_stub_state() {
     reset_iteration
     reset_logs
+    echo 0 > "$PR_VIEW_COUNT_FILE"
+    echo 0 > "$PR_CHECKS_COUNT_FILE"
     unset ACW_COMPLETION_ITER
     unset ACW_WRITE_COMMIT_REPORT
     unset ACW_FINALIZE_CONTENT
     unset ACW_OUTPUT_TEXT
     unset GH_FAIL_ISSUE_VIEW
+    unset GH_PR_CREATE_URL
+    GH_PR_MERGE_STATE_SEQUENCE="MERGEABLE"
+    GH_PR_MERGEABLE="MERGEABLE"
+    GH_PR_VIEW_URL="https://github.com/test/repo/pull/1"
+    GH_PR_CHECKS_SEQUENCE="0"
+    GH_PR_CHECKS_JSON='[{"name":"ci","state":"SUCCESS","link":"https://ci.example.com"}]'
     GIT_HAS_CHANGES=1
     GIT_REMOTES="origin"
     GIT_DEFAULT_BRANCH="main"
@@ -256,6 +339,8 @@ reset_stub_state() {
     GIT_REBASE_FAILS=0
     export GIT_HAS_CHANGES GIT_REMOTES GIT_DEFAULT_BRANCH
     export GIT_FETCH_FAILS GIT_REBASE_FAILS
+    export GH_PR_MERGE_STATE_SEQUENCE GH_PR_MERGEABLE GH_PR_VIEW_URL
+    export GH_PR_CHECKS_SEQUENCE GH_PR_CHECKS_JSON
 }
 
 # ── Test 1: Invalid backend format (missing colon) ──
@@ -477,6 +562,69 @@ if ! grep -q "gh pr create.*--base main" "$GH_CALL_LOG"; then
     echo "GH call log:" >&2
     cat "$GH_CALL_LOG" >&2
     test_fail "Expected gh pr create with --base main"
+fi
+
+# ── Test 11: wait-for-ci triggers PR checks ──
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
+ACW_COMPLETION_ITER=1
+export ACW_COMPLETION_ITER
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex --wait-for-ci 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed with --wait-for-ci"
+}
+
+if ! grep -q "gh pr view" "$GH_CALL_LOG"; then
+    echo "GH call log:" >&2
+    cat "$GH_CALL_LOG" >&2
+    test_fail "Expected gh pr view to be called for mergeability"
+fi
+
+if ! grep -q "gh pr checks" "$GH_CALL_LOG"; then
+    echo "GH call log:" >&2
+    cat "$GH_CALL_LOG" >&2
+    test_fail "Expected gh pr checks to be called for CI monitoring"
+fi
+
+# ── Test 12: Conflicting PR triggers rebase + force push ──
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
+ACW_COMPLETION_ITER=1
+export ACW_COMPLETION_ITER
+GH_PR_MERGE_STATE_SEQUENCE="CONFLICTING,MERGEABLE"
+export GH_PR_MERGE_STATE_SEQUENCE
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex --wait-for-ci 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed with auto-rebase on conflicts"
+}
+
+if ! grep -q "git push --force-with-lease" "$GIT_CALL_LOG"; then
+    echo "GIT call log:" >&2
+    cat "$GIT_CALL_LOG" >&2
+    test_fail "Expected force push after auto-rebase"
+fi
+
+# ── Test 13: CI failure triggers another iteration ──
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
+ACW_COMPLETION_ITER=1
+export ACW_COMPLETION_ITER
+GH_PR_CHECKS_SEQUENCE="1,0"
+GH_PR_CHECKS_JSON='[{"name":"ci","state":"FAILURE","link":"https://ci.example.com"}]'
+export GH_PR_CHECKS_SEQUENCE GH_PR_CHECKS_JSON
+
+output=$(lol impl 123 --backend codex:gpt-5.2-codex --wait-for-ci 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should recover from CI failure"
+}
+
+if [ "$(cat "$ITERATION_COUNT_FILE")" -lt 2 ]; then
+    test_fail "Expected a second iteration after CI failure"
 fi
 
 test_pass "lol impl workflow with stubbed dependencies"

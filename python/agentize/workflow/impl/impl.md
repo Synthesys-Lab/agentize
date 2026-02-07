@@ -13,6 +13,7 @@ def run_impl_workflow(
     backend: str = "codex:gpt-5.2-codex",
     max_iterations: int = 10,
     yolo: bool = False,
+    wait_for_ci: bool = False,
 ) -> None
 ```
 
@@ -25,6 +26,7 @@ source of truth.
 - `backend`: Backend in `provider:model` form.
 - `max_iterations`: Maximum number of iterations before failing.
 - `yolo`: Pass-through flag for `acw` autonomy.
+- `wait_for_ci`: When true, monitor PR mergeability and CI checks after creation.
 
 **Behavior**:
 - Resolves the issue worktree via `wt pathto`, spawning with `wt spawn --no-agent` if needed.
@@ -37,6 +39,12 @@ source of truth.
 - Requires `.tmp/commit-report-iter-<N>.txt` for commits; stages and commits when diffs exist.
 - Detects completion via `.tmp/finalize.txt` containing `Issue <N> resolved`.
 - Pushes the branch and opens a PR using the completion file as title/body.
+- Optionally waits for PR mergeability and CI completion, reusing the iteration loop to fix failures.
+
+**Post-PR phase** (when `wait_for_ci` is enabled):
+- Checks PR mergeability and rebases the branch when conflicts are detected.
+- Runs `gh pr checks --watch` to stream CI progress.
+- On CI failures, reruns an iteration with CI context injected into the prompt and pushes updates.
 
 **Errors**:
 - Raises `ValueError` for invalid arguments (issue number, backend format, max iterations).
@@ -60,6 +68,7 @@ of `finalize_file` is used as the PR title and must follow the format:
 - `iteration_section`
 - `previous_output_section`
 - `previous_commit_report_section`
+- `ci_failure_section`
 
 ## Outputs
 

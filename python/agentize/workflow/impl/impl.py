@@ -48,6 +48,7 @@ _REQUIRED_TOKENS = {
     "iteration_section",
     "previous_output_section",
     "previous_commit_report_section",
+    "ci_failure_section",
 }
 
 
@@ -92,6 +93,27 @@ def _section(title: str, content: str | None) -> str:
     return f"\n\n---\n{title}\n{content.rstrip()}\n"
 
 
+def _format_ci_failure_context(pr_url: str | None, checks: list[dict]) -> str | None:
+    if not pr_url and not checks:
+        return None
+    lines: list[str] = []
+    if pr_url:
+        lines.append(f"PR: {pr_url}")
+    if checks:
+        lines.append("Failing checks:")
+        for check in checks:
+            name = str(check.get("name") or "Unknown check")
+            state = str(check.get("state") or check.get("status") or "unknown")
+            link = check.get("link") or check.get("detailsUrl") or check.get("url")
+            line = f"- {name}: {state}"
+            if link:
+                line += f" ({link})"
+            lines.append(line)
+    else:
+        lines.append("CI checks failed. Review PR checks for details.")
+    return "\n".join(lines)
+
+
 def render_prompt(
     template_path: Path,
     *,
@@ -101,6 +123,7 @@ def render_prompt(
     iteration: int | None = None,
     previous_output: str | None = None,
     previous_commit_report: str | None = None,
+    ci_failure: str | None = None,
     dest_path: Path,
 ) -> str:
     """Render an iteration prompt from the template."""
@@ -116,6 +139,10 @@ def render_prompt(
         "previous_commit_report_section": _section(
             "Previous iteration summary (commit report):",
             previous_commit_report,
+        ),
+        "ci_failure_section": _section(
+            "CI failure context:",
+            ci_failure,
         ),
     }
 
@@ -185,6 +212,45 @@ def _stage_and_commit(worktree_path: Path, commit_report_file: Path, iteration: 
         raise ImplError(f"Error: Failed to commit iteration {iteration}")
 
 
+def _current_branch(worktree_path: Path) -> str:
+    branch_result = run_shell_function(
+        "git branch --show-current",
+        capture_output=True,
+        cwd=worktree_path,
+    )
+    branch_name = branch_result.stdout.strip()
+    if branch_result.returncode != 0 or not branch_name:
+        raise ImplError("Error: Failed to determine current branch")
+    return branch_name
+
+
+def _push_branch(
+    worktree_path: Path,
+    *,
+    push_remote: str,
+    branch_name: str,
+    set_upstream: bool = False,
+    force: bool = False,
+    allow_failure: bool = False,
+) -> None:
+    cmd_parts: list[str | Path] = ["git", "push"]
+    if force:
+        cmd_parts.append("--force-with-lease")
+    elif set_upstream:
+        cmd_parts.append("-u")
+    cmd_parts.extend([push_remote, branch_name])
+    push_cmd = _shell_cmd(cmd_parts)
+    push_result = run_shell_function(push_cmd, cwd=worktree_path)
+    if push_result.returncode != 0:
+        if allow_failure:
+            print(
+                f"Warning: Failed to push branch to {push_remote}",
+                file=sys.stderr,
+            )
+            return
+        raise ImplError(f"Error: Failed to push branch to {push_remote}")
+
+
 def _detect_push_remote(worktree_path: Path) -> str:
     result = run_shell_function("git remote", capture_output=True, cwd=worktree_path)
     if result.returncode != 0:
@@ -230,6 +296,44 @@ def _sync_branch(worktree_path: Path) -> tuple[str, str]:
     return push_remote, base_branch
 
 
+def _wait_for_pr_mergeable(
+    worktree_path: Path,
+    pr_number: str,
+    *,
+    push_remote: str,
+) -> None:
+    pr_data = gh_utils.pr_view(
+        pr_number,
+        fields="mergeStateStatus,mergeable,url",
+        cwd=worktree_path,
+    )
+    merge_state = str(pr_data.get("mergeStateStatus") or "").upper()
+    if merge_state != "CONFLICTING":
+        return
+
+    print("PR has merge conflicts. Rebasing onto base branch...")
+    _sync_branch(worktree_path)
+    branch_name = _current_branch(worktree_path)
+    _push_branch(
+        worktree_path,
+        push_remote=push_remote,
+        branch_name=branch_name,
+        force=True,
+    )
+
+    pr_data = gh_utils.pr_view(
+        pr_number,
+        fields="mergeStateStatus,mergeable,url",
+        cwd=worktree_path,
+    )
+    merge_state = str(pr_data.get("mergeStateStatus") or "").upper()
+    if merge_state == "CONFLICTING":
+        raise ImplError(
+            "Error: PR still has merge conflicts after rebase. "
+            "Resolve conflicts manually and rerun."
+        )
+
+
 def _append_closes_line(finalize_file: Path, issue_no: int) -> None:
     content = finalize_file.read_text()
     if re.search(rf"closes\s+#\s*{issue_no}", content, re.IGNORECASE):
@@ -245,29 +349,21 @@ def _push_and_create_pr(
     *,
     push_remote: str | None = None,
     base_branch: str | None = None,
-) -> None:
+) -> tuple[str | None, str | None, str]:
     if not push_remote:
         push_remote = _detect_push_remote(worktree_path)
     if not base_branch:
         base_branch = _detect_base_branch(worktree_path, push_remote)
 
-    branch_result = run_shell_function(
-        "git branch --show-current",
-        capture_output=True,
-        cwd=worktree_path,
-    )
-    branch_name = branch_result.stdout.strip()
+    branch_name = _current_branch(worktree_path)
 
-    push_cmd = _shell_cmd([
-        "git",
-        "push",
-        "-u",
-        push_remote,
-        branch_name,
-    ])
-    push_result = run_shell_function(push_cmd, cwd=worktree_path)
-    if push_result.returncode != 0:
-        print(f"Warning: Failed to push branch to {push_remote}", file=sys.stderr)
+    _push_branch(
+        worktree_path,
+        push_remote=push_remote,
+        branch_name=branch_name,
+        set_upstream=True,
+        allow_failure=True,
+    )
 
     pr_title = ""
     if finalize_file.exists():
@@ -281,7 +377,7 @@ def _push_and_create_pr(
     _append_closes_line(finalize_file, issue_no)
     pr_body = finalize_file.read_text() if finalize_file.exists() else ""
     try:
-        gh_utils.pr_create(
+        pr_number, pr_url = gh_utils.pr_create(
             pr_title,
             pr_body,
             base=base_branch,
@@ -293,6 +389,8 @@ def _push_and_create_pr(
             "Warning: Failed to create PR. You may need to create it manually.",
             file=sys.stderr,
         )
+        return None, None, branch_name
+    return pr_number, pr_url, branch_name
 
 
 def _coerce_issue_no(issue_no: int | str) -> int:
@@ -333,6 +431,7 @@ def run_impl_workflow(
     backend: str = "codex:gpt-5.2-codex",
     max_iterations: int = 10,
     yolo: bool = False,
+    wait_for_ci: bool = False,
 ) -> None:
     """Run the issue-to-implementation workflow loop."""
     issue_no = _coerce_issue_no(issue_no)
@@ -387,9 +486,7 @@ def run_impl_workflow(
         dest_path=base_input_file,
     )
 
-    completion_found = False
-
-    for iteration in range(1, max_iterations + 1):
+    def run_iteration(iteration: int, *, ci_failure: str | None = None) -> bool:
         print(f"Iteration {iteration}/{max_iterations}...")
         input_file = tmp_dir / f"impl-input-{iteration}.txt"
 
@@ -408,6 +505,7 @@ def run_impl_workflow(
             iteration=iteration,
             previous_output=previous_output,
             previous_commit_report=prev_commit_report,
+            ci_failure=ci_failure,
             dest_path=input_file,
         )
 
@@ -441,14 +539,20 @@ def run_impl_workflow(
                 f"Warning: Missing commit report for iteration {iteration}; skipping commit.",
                 file=sys.stderr,
             )
-            if completion_found:
-                break
-            continue
+            return completion_found
 
         _stage_and_commit(worktree, commit_report_file, iteration)
 
         if completion_found:
             print("Completion marker found!")
+        return completion_found
+
+    completion_found = False
+    last_iteration = 0
+    for iteration in range(1, max_iterations + 1):
+        last_iteration = iteration
+        completion_found = run_iteration(iteration)
+        if completion_found:
             break
 
     if not completion_found:
@@ -458,11 +562,50 @@ def run_impl_workflow(
             f"'Issue {issue_no} resolved'"
         )
 
-    _push_and_create_pr(
+    pr_number, pr_url, branch_name = _push_and_create_pr(
         worktree,
         issue_no,
         finalize_file,
         push_remote=push_remote,
         base_branch=base_branch,
     )
-    print(f"Implementation complete for issue #{issue_no}")
+
+    if wait_for_ci:
+        if not pr_number:
+            raise ImplError("Error: Failed to determine PR number for CI monitoring")
+        next_iteration = last_iteration + 1
+        while True:
+            _wait_for_pr_mergeable(
+                worktree,
+                str(pr_number),
+                push_remote=push_remote,
+            )
+            print("Waiting for PR CI...")
+            exit_code, checks = gh_utils.pr_checks(
+                pr_number,
+                watch=True,
+                interval=30,
+                cwd=worktree,
+            )
+            if exit_code == 0:
+                break
+            if next_iteration > max_iterations:
+                raise ImplError(
+                    f"Error: Max iteration limit ({max_iterations}) reached while fixing CI\n"
+                    f"Last PR status: failing checks"
+                )
+            ci_failure = _format_ci_failure_context(pr_url, checks)
+            print("CI checks failed. Running fix iteration...")
+            run_iteration(next_iteration, ci_failure=ci_failure)
+            _push_branch(
+                worktree,
+                push_remote=push_remote,
+                branch_name=branch_name,
+            )
+            next_iteration += 1
+
+    if pr_url:
+        print(f"Issue-{issue_no} implementation is done")
+        print(f"Find the PR at: {pr_url}")
+    else:
+        print(f"Issue-{issue_no} implementation is done")

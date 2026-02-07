@@ -11,7 +11,7 @@ def main(argv: list[str]) -> int
 ```
 
 Parses CLI arguments and runs `run_impl_workflow()` with the selected backend, maximum
-iteration count, and optional `--yolo` flag. Returns a process exit code.
+iteration count, and optional `--yolo` / `--wait-for-ci` flags. Returns a process exit code.
 
 ## Internal Helpers
 

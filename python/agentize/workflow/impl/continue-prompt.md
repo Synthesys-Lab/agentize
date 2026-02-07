@@ -18,4 +18,7 @@ Available tags are defined in docs/git-msg-tags.md. Choose the most specific tag
 - before claiming completion, ensure you have the goal described in the issue file fully implemented, and all tests are passing.
 - once completed the implementation, create a {{finalize_file}} file with the PR title and body, including "closes #{{issue_no}}" at the end of the body.
 
-{{iteration_section}}{{previous_output_section}}{{previous_commit_report_section}}
+If a CI failure context section is provided, use it to prioritize fixes and
+include relevant test updates or diagnostics in your response.
+
+{{iteration_section}}{{previous_output_section}}{{previous_commit_report_section}}{{ci_failure_section}}

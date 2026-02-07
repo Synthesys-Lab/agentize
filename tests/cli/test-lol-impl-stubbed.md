@@ -21,6 +21,9 @@ Stubs are defined in a shell override script referenced by `AGENTIZE_SHELL_OVERR
 4. Per-iteration commit report requirement (`.tmp/commit-report-iter-<N>.txt`)
 5. Sync fetch + rebase error handling (conflict/failure) before iterations
 6. Base branch + remote selection (upstream/master fallback to origin/main)
+7. Post-PR monitoring (`--wait-for-ci`) triggers mergeability checks + CI watch
+8. Auto-rebase on conflicting PRs (force-push after rebase)
+9. CI failure triggers a follow-up iteration with new commit
 
 ## Usage
 

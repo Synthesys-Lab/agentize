@@ -1,6 +1,7 @@
 # Impl Workflow Module
 
-Python implementation of the `lol impl` issue-to-implementation loop.
+ Python implementation of the `lol impl` issue-to-implementation loop, including
+ optional post-PR monitoring for mergeability and CI.
 
 ## Organization
 

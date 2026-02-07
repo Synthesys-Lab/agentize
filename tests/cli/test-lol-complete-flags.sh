@@ -55,6 +55,7 @@ impl_output=$(lol --complete impl-flags 2>/dev/null)
 echo "$impl_output" | grep -q "^--backend$" || test_fail "impl-flags missing: --backend"
 echo "$impl_output" | grep -q "^--max-iterations$" || test_fail "impl-flags missing: --max-iterations"
 echo "$impl_output" | grep -q "^--yolo$" || test_fail "impl-flags missing: --yolo"
+echo "$impl_output" | grep -q "^--wait-for-ci$" || test_fail "impl-flags missing: --wait-for-ci"
 
 # Test upgrade-flags
 upgrade_output=$(lol --complete upgrade-flags 2>/dev/null)

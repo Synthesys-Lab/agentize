@@ -29,6 +29,11 @@ def main(argv: list[str]) -> int:
         action="store_true",
         help="Pass through --yolo to acw",
     )
+    parser.add_argument(
+        "--wait-for-ci",
+        action="store_true",
+        help="Monitor PR mergeability and CI after creation",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -37,6 +42,7 @@ def main(argv: list[str]) -> int:
             backend=args.backend,
             max_iterations=args.max_iterations,
             yolo=args.yolo,
+            wait_for_ci=args.wait_for_ci,
         )
     except (ImplError, ValueError) as exc:
         print(str(exc), file=sys.stderr)

@@ -38,7 +38,8 @@ and `refine_instructions` are present, they are concatenated with a blank line
 (editor text first, positional instructions second).
 
 ### _lol_parse_impl()
-Validates positional arguments and flags for `lol impl`, then calls `_lol_cmd_impl`.
+Validates positional arguments and flags for `lol impl` (including `--wait-for-ci`),
+then calls `_lol_cmd_impl`.
 
 ### _lol_parse_simp()
 Accepts an optional file path plus optional focus description via `--editor`,

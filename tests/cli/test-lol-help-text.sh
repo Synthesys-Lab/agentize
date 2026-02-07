@@ -35,6 +35,9 @@ echo "$output" | grep -q "lol plan" || test_fail "Usage text missing 'lol plan' 
 # Verify usage text includes lol impl command
 echo "$output" | grep -q "lol impl" || test_fail "Usage text missing 'lol impl' command"
 
+# Verify usage text includes --wait-for-ci flag
+echo "$output" | grep -q "\-\-wait-for-ci" || test_fail "Usage text missing '--wait-for-ci' flag"
+
 # Verify usage text includes lol simp command
 echo "$output" | grep -q "lol simp" || test_fail "Usage text missing 'lol simp' command"
 

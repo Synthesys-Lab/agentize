@@ -57,6 +57,7 @@ _lol_complete() {
             echo "--backend"
             echo "--max-iterations"
             echo "--yolo"
+            echo "--wait-for-ci"
             ;;
         simp-flags)
             echo "--editor"

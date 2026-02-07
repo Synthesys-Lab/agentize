@@ -20,7 +20,7 @@ The Python CLI supports the same commands as the shell implementation:
 | `usage` | Report Claude Code token usage statistics (--cache, --cost) |
 | `claude-clean` | Remove stale project entries from `~/.claude.json` |
 | `version` | Display version information |
-| `impl` | Issue-to-implementation loop (Python workflow) |
+| `impl` | Issue-to-implementation loop (Python workflow, optional `--wait-for-ci`) |
 | `simp` | Simplify code without changing semantics (optional `--focus`, `--issue`) |
 
 ## Top-level Flags
@@ -80,6 +80,9 @@ python -m agentize.cli simp README.md --issue 123
 # Simplify with a focus description
 python -m agentize.cli simp --focus "Refactor for clarity"
 python -m agentize.cli simp README.md --focus "Reduce nesting"
+
+# Run impl workflow and wait for PR CI
+python -m agentize.cli impl 42 --wait-for-ci
 ```
 
 ## Related Documentation

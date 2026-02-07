@@ -7,7 +7,7 @@ Delegates `lol impl` to the Python workflow in `python/agentize/workflow/impl`.
 ### Command
 
 ```bash
-lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
+lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo] [--wait-for-ci]
 ```
 
 **Parameters**:
@@ -15,6 +15,7 @@ lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
 - `--backend`: Backend in `provider:model` form (default: `codex:gpt-5.2-codex`).
 - `--max-iterations`: Maximum number of `acw` iterations (default: `10`).
 - `--yolo`: Pass-through flag to `acw` for autonomous actions.
+- `--wait-for-ci`: After PR creation, monitor mergeability and CI before exiting.
 
 **Behavior**:
 - Delegates to the Python workflow after ensuring the issue worktree exists and navigating into it in sourced shells.
@@ -25,6 +26,7 @@ lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
 - Stages and commits changes each iteration when there are staged diffs.
 - Detects completion via `.tmp/finalize.txt` when it contains `Issue <no> resolved`.
 - Pushes the branch to a detected remote and opens a PR using the completion file contents.
+- When `--wait-for-ci` is set, waits for PR mergeability and CI, rerunning iterations on failures.
 
 **Outputs**:
 - Progress and warnings to stderr/stdout.

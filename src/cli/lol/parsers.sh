@@ -391,6 +391,7 @@ _lol_parse_impl() {
     local backend="codex:gpt-5.2-codex"
     local max_iterations="10"
     local yolo="0"
+    local wait_for_ci="0"
 
     # Handle --help
     if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
@@ -402,6 +403,7 @@ _lol_parse_impl() {
         echo "  --backend <provider:model>    Backend in provider:model form (default: codex:gpt-5.2-codex)"
         echo "  --max-iterations <N>          Maximum acw iterations (default: 10)"
         echo "  --yolo                        Pass through to provider CLI options"
+        echo "  --wait-for-ci                 Wait for PR mergeability and CI completion"
         echo "  --help                        Show this help message"
         return 0
     fi
@@ -413,7 +415,7 @@ _lol_parse_impl() {
                 shift
                 if [ -z "$1" ]; then
                     echo "Error: --backend requires provider:model" >&2
-                    echo "Usage: lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]" >&2
+                    echo "Usage: lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo] [--wait-for-ci]" >&2
                     return 1
                 fi
                 backend="$1"
@@ -423,7 +425,7 @@ _lol_parse_impl() {
                 shift
                 if [ -z "$1" ]; then
                     echo "Error: --max-iterations requires a number" >&2
-                    echo "Usage: lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]" >&2
+                    echo "Usage: lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo] [--wait-for-ci]" >&2
                     return 1
                 fi
                 max_iterations="$1"
@@ -433,9 +435,13 @@ _lol_parse_impl() {
                 yolo="1"
                 shift
                 ;;
+            --wait-for-ci)
+                wait_for_ci="1"
+                shift
+                ;;
             -*)
                 echo "Error: Unknown option '$1'" >&2
-                echo "Usage: lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]" >&2
+                echo "Usage: lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo] [--wait-for-ci]" >&2
                 return 1
                 ;;
             *)
@@ -443,7 +449,7 @@ _lol_parse_impl() {
                     issue_no="$1"
                 else
                     echo "Error: Unexpected argument '$1'" >&2
-                    echo "Usage: lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]" >&2
+                    echo "Usage: lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo] [--wait-for-ci]" >&2
                     return 1
                 fi
                 shift
@@ -454,11 +460,11 @@ _lol_parse_impl() {
     # Validate issue number
     if [ -z "$issue_no" ]; then
         echo "Error: Issue number is required" >&2
-        echo "Usage: lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]" >&2
+        echo "Usage: lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo] [--wait-for-ci]" >&2
         return 1
     fi
 
-    _lol_cmd_impl "$issue_no" "$backend" "$max_iterations" "$yolo"
+    _lol_cmd_impl "$issue_no" "$backend" "$max_iterations" "$yolo" "$wait_for_ci"
 }
 
 # Parse simp command arguments and call _lol_cmd_simp

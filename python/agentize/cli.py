@@ -89,6 +89,7 @@ def handle_impl(args: argparse.Namespace) -> int:
             backend=args.backend,
             max_iterations=args.max_iterations,
             yolo=args.yolo,
+            wait_for_ci=args.wait_for_ci,
         )
         return 0
     except (ImplError, ValueError) as e:
@@ -230,6 +231,11 @@ def main() -> int:
         "--yolo",
         action="store_true",
         help="Pass through to provider CLI options",
+    )
+    impl_parser.add_argument(
+        "--wait-for-ci",
+        action="store_true",
+        help="Monitor PR mergeability and CI after creation",
     )
 
     # simp command

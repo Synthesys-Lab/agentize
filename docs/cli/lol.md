@@ -257,7 +257,7 @@ Automate the issue-to-implementation loop using `wt` + the shared ACW runner (in
 When `lol` is sourced and `wt` is available, the wrapper ensures the worktree exists (`wt pathto` / `wt spawn`) and enters it (`wt goto`) before running the workflow (see `docs/feat/cli/wt.md`).
 
 ```bash
-lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
+lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo] [--wait-for-ci]
 ```
 
 #### Options
@@ -267,6 +267,7 @@ lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
 | `--backend` | No | `codex:gpt-5.2-codex` | Backend in `provider:model` form |
 | `--max-iterations` | No | `10` | Maximum `acw` iterations before giving up |
 | `--yolo` | No | Off | Pass through to provider CLI options (Claude via acw maps to `--dangerously-skip-permissions`) |
+| `--wait-for-ci` | No | Off | After PR creation, monitor mergeability + CI and iterate on failures |
 
 #### Issue prefetch
 
@@ -283,6 +284,10 @@ Before the iteration loop, `lol impl` syncs the issue branch by fetching and reb
 
 Each iteration stages and commits changes (skipping commits when there are no changes). A `.tmp/commit-report-iter-<N>.txt` file is required for each iteration and is used as the commit message for iteration `<N>`. On completion, the branch is pushed to `upstream` (or `origin`) and the PR targets `master` (or `main`).
 
+#### Post-PR monitoring (optional)
+
+When `--wait-for-ci` is set, `lol impl` checks PR mergeability and automatically rebases when conflicts are detected (failing fast on unresolved conflicts). It then runs `gh pr checks --watch` to stream CI progress. Failed checks trigger another iteration with CI context injected into the prompt; fixes are pushed and CI is rechecked until success or the iteration limit is reached.
+
 #### Example
 
 ```bash
@@ -294,6 +299,9 @@ lol impl 42 --backend cursor:gpt-5.2-codex
 
 # Limit iterations and enable yolo mode
 lol impl 42 --max-iterations 5 --yolo
+
+# Create a PR and wait for mergeability + CI status
+lol impl 42 --wait-for-ci
 ```
 
 ### lol serve

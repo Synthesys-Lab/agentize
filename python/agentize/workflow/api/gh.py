@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shlex
@@ -9,7 +10,7 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 
 
 def _resolve_overrides() -> Path | None:
@@ -86,11 +87,48 @@ def _run_gh(
     return result
 
 
+def _run_gh_with_status(
+    args: Iterable[str],
+    *,
+    cwd: str | Path | None = None,
+    capture_output: bool = True,
+) -> subprocess.CompletedProcess:
+    if not _gh_available():
+        raise RuntimeError("gh CLI not available or not authenticated")
+    overrides = _resolve_overrides()
+    if overrides is not None:
+        cmd = _shell_command(["gh", *args])
+        result = subprocess.run(
+            ["bash", "-c", f"source {shlex.quote(str(overrides))} && {cmd}"],
+            capture_output=capture_output,
+            text=True,
+            cwd=str(cwd) if cwd else None,
+        )
+    else:
+        result = subprocess.run(
+            ["gh", *args],
+            capture_output=capture_output,
+            text=True,
+            cwd=str(cwd) if cwd else None,
+        )
+    return result
+
+
 def _parse_issue_number(issue_url: str) -> str | None:
     match = re.search(r"([0-9]+)$", issue_url.strip())
     if not match:
         return None
     return match.group(1)
+
+
+def _parse_pr_number(pr_url: str) -> str | None:
+    match = re.search(r"/pull/([0-9]+)", pr_url.strip())
+    if match:
+        return match.group(1)
+    match = re.search(r"([0-9]+)$", pr_url.strip())
+    if match:
+        return match.group(1)
+    return None
 
 
 def issue_create(
@@ -204,7 +242,7 @@ def pr_create(
     base: str | None = None,
     head: str | None = None,
     cwd: str | Path | None = None,
-) -> str:
+) -> tuple[str | None, str]:
     body_args, temp_body = _body_args(body)
     args = ["pr", "create", "--title", title, *body_args]
     if draft:
@@ -221,7 +259,64 @@ def pr_create(
     pr_url = result.stdout.strip().splitlines()[-1] if result.stdout.strip() else ""
     if not pr_url:
         raise RuntimeError("gh pr create returned no URL")
-    return pr_url
+    return _parse_pr_number(pr_url), pr_url
+
+
+def pr_view(
+    pr_number: str | int,
+    fields: str = "mergeStateStatus,mergeable,url",
+    *,
+    cwd: str | Path | None = None,
+) -> dict[str, Any]:
+    result = _run_gh(
+        ["pr", "view", str(pr_number), "--json", fields],
+        cwd=cwd,
+    )
+    if not result.stdout.strip():
+        return {}
+    return json.loads(result.stdout)
+
+
+def pr_checks(
+    pr_number: str | int,
+    *,
+    watch: bool = False,
+    interval: int = 30,
+    cwd: str | Path | None = None,
+) -> tuple[int, list[dict]]:
+    if watch and interval <= 0:
+        raise ValueError("interval must be positive")
+    args = ["pr", "checks", str(pr_number)]
+    if watch:
+        args.extend(["--watch", "--interval", str(interval)])
+    result = _run_gh_with_status(args, cwd=cwd, capture_output=not watch)
+    exit_code = result.returncode
+    if exit_code not in (0, 1, 8):
+        detail = ""
+        if result.stdout:
+            detail = result.stdout.strip()
+        if result.stderr:
+            detail = result.stderr.strip() or detail
+        hint = detail if detail else f"exit code {exit_code}"
+        raise RuntimeError(f"gh {' '.join(args)} failed ({hint})")
+
+    checks: list[dict] = []
+    try:
+        checks_result = _run_gh(
+            [
+                "pr",
+                "checks",
+                str(pr_number),
+                "--json",
+                "name,state,link",
+            ],
+            cwd=cwd,
+        )
+        if checks_result.stdout.strip():
+            checks = json.loads(checks_result.stdout)
+    except RuntimeError:
+        checks = []
+    return exit_code, checks
 
 
 __all__ = [
@@ -233,4 +328,6 @@ __all__ = [
     "label_create",
     "label_add",
     "pr_create",
+    "pr_view",
+    "pr_checks",
 ]
