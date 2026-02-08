@@ -10,6 +10,7 @@
 # Test 8: --stdout rejects output-file positional argument
 # Test 9: --chat --editor --stdout echoes prompt on TTY stdout
 # Test 10: --chat --editor --stdout skips prompt echo on non-TTY stdout
+# Test 11: Gemini invocation forces stream-json output
 
 source "$(dirname "$0")/../common.sh"
 
@@ -66,6 +67,17 @@ fi
 cat
 STUB
 chmod +x "$TEST_BIN/kimi"
+
+# Stub gemini provider binary
+cat > "$TEST_BIN/gemini" << 'STUB'
+#!/usr/bin/env bash
+if [ -n "$GEMINI_ARGS_FILE" ]; then
+  printf "%s\n" "$@" > "$GEMINI_ARGS_FILE"
+fi
+# Output simulated stream-json response
+echo '{"role":"assistant","content":[{"type":"text","text":"Gemini response"}]}'
+STUB
+chmod +x "$TEST_BIN/gemini"
 
 export PATH="$TEST_BIN:$PATH"
 
@@ -347,5 +359,32 @@ if ! printf "%s\n" "$clean_non_tty_output" | grep -q "TTY prompt content"; then
 fi
 
 export AGENTIZE_HOME="$ORIGINAL_AGENTIZE_HOME"
+
+# Test 11: Gemini invocation forces stream-json output
+GEMINI_ARGS_FILE="$TEST_HOME/gemini-args.txt"
+export GEMINI_ARGS_FILE
+rm -f "$GEMINI_ARGS_FILE"
+
+set +e
+acw gemini default "$input_file" "$TEST_HOME/gemini-output.txt" >/dev/null 2>&1
+exit_code=$?
+set -e
+
+if [ "$exit_code" -ne 0 ]; then
+  test_fail "Gemini invocation should succeed with valid input"
+fi
+
+if ! grep -q -- "--output-format" "$GEMINI_ARGS_FILE"; then
+  test_fail "Gemini invocation should include --output-format flag"
+fi
+
+if ! grep -q "stream-json" "$GEMINI_ARGS_FILE"; then
+  test_fail "Gemini invocation should force stream-json output format"
+fi
+
+# Verify stream-json output was stripped to plain text
+if ! grep -q "Gemini response" "$TEST_HOME/gemini-output.txt"; then
+  test_fail "Gemini output should be stripped to plain text"
+fi
 
 test_pass "acw --editor/--stdout flags work correctly"

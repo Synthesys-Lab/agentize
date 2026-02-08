@@ -31,7 +31,7 @@ Usage:
   acw --help
 
 Arguments:
-  cli-name      Provider: claude, codex, opencode, cursor, kimi
+  cli-name      Provider: claude, codex, opencode, cursor, kimi, gemini
   model-name    Model identifier for the provider
   input-file    Path to file containing the prompt (unless --editor is used)
   output-file   Path where response will be written (unless --stdout is used)
@@ -51,6 +51,7 @@ Providers:
   opencode      Opencode CLI (best-effort)
   cursor        Cursor Agent CLI (best-effort)
   kimi          Kimi CLI (best-effort)
+  gemini        Gemini CLI (best-effort)
 
 Exit Codes:
   0   Success
@@ -254,7 +255,7 @@ acw() {
                 # Check if next arg looks like a session ID (not a flag, not a known provider)
                 if [ $# -gt 0 ] && [ "${1:0:1}" != "-" ]; then
                     case "$1" in
-                        claude|codex|opencode|cursor|kimi)
+                        claude|codex|opencode|cursor|kimi|gemini)
                             # This is the cli-name, not a session ID
                             ;;
                         *)
@@ -350,12 +351,12 @@ acw() {
 
     # Check if provider is known
     case "$cli_name" in
-        claude|codex|opencode|cursor|kimi)
+        claude|codex|opencode|cursor|kimi|gemini)
             # Valid provider
             ;;
         *)
             echo "Error: Unknown provider '$cli_name'" >&2
-            echo "Supported providers: claude, codex, opencode, cursor, kimi" >&2
+            echo "Supported providers: claude, codex, opencode, cursor, kimi, gemini" >&2
             return 2
             ;;
     esac
@@ -474,7 +475,7 @@ acw() {
 
             session_file=$(_acw_chat_session_path "$chat_session_id")
             local session_model="$model_name"
-            if [ "$cli_name" = "kimi" ]; then
+            if [ "$cli_name" = "kimi" ] || [ "$cli_name" = "gemini" ]; then
                 session_model="default"
             fi
             _acw_chat_create_session "$session_file" "$cli_name" "$session_model"
@@ -502,17 +503,17 @@ acw() {
         echo "Response:"
     fi
 
-    # Kimi writes stream-json; capture raw output and strip to plain text afterward.
+    # Kimi and Gemini write stream-json; capture raw output and strip to plain text afterward.
     local final_output_file="$output_file"
     local provider_output_file="$output_file"
-    local kimi_raw_output=""
-    local kimi_strip=0
+    local stream_json_raw_output=""
+    local stream_json_strip=0
 
-    if [ "$cli_name" = "kimi" ]; then
-        kimi_strip=1
-        kimi_raw_output=$(mktemp)
-        if [ -z "$kimi_raw_output" ]; then
-            echo "Error: Failed to create temporary output file for Kimi." >&2
+    if [ "$cli_name" = "kimi" ] || [ "$cli_name" = "gemini" ]; then
+        stream_json_strip=1
+        stream_json_raw_output=$(mktemp)
+        if [ -z "$stream_json_raw_output" ]; then
+            echo "Error: Failed to create temporary output file for stream-json stripping." >&2
             if [ -n "$combined_input" ]; then
                 rm -f "$combined_input"
             fi
@@ -525,7 +526,7 @@ acw() {
             fi
             return 1
         fi
-        provider_output_file="$kimi_raw_output"
+        provider_output_file="$stream_json_raw_output"
     fi
 
     # Remaining arguments are provider options
@@ -612,6 +613,20 @@ acw() {
             fi
             provider_exit=$?
             ;;
+        gemini)
+            if [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 0 ]; then
+                _acw_invoke_gemini "$model_name" "$input_file" "$provider_output_file" "$@" 2>&1
+            elif [ "$stdout_mode" -eq 1 ] && [ "$chat_mode" -eq 1 ]; then
+                _acw_invoke_gemini "$model_name" "$input_file" "$provider_output_file" "$@" 2>>"$stderr_file"
+            else
+                if [ -n "$stderr_file" ]; then
+                    _acw_invoke_gemini "$model_name" "$input_file" "$provider_output_file" "$@" 2>"$stderr_file"
+                else
+                    _acw_invoke_gemini "$model_name" "$input_file" "$provider_output_file" "$@"
+                fi
+            fi
+            provider_exit=$?
+            ;;
     esac
 
     # Clean up empty stderr sidecar if newly created
@@ -619,7 +634,7 @@ acw() {
         rm -f "$stderr_file"
     fi
 
-    if [ "$kimi_strip" -eq 1 ]; then
+    if [ "$stream_json_strip" -eq 1 ]; then
         _acw_kimi_strip_output "$provider_output_file" "$final_output_file"
     fi
 
@@ -654,8 +669,8 @@ acw() {
         trap - EXIT INT TERM
     fi
 
-    if [ -n "$kimi_raw_output" ]; then
-        rm -f "$kimi_raw_output"
+    if [ -n "$stream_json_raw_output" ]; then
+        rm -f "$stream_json_raw_output"
     fi
 
     return "$provider_exit"

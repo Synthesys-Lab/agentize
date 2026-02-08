@@ -58,6 +58,9 @@ _acw_check_cli() {
         kimi)
             binary="kimi"
             ;;
+        gemini)
+            binary="gemini"
+            ;;
         *)
             echo "Error: Unknown provider '$cli_name'" >&2
             return 2

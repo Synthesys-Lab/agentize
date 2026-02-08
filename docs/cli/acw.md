@@ -19,7 +19,7 @@ acw --help
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `cli-name` | Yes | Provider name: `claude`, `codex`, `opencode`, `cursor`, `kimi` |
+| `cli-name` | Yes | Provider name: `claude`, `codex`, `opencode`, `cursor`, `kimi`, `gemini` |
 | `model-name` | Yes | Model identifier passed to the provider (Kimi ignores this and uses its default model) |
 | `input-file` | Conditional | Path to file containing the prompt (required unless `--editor` is used) |
 | `output-file` | Conditional | Path where response will be written (required unless `--stdout` is used) |
@@ -45,6 +45,7 @@ acw --help
 | `opencode` | `opencode` | Best-effort |
 | `cursor` | `agent` | Best-effort |
 | `kimi` | `kimi` | Best-effort |
+| `gemini` | `gemini` | Best-effort |
 
 ## Exit Codes
 
@@ -72,6 +73,9 @@ acw codex gpt-4o prompt.txt response.txt
 
 # Invoke Kimi (model-name is ignored; Kimi uses its default)
 acw kimi default prompt.txt response.txt
+
+# Invoke Gemini (model-name is ignored; Gemini uses its default)
+acw gemini default prompt.txt response.txt
 
 # Pass additional options to the provider
 acw claude claude-sonnet-4-20250514 prompt.txt response.txt --max-tokens 4096
@@ -156,7 +160,7 @@ Use `acw --complete <topic>` to get completion values programmatically:
 
 | Topic | Description |
 |-------|-------------|
-| `providers` | List of supported providers (claude, codex, opencode, cursor, kimi) |
+| `providers` | List of supported providers (claude, codex, opencode, cursor, kimi, gemini) |
 | `cli-options` | Common CLI options (e.g., --help, --editor, --stdout, --model, --max-tokens, --yolo) |
 
 Kimi ignores `<model-name>`, so provider completions still include `--model` for other CLIs while Kimi uses its default model.

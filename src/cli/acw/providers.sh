@@ -94,3 +94,19 @@ _acw_invoke_kimi() {
     # stderr passes through for progress messages
     kimi --print --output-format stream-json "$@" < "$input" > "$output"
 }
+
+# Invoke Gemini CLI (best-effort)
+# Usage: _acw_invoke_gemini <model> <input> <output> [options...]
+# I/O: stdout -> output file, stderr -> passthrough (progress messages visible)
+# Returns: gemini exit code
+_acw_invoke_gemini() {
+    local model="$1"
+    local input="$2"
+    local output="$3"
+    shift 3
+
+    # Gemini uses -p for prompt input; model argument is ignored.
+    # Forces stream-json output for consistent stripping.
+    # stderr passes through for progress messages
+    gemini -p "$(cat "$input")" --output-format stream-json "$@" > "$output"
+}

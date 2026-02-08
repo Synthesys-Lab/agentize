@@ -35,6 +35,14 @@ serve as the provider invocation surface for the dispatcher.
 - Ignores the `model` argument and lets Kimi select its default model.
 - Returns the Kimi CLI exit code.
 
+### _acw_invoke_gemini <model> <input> <output> [options...]
+- Runs Gemini CLI in non-interactive mode with `-p` flag for prompt input.
+- Forces `--output-format stream-json` to normalize streaming output.
+- Reads the prompt from `input` via `-p "$(cat "$input")"` and writes to `output`.
+- Ignores the `model` argument and lets Gemini select its default model.
+- Passes `--yolo` through natively (no translation needed).
+- Returns the Gemini CLI exit code.
+
 ## Internal Helpers
 
 None. Each provider function encapsulates its own CLI-specific invocation.

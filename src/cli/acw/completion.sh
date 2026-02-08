@@ -14,6 +14,7 @@ _acw_complete() {
             echo "opencode"
             echo "cursor"
             echo "kimi"
+            echo "gemini"
             ;;
         cli-options)
             echo "--help"
