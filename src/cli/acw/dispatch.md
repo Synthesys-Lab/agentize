@@ -43,26 +43,29 @@ acw --chat-list
 - Emits argument or validation errors to stderr with non-zero exit codes as
   documented in `acw.md`.
 
-## Kimi and Gemini Output Normalization
+## Kimi Output Normalization
 
-Kimi and Gemini are forced to stream JSON. The dispatcher captures raw output,
-extracts assistant text, and writes clean output to the final destination.
+Kimi outputs stream-json format which requires stripping to extract plain text.
+Gemini outputs plain text by default and does not require normalization.
 
 ### Kimi Format
-Extracts `content[].type == "text"` segments from assistant messages.
+Kimi outputs JSON with `content` as a list of typed objects:
+```json
+{"role":"assistant","content":[{"type":"text","text":"Hello"}]}
+```
 
-### Gemini Format
-Extracts `content` string from `role=assistant` messages.
+The dispatcher extracts `content[].type == "text"` segments from assistant messages.
 
 ### Normalization Flow
-1. Attempt to parse the full payload as JSON.
-2. If that fails, parse each line as NDJSON.
-3. Extract text based on the detected format (Kimi list or Gemini string).
-4. Concatenate all text fragments in order.
+1. Capture raw Kimi output to a temp file.
+2. Attempt to parse the full payload as JSON.
+3. If that fails, parse each line as NDJSON.
+4. Concatenate all `text` fragments in order.
 5. If nothing parses, fall back to the raw payload.
+6. Write clean assistant text to the final output.
 
 In non-chat `--stdout` mode, stderr is merged into the stream before stripping,
-so non-JSON stderr lines may be dropped when output is normalized.
+so non-JSON stderr lines may be dropped when Kimi output is normalized.
 
 ## Internal Helpers
 
@@ -83,16 +86,17 @@ Ensures editor/stdout modes do not accept extra positional arguments. Allows
 values following flags and allows positional values after `--`.
 
 ### _acw_kimi_strip_output()
-Strips Kimi and Gemini stream-json output into plain assistant text. Uses Python
-to parse either a full JSON payload or NDJSON and falls back to raw output when
-parsing fails or yields no text segments.
+Strips Kimi stream-json output into plain assistant text. Uses Python to parse
+either a full JSON payload or NDJSON and falls back to raw output when parsing
+fails or yields no text segments.
 
 Filtering rules:
-- Only extracts text from `role=assistant` messages (Gemini: `type=message` with `role=assistant`)
+- Only extracts text from `role=assistant` messages
 - Skips `role=tool` messages (skill/tool execution results)
-- For Kimi: only processes `type=text` content parts (skips thinking, images, etc.)
-- For Gemini: extracts `content` string directly
+- Only processes `type=text` content parts (skips thinking, images, etc.)
 - Removes `<system>...</system>` tags from text content
+
+Note: Gemini outputs plain text by default and does not require stripping.
 
 ## Chat Mode
 

@@ -105,8 +105,8 @@ _acw_invoke_gemini() {
     local output="$3"
     shift 3
 
-    # Gemini uses -p for prompt input; model argument is ignored.
-    # Forces stream-json output for consistent stripping.
+    # Gemini reads from stdin; model argument is ignored.
+    # Outputs plain text by default (unlike Kimi which needs stream-json stripping).
     # stderr passes through for progress messages
-    gemini -p "$(cat "$input")" --output-format stream-json "$@" > "$output"
+    gemini "$@" < "$input" > "$output"
 }

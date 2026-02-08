@@ -513,13 +513,13 @@ acw() {
         echo "Response:"
     fi
 
-    # Kimi and Gemini write stream-json; capture raw output and strip to plain text afterward.
+    # Kimi writes stream-json; capture raw output and strip to plain text afterward.
     local final_output_file="$output_file"
     local provider_output_file="$output_file"
     local stream_json_raw_output=""
     local stream_json_strip=0
 
-    if [ "$cli_name" = "kimi" ] || [ "$cli_name" = "gemini" ]; then
+    if [ "$cli_name" = "kimi" ]; then
         stream_json_strip=1
         stream_json_raw_output=$(mktemp)
         if [ -z "$stream_json_raw_output" ]; then
