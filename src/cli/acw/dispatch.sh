@@ -152,8 +152,18 @@ def extract_text(obj):
         # Skip tool/skill messages entirely
         if obj.get("role") == "tool":
             return parts
-        if "content" in obj and isinstance(obj["content"], list):
-            parts.extend(extract_from_content_list(obj["content"]))
+        if "content" in obj:
+            if isinstance(obj["content"], list):
+                # Kimi format: content is a list of typed objects
+                parts.extend(extract_from_content_list(obj["content"]))
+            elif isinstance(obj["content"], str):
+                # Gemini format: content is a direct string
+                text = obj["content"]
+                # Only include assistant messages, not user messages
+                if obj.get("role") == "assistant":
+                    text = _SYSTEM_TAG_RE.sub('', text)
+                    if text.strip():
+                        parts.append(text)
             for key, value in obj.items():
                 if key == "content":
                     continue
