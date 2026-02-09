@@ -9,10 +9,12 @@ This directory contains all user-facing and developer documentation for the Agen
 Learn Agentize step-by-step in 15 minutes total (3-5 min per tutorial):
 
 See [`tutorial/README.md`](tutorial/README.md) for the complete tutorial series:
-- `tutorial/00-initialize.md` - Project initialization and setup
-- `tutorial/01-ultra-planner.md` - Primary planning tutorial (recommended)
+- `tutorial/00-cli-quickstart.md` - CLI workflow from config to implementation (recommended)
+- `tutorial/00a-claude-ui-setup.md` - Claude UI setup for slash commands
+- `tutorial/01-ultra-planner.md` - Primary planning tutorial
 - `tutorial/02-issue-to-impl.md` - Complete development cycle
 - `tutorial/03-advanced-usage.md` - Parallel development workflows
+- `tutorial/04-project.md` - Project board automation with PAT
 
 ### CLI Reference
 
@@ -60,10 +62,12 @@ Testing framework, validation, and agent testing:
 
 New to Agentize? Start with the tutorial series in order:
 
-1. Tutorial 00: Initialize your project
-2. Tutorial 01: Learn to plan features
-3. Tutorial 02: Implement your first issue
-4. Tutorial 03: Scale up with parallel development
+1. Tutorial 00: CLI Quickstart
+2. Tutorial 00a: Claude UI Setup (optional for UI users)
+3. Tutorial 01: Learn to plan features
+4. Tutorial 02: Implement your first issue
+5. Tutorial 03: Scale up with parallel development
+6. Tutorial 04: Configure project automation
 
 ## Maintenance Note
 

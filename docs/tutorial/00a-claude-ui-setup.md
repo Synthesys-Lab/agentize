@@ -1,10 +1,13 @@
-# Tutorial 00: Initialize Your Project
+> **Looking for the CLI quickstart?** See [Tutorial 00: CLI Quickstart](./00-cli-quickstart.md) for the `wt clone` -> `lol plan` -> `lol impl` workflow.
+>
+> This tutorial covers Claude UI setup for users who prefer the `/ultra-planner` and `/issue-to-impl` slash commands.
+
+# Tutorial 00a: Claude UI Setup
 
 **Read time: 3-5 minutes**
 
-This tutorial shows you how to set up the Agentize framework in your project.
-Currently, this framework is stuck to Claude Code CLI.
-~~I am not sure how long it will take to support other Coding agents.~~
+This tutorial shows you how to set up the Agentize framework and Claude Code plugin in your project.
+Use this path if you prefer the Claude UI slash commands for planning and implementation.
 
 ## Getting Started
 
@@ -38,7 +41,7 @@ claude plugin install agentize@agentize
 
 ## Verify Installation
 
-After setup, verify the CLI entrypoints are available:
+After setup, verify the CLI entrypoints are available (the installer sets up both CLI and UI tooling):
 
 ```bash
 lol plan --help
@@ -71,6 +74,7 @@ For example, you might add project-specific tags like:
 ## Next Steps
 
 Once initialized:
+- **Tutorial 00**: If you prefer CLI onboarding, start with [Tutorial 00: CLI Quickstart](./00-cli-quickstart.md)
 - **Tutorial 01**: Learn CLI planning with `lol plan --editor` (uses the git tags you just customized)
 - **Tutorial 02**: Learn the CLI implementation loop with `lol impl <issue-no>`
 - **Tutorial 03**: Scale up with parallel development workflows
