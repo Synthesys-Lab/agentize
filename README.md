@@ -37,9 +37,9 @@ Agentize is an AI-powered SDK that helps you build your software projects
 using Claude Code powerfully. It is splitted into two main components:
 
 1. **Claude Code Plugin**: Automatically registered during installation when `claude` CLI is available.
-   See [Tutorial 00: Initialize Your Project](./docs/tutorial/00-initialize.md) for details.
+   See [Tutorial 00a: Claude UI Setup](./docs/tutorial/00a-claude-ui-setup.md) for details.
 2. **CLI Tool**: A source-first CLI tool to help you manage your projects using Agentize.
-   See the commands below to install.
+   See [Tutorial 00: CLI Quickstart](./docs/tutorial/00-cli-quickstart.md) for the CLI workflow.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SyntheSys-Lab/agentize/main/scripts/install | bash
@@ -54,6 +54,39 @@ source $HOME/.agentize/setup.sh
 See [docs/feat/cli/install.md](./docs/feat/cli/install.md) for installation options and troubleshooting.
 
 **Upgrade:** Run `lol upgrade` to pull the latest changes.
+
+## Your First 15 Minutes
+
+After installation, the installer creates `~/.agentize.local.yaml` in your home folder. This file controls which AI backends are used for planning and implementation.
+
+### The 5-Step Agentize CLI Workflow
+
+1. **Configure** (already done) - confirm `~/.agentize.local.yaml` exists and adjust backends if needed
+
+2. **Clone** with worktrees:
+   ```bash
+   wt clone https://github.com/org/repo.git myproject.git
+   ```
+   `wt clone` sets up a bare repository and leaves you in `trees/main`.
+
+3. **Plan** your first feature:
+   ```bash
+   lol plan --editor
+   ```
+   Review the GitHub issue it creates.
+
+4. **Implement** the plan:
+   ```bash
+   lol impl <issue-number>
+   ```
+
+5. **Navigate** between worktrees:
+   ```bash
+   wt goto <issue-number>
+   wt goto main
+   ```
+
+See [Tutorial 00: CLI Quickstart](./docs/tutorial/00-cli-quickstart.md) for a full walkthrough.
 
 ## Troubleshoot
 
@@ -110,11 +143,11 @@ See our detailed workflow diagrams:
 
 Learn Agentize in 15 minutes with our step-by-step tutorials (3-5 min each):
 
-1. **[Initialize Your Project](./docs/tutorial/00-initialize.md)** - Set up Agentize in new or existing projects
-   - You already did this if you followed the Quick Start!
-2. **[Ultra Planner](./docs/tutorial/01-ultra-planner.md)** - Primary planning tutorial (recommended)
-3. **[Issue to Implementation](./docs/tutorial/02-issue-to-impl.md)** - Complete development cycle with `/issue-to-impl` and `/code-review`
-4. **[Advanced Usage](./docs/tutorial/03-advanced-usage.md)** - Scale up with parallel development workflows
+1. **[CLI Quickstart](./docs/tutorial/00-cli-quickstart.md)** - Learn the core CLI workflow in 15 minutes
+2. **[Claude UI Setup](./docs/tutorial/00a-claude-ui-setup.md)** - Set up the Claude Code plugin and slash commands
+3. **[Ultra Planner](./docs/tutorial/01-ultra-planner.md)** - Primary planning tutorial (recommended)
+4. **[Issue to Implementation](./docs/tutorial/02-issue-to-impl.md)** - Complete development cycle with `/issue-to-impl` and `/code-review`
+5. **[Advanced Usage](./docs/tutorial/03-advanced-usage.md)** - Scale up with parallel development workflows
 
 ## Project Organization
 
