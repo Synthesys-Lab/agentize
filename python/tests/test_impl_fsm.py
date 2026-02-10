@@ -1,12 +1,17 @@
 """Tests for impl FSM scaffold modules (state, transition, orchestrator)."""
 
+from pathlib import Path
+from types import SimpleNamespace
+
 import pytest
 
+from agentize.workflow.impl.checkpoint import create_initial_state
 from agentize.workflow.impl.kernels import (
     KERNELS,
     impl_stage_kernel,
     pr_stage_kernel,
     rebase_stage_kernel,
+    run_parse_gate,
     review_stage_kernel,
 )
 from agentize.workflow.impl.orchestrator import run_fsm_orchestrator
@@ -192,3 +197,59 @@ class TestKernelRegistry:
             result = kernel(context)
             assert result.event == EVENT_FATAL
             assert "Kernel not configured" in (result.reason or "")
+
+
+class TestParseGate:
+    """Tests for deterministic parse gate behavior."""
+
+    def test_run_parse_gate_skips_when_no_changes(self, tmp_path: Path):
+        state = create_initial_state(857, tmp_path)
+
+        passed, feedback, report_path = run_parse_gate(state, files_changed=False)
+
+        assert passed is True
+        assert "no changed Python files" in feedback
+        assert report_path.exists()
+        assert '"pass": true' in report_path.read_text().lower()
+
+    def test_run_parse_gate_passes_when_compile_succeeds(self, tmp_path: Path, monkeypatch):
+        state = create_initial_state(857, tmp_path)
+
+        monkeypatch.setattr(
+            "agentize.workflow.impl.kernels._latest_commit_python_files",
+            lambda _worktree: ["python/agentize/workflow/impl/state.py"],
+        )
+        monkeypatch.setattr(
+            "agentize.workflow.impl.kernels.run_shell_function",
+            lambda *_args, **_kwargs: SimpleNamespace(returncode=0, stdout="", stderr=""),
+        )
+
+        passed, feedback, report_path = run_parse_gate(state, files_changed=True)
+
+        assert passed is True
+        assert "Parse gate passed" in feedback
+        report = report_path.read_text()
+        assert '"pass": true' in report.lower()
+        assert '"failed_files": []' in report
+
+    def test_run_parse_gate_fails_when_compile_fails(self, tmp_path: Path, monkeypatch):
+        state = create_initial_state(857, tmp_path)
+
+        monkeypatch.setattr(
+            "agentize.workflow.impl.kernels._latest_commit_python_files",
+            lambda _worktree: ["broken.py"],
+        )
+        stderr = 'File "broken.py", line 1\n    def x(:\n          ^\nSyntaxError: invalid syntax'
+        monkeypatch.setattr(
+            "agentize.workflow.impl.kernels.run_shell_function",
+            lambda *_args, **_kwargs: SimpleNamespace(returncode=1, stdout="", stderr=stderr),
+        )
+
+        passed, feedback, report_path = run_parse_gate(state, files_changed=True)
+
+        assert passed is False
+        assert "Parse gate failed" in feedback
+        report = report_path.read_text()
+        assert '"pass": false' in report.lower()
+        assert '"failed_files": [' in report
+        assert '"broken.py"' in report

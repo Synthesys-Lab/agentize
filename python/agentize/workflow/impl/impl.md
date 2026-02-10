@@ -78,6 +78,8 @@ flowchart LR
 - Syncs the issue branch by fetching and rebasing onto the detected default branch.
 - Prefetches issue content via `agentize.workflow.api.gh` into `.tmp/issue-<N>.md`.
 - Runs implementation iterations through `impl_kernel()`.
+- Runs deterministic parse gate (`python -m py_compile`) on latest committed
+  changed Python files before advancing to `review`/`pr`.
 - Validates implementation through `review_kernel()` with feedback loop.
 - Optionally simplifies through `simp_kernel()`.
 - Creates PR through `pr_kernel()` with title validation.
@@ -150,6 +152,7 @@ of `finalize_file` is used as the PR title and must follow the format:
 - `.tmp/impl-input-base.txt`: Base prompt instructions
 - `.tmp/impl-input-<N>.txt`: Iteration-specific prompt
 - `.tmp/impl-output.txt`: Latest `acw` output
+- `.tmp/parse-iter-<N>.json`: Parse gate report for each completion attempt
 - `.tmp/finalize.txt`: Completion marker and PR title/body
 - `.tmp/impl-checkpoint.json`: Workflow state for resumption
 

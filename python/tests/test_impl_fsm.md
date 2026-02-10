@@ -13,10 +13,10 @@ orchestration contracts before production kernels are fully migrated.
 - Transition table resolution and fail-fast validation behavior
 - Orchestrator terminal behavior (`finish` / `fatal`) and log emission format
 - Kernel registry scaffold integrity and placeholder safety behavior
+- Deterministic parse gate report generation and pass/fail routing contract
 
 ## Design Rationale
 
 The tests focus on objective control-flow semantics rather than model output
 quality, ensuring that state routing behavior remains stable while stage
 implementations evolve across future iterations.
-

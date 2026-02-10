@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -143,6 +144,116 @@ def _shell_cmd(parts: list[str | Path]) -> str:
     import shlex
 
     return " ".join(shlex.quote(str(part)) for part in parts)
+
+
+def _latest_commit_python_files(worktree_path: Path) -> list[str]:
+    """Collect Python files changed in the latest commit.
+
+    Args:
+        worktree_path: Path to the git worktree.
+
+    Returns:
+        Sorted list of repository-relative Python file paths that exist.
+
+    Raises:
+        ImplError: If commit diff cannot be determined.
+    """
+    from agentize.workflow.impl.impl import ImplError
+
+    diff_cmd = _shell_cmd(["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"])
+    result = run_shell_function(diff_cmd, capture_output=True, cwd=worktree_path)
+    if result.returncode != 0:
+        raise ImplError("Error: Failed to inspect latest commit for parse gate")
+
+    python_files: list[str] = []
+    for raw_path in result.stdout.splitlines():
+        relative_path = raw_path.strip()
+        if not relative_path.endswith(".py"):
+            continue
+
+        absolute_path = worktree_path / relative_path
+        if absolute_path.exists() and absolute_path.is_file():
+            python_files.append(relative_path)
+
+    return sorted(dict.fromkeys(python_files))
+
+
+def _parse_failed_python_files(py_compile_output: str) -> list[str]:
+    """Extract failed Python file paths from py_compile output."""
+    matches = re.findall(r'File "([^"]+\.py)"', py_compile_output)
+    return sorted(dict.fromkeys(matches))
+
+
+def run_parse_gate(
+    state: ImplState,
+    *,
+    files_changed: bool,
+) -> tuple[bool, str, Path]:
+    """Run deterministic Python parse gate for the current iteration.
+
+    Args:
+        state: Current workflow state.
+        files_changed: Whether current iteration produced a commit.
+
+    Returns:
+        Tuple of (passed, feedback, report_path).
+    """
+    tmp_dir = state.worktree / ".tmp"
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    report_path = tmp_dir / f"parse-iter-{state.iteration}.json"
+
+    if not files_changed:
+        report = {
+            "pass": True,
+            "failed_files": [],
+            "traceback": "",
+            "suggestions": ["No Python files changed in this iteration."],
+        }
+        report_path.write_text(json.dumps(report, indent=2) + "\n")
+        return True, "Parse gate skipped: no changed Python files.", report_path
+
+    python_files = _latest_commit_python_files(state.worktree)
+    if not python_files:
+        report = {
+            "pass": True,
+            "failed_files": [],
+            "traceback": "",
+            "suggestions": ["No Python files changed in this iteration."],
+        }
+        report_path.write_text(json.dumps(report, indent=2) + "\n")
+        return True, "Parse gate passed: no changed Python files.", report_path
+
+    parse_cmd = _shell_cmd(["python", "-m", "py_compile", *python_files])
+    parse_result = run_shell_function(parse_cmd, capture_output=True, cwd=state.worktree)
+
+    traceback_text = parse_result.stderr.strip() or parse_result.stdout.strip()
+    if parse_result.returncode == 0:
+        report = {
+            "pass": True,
+            "failed_files": [],
+            "traceback": "",
+            "suggestions": [],
+        }
+        report_path.write_text(json.dumps(report, indent=2) + "\n")
+        return True, f"Parse gate passed for {len(python_files)} file(s).", report_path
+
+    failed_files = _parse_failed_python_files(traceback_text) or python_files
+    report = {
+        "pass": False,
+        "failed_files": failed_files,
+        "traceback": traceback_text,
+        "suggestions": [
+            "Fix syntax errors in failed files before rerunning implementation.",
+            "Re-run python -m py_compile on changed Python files locally.",
+        ],
+    }
+    report_path.write_text(json.dumps(report, indent=2) + "\n")
+
+    return (
+        False,
+        f"Parse gate failed for {len(failed_files)} file(s). See {report_path}.",
+        report_path,
+    )
 
 
 def _stage_and_commit(

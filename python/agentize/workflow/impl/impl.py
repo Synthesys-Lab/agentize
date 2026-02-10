@@ -671,6 +671,7 @@ def run_impl_workflow(
     from agentize.workflow.impl.kernels import (
         impl_kernel,
         pr_kernel,
+        run_parse_gate,
         review_kernel,
     )
     from agentize.workflow.impl.transition import validate_transition_table
@@ -767,6 +768,7 @@ def run_impl_workflow(
 
     # State machine implementation
     review_attempts = 0
+    retry_context: str | None = None
 
     while state.current_stage != "done":
         # Save checkpoint before each stage
@@ -786,7 +788,9 @@ def run_impl_workflow(
                 provider=impl_provider,
                 model=impl_model_name,
                 yolo=yolo,
+                ci_failure=retry_context,
             )
+            retry_context = None
 
             state.last_feedback = feedback
             state.last_score = score
@@ -799,6 +803,40 @@ def run_impl_workflow(
             })
 
             if result.get("completion_found"):
+                parse_passed, parse_feedback, parse_report = run_parse_gate(
+                    state,
+                    files_changed=bool(result.get("files_changed")),
+                )
+                print(parse_feedback)
+                print(f"Parse report: {parse_report}")
+                state.history.append({
+                    "stage": "parse",
+                    "iteration": state.iteration,
+                    "timestamp": datetime.now().isoformat(),
+                    "result": "pass" if parse_passed else "fail",
+                    "score": None,
+                    "artifact": str(parse_report),
+                })
+
+                if not parse_passed:
+                    print(
+                        f"stage=impl event=parse_fail iter={state.iteration} "
+                        f"reason={parse_feedback}"
+                    )
+                    state.last_feedback = parse_feedback
+                    parse_report_text = parse_report.read_text() if parse_report.exists() else ""
+                    retry_context = (
+                        "Parse gate failure context:\n"
+                        f"{parse_report_text}"
+                    ).strip()
+                    state.current_stage = "impl"
+                    state.iteration += 1
+                    continue
+
+                print(
+                    f"stage=impl event=impl_done iter={state.iteration} "
+                    f"reason={parse_feedback}"
+                )
                 if enable_review:
                     state.current_stage = "review"
                     review_attempts = 0
@@ -806,6 +844,10 @@ def run_impl_workflow(
                     # Skip review if disabled
                     state.current_stage = "pr"
             else:
+                print(
+                    f"stage=impl event=impl_not_done iter={state.iteration} "
+                    "reason=completion marker missing"
+                )
                 # Continue to next iteration
                 state.iteration += 1
 
@@ -839,10 +881,19 @@ def run_impl_workflow(
             })
 
             if passed:
+                print(
+                    f"stage=review event=review_pass iter={state.iteration} "
+                    f"reason=score {score}"
+                )
                 state.current_stage = "pr"
             else:
                 # Retry implementation with feedback
                 print(f"Review failed (score: {score}), retrying with feedback...")
+                print(
+                    f"stage=review event=review_fail iter={state.iteration} "
+                    f"reason=score {score}"
+                )
+                retry_context = f"Review failure context:\n{feedback}".strip()
                 state.current_stage = "impl"
                 state.iteration += 1
 

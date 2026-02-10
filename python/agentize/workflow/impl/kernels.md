@@ -211,6 +211,27 @@ def _parse_completion_marker(
 
 Returns True if finalize file contains "Issue {N} resolved".
 
+### run_parse_gate()
+
+Run deterministic Python parse validation for the latest implementation
+iteration before entering `review`/`pr`.
+
+```python
+def run_parse_gate(
+    state: ImplState,
+    *,
+    files_changed: bool,
+) -> tuple[bool, str, Path]
+```
+
+Behavior:
+- Writes `.tmp/parse-iter-{N}.json` for every completion attempt.
+- Detects Python files from the latest commit and runs:
+  `python -m py_compile <files...>`.
+- Returns pass/fail status, feedback message, and report path.
+- On failure, report contains failed files, traceback, and suggestions for
+  the next implementation retry.
+
 ## Output Format Conventions
 
 Kernels should produce output that follows these conventions for
