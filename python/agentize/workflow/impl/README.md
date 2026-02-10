@@ -50,6 +50,9 @@ flowchart TB
 | `impl.py` | Main orchestrator with state machine and backward-compatible interface |
 | `kernels.py` | Kernel functions for each workflow stage (impl, review, simp, pr) |
 | `checkpoint.py` | Serializable state management for workflow resumption |
+| `state.py` | FSM stage/event contracts and shared workflow context types |
+| `transition.py` | Transition table and fail-fast transition validators |
+| `orchestrator.py` | Flat loop FSM executor using stage handlers and transitions |
 | `__main__.py` | CLI entrypoint with argument parsing |
 | `__init__.py` | Public exports |
 | `continue-prompt.md` | Prompt template for implementation iterations |
@@ -185,6 +188,9 @@ python -m pytest python/tests/test_impl_pr_title.py
 - `impl.md` — Main implementation documentation
 - `kernels.md` — Kernel function signatures and behaviors
 - `checkpoint.md` — State format and checkpoint API
+- `state.md` — FSM stage/event contracts and workflow context model
+- `transition.md` — Transition mapping and fail-fast validation rules
+- `orchestrator.md` — FSM execution loop and stage logging contract
 - `__init__.md` — Public interface
 - `__main__.md` — CLI documentation
 

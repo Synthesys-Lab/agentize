@@ -5,16 +5,66 @@ from __future__ import annotations
 import re
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from agentize.shell import run_shell_function
 from agentize.workflow.api import gh as gh_utils
 from agentize.workflow.api import prompt as prompt_utils
 from agentize.workflow.api.session import PipelineError
+from agentize.workflow.impl.state import (
+    EVENT_FATAL,
+    STAGE_IMPL,
+    STAGE_PR,
+    STAGE_REBASE,
+    STAGE_REVIEW,
+    Stage,
+    StageResult,
+    WorkflowContext,
+)
 
 if TYPE_CHECKING:
     from agentize.workflow.api import Session
     from agentize.workflow.impl.checkpoint import ImplState
+
+
+def _unconfigured_kernel(stage: Stage) -> StageResult:
+    """Return a fatal stage result for a stage without concrete wiring yet."""
+    return StageResult(
+        event=EVENT_FATAL,
+        reason=f"Kernel not configured for stage: {stage}",
+    )
+
+
+def impl_stage_kernel(context: WorkflowContext) -> StageResult:
+    """FSM placeholder kernel for impl stage.
+
+    This stage adapter is intentionally minimal in the first FSM scaffold
+    iteration and is not yet wired to the production impl kernel.
+    """
+    return _unconfigured_kernel(STAGE_IMPL)
+
+
+def review_stage_kernel(context: WorkflowContext) -> StageResult:
+    """FSM placeholder kernel for review stage."""
+    return _unconfigured_kernel(STAGE_REVIEW)
+
+
+def pr_stage_kernel(context: WorkflowContext) -> StageResult:
+    """FSM placeholder kernel for PR stage."""
+    return _unconfigured_kernel(STAGE_PR)
+
+
+def rebase_stage_kernel(context: WorkflowContext) -> StageResult:
+    """FSM placeholder kernel for rebase stage."""
+    return _unconfigured_kernel(STAGE_REBASE)
+
+
+KERNELS: dict[Stage, Callable[[WorkflowContext], StageResult]] = {
+    STAGE_IMPL: impl_stage_kernel,
+    STAGE_REVIEW: review_stage_kernel,
+    STAGE_PR: pr_stage_kernel,
+    STAGE_REBASE: rebase_stage_kernel,
+}
 
 
 def _parse_quality_score(output: str) -> int:

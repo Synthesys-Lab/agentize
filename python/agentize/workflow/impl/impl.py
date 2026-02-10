@@ -673,6 +673,10 @@ def run_impl_workflow(
         pr_kernel,
         review_kernel,
     )
+    from agentize.workflow.impl.transition import validate_transition_table
+
+    # Validate explicit FSM transition wiring early.
+    validate_transition_table()
 
     issue_no = _coerce_issue_no(issue_no)
 

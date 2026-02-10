@@ -243,3 +243,16 @@ Kernels handle errors at three levels:
 
 The orchestrator decides whether to retry, continue, or abort based on
 kernel return values and the current state.
+
+## FSM Registry Scaffold
+
+`kernels.py` also exposes a stage-handler registry for the explicit FSM layer:
+
+- `impl_stage_kernel(context: WorkflowContext) -> StageResult`
+- `review_stage_kernel(context: WorkflowContext) -> StageResult`
+- `pr_stage_kernel(context: WorkflowContext) -> StageResult`
+- `rebase_stage_kernel(context: WorkflowContext) -> StageResult`
+- `KERNELS: dict[Stage, Callable[[WorkflowContext], StageResult]]`
+
+In the initial scaffold phase these handlers intentionally return a fatal
+`StageResult` to ensure unsafe partial wiring cannot run silently.
