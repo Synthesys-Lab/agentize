@@ -870,6 +870,10 @@ def run_impl_workflow(
                 threshold=70,
             )
 
+            review_report = tmp_dir / f"review-iter-{state.iteration}.json"
+            if review_report.exists():
+                print(f"Review report: {review_report}")
+
             state.last_feedback = feedback
             state.last_score = score
             state.history.append({
@@ -893,7 +897,12 @@ def run_impl_workflow(
                     f"stage=review event=review_fail iter={state.iteration} "
                     f"reason=score {score}"
                 )
-                retry_context = f"Review failure context:\n{feedback}".strip()
+                review_report_text = review_report.read_text() if review_report.exists() else ""
+                retry_context = (
+                    "Review failure context:\n"
+                    f"{feedback}\n\n"
+                    f"Structured review report:\n{review_report_text}"
+                ).strip()
                 state.current_stage = "impl"
                 state.iteration += 1
 

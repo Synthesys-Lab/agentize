@@ -6,7 +6,7 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 from agentize.shell import run_shell_function
 from agentize.workflow.api import gh as gh_utils
@@ -66,6 +66,139 @@ KERNELS: dict[Stage, Callable[[WorkflowContext], StageResult]] = {
     STAGE_PR: pr_stage_kernel,
     STAGE_REBASE: rebase_stage_kernel,
 }
+
+
+REVIEW_SCORE_KEYS: tuple[str, ...] = (
+    "faithful",
+    "style",
+    "docs",
+    "corner_cases",
+)
+
+REVIEW_SCORE_THRESHOLDS: dict[str, int] = {
+    "faithful": 90,
+    "style": 85,
+    "docs": 85,
+    "corner_cases": 85,
+}
+
+
+def _clamp_score(value: int) -> int:
+    return min(100, max(0, value))
+
+
+def _coerce_score(value: object, *, fallback: int) -> int:
+    if isinstance(value, bool):
+        return fallback
+    if isinstance(value, (int, float)):
+        return _clamp_score(int(round(value)))
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped:
+            return fallback
+        try:
+            return _clamp_score(int(round(float(stripped))))
+        except ValueError:
+            return fallback
+    return fallback
+
+
+def _json_object_candidates(output: str) -> list[str]:
+    candidates: list[str] = []
+    stripped = output.strip()
+    if stripped:
+        candidates.append(stripped)
+
+    fenced = re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", output, flags=re.DOTALL)
+    candidates.extend(block.strip() for block in fenced if block.strip())
+
+    start = output.find("{")
+    end = output.rfind("}")
+    if start >= 0 and end > start:
+        candidates.append(output[start:end + 1].strip())
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        deduped.append(candidate)
+    return deduped
+
+
+def _extract_review_json(output: str) -> dict[str, Any] | None:
+    for candidate in _json_object_candidates(output):
+        try:
+            parsed = json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(parsed, dict):
+            return parsed
+    return None
+
+
+def _normalize_list(value: object) -> list[str]:
+    if isinstance(value, list):
+        normalized = [str(item).strip() for item in value if str(item).strip()]
+        return normalized
+    if isinstance(value, str):
+        lines = [line.strip().lstrip("- ").strip() for line in value.splitlines()]
+        return [line for line in lines if line]
+    return []
+
+
+def _extract_named_list(output: str, section_name: str) -> list[str]:
+    pattern = re.compile(
+        rf"{section_name}\s*:\s*(.*?)(?:\n\s*[A-Za-z_][A-Za-z0-9_ ]*\s*:|\Z)",
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    match = pattern.search(output)
+    if not match:
+        return []
+    return _normalize_list(match.group(1))
+
+
+def _coerce_review_scores(raw: object, *, fallback_score: int) -> dict[str, int]:
+    if isinstance(raw, dict):
+        source = raw
+    else:
+        source = {}
+
+    return {
+        key: _coerce_score(source.get(key), fallback=fallback_score)
+        for key in REVIEW_SCORE_KEYS
+    }
+
+
+def _overall_review_score(
+    review_json: dict[str, Any] | None,
+    *,
+    fallback_score: int,
+    scores: dict[str, int],
+) -> int:
+    if review_json:
+        for key in ("overall_score", "overall", "score"):
+            if key in review_json:
+                return _coerce_score(review_json[key], fallback=fallback_score)
+
+    if fallback_score != 50:
+        return fallback_score
+
+    if not scores:
+        return 0
+
+    return int(round(sum(scores.values()) / len(scores)))
+
+
+def _score_threshold_failures(scores: dict[str, int], thresholds: dict[str, int]) -> list[str]:
+    failures: list[str] = []
+    for key in REVIEW_SCORE_KEYS:
+        threshold = thresholds.get(key, 0)
+        score = scores.get(key, 0)
+        if score < threshold:
+            failures.append(f"{key}={score}<{threshold}")
+    return failures
 
 
 def _parse_quality_score(output: str) -> int:
@@ -526,45 +659,46 @@ def review_kernel(
         - feedback: Detailed feedback for re-implementation if failed
         - score: Quality score from 0-100
     """
+    _ = threshold
     tmp_dir = state.worktree / ".tmp"
     output_file = tmp_dir / "impl-output.txt"
     issue_file = tmp_dir / f"issue-{state.issue_no}.md"
+    review_report_file = tmp_dir / f"review-iter-{state.iteration}.json"
 
-    # Read the implementation output
     if not output_file.exists():
         return False, "No implementation output found to review", 0
 
     impl_output = output_file.read_text()
     issue_content = issue_file.read_text() if issue_file.exists() else ""
 
-    # Build review prompt
-    review_prompt = f"""Review the following implementation against the issue requirements.
+    review_prompt = f"""Review the following implementation against issue requirements.
 
 Issue Requirements:
 {issue_content}
 
 Implementation:
-{impl_output[:8000]}  # Truncate if too long
+{impl_output[:8000]}
 
-Evaluate on these criteria (0-100 scale for each):
-1. Code correctness and error handling
-2. Test coverage and quality
-3. Documentation completeness
-4. Adherence to project conventions
-5. Issue requirement fulfillment
+Output JSON only with this schema:
+{{
+  "scores": {{
+    "faithful": <0-100 int>,
+    "style": <0-100 int>,
+    "docs": <0-100 int>,
+    "corner_cases": <0-100 int>
+  }},
+  "overall_score": <0-100 int>,
+  "findings": ["..."],
+  "suggestions": ["..."]
+}}
 
-Provide:
-1. Overall Score: X/100
-2. Pass/Fail: (score >= {threshold} is pass)
-3. Feedback: If failed, provide specific actionable feedback for improvement
-4. Suggestions: What needs to be changed to pass
+Scoring constraints:
+- faithful >= 90
+- style >= 85
+- docs >= 85
+- corner_cases >= 85
 
-Format your response as:
-Score: <number>/100
-Passed: <Yes/No>
-Feedback:
-- <point 1>
-- <point 2>
+Be strict and objective. No markdown wrapper.
 """
 
     input_file = tmp_dir / f"review-input-{state.iteration}.txt"
@@ -580,20 +714,67 @@ Feedback:
         )
     except PipelineError as exc:
         print(f"Warning: Review failed ({exc})", file=sys.stderr)
-        # If review fails, assume pass to avoid blocking
-        return True, f"Review pipeline error (assuming pass): {exc}", 75
+        report = {
+            "scores": {key: 0 for key in REVIEW_SCORE_KEYS},
+            "pass": False,
+            "findings": [f"Review pipeline error: {exc}"],
+            "suggestions": ["Retry review stage and inspect model/runtime connectivity."],
+            "raw_output_path": str(review_output_file),
+        }
+        review_report_file.write_text(json.dumps(report, indent=2) + "\n")
+        return False, f"Review pipeline error: {exc}", 0
 
     review_text = result.text() if result.output_path.exists() else ""
-    score = _parse_quality_score(review_text)
-    passed = score >= threshold
+    fallback_score = _parse_quality_score(review_text)
+    review_json = _extract_review_json(review_text)
+    raw_scores: object = {}
+    if review_json:
+        raw_scores = review_json.get("scores")
+        if not isinstance(raw_scores, dict):
+            raw_scores = review_json
 
-    # Extract feedback section
-    feedback = review_text
-    match = re.search(r"[Ff]eedback:?(.*?)(?:\n\n|\Z)", review_text, re.DOTALL)
-    if match:
-        feedback = match.group(1).strip()
+    scores = _coerce_review_scores(raw_scores, fallback_score=fallback_score)
+    threshold_failures = _score_threshold_failures(scores, REVIEW_SCORE_THRESHOLDS)
+    passed = len(threshold_failures) == 0
 
-    return passed, feedback, score
+    findings: list[str] = []
+    suggestions: list[str] = []
+    if review_json:
+        findings = _normalize_list(review_json.get("findings"))
+        suggestions = _normalize_list(review_json.get("suggestions"))
+
+    if not findings:
+        findings = _extract_named_list(review_text, "Findings")
+    if not findings:
+        findings = _extract_named_list(review_text, "Feedback")
+    if not suggestions:
+        suggestions = _extract_named_list(review_text, "Suggestions")
+
+    if not passed and not suggestions:
+        suggestions = [
+            (
+                "Raise review scores to threshold: "
+                + ", ".join(threshold_failures)
+            )
+        ]
+
+    report = {
+        "scores": scores,
+        "pass": passed,
+        "findings": findings,
+        "suggestions": suggestions,
+        "raw_output_path": str(review_output_file),
+    }
+    review_report_file.write_text(json.dumps(report, indent=2) + "\n")
+
+    feedback_points = suggestions or findings
+    feedback = "\n".join(feedback_points).strip() or "No actionable review feedback provided"
+    overall_score = _overall_review_score(
+        review_json,
+        fallback_score=fallback_score,
+        scores=scores,
+    )
+    return passed, feedback, overall_score
 
 
 def simp_kernel(

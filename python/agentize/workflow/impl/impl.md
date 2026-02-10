@@ -153,6 +153,7 @@ of `finalize_file` is used as the PR title and must follow the format:
 - `.tmp/impl-input-<N>.txt`: Iteration-specific prompt
 - `.tmp/impl-output.txt`: Latest `acw` output
 - `.tmp/parse-iter-<N>.json`: Parse gate report for each completion attempt
+- `.tmp/review-iter-<N>.json`: Structured review score report for each review attempt
 - `.tmp/finalize.txt`: Completion marker and PR title/body
 - `.tmp/impl-checkpoint.json`: Workflow state for resumption
 

@@ -80,7 +80,8 @@ def review_kernel(
     state: ImplState,
     session: Session,
     *,
-    review_template_path: Path | None = None,
+    provider: str,
+    model: str,
     threshold: int = 70,
 ) -> tuple[bool, str, int]
 ```
@@ -90,8 +91,9 @@ Review implementation quality and provide feedback.
 **Parameters**:
 - `state`: Current workflow state including last implementation
 - `session`: Session for running prompts
-- `review_template_path`: Optional path to review prompt template
-- `threshold`: Minimum score to pass review (default 70)
+- `provider`: Review model provider
+- `model`: Review model name
+- `threshold`: Legacy compatibility argument (current gate uses fixed per-dimension thresholds)
 
 **Returns**:
 - `passed`: Whether implementation passes quality threshold
@@ -99,17 +101,29 @@ Review implementation quality and provide feedback.
 - `score`: Quality score from 0-100
 
 **Behavior**:
-- Analyzes the last implementation output against the issue requirements
-- Scores code quality, test coverage, documentation completeness
-- Provides actionable feedback for improvements
-- Can trigger re-implementation loop via orchestrator
+- Analyzes the latest implementation output against issue requirements.
+- Requests JSON-first review output with scores for:
+  - `faithful`
+  - `style`
+  - `docs`
+  - `corner_cases`
+- Enforces deterministic thresholds:
+  - `faithful >= 90`
+  - `style >= 85`
+  - `docs >= 85`
+  - `corner_cases >= 85`
+- Writes structured artifact: `.tmp/review-iter-{N}.json`
+- Returns fail with retry feedback when any threshold is not met.
 
-**Review Criteria**:
-- Code correctness and error handling
-- Test coverage and quality
-- Documentation completeness
-- Adherence to project conventions
-- Issue requirement fulfillment
+**Review Artifact** (`.tmp/review-iter-{N}.json`):
+- `scores`: dimension score map
+- `pass`: boolean gate result
+- `findings`: reviewer findings list
+- `suggestions`: actionable retry suggestions
+- `raw_output_path`: source review text path
+
+If review output is non-JSON, the kernel falls back to legacy textual score and
+section parsing to keep the gate deterministic.
 
 ### simp_kernel()
 

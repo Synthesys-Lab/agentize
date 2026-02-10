@@ -14,6 +14,7 @@ orchestration contracts before production kernels are fully migrated.
 - Orchestrator terminal behavior (`finish` / `fatal`) and log emission format
 - Kernel registry scaffold integrity and placeholder safety behavior
 - Deterministic parse gate report generation and pass/fail routing contract
+- Deterministic review report artifact and threshold gate behavior (via dedicated review tests)
 
 ## Design Rationale
 
