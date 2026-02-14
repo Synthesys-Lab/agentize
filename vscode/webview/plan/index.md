@@ -8,6 +8,7 @@ Webview script that renders the Plan session list and handles user input.
 - Creates new Plan sessions and posts `plan/new` to the extension.
 - Sends `plan/run`, `plan/toggleCollapse`, `plan/delete`, and `plan/updateDraft` messages.
 - Receives `state/replace`, `plan/sessionUpdated`, and `plan/runEvent` messages.
+- Deletes confirm that running sessions will be stopped before removal.
 
 ### Keyboard Shortcuts
 - `Cmd+Enter` (macOS) or `Ctrl+Enter` (Linux/Windows) submits the plan input.

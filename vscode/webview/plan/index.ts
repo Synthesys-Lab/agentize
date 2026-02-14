@@ -149,7 +149,7 @@
     });
 
     remove.addEventListener('click', () => {
-      const confirmed = window.confirm('Delete this session?');
+      const confirmed = window.confirm('Delete this session? Running sessions will be stopped.');
       if (!confirmed) {
         return;
       }

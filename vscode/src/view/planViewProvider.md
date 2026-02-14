@@ -19,6 +19,8 @@ Consumes UI messages:
 - `plan/delete`
 - `plan/updateDraft`
 
+`plan/delete` stops an in-flight session before removing it from storage.
+
 Emits UI messages:
 - `state/replace`
 - `plan/sessionUpdated`

@@ -27,11 +27,10 @@ export class PlanRunner {
         shell: false,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
       onEvent({
         type: 'stderr',
         sessionId: input.sessionId,
-        line: `Failed to start: ${message}`,
+        line: this.formatSpawnError(error, spec.command),
         timestamp: Date.now(),
       });
       onEvent({
@@ -70,30 +69,33 @@ export class PlanRunner {
       });
     };
 
-    this.attachLineReaders(child.stdout, (line) => {
-      onEvent({
-        type: 'stdout',
-        sessionId: input.sessionId,
-        line,
-        timestamp: Date.now(),
+    if (child.stdout) {
+      this.attachLineReaders(child.stdout, (line) => {
+        onEvent({
+          type: 'stdout',
+          sessionId: input.sessionId,
+          line,
+          timestamp: Date.now(),
+        });
       });
-    });
+    }
 
-    this.attachLineReaders(child.stderr, (line) => {
-      onEvent({
-        type: 'stderr',
-        sessionId: input.sessionId,
-        line,
-        timestamp: Date.now(),
+    if (child.stderr) {
+      this.attachLineReaders(child.stderr, (line) => {
+        onEvent({
+          type: 'stderr',
+          sessionId: input.sessionId,
+          line,
+          timestamp: Date.now(),
+        });
       });
-    });
+    }
 
     child.on('error', (error) => {
-      const message = error instanceof Error ? error.message : String(error);
       onEvent({
         type: 'stderr',
         sessionId: input.sessionId,
-        line: `Failed to start: ${message}`,
+        line: this.formatSpawnError(error, spec.command),
         timestamp: Date.now(),
       });
       emitExit(1, null);
@@ -148,5 +150,15 @@ export class PlanRunner {
     }
 
     return value;
+  }
+
+  private formatSpawnError(error: unknown, command: string): string {
+    const err = error as NodeJS.ErrnoException | undefined;
+    if (err?.code === 'ENOENT') {
+      return `Command not found: ${command}. Ensure the Agentize CLI is installed and on your PATH.`;
+    }
+
+    const message = error instanceof Error ? error.message : String(error);
+    return `Failed to start: ${message}`;
   }
 }

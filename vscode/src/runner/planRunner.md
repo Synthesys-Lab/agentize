@@ -7,6 +7,7 @@ Command runner for Plan sessions that spawns the CLI process and emits run event
 ### PlanRunner
 - `run(input: RunPlanInput, onEvent: (event: RunEvent) => void)`: starts a CLI run and
   streams events to the callback.
+- Spawn failures emit stderr lines with user-friendly guidance (including missing command hints).
 - `stop(sessionId: string)`: terminates a running session.
 - `isRunning(sessionId: string)`: reports whether a session is currently running.
 
