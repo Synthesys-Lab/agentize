@@ -20,7 +20,7 @@ export class PlanRunner {
     const spec = this.buildCommand(input.prompt);
     const startedAt = Date.now();
 
-    let child;
+    let child: ReturnType<typeof spawn>;
     try {
       child = spawn(spec.command, spec.args, {
         cwd: input.cwd,

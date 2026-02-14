@@ -10,7 +10,7 @@
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "esModuleInterop": true,
-    "types": ["vscode"]
+    "types": ["vscode", "node"]
   },
   "include": ["src"],
   "exclude": ["node_modules", "out", "webview"]

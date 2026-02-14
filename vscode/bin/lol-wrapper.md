@@ -26,13 +26,14 @@ node vscode/bin/lol-wrapper.js <lol-subcommand> [args...]
 
 ## Internal Helpers
 
-### resolveRepoRoot()
-Derives the repository root by walking up from `vscode/bin/` so the wrapper can
-locate `setup.sh` and CLI sources.
+### escapeForDoubleQuotes(value: string)
+Escapes backslashes and double quotes so paths can be safely interpolated into
+the `bash -lc` command string.
 
-### buildShellCommand(args: string[])
-Constructs a bash command that exports `AGENTIZE_HOME`, sources the setup script,
-and invokes `lol` with shell-escaped arguments.
+### bash command composition
+Builds a single `bash -lc` string that exports `AGENTIZE_HOME`, sources the setup
+script, and runs `lol "$@"` with arguments forwarded as positional parameters.
 
-### spawnBash(command: string)
-Spawns `bash -lc` with inherited stdio and propagates the child process exit code.
+### subprocess lifecycle
+Spawns `bash` with inherited stdio and forwards the child exit status, emitting a
+clear error if the shell fails to start.
