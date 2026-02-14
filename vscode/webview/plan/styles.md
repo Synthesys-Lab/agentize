@@ -11,6 +11,7 @@ Minimal readable styles for the Plan webview UI.
 - `.session-header`: row with title, status, and actions.
 - `.session-body`: contains prompt and logs.
 - `.logs`: monospace log display.
+- `#plan-textarea`: uses border-box sizing to keep padding within the panel.
 
 ### Status Modifiers
 - `[data-status="idle"]`, `[data-status="running"]`, `[data-status="success"]`,
