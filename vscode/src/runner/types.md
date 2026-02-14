@@ -8,6 +8,7 @@ Contracts for Plan command execution events.
 - `sessionId`: session identifier to associate with the run.
 - `prompt`: prompt text passed to the CLI.
 - `cwd`: working directory for the command.
+- `refineIssueNumber`: optional issue number enabling `lol plan --refine <issue> "<prompt>"`.
 
 ### RunEvent
 Union of events emitted during execution:

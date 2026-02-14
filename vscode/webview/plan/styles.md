@@ -12,6 +12,7 @@ Minimal readable styles for the Plan webview UI.
 - `.session-body`: contains prompt and logs.
 - `.logs`: monospace log display.
 - `#plan-textarea`: uses border-box sizing to keep padding within the panel.
+- `.refine`: action button for starting a refinement run on completed sessions.
 
 ### Status Modifiers
 - `[data-status="idle"]`, `[data-status="running"]`, `[data-status="success"]`,

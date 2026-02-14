@@ -41,6 +41,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     prompt: HTMLElement;
     logs: HTMLElement;
     body: HTMLElement;
+    refineButton?: HTMLButtonElement;
     stepIndicators?: HTMLElement;
     rawLogsBody?: HTMLElement;
     rawLogsToggle?: HTMLElement;
@@ -283,10 +284,16 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     const actions = document.createElement('div');
     actions.className = 'actions';
 
+    const refine = document.createElement('button');
+    refine.className = 'refine';
+    refine.textContent = 'Refine';
+    refine.hidden = true;
+
     const remove = document.createElement('button');
     remove.className = 'delete';
     remove.textContent = '×';
 
+    actions.appendChild(refine);
     actions.appendChild(remove);
 
     header.appendChild(toggleButton);
@@ -349,6 +356,10 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
       postMessage({ type: 'plan/delete', sessionId: session.id });
     });
 
+    refine.addEventListener('click', () => {
+      postMessage({ type: 'plan/refine', sessionId: session.id });
+    });
+
     // Toggle raw logs collapse
     rawLogsToggle.addEventListener('click', () => {
       const isCollapsed = rawLogsBody.classList.toggle('collapsed');
@@ -359,7 +370,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     // Handle link clicks in logs
     logs.addEventListener('click', handleLinkClick);
 
-    const node = { container, toggleButton, title, status, prompt, logs, body, stepIndicators, rawLogsBody, rawLogsToggle };
+    const node = { container, toggleButton, title, status, prompt, logs, body, refineButton: refine, stepIndicators, rawLogsBody, rawLogsToggle };
     sessionNodes.set(session.id, node);
     return node;
   };
@@ -370,6 +381,12 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     node.title.textContent = session.title || 'Untitled';
     node.status.textContent = session.status;
     node.prompt.textContent = session.prompt || '';
+
+    const canRefine = session.status === 'success' || session.status === 'error';
+    if (node.refineButton) {
+      node.refineButton.hidden = !canRefine;
+      node.refineButton.disabled = !canRefine;
+    }
 
     node.toggleButton.textContent = session.collapsed ? '[▶]' : '[▼]';
     node.body.classList.toggle('collapsed', session.collapsed);

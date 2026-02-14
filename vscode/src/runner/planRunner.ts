@@ -17,7 +17,7 @@ export class PlanRunner {
       return false;
     }
 
-    const spec = this.buildCommand(input.prompt);
+    const spec = this.buildCommand(input);
     const startedAt = Date.now();
 
     let child: ReturnType<typeof spawn>;
@@ -124,11 +124,20 @@ export class PlanRunner {
     return this.processes.has(sessionId);
   }
 
-  private buildCommand(prompt: string): CommandSpec {
+  private buildCommand(input: RunPlanInput): CommandSpec {
     const command = 'node';
     const wrapperPath = path.join(__dirname, '..', '..', 'bin', 'lol-wrapper.js');
-    const args = [wrapperPath, 'plan', prompt];
-    const display = `lol plan ${this.quoteArg(prompt)}`.trim();
+    const args = [wrapperPath, 'plan'];
+    let display = 'lol plan';
+
+    if (typeof input.refineIssueNumber === 'number') {
+      args.push('--refine', input.refineIssueNumber.toString(), input.prompt);
+      display = `${display} --refine ${input.refineIssueNumber} ${this.quoteArg(input.prompt)}`.trim();
+    } else {
+      args.push(input.prompt);
+      display = `${display} ${this.quoteArg(input.prompt)}`.trim();
+    }
+
     return { command, args, display };
   }
 

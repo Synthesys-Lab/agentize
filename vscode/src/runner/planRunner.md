@@ -15,9 +15,10 @@ Command runner for Plan sessions that spawns the CLI process and emits run event
 
 ## Internal Helpers
 
-### buildCommand(prompt: string)
+### buildCommand(input: RunPlanInput)
 Returns the executable and arguments used to invoke the planning CLI, using `node`
-to run the wrapper script while preserving the user-facing display string.
+to run the wrapper script while preserving the user-facing display string. When
+`refineIssueNumber` is provided, the runner builds `lol plan --refine <issue> "<prompt>"`.
 
 ### attachLineReaders()
 Converts stdout/stderr streams into line-based run events.

@@ -2,6 +2,7 @@ export interface RunPlanInput {
   sessionId: string;
   prompt: string;
   cwd: string;
+  refineIssueNumber?: number;
 }
 
 export type RunEvent =
