@@ -20,3 +20,13 @@ Minimal readable styles for the Plan webview UI.
 ## Internal Helpers
 
 No internal helpers; this file only provides static styles.
+
+### Animation
+
+- `.session-body` uses CSS transitions to keep the collapse/expand interaction smooth while
+  preserving layout flow for the header area.
+- Transitioned properties:
+  - `max-height`: 0 ↔ 2000px to accommodate variable content without JS measurement.
+  - `opacity`: 0 ↔ 1 to soften the visibility change.
+  - `margin-top`: 0 ↔ 10px to collapse spacing cleanly.
+- Timing: `0.2s ease-out` to match the existing `fadeIn` cadence used elsewhere in the view.

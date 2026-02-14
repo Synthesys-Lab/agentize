@@ -165,10 +165,16 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-height: 2000px;
+  opacity: 1;
+  overflow: hidden;
+  transition: max-height 0.2s ease-out, opacity 0.2s ease-out, margin-top 0.2s ease-out;
 }
 
 .session-body.collapsed {
-  display: none;
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
 }
 
 .prompt {
