@@ -1,6 +1,6 @@
 # Plan Tab UI
 
-This folder provides the Plan sidebar UI implementation for the webview.
+This folder provides the Plan Activity Bar UI implementation for the webview.
 
 ## Organization
 

@@ -1,11 +1,11 @@
 # types.ts
 
-Shared state contracts for the Plan sidebar and related tabs.
+Shared state contracts for the Plan Activity Bar view and related tabs.
 
 ## External Interface
 
 ### AppState
-- `activeTab`: which sidebar tab is active (`plan`, `repo`, `impl`, `settings`).
+- `activeTab`: which Plan view tab is active (`plan`, `repo`, `impl`, `settings`).
 - `plan`: PlanState payload.
 - `repo`, `impl`, `settings`: placeholders for future tabs.
 

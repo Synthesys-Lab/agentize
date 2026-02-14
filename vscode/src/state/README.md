@@ -1,6 +1,6 @@
 # Plan State
 
-This folder defines the Plan sidebar state models and persistence helpers.
+This folder defines the Plan Activity Bar state models and persistence helpers.
 
 ## Organization
 

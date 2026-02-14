@@ -1,12 +1,12 @@
 # extension.ts
 
-Extension entry point that wires the Plan sidebar webview provider into VS Code.
+Extension entry point that wires the Plan Activity Bar webview provider into VS Code.
 
 ## External Interface
 
 ### activate(context: vscode.ExtensionContext)
 Registers the Plan webview view provider, instantiates state and runner services, and
-exposes the sidebar view to the user.
+exposes the Activity Bar view to the user.
 
 ### deactivate()
 Reserved for cleanup when the extension is deactivated.

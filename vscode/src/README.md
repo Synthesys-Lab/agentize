@@ -1,6 +1,6 @@
 # Extension Backend
 
-This folder hosts the VS Code extension backend modules for the Plan sidebar.
+This folder hosts the VS Code extension backend modules for the Plan Activity Bar view.
 
 ## Organization
 

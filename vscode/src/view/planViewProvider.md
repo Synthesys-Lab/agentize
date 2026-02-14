@@ -1,6 +1,6 @@
 # planViewProvider.ts
 
-Webview view provider that renders the Plan sidebar and routes messages between the
+Webview view provider that renders the Plan Activity Bar panel and routes messages between the
 webview UI, session state, and runner.
 
 ## External Interface

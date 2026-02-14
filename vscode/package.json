@@ -1,7 +1,7 @@
 {
   "name": "agentize-plan-extension",
   "displayName": "Agentize Plan",
-  "description": "Plan sidebar extension for the Agentize CLI.",
+  "description": "Plan Activity Bar extension for the Agentize CLI.",
   "version": "0.0.1",
   "publisher": "agentize",
   "private": true,
@@ -16,8 +16,17 @@
     "onView:agentize.planView"
   ],
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "agentize-plan",
+          "title": "Plan",
+          "icon": "resources/plan.svg"
+        }
+      ]
+    },
     "views": {
-      "explorer": [
+      "agentize-plan": [
         {
           "id": "agentize.planView",
           "name": "Plan",

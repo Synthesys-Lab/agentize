@@ -1,6 +1,6 @@
 # Plan Webview Assets
 
-This folder contains webview assets for the VS Code Plan sidebar.
+This folder contains webview assets for the VS Code Plan Activity Bar view.
 
 ## Organization
 

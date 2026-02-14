@@ -1,6 +1,6 @@
 # Webview Provider
 
-This folder implements the webview provider that renders the Plan sidebar UI.
+This folder implements the webview provider that renders the Plan Activity Bar UI.
 
 ## Organization
 
