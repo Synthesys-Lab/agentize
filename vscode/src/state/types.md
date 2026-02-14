@@ -20,6 +20,10 @@ Shared state contracts for the Plan Activity Bar view and related tabs.
 - `status`: session status.
 - `prompt`: raw planning prompt.
 - `command`: resolved CLI command string (optional).
+- `issueNumber`: GitHub issue number captured from plan output (optional).
+- `implStatus`: implementation run status (`idle`, `running`, `success`, `error`).
+- `implLogs`: implementation log lines captured for this session (optional).
+- `implCollapsed`: whether the implementation log panel is collapsed (optional).
 - `logs`: log lines captured for this session.
 - `createdAt`, `updatedAt`: timestamps.
 

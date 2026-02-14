@@ -1,3 +1,5 @@
+import type { PlanImplMessage, PlanToggleImplCollapseMessage } from './types';
+
 // Provided by VS Code in the webview environment.
 declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
 
@@ -40,14 +42,22 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     status: HTMLElement;
     prompt: HTMLElement;
     logs: HTMLElement;
+    implLogs?: HTMLElement;
     body: HTMLElement;
     stepIndicators?: HTMLElement;
     rawLogsBody?: HTMLElement;
     rawLogsToggle?: HTMLElement;
+    implLogsBox?: HTMLElement;
+    implLogsBody?: HTMLElement;
+    implLogsToggle?: HTMLElement;
+    implButton?: HTMLButtonElement;
   }>();
   const logBuffers = new Map<string, string[]>();
+  const implLogBuffers = new Map<string, string[]>();
   const stepStates = new Map<string, StepState[]>();
   const logsCollapsedState = new Map<string, boolean>();
+  const issueNumbers = new Map<string, string>();
+  const sessionCache = new Map<string, SessionSummary>();
 
   interface StepState {
     stage: number;
@@ -62,6 +72,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
   }
 
   const postMessage = (message: unknown) => vscode.postMessage(message);
+  const postImplMessage = (message: PlanImplMessage | PlanToggleImplCollapseMessage) => postMessage(message);
 
   const showInputPanel = () => {
     inputPanel?.classList.remove('hidden');
@@ -237,6 +248,20 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     return result;
   };
 
+  const extractIssueNumber = (line: string): string | null => {
+    const placeholderMatch = /Created placeholder issue #(\d+)/.exec(line);
+    if (placeholderMatch) {
+      return placeholderMatch[1];
+    }
+
+    const urlMatch = /https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/(\d+)/.exec(line);
+    if (urlMatch) {
+      return urlMatch[1];
+    }
+
+    return null;
+  };
+
   // Handle link click
   const handleLinkClick = (event: Event): void => {
     const target = event.target as HTMLElement;
@@ -255,6 +280,41 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
       const path = anchor.dataset.path;
       if (path) {
         postMessage({ type: 'link/openFile', path });
+      }
+    }
+  };
+
+  const updateImplControls = (sessionId: string, session?: SessionSummary): void => {
+    const current = session ?? sessionCache.get(sessionId);
+    const node = sessionNodes.get(sessionId);
+    if (!current || !node) {
+      return;
+    }
+
+    if (current.issueNumber) {
+      issueNumbers.set(sessionId, current.issueNumber);
+    }
+
+    const issueNumber = current.issueNumber || issueNumbers.get(sessionId);
+    const showButton = current.status === 'success' && Boolean(issueNumber);
+    if (node.implButton) {
+      node.implButton.classList.toggle('hidden', !showButton);
+      node.implButton.disabled = current.implStatus === 'running';
+      node.implButton.dataset.issueNumber = issueNumber ?? '';
+    }
+
+    const hasImplLogs = Array.isArray(current.implLogs) && current.implLogs.length > 0;
+    const implStatus = current.implStatus ?? 'idle';
+    const showImplLogs = hasImplLogs || (implStatus !== 'idle');
+    if (node.implLogsBox) {
+      node.implLogsBox.classList.toggle('hidden', !showImplLogs);
+    }
+
+    if (node.implLogsBody) {
+      const isCollapsed = current.implCollapsed ?? false;
+      node.implLogsBody.classList.toggle('collapsed', isCollapsed);
+      if (node.implLogsToggle) {
+        node.implLogsToggle.textContent = isCollapsed ? '[▶]' : '[▼]';
       }
     }
   };
@@ -283,10 +343,15 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     const actions = document.createElement('div');
     actions.className = 'actions';
 
+    const implButton = document.createElement('button');
+    implButton.className = 'impl-button hidden';
+    implButton.textContent = 'Implement';
+
     const remove = document.createElement('button');
     remove.className = 'delete';
     remove.textContent = '×';
 
+    actions.appendChild(implButton);
     actions.appendChild(remove);
 
     header.appendChild(toggleButton);
@@ -332,9 +397,37 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     rawLogsBox.appendChild(rawLogsHeader);
     rawLogsBox.appendChild(rawLogsBody);
 
+    const implLogsBox = document.createElement('div');
+    implLogsBox.className = 'impl-logs-box hidden';
+
+    const implLogsHeader = document.createElement('div');
+    implLogsHeader.className = 'impl-logs-header';
+
+    const implLogsToggle = document.createElement('button');
+    implLogsToggle.className = 'impl-logs-toggle';
+    implLogsToggle.textContent = '[▼]';
+
+    const implLogsTitle = document.createElement('span');
+    implLogsTitle.className = 'impl-logs-title';
+    implLogsTitle.textContent = 'Implementation Log';
+
+    implLogsHeader.appendChild(implLogsToggle);
+    implLogsHeader.appendChild(implLogsTitle);
+
+    const implLogsBody = document.createElement('div');
+    implLogsBody.className = 'impl-logs-body';
+
+    const implLogs = document.createElement('pre');
+    implLogs.className = 'logs impl-logs';
+
+    implLogsBody.appendChild(implLogs);
+    implLogsBox.appendChild(implLogsHeader);
+    implLogsBox.appendChild(implLogsBody);
+
     body.appendChild(prompt);
     body.appendChild(stepIndicators);
     body.appendChild(rawLogsBox);
+    body.appendChild(implLogsBox);
 
     container.appendChild(header);
     container.appendChild(body);
@@ -349,6 +442,15 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
       postMessage({ type: 'plan/delete', sessionId: session.id });
     });
 
+    implButton.addEventListener('click', () => {
+      const issueNumber = implButton.dataset.issueNumber || '';
+      if (!issueNumber) {
+        return;
+      }
+      const message: PlanImplMessage = { type: 'plan/impl', sessionId: session.id, issueNumber };
+      postImplMessage(message);
+    });
+
     // Toggle raw logs collapse
     rawLogsToggle.addEventListener('click', () => {
       const isCollapsed = rawLogsBody.classList.toggle('collapsed');
@@ -356,15 +458,40 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
       logsCollapsedState.set(session.id, isCollapsed);
     });
 
+    implLogsToggle.addEventListener('click', () => {
+      const isCollapsed = implLogsBody.classList.toggle('collapsed');
+      implLogsToggle.textContent = isCollapsed ? '[▶]' : '[▼]';
+      const message: PlanToggleImplCollapseMessage = { type: 'plan/toggleImplCollapse', sessionId: session.id };
+      postImplMessage(message);
+    });
+
     // Handle link clicks in logs
     logs.addEventListener('click', handleLinkClick);
+    implLogs.addEventListener('click', handleLinkClick);
 
-    const node = { container, toggleButton, title, status, prompt, logs, body, stepIndicators, rawLogsBody, rawLogsToggle };
+    const node = {
+      container,
+      toggleButton,
+      title,
+      status,
+      prompt,
+      logs,
+      implLogs,
+      body,
+      stepIndicators,
+      rawLogsBody,
+      rawLogsToggle,
+      implLogsBox,
+      implLogsBody,
+      implLogsToggle,
+      implButton,
+    };
     sessionNodes.set(session.id, node);
     return node;
   };
 
-  const updateSession = (session: { id: string; status: string; title?: string; prompt?: string; logs?: string[]; collapsed?: boolean }) => {
+  const updateSession = (session: SessionSummary) => {
+    sessionCache.set(session.id, session);
     const node = ensureSessionNode(session);
     node.container.dataset.status = session.status;
     node.title.textContent = session.title || 'Untitled';
@@ -397,6 +524,26 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
       // Re-render logs with link detection
       node.logs.innerHTML = session.logs.map(line => renderLinks(line)).join('\n');
     }
+
+    if (!session.issueNumber && Array.isArray(session.logs)) {
+      for (const line of session.logs) {
+        const issueNumber = extractIssueNumber(line);
+        if (issueNumber) {
+          issueNumbers.set(session.id, issueNumber);
+          break;
+        }
+      }
+    }
+
+    if (Array.isArray(session.implLogs) && node.implLogs) {
+      implLogBuffers.set(session.id, session.implLogs.slice());
+      node.implLogs.innerHTML = session.implLogs.map(line => renderLinks(line)).join('\n');
+      if (node.implLogsBody) {
+        node.implLogsBody.scrollTop = node.implLogsBody.scrollHeight;
+      }
+    }
+
+    updateImplControls(session.id, session);
   };
 
   const removeSession = (sessionId: string) => {
@@ -407,14 +554,23 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     node.container.remove();
     sessionNodes.delete(sessionId);
     logBuffers.delete(sessionId);
+    implLogBuffers.delete(sessionId);
     stepStates.delete(sessionId);
     logsCollapsedState.delete(sessionId);
+    issueNumbers.delete(sessionId);
+    sessionCache.delete(sessionId);
   };
 
   const appendLogLine = (sessionId: string, line: string, stream?: string) => {
     const node = sessionNodes.get(sessionId);
     if (!node) {
       return;
+    }
+
+    const issueNumber = extractIssueNumber(line);
+    if (issueNumber) {
+      issueNumbers.set(sessionId, issueNumber);
+      updateImplControls(sessionId);
     }
 
     const prefix = stream === 'stderr' ? 'stderr: ' : '';
@@ -448,6 +604,30 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     }
   };
 
+  const appendImplLogLine = (sessionId: string, line: string, stream?: string) => {
+    const node = sessionNodes.get(sessionId);
+    if (!node || !node.implLogs) {
+      return;
+    }
+
+    const prefix = stream === 'stderr' ? 'stderr: ' : '';
+    const fullLine = `${prefix}${line}`;
+    const buffer = implLogBuffers.get(sessionId) || [];
+    buffer.push(fullLine);
+    if (buffer.length > MAX_LOG_LINES) {
+      buffer.splice(0, buffer.length - MAX_LOG_LINES);
+    }
+    implLogBuffers.set(sessionId, buffer);
+
+    node.implLogs.innerHTML = buffer.map(l => renderLinks(l)).join('\n');
+
+    if (node.implLogsBody) {
+      node.implLogsBody.scrollTop = node.implLogsBody.scrollHeight;
+    }
+
+    updateImplControls(sessionId);
+  };
+
   type SessionSummary = {
     id: string;
     status: string;
@@ -455,6 +635,10 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     prompt?: string;
     logs?: string[];
     collapsed?: boolean;
+    issueNumber?: string;
+    implStatus?: string;
+    implLogs?: string[];
+    implCollapsed?: boolean;
   };
 
   type PlanState = {
@@ -471,6 +655,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     sessionId?: string;
     line?: string;
     code?: number;
+    commandType?: string;
   };
 
   type IncomingWebviewMessage = {
@@ -537,11 +722,15 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
           return;
         }
         if (eventData.type === 'stdout' || eventData.type === 'stderr') {
-          appendLogLine(eventData.sessionId || '', eventData.line || '', eventData.type);
+          if (eventData.commandType === 'impl') {
+            appendImplLogLine(eventData.sessionId || '', eventData.line || '', eventData.type);
+          } else {
+            appendLogLine(eventData.sessionId || '', eventData.line || '', eventData.type);
+          }
         }
         if (eventData.type === 'exit') {
-          // Complete all running steps when process exits
-          if (eventData.sessionId) {
+          if (eventData.commandType !== 'impl' && eventData.sessionId) {
+            // Complete all running steps when process exits
             completeAllSteps(eventData.sessionId);
             const node = sessionNodes.get(eventData.sessionId);
             if (node?.stepIndicators) {

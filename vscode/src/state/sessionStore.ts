@@ -47,6 +47,10 @@ export class SessionStore {
       collapsed: false,
       status: 'idle',
       prompt: trimmed,
+      issueNumber: undefined,
+      implStatus: 'idle',
+      implLogs: [],
+      implCollapsed: false,
       logs: [],
       createdAt: now,
       updatedAt: now,
@@ -80,6 +84,19 @@ export class SessionStore {
     return this.cloneSession(session);
   }
 
+  appendImplLogs(id: string, lines: string[]): PlanSession | undefined {
+    const session = this.state.sessions.find((item) => item.id === id);
+    if (!session) {
+      return undefined;
+    }
+
+    const existing = session.implLogs ?? [];
+    session.implLogs = this.trimLogs([...existing, ...lines]);
+    session.updatedAt = Date.now();
+    this.persist();
+    return this.cloneSession(session);
+  }
+
   toggleSessionCollapse(id: string): PlanSession | undefined {
     const session = this.state.sessions.find((item) => item.id === id);
     if (!session) {
@@ -87,6 +104,18 @@ export class SessionStore {
     }
 
     session.collapsed = !session.collapsed;
+    session.updatedAt = Date.now();
+    this.persist();
+    return this.cloneSession(session);
+  }
+
+  toggleImplCollapse(id: string): PlanSession | undefined {
+    const session = this.state.sessions.find((item) => item.id === id);
+    if (!session) {
+      return undefined;
+    }
+
+    session.implCollapsed = !session.implCollapsed;
     session.updatedAt = Date.now();
     this.persist();
     return this.cloneSession(session);
@@ -143,6 +172,9 @@ export class SessionStore {
     return {
       ...session,
       logs: [...session.logs],
+      implStatus: session.implStatus ?? 'idle',
+      implLogs: session.implLogs ? [...session.implLogs] : [],
+      implCollapsed: session.implCollapsed ?? false,
     };
   }
 }

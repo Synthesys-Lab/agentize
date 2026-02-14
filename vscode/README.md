@@ -9,6 +9,12 @@ planning workflow and surfaces it in a webview.
 - `webview/` contains the Plan tab UI assets rendered in the Activity Bar webview.
 - `bin/` contains helper executables used by the extension runtime.
 
+## Plan to Implementation Flow
+
+When a plan finishes successfully and the planner creates a placeholder GitHub issue, the
+Plan tab surfaces an Implement button. Clicking it launches `lol impl <issue-number>` in a
+separate Implementation Log panel so plan and implementation output stay distinct.
+
 ## Prerequisites
 
 - Node.js + npm (for compiling the extension TypeScript).

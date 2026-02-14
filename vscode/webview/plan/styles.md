@@ -11,6 +11,10 @@ Minimal readable styles for the Plan webview UI.
 - `.session-header`: row with title, status, and actions.
 - `.session-body`: contains prompt and logs.
 - `.logs`: monospace log display.
+- `.hidden`: utility class to hide optional UI elements.
+- `.impl-button`: primary action for starting implementation runs.
+- `.impl-logs-box`: container for implementation logs and header.
+- `.impl-logs-header`, `.impl-logs-toggle`, `.impl-logs-title`, `.impl-logs-body`: implementation log panel chrome.
 - `#plan-textarea`: uses border-box sizing to keep padding within the panel.
 
 ### Status Modifiers

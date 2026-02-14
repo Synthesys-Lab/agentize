@@ -1,7 +1,7 @@
 import { spawn } from 'child_process';
 import * as path from 'path';
 import * as readline from 'readline';
-import type { RunEvent, RunPlanInput } from './types';
+import type { RunCommandType, RunEvent, RunPlanInput } from './types';
 
 interface CommandSpec {
   command: string;
@@ -13,11 +13,12 @@ export class PlanRunner {
   private processes = new Map<string, ReturnType<typeof spawn>>();
 
   run(input: RunPlanInput, onEvent: (event: RunEvent) => void): boolean {
-    if (this.processes.has(input.sessionId)) {
+    const key = this.getProcessKey(input.sessionId, input.command);
+    if (this.processes.has(key)) {
       return false;
     }
 
-    const spec = this.buildCommand(input.prompt);
+    const spec = this.buildCommand(input);
     const startedAt = Date.now();
 
     let child: ReturnType<typeof spawn>;
@@ -31,12 +32,14 @@ export class PlanRunner {
       onEvent({
         type: 'stderr',
         sessionId: input.sessionId,
+        commandType: input.command,
         line: this.formatSpawnError(error, spec.command),
         timestamp: Date.now(),
       });
       onEvent({
         type: 'exit',
         sessionId: input.sessionId,
+        commandType: input.command,
         code: 1,
         signal: null,
         timestamp: Date.now(),
@@ -44,11 +47,12 @@ export class PlanRunner {
       return false;
     }
 
-    this.processes.set(input.sessionId, child);
+    this.processes.set(key, child);
     onEvent({
       type: 'start',
       sessionId: input.sessionId,
       command: spec.display,
+      commandType: input.command,
       cwd: input.cwd,
       timestamp: startedAt,
     });
@@ -60,10 +64,11 @@ export class PlanRunner {
         return;
       }
       exitEmitted = true;
-      this.processes.delete(input.sessionId);
+      this.processes.delete(key);
       onEvent({
         type: 'exit',
         sessionId: input.sessionId,
+        commandType: input.command,
         code,
         signal,
         timestamp: Date.now(),
@@ -75,6 +80,7 @@ export class PlanRunner {
         onEvent({
           type: 'stdout',
           sessionId: input.sessionId,
+          commandType: input.command,
           line,
           timestamp: Date.now(),
         });
@@ -86,6 +92,7 @@ export class PlanRunner {
         onEvent({
           type: 'stderr',
           sessionId: input.sessionId,
+          commandType: input.command,
           line,
           timestamp: Date.now(),
         });
@@ -96,6 +103,7 @@ export class PlanRunner {
       onEvent({
         type: 'stderr',
         sessionId: input.sessionId,
+        commandType: input.command,
         line: this.formatSpawnError(error, spec.command),
         timestamp: Date.now(),
       });
@@ -110,23 +118,42 @@ export class PlanRunner {
   }
 
   stop(sessionId: string): boolean {
-    const child = this.processes.get(sessionId);
-    if (!child) {
-      return false;
+    let stopped = false;
+    for (const [key, child] of this.processes.entries()) {
+      if (!key.startsWith(`${sessionId}:`)) {
+        continue;
+      }
+      child.kill();
+      this.processes.delete(key);
+      stopped = true;
+    }
+    return stopped;
+  }
+
+  isRunning(sessionId: string, commandType?: RunCommandType): boolean {
+    if (commandType) {
+      return this.processes.has(this.getProcessKey(sessionId, commandType));
     }
 
-    child.kill();
-    this.processes.delete(sessionId);
-    return true;
+    for (const key of this.processes.keys()) {
+      if (key.startsWith(`${sessionId}:`)) {
+        return true;
+      }
+    }
+    return false;
   }
 
-  isRunning(sessionId: string): boolean {
-    return this.processes.has(sessionId);
-  }
-
-  private buildCommand(prompt: string): CommandSpec {
+  private buildCommand(input: RunPlanInput): CommandSpec {
     const command = 'node';
     const wrapperPath = path.join(__dirname, '..', '..', 'bin', 'lol-wrapper.js');
+    if (input.command === 'impl') {
+      const issueNumber = input.issueNumber ?? '';
+      const args = [wrapperPath, 'impl', issueNumber];
+      const display = `lol impl ${this.quoteArg(issueNumber)}`.trim();
+      return { command, args, display };
+    }
+
+    const prompt = input.prompt ?? '';
     const args = [wrapperPath, 'plan', prompt];
     const display = `lol plan ${this.quoteArg(prompt)}`.trim();
     return { command, args, display };
@@ -162,5 +189,9 @@ export class PlanRunner {
 
     const message = error instanceof Error ? error.message : String(error);
     return `Failed to start: ${message}`;
+  }
+
+  private getProcessKey(sessionId: string, commandType: RunCommandType): string {
+    return `${sessionId}:${commandType}`;
   }
 }

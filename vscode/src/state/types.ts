@@ -7,6 +7,10 @@ export interface PlanSession {
   status: SessionStatus;
   prompt: string;
   command?: string;
+  issueNumber?: string;
+  implStatus?: SessionStatus;
+  implLogs?: string[];
+  implCollapsed?: boolean;
   logs: string[];
   createdAt: number;
   updatedAt: number;

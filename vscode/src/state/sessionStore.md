@@ -10,7 +10,9 @@ Plan session persistence and CRUD helper used by the extension backend.
 - `createSession(prompt: string)`: creates a new session and persists it.
 - `updateSession(id: string, update: Partial<PlanSession>)`: updates a session and persists it.
 - `appendSessionLogs(id: string, lines: string[])`: appends log lines with trimming.
+- `appendImplLogs(id: string, lines: string[])`: appends implementation log lines with trimming.
 - `toggleSessionCollapse(id: string)`: flips the collapsed flag.
+- `toggleImplCollapse(id: string)`: flips the implementation log collapse flag.
 - `deleteSession(id: string)`: removes a session.
 - `updateDraftInput(value: string)`: persists the draft input text.
 - `getSession(id: string)`: returns a single session by id.

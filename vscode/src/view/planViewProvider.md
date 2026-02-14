@@ -15,13 +15,17 @@ webview UI, session state, and runner.
 Consumes UI messages:
 - `plan/new`
 - `plan/run`
+- `plan/impl`
 - `plan/toggleCollapse`
+- `plan/toggleImplCollapse`
 - `plan/delete`
 - `plan/updateDraft`
 - `link/openExternal` - Opens GitHub issue URLs in default browser
 - `link/openFile` - Opens local markdown files in VSCode editor
 
 `plan/delete` stops an in-flight session before removing it from storage.
+`plan/impl` starts an implementation run for the captured issue number and stores output in a
+separate implementation log buffer.
 
 Emits UI messages:
 - `state/replace`
@@ -38,6 +42,8 @@ The provider loads the compiled webview script `webview/plan/out/index.js` (buil
 
 ### handleRunEvent(event: RunEvent)
 Transforms runner events into state updates and UI updates (status changes and log lines).
+Plan events update `status` and `logs`; implementation events update `implStatus` and `implLogs`.
+Issue numbers are extracted in real time from stdout/stderr lines and persisted on the session.
 
 ### resolvePlanCwd()
 Resolves the planning working directory.
@@ -54,3 +60,10 @@ Validates GitHub issue URLs using the pattern `^https://github\.com/[^/]+/[^/]+/
 
 **`openLocalFile(filePath: string): Promise<void>`**
 Resolves local file paths relative to the workspace root and opens them in the VSCode editor using `vscode.workspace.openTextDocument()` and `vscode.window.showTextDocument()`.
+
+### Issue Extraction
+Plan stdout/stderr lines are scanned for:
+- `Created placeholder issue #N`
+- `https://github.com/<owner>/<repo>/issues/N`
+
+When a match is found, `issueNumber` is stored on the session and pushed to the webview.

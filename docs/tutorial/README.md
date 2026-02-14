@@ -10,8 +10,9 @@ Complete all tutorials in 15-25 minutes (3-5 minutes each):
 2. `00a-claude-ui-setup.md` - Claude UI setup for slash commands
 3. `01-ultra-planner.md` - CLI planning with `lol plan --editor`
 4. `02-issue-to-impl.md` - Implementation; together with 01 this forms the end-to-end flow
-5. `03-advanced-usage.md` - Parallel development workflows with clones or worktrees
-6. `04-project.md` - Configuring project board automation with PAT
+5. `03-vscode-planning.md` - Planning and implementation from the VS Code Activity Bar
+6. `03-advanced-usage.md` - Parallel development workflows with clones or worktrees
+7. `04a-project.md` - Configuring project board automation with PAT
 
 ## Tutorial Format
 

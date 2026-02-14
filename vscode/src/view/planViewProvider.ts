@@ -4,13 +4,14 @@ import * as vscode from 'vscode';
 import type { PlanSession } from '../state/types';
 import { SessionStore } from '../state/sessionStore';
 import { PlanRunner } from '../runner/planRunner';
-import type { RunEvent } from '../runner/types';
+import type { RunCommandType, RunEvent } from '../runner/types';
 
 interface IncomingMessage {
   type: string;
   sessionId?: string;
   prompt?: string;
   value?: string;
+  issueNumber?: string;
   url?: string;
   path?: string;
 }
@@ -66,7 +67,7 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
         const session = this.store.createSession(prompt);
         this.store.updateDraftInput('');
         this.postSessionUpdate(session.id, session);
-        this.startRun(session);
+        this.startRun(session, 'plan');
         return;
       }
       case 'plan/run': {
@@ -78,7 +79,32 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
         if (!session) {
           return;
         }
-        this.startRun(session);
+        this.startRun(session, 'plan');
+        return;
+      }
+      case 'plan/impl': {
+        const sessionId = message.sessionId ?? '';
+        if (!sessionId) {
+          return;
+        }
+        const session = this.store.getSession(sessionId);
+        if (!session) {
+          return;
+        }
+        if (session.status !== 'success') {
+          this.appendSystemLog(sessionId, 'Plan must succeed before implementation can start.', true, 'impl');
+          return;
+        }
+        if (session.implStatus === 'running' || this.runner.isRunning(sessionId, 'impl')) {
+          this.appendSystemLog(sessionId, 'Implementation already running.', true, 'impl');
+          return;
+        }
+        const issueNumber = (message.issueNumber ?? session.issueNumber ?? '').trim();
+        if (!issueNumber) {
+          this.appendSystemLog(sessionId, 'Missing issue number for implementation.', true, 'impl');
+          return;
+        }
+        this.startRun(session, 'impl', issueNumber);
         return;
       }
       case 'plan/toggleCollapse': {
@@ -87,6 +113,17 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
           return;
         }
         const session = this.store.toggleSessionCollapse(sessionId);
+        if (session) {
+          this.postSessionUpdate(session.id, session);
+        }
+        return;
+      }
+      case 'plan/toggleImplCollapse': {
+        const sessionId = message.sessionId ?? '';
+        if (!sessionId) {
+          return;
+        }
+        const session = this.store.toggleImplCollapse(sessionId);
         if (session) {
           this.postSessionUpdate(session.id, session);
         }
@@ -153,16 +190,26 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private startRun(session: PlanSession): void {
-    if (this.runner.isRunning(session.id) || session.status === 'running') {
-      this.appendSystemLog(session.id, 'Session already running.', true);
+  private startRun(session: PlanSession, commandType: RunCommandType, issueNumber?: string): void {
+    if (this.runner.isRunning(session.id)) {
+      this.appendSystemLog(session.id, 'Session already running.', true, commandType);
+      return;
+    }
+    if (commandType === 'plan' && session.status === 'running') {
+      this.appendSystemLog(session.id, 'Session already running.', true, commandType);
+      return;
+    }
+    if (commandType === 'impl' && session.implStatus === 'running') {
+      this.appendSystemLog(session.id, 'Implementation already running.', true, commandType);
       return;
     }
 
     const cwd = this.resolvePlanCwd();
     if (!cwd) {
-      this.appendSystemLog(session.id, 'Missing workspace or trees/main path.', false);
-      this.store.updateSession(session.id, { status: 'error' });
+      const update: Partial<PlanSession> =
+        commandType === 'impl' ? { implStatus: 'error' } : { status: 'error' };
+      this.appendSystemLog(session.id, 'Missing workspace or trees/main path.', false, commandType);
+      this.store.updateSession(session.id, update);
       const updated = this.store.getSession(session.id);
       if (updated) {
         this.postSessionUpdate(updated.id, updated);
@@ -170,18 +217,40 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
+    if (commandType === 'plan') {
+      this.store.updateSession(session.id, {
+        issueNumber: undefined,
+        implStatus: 'idle',
+        implLogs: [],
+      });
+    } else {
+      this.store.updateSession(session.id, {
+        issueNumber: issueNumber ?? session.issueNumber,
+        implStatus: 'idle',
+        implLogs: [],
+      });
+    }
+    const prepped = this.store.getSession(session.id);
+    if (prepped) {
+      this.postSessionUpdate(prepped.id, prepped);
+    }
+
     const started = this.runner.run(
       {
         sessionId: session.id,
-        prompt: session.prompt,
+        command: commandType,
+        prompt: commandType === 'plan' ? session.prompt : undefined,
+        issueNumber: commandType === 'impl' ? issueNumber : undefined,
         cwd,
       },
       (event) => this.handleRunEvent(event),
     );
 
     if (!started) {
-      this.appendSystemLog(session.id, 'Unable to start session.', false);
-      this.store.updateSession(session.id, { status: 'error' });
+      const update: Partial<PlanSession> =
+        commandType === 'impl' ? { implStatus: 'error' } : { status: 'error' };
+      this.appendSystemLog(session.id, 'Unable to start session.', false, commandType);
+      this.store.updateSession(session.id, update);
       const updated = this.store.getSession(session.id);
       if (updated) {
         this.postSessionUpdate(updated.id, updated);
@@ -195,13 +264,15 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
+    const isImpl = event.commandType === 'impl';
+
     switch (event.type) {
       case 'start': {
-        const updated = this.store.updateSession(event.sessionId, {
-          status: 'running',
-          command: event.command,
-        });
-        this.appendSystemLog(event.sessionId, `> ${event.command}`, false);
+        const update: Partial<PlanSession> = isImpl
+          ? { implStatus: 'running' }
+          : { status: 'running', command: event.command };
+        const updated = this.store.updateSession(event.sessionId, update);
+        this.appendSystemLog(event.sessionId, `> ${event.command}`, false, event.commandType);
         if (updated) {
           this.postSessionUpdate(updated.id, updated);
         }
@@ -209,20 +280,36 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
         return;
       }
       case 'stdout': {
-        this.store.appendSessionLogs(event.sessionId, [event.line]);
+        if (isImpl) {
+          this.store.appendImplLogs(event.sessionId, [event.line]);
+        } else {
+          this.store.appendSessionLogs(event.sessionId, [event.line]);
+          this.captureIssueNumber(event.sessionId, event.line);
+        }
         this.postRunEvent(event);
         return;
       }
       case 'stderr': {
-        const line = `stderr: ${event.line}`;
-        this.store.appendSessionLogs(event.sessionId, [line]);
-        this.postRunEvent({ ...event, line });
+        const storedLine = `stderr: ${event.line}`;
+        if (isImpl) {
+          this.store.appendImplLogs(event.sessionId, [storedLine]);
+        } else {
+          this.store.appendSessionLogs(event.sessionId, [storedLine]);
+          this.captureIssueNumber(event.sessionId, event.line);
+        }
+        this.postRunEvent(event);
         return;
       }
       case 'exit': {
         const status = event.code === 0 ? 'success' : 'error';
-        this.store.appendSessionLogs(event.sessionId, [`Exit code: ${event.code ?? 'null'}`]);
-        const updated = this.store.updateSession(event.sessionId, { status });
+        const update: Partial<PlanSession> = isImpl ? { implStatus: status } : { status };
+        const line = `Exit code: ${event.code ?? 'null'}`;
+        if (isImpl) {
+          this.store.appendImplLogs(event.sessionId, [line]);
+        } else {
+          this.store.appendSessionLogs(event.sessionId, [line]);
+        }
+        const updated = this.store.updateSession(event.sessionId, update);
         if (updated) {
           this.postSessionUpdate(updated.id, updated);
         }
@@ -234,16 +321,52 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private appendSystemLog(sessionId: string, line: string, broadcast: boolean): void {
-    this.store.appendSessionLogs(sessionId, [line]);
+  private appendSystemLog(
+    sessionId: string,
+    line: string,
+    broadcast: boolean,
+    commandType: RunCommandType = 'plan',
+  ): void {
+    if (commandType === 'impl') {
+      this.store.appendImplLogs(sessionId, [line]);
+    } else {
+      this.store.appendSessionLogs(sessionId, [line]);
+    }
     if (broadcast) {
       this.postRunEvent({
         type: 'stdout',
         sessionId,
+        commandType,
         line,
         timestamp: Date.now(),
       });
     }
+  }
+
+  private captureIssueNumber(sessionId: string, line: string): void {
+    const issueNumber = this.extractIssueNumber(line);
+    if (!issueNumber) {
+      return;
+    }
+
+    const updated = this.store.updateSession(sessionId, { issueNumber });
+    if (updated) {
+      this.postSessionUpdate(updated.id, updated);
+    }
+  }
+
+  private extractIssueNumber(line: string): string | null {
+    const placeholderMatch = /Created placeholder issue #(\d+)/.exec(line);
+    if (placeholderMatch) {
+      return placeholderMatch[1];
+    }
+
+    const urlMatch = /https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/(\d+)/.exec(line);
+    if (urlMatch) {
+      return urlMatch[1];
+    }
+
+    return null;
   }
 
   private resolvePlanCwd(): string | null {
@@ -369,6 +492,16 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
 }
 
 export const PlanViewProviderMessages = {
-  incoming: ['plan/new', 'plan/run', 'plan/toggleCollapse', 'plan/delete', 'plan/updateDraft', 'link/openExternal', 'link/openFile'],
+  incoming: [
+    'plan/new',
+    'plan/run',
+    'plan/impl',
+    'plan/toggleCollapse',
+    'plan/toggleImplCollapse',
+    'plan/delete',
+    'plan/updateDraft',
+    'link/openExternal',
+    'link/openFile',
+  ],
   outgoing: ['state/replace', 'plan/sessionUpdated', 'plan/runEvent'],
 };
