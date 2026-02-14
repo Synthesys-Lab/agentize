@@ -205,17 +205,40 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
   }
 
   private resolvePlanCwd(): string | null {
-    const workspace = vscode.workspace.workspaceFolders?.[0];
-    if (!workspace) {
+    const workspaces = vscode.workspace.workspaceFolders;
+    if (!workspaces || workspaces.length === 0) {
       return null;
     }
 
-    const planRoot = path.join(workspace.uri.fsPath, 'trees', 'main');
-    if (!fs.existsSync(planRoot)) {
-      return null;
+    // Prefer the shared "trees/main" layout (workspace root is a meta-repo that
+    // contains multiple worktrees under ./trees).
+    for (const workspace of workspaces) {
+      const planRoot = path.join(workspace.uri.fsPath, 'trees', 'main');
+      if (fs.existsSync(planRoot)) {
+        return planRoot;
+      }
     }
 
-    return planRoot;
+    // Fallback: if the user opened a single worktree (e.g. ./trees/issue-866),
+    // run planning in that workspace root directly.
+    for (const workspace of workspaces) {
+      const root = workspace.uri.fsPath;
+      if (this.looksLikeWorktreeRoot(root)) {
+        return root;
+      }
+    }
+
+    return null;
+  }
+
+  private looksLikeWorktreeRoot(root: string): boolean {
+    // Keep this heuristic simple and cheap: we just need a directory that
+    // resembles an Agentize working tree where `setup.sh` and the CLI sources live.
+    return (
+      fs.existsSync(path.join(root, 'setup.sh')) &&
+      fs.existsSync(path.join(root, 'Makefile')) &&
+      fs.existsSync(path.join(root, 'src'))
+    );
   }
 
   private postState(): void {

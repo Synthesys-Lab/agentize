@@ -20,7 +20,8 @@
       "explorer": [
         {
           "id": "agentize.planView",
-          "name": "Plan"
+          "name": "Plan",
+          "type": "webview"
         }
       ]
     }

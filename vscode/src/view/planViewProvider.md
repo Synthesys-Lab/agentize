@@ -35,4 +35,7 @@ Builds the webview HTML with CSP, script/style URIs, and initial state injection
 Transforms runner events into state updates and UI updates (status changes and log lines).
 
 ### resolvePlanCwd()
-Resolves the default planning working directory as `<workspace>/trees/main`.
+Resolves the planning working directory.
+
+- If an opened workspace folder contains `trees/main`, uses `<workspace>/trees/main`.
+- Otherwise, falls back to the workspace root when it appears to be an Agentize worktree.
