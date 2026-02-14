@@ -72,6 +72,10 @@ setup:
 	@echo "  2. For persistence, add to your shell RC file:"
 	@echo "     cat setup.sh >> ~/.bashrc  # or ~/.zshrc"
 
+vscode-plugin: setup
+	@echo "Installing VSCode plugin dependencies..."
+	make -C vscode build
+
 help:
 	@echo "Available targets:"
 	@echo "  make test                - Run all tests (bash only)"
