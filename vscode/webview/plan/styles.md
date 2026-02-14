@@ -27,6 +27,5 @@ No internal helpers; this file only provides static styles.
   preserving layout flow for the header area.
 - Transitioned properties:
   - `max-height`: 0 ↔ 2000px to accommodate variable content without JS measurement.
-  - `opacity`: 0 ↔ 1 to soften the visibility change.
   - `margin-top`: 0 ↔ 10px to collapse spacing cleanly.
-- Timing: `0.2s ease-out` to match the existing `fadeIn` cadence used elsewhere in the view.
+- Timing: `0.25s ease-out` to match the raw logs collapse cadence used elsewhere in the view.
