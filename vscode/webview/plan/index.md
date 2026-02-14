@@ -7,6 +7,7 @@ Webview script that renders the Plan session list and handles user input.
 ### UI Actions
 - Creates new Plan sessions and posts `plan/new` to the extension.
 - Sends `plan/toggleCollapse`, `plan/delete`, and `plan/updateDraft` messages.
+- Sends `plan/refine` for completed sessions to start a refinement run.
 - Sends `link/openExternal` and `link/openFile` for clickable links in logs.
 - Deletes are immediate; running sessions are stopped by the extension host.
 

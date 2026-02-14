@@ -160,6 +160,11 @@ button:disabled {
   color: var(--error);
 }
 
+.refine {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .session-body {
   margin-top: 10px;
   display: flex;

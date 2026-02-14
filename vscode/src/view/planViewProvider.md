@@ -15,11 +15,15 @@ webview UI, session state, and runner.
 Consumes UI messages:
 - `plan/new`
 - `plan/run`
+- `plan/refine`
 - `plan/toggleCollapse`
 - `plan/delete`
 - `plan/updateDraft`
 - `link/openExternal` - Opens GitHub issue URLs in default browser
 - `link/openFile` - Opens local markdown files in VSCode editor
+
+`plan/refine` collects an issue number and refinement focus via VS Code input boxes
+before starting a new run in refinement mode.
 
 `plan/delete` stops an in-flight session before removing it from storage.
 

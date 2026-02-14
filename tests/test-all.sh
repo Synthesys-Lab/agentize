@@ -67,7 +67,7 @@ fi
 # Parse optional category arguments (sdk, cli, lint, e2e)
 # If no arguments provided, run all categories
 if [ $# -eq 0 ]; then
-  CATEGORIES="sdk cli lint e2e"
+  CATEGORIES="sdk cli lint e2e vscode"
 else
   CATEGORIES="$@"
 fi

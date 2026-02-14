@@ -44,7 +44,7 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
     view.webview.html = this.buildHtml(view.webview);
 
     view.webview.onDidReceiveMessage((message: IncomingMessage) => {
-      this.handleMessage(message);
+      void this.handleMessage(message);
     });
 
     view.onDidChangeVisibility(() => {
@@ -56,7 +56,7 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
     setTimeout(() => this.postState(), 0);
   }
 
-  private handleMessage(message: IncomingMessage): void {
+  private async handleMessage(message: IncomingMessage): Promise<void> {
     switch (message.type) {
       case 'plan/new': {
         const prompt = message.prompt?.trim() ?? '';
@@ -79,6 +79,31 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
           return;
         }
         this.startRun(session);
+        return;
+      }
+      case 'plan/refine': {
+        const sessionId = message.sessionId ?? '';
+        if (!sessionId) {
+          return;
+        }
+        const baseSession = this.store.getSession(sessionId);
+        if (!baseSession || (baseSession.status !== 'success' && baseSession.status !== 'error')) {
+          return;
+        }
+
+        const issueNumber = await this.promptForRefineIssueNumber();
+        if (!issueNumber) {
+          return;
+        }
+
+        const focus = await this.promptForRefineFocus();
+        if (!focus) {
+          return;
+        }
+
+        const session = this.store.createSession(focus);
+        this.postSessionUpdate(session.id, session);
+        this.startRun(session, issueNumber);
         return;
       }
       case 'plan/toggleCollapse': {
@@ -153,7 +178,7 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  private startRun(session: PlanSession): void {
+  private startRun(session: PlanSession, refineIssueNumber?: number): void {
     if (this.runner.isRunning(session.id) || session.status === 'running') {
       this.appendSystemLog(session.id, 'Session already running.', true);
       return;
@@ -175,6 +200,7 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
         sessionId: session.id,
         prompt: session.prompt,
         cwd,
+        refineIssueNumber,
       },
       (event) => this.handleRunEvent(event),
     );
@@ -187,6 +213,64 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
         this.postSessionUpdate(updated.id, updated);
       }
     }
+  }
+
+  private async promptForRefineIssueNumber(): Promise<number | null> {
+    const issueInput = await vscode.window.showInputBox({
+      prompt: 'Enter the issue number to refine',
+      placeHolder: 'e.g. 882',
+      ignoreFocusOut: true,
+      validateInput: (value) => {
+        const trimmed = value.trim();
+        if (!trimmed) {
+          return 'Issue number is required.';
+        }
+        if (!/^\d+$/.test(trimmed)) {
+          return 'Issue number must be numeric.';
+        }
+        const parsed = Number(trimmed);
+        if (!Number.isInteger(parsed) || parsed <= 0) {
+          return 'Issue number must be a positive integer.';
+        }
+        return undefined;
+      },
+    });
+
+    if (!issueInput) {
+      return null;
+    }
+
+    const parsed = Number(issueInput.trim());
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+      return null;
+    }
+
+    return parsed;
+  }
+
+  private async promptForRefineFocus(): Promise<string | null> {
+    const focusInput = await vscode.window.showInputBox({
+      prompt: 'Enter refinement focus or instructions',
+      placeHolder: 'e.g. Clarify success criteria or reduce scope',
+      ignoreFocusOut: true,
+      validateInput: (value) => {
+        if (!value.trim()) {
+          return 'Refinement focus is required.';
+        }
+        return undefined;
+      },
+    });
+
+    if (!focusInput) {
+      return null;
+    }
+
+    const trimmed = focusInput.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    return trimmed;
   }
 
   private handleRunEvent(event: RunEvent): void {
@@ -369,6 +453,6 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
 }
 
 export const PlanViewProviderMessages = {
-  incoming: ['plan/new', 'plan/run', 'plan/toggleCollapse', 'plan/delete', 'plan/updateDraft', 'link/openExternal', 'link/openFile'],
+  incoming: ['plan/new', 'plan/run', 'plan/refine', 'plan/toggleCollapse', 'plan/delete', 'plan/updateDraft', 'link/openExternal', 'link/openFile'],
   outgoing: ['state/replace', 'plan/sessionUpdated', 'plan/runEvent'],
 };
