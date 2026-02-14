@@ -1,4 +1,5 @@
 import { spawn } from 'child_process';
+import * as path from 'path';
 import * as readline from 'readline';
 import type { RunEvent, RunPlanInput } from './types';
 
@@ -124,9 +125,10 @@ export class PlanRunner {
   }
 
   private buildCommand(prompt: string): CommandSpec {
-    const command = 'lol';
-    const args = ['plan', prompt];
-    const display = `${command} plan ${this.quoteArg(prompt)}`.trim();
+    const command = 'node';
+    const wrapperPath = path.join(__dirname, '..', '..', 'bin', 'lol-wrapper.js');
+    const args = [wrapperPath, 'plan', prompt];
+    const display = `lol plan ${this.quoteArg(prompt)}`.trim();
     return { command, args, display };
   }
 

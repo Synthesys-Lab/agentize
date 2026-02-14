@@ -1,0 +1,37 @@
+{
+  "name": "agentize-plan-extension",
+  "displayName": "Agentize Plan",
+  "description": "Plan sidebar extension for the Agentize CLI.",
+  "version": "0.0.1",
+  "publisher": "agentize",
+  "private": true,
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onView:agentize.planView"
+  ],
+  "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "agentize.planView",
+          "name": "Plan"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -watch -p .",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.3.3"
+  }
+}

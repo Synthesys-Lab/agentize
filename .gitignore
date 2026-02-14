@@ -8,3 +8,9 @@ __pycache__
 .pytest_cache
 # Runtime configuration (contains secrets and machine-specific settings)
 .agentize.local.yaml
+
+# VS Code extension
+vscode/node_modules/
+vscode/out/
+vscode/*.vsix
+vscode/.vscode-test/

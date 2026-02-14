@@ -1,8 +1,42 @@
 # VS Code Plan Extension
 
-This directory contains a VS Code sidebar extension that wraps the Agentize CLI planning workflow.
+This directory contains a VS Code sidebar extension that wraps the Agentize CLI
+planning workflow and surfaces it in a webview.
 
 ## Organization
 
 - `src/` contains extension backend code (state, runner, and view wiring).
 - `webview/` contains the Plan tab UI assets rendered in the sidebar webview.
+- `bin/` contains helper executables used by the extension runtime.
+
+## Prerequisites
+
+- Node.js + npm (for compiling the extension TypeScript).
+- Bash (used by the `lol` wrapper).
+- A generated `setup.sh` in the repository root (run `make setup` from the repo
+  root that contains `vscode/`).
+
+## Build
+
+```bash
+npm --prefix vscode install
+npm --prefix vscode run compile
+```
+
+For development watch mode:
+
+```bash
+npm --prefix vscode run watch
+```
+
+## Load in VS Code
+
+- Command line: `code --extensionDevelopmentPath ./vscode`
+- Or use the VS Code command palette: "Developer: Install Extension from
+  Location..." and choose the `vscode/` folder.
+
+## Workspace Requirement
+
+The Plan runner uses `<workspace>/trees/main` as its working directory. Open a
+workspace that contains `trees/main` (created by `wt init` or `wt clone`) so the
+Plan view can execute `lol plan` successfully.
