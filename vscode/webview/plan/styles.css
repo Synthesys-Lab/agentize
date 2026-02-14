@@ -208,6 +208,132 @@ button:disabled {
   }
 }
 
+/* Step Progress Indicators */
+.step-indicators {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-start);
+  border-radius: 6px;
+  font-size: 12px;
+  border-left: 3px solid var(--border);
+}
+
+.step-indicator.running {
+  border-left-color: var(--running);
+  background: linear-gradient(90deg, rgba(179, 98, 0, 0.08), transparent);
+}
+
+.step-indicator.completed {
+  border-left-color: var(--success);
+}
+
+.step-number {
+  font-weight: 600;
+  color: var(--muted);
+  min-width: 45px;
+}
+
+.step-name {
+  font-weight: 500;
+  flex: 1;
+}
+
+.step-model {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: "Fira Mono", monospace;
+}
+
+.step-status {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.step-status .loading-dots {
+  display: inline-block;
+  min-width: 18px;
+}
+
+@keyframes dot-cycle {
+  0%, 20% { content: '.'; }
+  40% { content: '..'; }
+  60%, 100% { content: '...'; }
+}
+
+.step-indicator.running .loading-dots::after {
+  content: '...';
+  animation: dot-cycle 1.2s infinite;
+}
+
+/* Raw Logs Box */
+.raw-logs-box {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.raw-logs-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-end);
+  border-bottom: 1px solid var(--border);
+}
+
+.raw-logs-toggle {
+  border: none;
+  background: none;
+  font-weight: 700;
+  color: var(--accent);
+  padding: 0 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.raw-logs-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  flex: 1;
+}
+
+.raw-logs-body {
+  max-height: 220px;
+  overflow-y: auto;
+  transition: max-height 0.25s ease-out;
+}
+
+.raw-logs-body.collapsed {
+  max-height: 0;
+}
+
+.raw-logs-body .logs {
+  border-radius: 0;
+  max-height: none;
+  margin: 0;
+}
+
+/* Clickable Links in Logs */
+.logs a {
+  color: #5c9fd6;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.logs a:hover {
+  color: #7cb8e8;
+}
+
 @media (max-width: 480px) {
   .plan-root {
     padding: 12px;

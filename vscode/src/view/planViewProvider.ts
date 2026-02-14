@@ -11,6 +11,8 @@ interface IncomingMessage {
   sessionId?: string;
   prompt?: string;
   value?: string;
+  url?: string;
+  path?: string;
 }
 
 interface SessionUpdateMessage {
@@ -107,8 +109,47 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
         this.store.updateDraftInput(message.value ?? '');
         return;
       }
+      case 'link/openExternal': {
+        const url = message.url ?? '';
+        if (this.isValidGitHubUrl(url)) {
+          void vscode.env.openExternal(vscode.Uri.parse(url));
+        }
+        return;
+      }
+      case 'link/openFile': {
+        const filePath = message.path ?? '';
+        if (filePath) {
+          void this.openLocalFile(filePath);
+        }
+        return;
+      }
       default:
         return;
+    }
+  }
+
+  private isValidGitHubUrl(url: string): boolean {
+    // Validate GitHub issue URLs: https://github.com/owner/repo/issues/N
+    return /^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/\d+$/.test(url);
+  }
+
+  private async openLocalFile(filePath: string): Promise<void> {
+    try {
+      const workspaceFolders = vscode.workspace.workspaceFolders;
+      if (!workspaceFolders || workspaceFolders.length === 0) {
+        return;
+      }
+
+      // Resolve path relative to workspace root
+      const workspaceRoot = workspaceFolders[0].uri.fsPath;
+      const fullPath = path.isAbsolute(filePath)
+        ? filePath
+        : path.join(workspaceRoot, filePath);
+
+      const document = await vscode.workspace.openTextDocument(fullPath);
+      await vscode.window.showTextDocument(document);
+    } catch (error) {
+      console.error('[PlanViewProvider] Failed to open file:', filePath, error);
     }
   }
 
@@ -326,6 +367,6 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
 }
 
 export const PlanViewProviderMessages = {
-  incoming: ['plan/new', 'plan/run', 'plan/toggleCollapse', 'plan/delete', 'plan/updateDraft'],
+  incoming: ['plan/new', 'plan/run', 'plan/toggleCollapse', 'plan/delete', 'plan/updateDraft', 'link/openExternal', 'link/openFile'],
   outgoing: ['state/replace', 'plan/sessionUpdated', 'plan/runEvent'],
 };

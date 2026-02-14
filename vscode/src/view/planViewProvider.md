@@ -18,6 +18,8 @@ Consumes UI messages:
 - `plan/toggleCollapse`
 - `plan/delete`
 - `plan/updateDraft`
+- `link/openExternal` - Opens GitHub issue URLs in default browser
+- `link/openFile` - Opens local markdown files in VSCode editor
 
 `plan/delete` stops an in-flight session before removing it from storage.
 
@@ -39,3 +41,13 @@ Resolves the planning working directory.
 
 - If an opened workspace folder contains `trees/main`, uses `<workspace>/trees/main`.
 - Otherwise, falls back to the workspace root when it appears to be an Agentize worktree.
+
+### Link Handling
+
+The provider validates and handles link opening requests from the webview:
+
+**`isValidGitHubUrl(url: string): boolean`**
+Validates GitHub issue URLs using the pattern `^https://github\.com/[^/]+/[^/]+/issues/\d+$`.
+
+**`openLocalFile(filePath: string): Promise<void>`**
+Resolves local file paths relative to the workspace root and opens them in the VSCode editor using `vscode.workspace.openTextDocument()` and `vscode.window.showTextDocument()`.
