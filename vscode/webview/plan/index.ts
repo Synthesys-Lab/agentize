@@ -109,14 +109,10 @@
     const actions = document.createElement('div');
     actions.className = 'actions';
 
-    const run = document.createElement('button');
-    run.className = 'run';
-
     const remove = document.createElement('button');
     remove.className = 'delete';
     remove.textContent = '[x]';
 
-    actions.appendChild(run);
     actions.appendChild(remove);
 
     header.appendChild(toggleButton);
@@ -144,19 +140,12 @@
       postMessage({ type: 'plan/toggleCollapse', sessionId: session.id });
     });
 
-    run.addEventListener('click', () => {
-      postMessage({ type: 'plan/run', sessionId: session.id });
-    });
-
     remove.addEventListener('click', () => {
-      const confirmed = window.confirm('Delete this session? Running sessions will be stopped.');
-      if (!confirmed) {
-        return;
-      }
+      console.log('[PlanPanel] Initiating delete for session:', session.id);
       postMessage({ type: 'plan/delete', sessionId: session.id });
     });
 
-    const node = { container, toggleButton, title, status, run, prompt, logs, body };
+    const node = { container, toggleButton, title, status, prompt, logs, body };
     sessionNodes.set(session.id, node);
     return node;
   };
@@ -170,9 +159,6 @@
 
     node.toggleButton.textContent = session.collapsed ? '[>]' : '[v]';
     node.body.classList.toggle('collapsed', session.collapsed);
-
-    node.run.textContent = session.status === 'error' ? 'Retry' : 'Run';
-    node.run.disabled = session.status === 'running';
 
     if (Array.isArray(session.logs)) {
       logBuffers.set(session.id, session.logs.slice());

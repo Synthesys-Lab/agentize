@@ -95,6 +95,7 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
         if (!sessionId) {
           return;
         }
+        console.log('[PlanViewProvider] Handling plan/delete for:', sessionId);
         if (this.runner.isRunning(sessionId)) {
           this.runner.stop(sessionId);
         }

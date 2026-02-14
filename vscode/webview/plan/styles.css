@@ -79,6 +79,7 @@ button:disabled {
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 8px;
+  box-sizing: border-box;
   font-family: "Fira Sans", "Segoe UI", sans-serif;
   resize: vertical;
 }
