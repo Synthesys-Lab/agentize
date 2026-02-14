@@ -1,7 +1,7 @@
 {
   "name": "agentize-plan-extension",
   "displayName": "Agentize Plan",
-  "description": "Plan Activity Bar extension for the Agentize CLI.",
+  "description": "Agentize Activity Bar extension for the Agentize CLI.",
   "version": "0.0.1",
   "publisher": "agentize",
   "private": true,
@@ -20,7 +20,7 @@
       "activitybar": [
         {
           "id": "agentize-plan",
-          "title": "Plan",
+          "title": "Agentize",
           "icon": "resources/plan.svg"
         }
       ]
@@ -29,7 +29,7 @@
       "agentize-plan": [
         {
           "id": "agentize.planView",
-          "name": "Plan",
+          "name": "Agentize",
           "type": "webview"
         }
       ]
