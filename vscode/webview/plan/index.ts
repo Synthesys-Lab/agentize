@@ -157,7 +157,7 @@
     node.status.textContent = session.status;
     node.prompt.textContent = session.prompt;
 
-    node.toggleButton.textContent = session.collapsed ? '[>]' : '[v]';
+    node.toggleButton.textContent = session.collapsed ? '[▶]' : '[▼]';
     node.body.classList.toggle('collapsed', session.collapsed);
 
     if (Array.isArray(session.logs)) {
