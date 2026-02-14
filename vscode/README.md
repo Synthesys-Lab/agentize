@@ -1,4 +1,4 @@
-# VS Code Plan Extension
+# VS Code Agentize Extension
 
 This directory contains a VS Code Activity Bar extension that wraps the Agentize CLI
 planning workflow and surfaces it in a webview.
