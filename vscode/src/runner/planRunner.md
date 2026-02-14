@@ -1,0 +1,19 @@
+# planRunner.ts
+
+Command runner for Plan sessions that spawns the CLI process and emits run events.
+
+## External Interface
+
+### PlanRunner
+- `run(input: RunPlanInput, onEvent: (event: RunEvent) => void)`: starts a CLI run and
+  streams events to the callback.
+- `stop(sessionId: string)`: terminates a running session.
+- `isRunning(sessionId: string)`: reports whether a session is currently running.
+
+## Internal Helpers
+
+### buildCommand(prompt: string)
+Returns the executable and arguments used to invoke the planning CLI.
+
+### attachLineReaders()
+Converts stdout/stderr streams into line-based run events.
