@@ -3,3 +3,6 @@ node_modules/
 out/
 .vscode-test/
 *.vsix
+
+# Webview compiled JS (built from webview/*/*.tsconfig.json)
+webview/**/out/

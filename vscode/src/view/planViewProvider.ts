@@ -332,7 +332,9 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
   }
 
   private buildHtml(webview: vscode.Webview): string {
-    const scriptPath = vscode.Uri.joinPath(this.extensionUri, 'webview', 'plan', 'index.ts');
+    // The webview runs in a browser context and must load JavaScript, not TypeScript.
+    // `npm --prefix vscode run compile` compiles `webview/plan/index.ts` to `webview/plan/out/index.js`.
+    const scriptPath = vscode.Uri.joinPath(this.extensionUri, 'webview', 'plan', 'out', 'index.js');
     const stylePath = vscode.Uri.joinPath(this.extensionUri, 'webview', 'plan', 'styles.css');
     const scriptUri = webview.asWebviewUri(scriptPath);
     const styleUri = webview.asWebviewUri(stylePath);

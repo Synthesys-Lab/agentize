@@ -53,12 +53,17 @@ if ! grep -q "isValidGitHubUrl" "$PROVIDER_FILE"; then
   test_fail "planViewProvider.ts missing isValidGitHubUrl function"
 fi
 
-# Test 9: Check documentation exists
+# Test 9: Ensure webview loads compiled JS (loading TS directly breaks rendering)
+if ! grep -q "'webview', 'plan', 'out', 'index.js'" "$PROVIDER_FILE"; then
+  test_fail "planViewProvider.ts should load compiled webview/plan/out/index.js"
+fi
+
+# Test 10: Check documentation exists
 if [ ! -f "$WEBVIEW_DIR/index.md" ]; then
   test_fail "index.md documentation missing"
 fi
 
-# Test 10: Check documentation mentions new features
+# Test 11: Check documentation mentions new features
 if ! grep -q "Step Progress Indicators" "$WEBVIEW_DIR/index.md"; then
   test_fail "index.md missing Step Progress Indicators documentation"
 fi

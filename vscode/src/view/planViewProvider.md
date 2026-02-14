@@ -33,6 +33,9 @@ Emits UI messages:
 ### buildHtml(webview: vscode.Webview)
 Builds the webview HTML with CSP, script/style URIs, and initial state injection.
 
+The provider loads the compiled webview script `webview/plan/out/index.js` (built from
+`webview/plan/index.ts`) because webviews execute JavaScript only.
+
 ### handleRunEvent(event: RunEvent)
 Transforms runner events into state updates and UI updates (status changes and log lines).
 

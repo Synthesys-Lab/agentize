@@ -1,3 +1,6 @@
+// Provided by VS Code in the webview environment.
+declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
+
 (() => {
   const vscode = acquireVsCodeApi();
   const MAX_LOG_LINES = 1000;
@@ -143,9 +146,9 @@
     let steps = stepStates.get(sessionId) || [];
 
     // Mark any running step as completed
-    steps = steps.map(step => {
+    steps = steps.map((step): StepState => {
       if (step.status === 'running') {
-        return { ...step, status: 'completed', endTime: Date.now() };
+        return { ...step, status: 'completed' as const, endTime: Date.now() };
       }
       return step;
     });
@@ -159,9 +162,9 @@
   // Mark all steps as completed (called on process exit)
   const completeAllSteps = (sessionId: string): void => {
     const steps = stepStates.get(sessionId) || [];
-    const updated = steps.map(step => {
+    const updated = steps.map((step): StepState => {
       if (step.status === 'running') {
-        return { ...step, status: 'completed', endTime: Date.now() };
+        return { ...step, status: 'completed' as const, endTime: Date.now() };
       }
       return step;
     });
@@ -445,7 +448,41 @@
     }
   };
 
-  const renderState = (appState: { plan?: { draftInput?: string; sessions: Array<{ id: string; status: string; title?: string; prompt?: string; logs?: string[]; collapsed?: boolean }> } }) => {
+  type SessionSummary = {
+    id: string;
+    status: string;
+    title?: string;
+    prompt?: string;
+    logs?: string[];
+    collapsed?: boolean;
+  };
+
+  type PlanState = {
+    draftInput?: string;
+    sessions: SessionSummary[];
+  };
+
+  type AppState = {
+    plan?: PlanState;
+  };
+
+  type RunEventData = {
+    type?: string;
+    sessionId?: string;
+    line?: string;
+    code?: number;
+  };
+
+  type IncomingWebviewMessage = {
+    type?: string;
+    state?: AppState;
+    sessionId?: string;
+    deleted?: boolean;
+    session?: SessionSummary;
+    event?: RunEventData;
+  };
+
+  const renderState = (appState: AppState) => {
     if (!appState || !appState.plan) {
       return;
     }
@@ -467,13 +504,13 @@
     });
   };
 
-  const initialState = (window as unknown as { __INITIAL_STATE__?: { plan?: { draftInput?: string; sessions: Array<{ id: string; status: string; title?: string; prompt?: string; logs?: string[]; collapsed?: boolean }> } } }).__INITIAL_STATE__;
+  const initialState = (window as unknown as { __INITIAL_STATE__?: AppState }).__INITIAL_STATE__;
   if (initialState) {
     renderState(initialState);
   }
 
   window.addEventListener('message', (event) => {
-    const message = event.data as { type?: string; state?: { plan?: { draftInput?: string; sessions: Array<{ id: string; status: string; title?: string; prompt?: string; logs?: string[]; collapsed?: boolean }> } } }; sessionId?: string; deleted?: boolean; session?: { id: string; status: string; title?: string; prompt?: string; logs?: string[]; collapsed?: boolean }; event?: { type?: string; sessionId?: string; line?: string; code?: number } };
+    const message = event.data as IncomingWebviewMessage;
     if (!message || !message.type) {
       return;
     }

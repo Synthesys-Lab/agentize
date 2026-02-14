@@ -36,13 +36,14 @@
     }
   },
   "scripts": {
-    "compile": "tsc -p .",
+    "compile": "tsc -p . && tsc -p webview/plan/tsconfig.json",
     "watch": "tsc -watch -p .",
     "vscode:prepublish": "npm run compile"
   },
   "devDependencies": {
     "@types/node": "^18.19.0",
     "@types/vscode": "^1.80.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "undici-types": "^7.22.0"
   }
 }
