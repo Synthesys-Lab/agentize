@@ -217,6 +217,15 @@ button:disabled {
   border-color: var(--border);
 }
 
+.refine {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.refine:hover {
+  background: rgba(15, 110, 110, 0.08);
+}
+
 .session-body {
   margin-top: 10px;
   display: flex;

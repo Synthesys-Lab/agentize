@@ -50,3 +50,15 @@ It resolves the planning working directory with the following rules:
   `wt clone`), the runner uses `<workspace>/trees/main`.
 - Otherwise, it falls back to the workspace folder root (useful when you open a
   single worktree like `trees/issue-866` directly).
+
+## Refining Plans
+
+When a plan session completes (success or error), a Refine button appears on the
+session card.
+
+1. Click Refine on the completed session.
+1. Enter the issue number to refine.
+1. Enter the refinement focus or instructions.
+
+The extension runs `lol plan --refine <issue> "<focus>"` and streams the
+refinement session in the plan view like any other run.

@@ -10,6 +10,7 @@ Contracts for Plan command execution events.
 - `prompt`: prompt text passed to the CLI (required for `plan`).
 - `issueNumber`: issue number passed to the CLI (required for `impl`).
 - `cwd`: working directory for the command.
+- `refineIssueNumber`: optional issue number enabling `lol plan --refine <issue> "<prompt>"`.
 
 ### RunCommandType
 Union of `plan` and `impl` command identifiers used by the runner and webview routing.

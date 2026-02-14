@@ -6,6 +6,7 @@ export interface RunPlanInput {
   prompt?: string;
   issueNumber?: string;
   cwd: string;
+  refineIssueNumber?: number;
 }
 
 export type RunEvent =

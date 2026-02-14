@@ -66,6 +66,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     logs: HTMLElement;
     implLogs?: HTMLElement;
     body: HTMLElement;
+    refineButton?: HTMLButtonElement;
     stepIndicators?: HTMLElement;
     rawLogsBody?: HTMLElement;
     rawLogsToggle?: HTMLElement;
@@ -341,6 +342,25 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     }
   };
 
+  const updateRefineControls = (sessionId: string, session?: SessionSummary): void => {
+    const current = session ?? sessionCache.get(sessionId);
+    const node = sessionNodes.get(sessionId);
+    if (!current || !node) {
+      return;
+    }
+
+    if (current.issueNumber) {
+      issueNumbers.set(sessionId, current.issueNumber);
+    }
+
+    const issueNumber = current.issueNumber || issueNumbers.get(sessionId);
+    const showButton = (current.status === 'success' || current.status === 'error') && Boolean(issueNumber);
+    if (node.refineButton) {
+      node.refineButton.classList.toggle('hidden', !showButton);
+      node.refineButton.dataset.issueNumber = issueNumber ?? '';
+    }
+  };
+
   const ensureSessionNode = (session: { id: string; status: string; title?: string; prompt?: string; logs?: string[]; collapsed?: boolean }) => {
     if (sessionNodes.has(session.id)) {
       return sessionNodes.get(session.id)!;
@@ -369,11 +389,16 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     implButton.className = 'impl-button hidden';
     implButton.textContent = 'Implement';
 
+    const refineButton = document.createElement('button');
+    refineButton.className = 'refine hidden';
+    refineButton.textContent = 'Refine';
+
     const remove = document.createElement('button');
     remove.className = 'delete';
     remove.textContent = '×';
 
     actions.appendChild(implButton);
+    actions.appendChild(refineButton);
     actions.appendChild(remove);
 
     header.appendChild(toggleButton);
@@ -473,6 +498,11 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
       postImplMessage(message);
     });
 
+    refineButton.addEventListener('click', () => {
+      const issueNumber = refineButton.dataset.issueNumber || '';
+      postMessage({ type: 'plan/refine', sessionId: session.id, issueNumber });
+    });
+
     // Toggle raw logs collapse
     rawLogsToggle.addEventListener('click', () => {
       const isCollapsed = rawLogsBody.classList.toggle('collapsed');
@@ -507,6 +537,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
       implLogsBody,
       implLogsToggle,
       implButton,
+      refineButton,
     };
     sessionNodes.set(session.id, node);
     return node;
@@ -566,6 +597,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     }
 
     updateImplControls(session.id, session);
+    updateRefineControls(session.id, session);
   };
 
   const removeSession = (sessionId: string) => {
@@ -593,6 +625,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     if (issueNumber) {
       issueNumbers.set(sessionId, issueNumber);
       updateImplControls(sessionId);
+      updateRefineControls(sessionId);
     }
 
     const prefix = stream === 'stderr' ? 'stderr: ' : '';

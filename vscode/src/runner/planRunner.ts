@@ -154,8 +154,16 @@ export class PlanRunner {
     }
 
     const prompt = input.prompt ?? '';
-    const args = [wrapperPath, 'plan', prompt];
-    const display = `lol plan ${this.quoteArg(prompt)}`.trim();
+    const args = [wrapperPath, 'plan'];
+    let display = 'lol plan';
+
+    if (typeof input.refineIssueNumber === 'number') {
+      args.push('--refine', input.refineIssueNumber.toString(), prompt);
+      display = `${display} --refine ${input.refineIssueNumber} ${this.quoteArg(prompt)}`.trim();
+    } else {
+      args.push(prompt);
+      display = `${display} ${this.quoteArg(prompt)}`.trim();
+    }
     return { command, args, display };
   }
 

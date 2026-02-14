@@ -9,6 +9,7 @@ Webview script that renders the Plan session list and handles user input.
 - Sends `plan/toggleCollapse`, `plan/delete`, and `plan/updateDraft` messages.
 - Sends `plan/impl` when the Implement button is pressed for a completed plan.
 - Sends `plan/toggleImplCollapse` when the implementation log panel is collapsed or expanded.
+- Sends `plan/refine` for completed sessions to start a refinement run.
 - Sends `link/openExternal` and `link/openFile` for clickable links in logs.
 - Deletes are immediate; running sessions are stopped by the extension host.
 

@@ -17,6 +17,7 @@ Minimal readable styles for the Plan webview UI.
 - `.impl-logs-box`: container for implementation logs and header.
 - `.impl-logs-header`, `.impl-logs-toggle`, `.impl-logs-title`, `.impl-logs-body`: implementation log panel chrome.
 - `#plan-textarea`: uses border-box sizing to keep padding within the panel.
+- `.refine`: action button for starting a refinement run on completed sessions.
 
 ### Status Modifiers
 - `[data-status="idle"]`, `[data-status="running"]`, `[data-status="success"]`,
