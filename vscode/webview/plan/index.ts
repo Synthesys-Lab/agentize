@@ -111,7 +111,7 @@
 
     const remove = document.createElement('button');
     remove.className = 'delete';
-    remove.textContent = '[x]';
+    remove.textContent = '×';
 
     actions.appendChild(remove);
 
