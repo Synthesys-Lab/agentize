@@ -37,6 +37,10 @@ npm --prefix vscode run watch
 
 ## Workspace Requirement
 
-The Plan runner uses `<workspace>/trees/main` as its working directory. Open a
-workspace that contains `trees/main` (created by `wt init` or `wt clone`) so the
-Plan view can execute `lol plan` successfully.
+The Plan runner needs a working directory where the Agentize CLI is available.
+It resolves the planning working directory with the following rules:
+
+- If any opened workspace folder contains `trees/main` (created by `wt init` or
+  `wt clone`), the runner uses `<workspace>/trees/main`.
+- Otherwise, it falls back to the workspace folder root (useful when you open a
+  single worktree like `trees/issue-866` directly).

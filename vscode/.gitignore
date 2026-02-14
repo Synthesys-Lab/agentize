@@ -1,0 +1,5 @@
+# VS Code extension build outputs / dev artifacts
+node_modules/
+out/
+.vscode-test/
+*.vsix
