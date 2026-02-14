@@ -3,6 +3,7 @@
   - `README.md` already asks users to manage their own Python environment.
   - `python3` essentially falls back to the system default Python version, which may be `python2` or some old `python3` without specific packages installed.
 - When mentioning issue or PR, if not specified, it always refers to this project repository.
+- When modifying the vscode extention in `vscode/` folder, please do `make vscode-plugin` to build the extension to make sure your code has no syntax issues.
 - When committing, use `docs/git-msg-tags.md` to determine proper commit message tags. Briefly,
   - summarize the overall change in this commit.
   - describe changes to each modified file.
@@ -36,7 +37,3 @@
 - This project is still at its early stage.
   - Feel free to make breaking changes to the design.
   - Do not over-worry about backward compatibility.
-- When synthesizing any commandline commands including direct execution or in `.sh`, consider the following
-  to have better permission control:
-   - **BAD**: `ENV_VAR=xxx ./command` as such command will be regarded as a different command, which asks for human intervention to permit.
-   - **GOOD**: `./command --env-var xxx` where `./command` can be invoked as a allowed-tool in Claude Code.
