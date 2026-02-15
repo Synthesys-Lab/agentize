@@ -217,6 +217,13 @@ button:disabled {
   border-color: var(--border);
 }
 
+.impl-button.closed {
+  background-color: #6e7681;
+  color: #c9d1d9;
+  border-color: #6e7681;
+  cursor: not-allowed;
+}
+
 .refine {
   border-color: var(--accent);
   color: var(--accent);

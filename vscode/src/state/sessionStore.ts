@@ -48,6 +48,7 @@ export class SessionStore {
       status: 'idle',
       prompt: trimmed,
       issueNumber: undefined,
+      issueState: undefined,
       implStatus: 'idle',
       implLogs: [],
       implCollapsed: false,

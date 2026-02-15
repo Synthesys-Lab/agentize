@@ -67,6 +67,8 @@ The raw console log box can be collapsed/expanded independently of the session c
 When a plan finishes successfully and an issue number has been captured, the session header shows an Implement button.
 Clicking it triggers `plan/impl` with the issue number, and a separate "Implementation Log" panel streams the output.
 The button is disabled while the implementation run is active.
+If the session `issueState` is `closed`, the button text changes to "Closed" and stays disabled to prevent
+implementation runs on closed issues.
 
 ### Issue Number Extraction (UI)
 

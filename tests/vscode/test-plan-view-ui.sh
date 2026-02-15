@@ -8,6 +8,7 @@ test_info "Testing plan view UI structure and components"
 # Check that the webview files exist and have the expected content
 WEBVIEW_DIR="$PROJECT_ROOT/vscode/webview/plan"
 PROVIDER_FILE="$PROJECT_ROOT/vscode/src/view/planViewProvider.ts"
+STATE_TYPES_FILE="$PROJECT_ROOT/vscode/src/state/types.ts"
 
 # Test 1: Check CSS has step indicator styles
 if ! grep -q "step-indicator" "$WEBVIEW_DIR/styles.css"; then
@@ -74,6 +75,31 @@ fi
 
 if ! grep -q "Interactive Links" "$WEBVIEW_DIR/index.md"; then
   test_fail "index.md missing Interactive Links documentation"
+fi
+
+# Test 12: Check documentation mentions closed issue behavior
+if ! grep -q "Closed" "$WEBVIEW_DIR/index.md"; then
+  test_fail "index.md missing closed issue button documentation"
+fi
+
+# Test 13: Check session type includes issueState
+if ! grep -q "issueState" "$STATE_TYPES_FILE"; then
+  test_fail "types.ts missing issueState field"
+fi
+
+# Test 14: Check plan view provider handles issue state validation
+if ! grep -q "checkIssueState" "$PROVIDER_FILE"; then
+  test_fail "planViewProvider.ts missing checkIssueState handler"
+fi
+
+# Test 15: Check webview handles closed issue state
+if ! grep -q "Closed" "$WEBVIEW_DIR/index.ts"; then
+  test_fail "index.ts missing Closed button state"
+fi
+
+# Test 16: Check CSS has closed issue styling
+if ! grep -q "impl-button.closed" "$WEBVIEW_DIR/styles.css"; then
+  test_fail "styles.css missing impl-button.closed styles"
 fi
 
 test_info "All UI structure tests passed"

@@ -1,5 +1,7 @@
+import { execFile } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { promisify } from 'util';
 import * as vscode from 'vscode';
 import type { PlanSession } from '../state/types';
 import { SessionStore } from '../state/sessionStore';
@@ -23,6 +25,8 @@ interface SessionUpdateMessage {
   session?: PlanSession;
   deleted?: boolean;
 }
+
+const execFileAsync = promisify(execFile);
 
 export class PlanViewProvider implements vscode.WebviewViewProvider {
   static readonly viewType = 'agentize.planView';
@@ -56,10 +60,14 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
     view.onDidChangeVisibility(() => {
       if (view.visible) {
         this.postState();
+        void this.refreshIssueStates();
       }
     });
 
-    setTimeout(() => this.postState(), 0);
+    setTimeout(() => {
+      this.postState();
+      void this.refreshIssueStates();
+    }, 0);
   }
 
   private async handleMessage(message: IncomingMessage): Promise<void> {
@@ -111,6 +119,15 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
         const issueNumber = (message.issueNumber ?? session.issueNumber ?? '').trim();
         if (!issueNumber) {
           this.appendSystemLog(sessionId, 'Missing issue number for implementation.', true, 'impl');
+          return;
+        }
+        const issueState = await this.checkIssueState(issueNumber);
+        const updated = this.store.updateSession(sessionId, { issueState });
+        if (updated) {
+          this.postSessionUpdate(updated.id, updated);
+        }
+        if (issueState === 'closed') {
+          this.appendSystemLog(sessionId, `Issue #${issueNumber} is closed.`, true, 'impl');
           return;
         }
         this.startRun(session, 'impl', issueNumber);
@@ -314,7 +331,6 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
 
     if (commandType === 'plan') {
       this.store.updateSession(session.id, {
-        issueNumber: typeof refineIssueNumber === 'number' ? refineIssueNumber.toString() : undefined,
         implStatus: 'idle',
         implLogs: [],
         implCollapsed: false,
@@ -324,8 +340,10 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
         issueNumber: typeof refineIssueNumber === 'number' ? refineIssueNumber.toString() : session.issueNumber,
       });
     } else {
+      const resolvedIssueNumber = issueNumber ?? session.issueNumber;
       this.store.updateSession(session.id, {
-        issueNumber: issueNumber ?? session.issueNumber,
+        issueNumber: resolvedIssueNumber,
+        issueState: resolvedIssueNumber === session.issueNumber ? session.issueState : undefined,
         implStatus: 'idle',
         implLogs: [],
         implCollapsed: false,
@@ -500,9 +518,66 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    const updated = this.store.updateSession(sessionId, { issueNumber });
+    const updated = this.store.updateSession(sessionId, { issueNumber, issueState: undefined });
     if (updated) {
       this.postSessionUpdate(updated.id, updated);
+    }
+  }
+
+  private async refreshIssueStates(): Promise<void> {
+    if (!this.view || !this.view.visible) {
+      return;
+    }
+
+    const sessions = this.store.getPlanState().sessions;
+    const withIssues = sessions.filter((session) => Boolean(session.issueNumber?.trim()));
+    if (withIssues.length === 0) {
+      return;
+    }
+
+    await Promise.all(
+      withIssues.map(async (session) => {
+        const issueNumber = session.issueNumber?.trim();
+        if (!issueNumber) {
+          return;
+        }
+        const issueState = await this.checkIssueState(issueNumber);
+        if (issueState === session.issueState) {
+          return;
+        }
+        const updated = this.store.updateSession(session.id, { issueState });
+        if (updated) {
+          this.postSessionUpdate(updated.id, updated);
+        }
+      }),
+    );
+  }
+
+  private async checkIssueState(issueNumber: string): Promise<'open' | 'closed' | 'unknown'> {
+    const cwd = this.resolvePlanCwd();
+    if (!cwd) {
+      return 'unknown';
+    }
+
+    try {
+      const { stdout } = await execFileAsync(
+        'gh',
+        ['issue', 'view', issueNumber, '--json', 'state', '--jq', '.state'],
+        { cwd },
+      );
+      const state = stdout.trim().toLowerCase();
+      if (state === 'closed') {
+        return 'closed';
+      }
+      if (state === 'open') {
+        return 'open';
+      }
+      return 'unknown';
+    } catch (error) {
+      this.output.appendLine(
+        `[planView] issue state check failed for #${issueNumber}: ${String(error)}`,
+      );
+      return 'unknown';
     }
   }
 

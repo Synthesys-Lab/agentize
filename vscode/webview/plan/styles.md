@@ -14,6 +14,7 @@ Minimal readable styles for the Plan webview UI.
 - `.logs`: monospace log display.
 - `.hidden`: utility class to hide optional UI elements.
 - `.impl-button`: primary action for starting implementation runs.
+- `.impl-button.closed`: disabled styling when the linked issue is closed.
 - `.impl-logs-box`: container for implementation logs and header.
 - `.impl-logs-header`, `.impl-logs-toggle`, `.impl-logs-title`, `.impl-logs-body`: implementation log panel chrome.
 - `#plan-textarea`: uses border-box sizing to keep padding within the panel.

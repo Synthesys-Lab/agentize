@@ -198,8 +198,22 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     const showButton = current.status === 'success' && Boolean(issueNumber);
     if (node.implButton) {
       node.implButton.classList.toggle('hidden', !showButton);
-      node.implButton.disabled = current.implStatus === 'running';
       node.implButton.dataset.issueNumber = issueNumber ?? '';
+      const isRunning = current.implStatus === 'running';
+      const isClosed = current.issueState === 'closed';
+      if (isRunning) {
+        node.implButton.disabled = true;
+        node.implButton.textContent = 'Running...';
+        node.implButton.classList.remove('closed');
+      } else if (isClosed) {
+        node.implButton.disabled = true;
+        node.implButton.textContent = 'Closed';
+        node.implButton.classList.add('closed');
+      } else {
+        node.implButton.disabled = false;
+        node.implButton.textContent = 'Implement';
+        node.implButton.classList.remove('closed');
+      }
     }
 
     const hasImplLogs = Array.isArray(current.implLogs) && current.implLogs.length > 0;
@@ -829,6 +843,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     logs?: string[];
     collapsed?: boolean;
     issueNumber?: string;
+    issueState?: 'open' | 'closed' | 'unknown';
     implStatus?: string;
     implLogs?: string[];
     implCollapsed?: boolean;

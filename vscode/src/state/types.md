@@ -21,6 +21,8 @@ Shared state contracts for the Plan Activity Bar view and related tabs.
 - `prompt`: raw planning prompt.
 - `command`: resolved CLI command string (optional).
 - `issueNumber`: GitHub issue number captured from plan output (optional).
+- `issueState`: last known GitHub issue state (`open`, `closed`, `unknown`) used to gate implementation runs (optional).
+  - `unknown` means the state could not be verified (missing `gh`, auth, or network).
 - `implStatus`: implementation run status (`idle`, `running`, `success`, `error`).
 - `implLogs`: implementation log lines captured for this session (optional).
 - `implCollapsed`: whether the implementation log panel is collapsed (optional).

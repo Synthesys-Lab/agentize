@@ -18,6 +18,7 @@ export interface PlanSession {
   prompt: string;
   command?: string;
   issueNumber?: string;
+  issueState?: 'open' | 'closed' | 'unknown';
   implStatus?: SessionStatus;
   implLogs?: string[];
   implCollapsed?: boolean;

@@ -28,7 +28,8 @@ Consumes UI messages:
 
 `plan/delete` stops an in-flight session before removing it from storage.
 `plan/impl` starts an implementation run for the captured issue number and stores output in a
-separate implementation log buffer.
+separate implementation log buffer. Before starting implementation, the provider validates
+the GitHub issue state and blocks the run if the issue is closed.
 
 Emits UI messages:
 - `state/replace`
@@ -84,3 +85,11 @@ Plan stdout/stderr lines are scanned for:
 - `https://github.com/<owner>/<repo>/issues/N`
 
 When a match is found, `issueNumber` is stored on the session and pushed to the webview.
+
+### Issue State Validation
+
+When the Plan view becomes visible, the provider checks the GitHub issue state (via `gh issue view`)
+for sessions with an issue number and stores the resulting `issueState` on the session. The same check
+runs immediately before starting an implementation run. A closed issue blocks implementation and keeps
+the button disabled in the UI. If the `gh` CLI check fails, the provider records `unknown` and allows
+implementation to proceed.
