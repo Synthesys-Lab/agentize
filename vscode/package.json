@@ -13,7 +13,9 @@
   ],
   "main": "./out/extension.js",
   "activationEvents": [
-    "onView:agentize.planView"
+    "onView:agentize.planView",
+    "onView:agentize.worktreeView",
+    "onView:agentize.settingsView"
   ],
   "contributes": {
     "viewsContainers": {
@@ -30,13 +32,26 @@
         {
           "id": "agentize.planView",
           "name": "Agentize",
-          "type": "webview"
+          "type": "webview",
+          "icon": "resources/plan.svg"
+        },
+        {
+          "id": "agentize.worktreeView",
+          "name": "Worktree",
+          "type": "webview",
+          "icon": "resources/worktree.svg"
+        },
+        {
+          "id": "agentize.settingsView",
+          "name": "Settings",
+          "type": "webview",
+          "icon": "resources/settings.svg"
         }
       ]
     }
   },
   "scripts": {
-    "compile": "tsc -p . && tsc -p webview/plan/tsconfig.json",
+    "compile": "tsc -p . && tsc -p webview/plan/tsconfig.json && tsc -p webview/worktree/tsconfig.json && tsc -p webview/settings/tsconfig.json",
     "watch": "tsc -watch -p .",
     "vscode:prepublish": "npm run compile"
   },

@@ -1,12 +1,13 @@
 # VS Code Agentize Extension
 
 This directory contains a VS Code Activity Bar extension that wraps the Agentize CLI
-planning workflow and surfaces it in a webview.
+planning workflow and surfaces it alongside Worktree and Settings placeholders.
 
 ## Organization
 
 - `src/` contains extension backend code (state, runner, and view wiring).
-- `webview/` contains the Plan tab UI assets rendered in the Activity Bar webview.
+- `webview/` contains the Plan, Worktree, and Settings tab UI assets rendered in the Activity Bar webviews.
+- `resources/` contains icons for the Activity Bar container and each tab.
 - `bin/` contains helper executables used by the extension runtime.
 
 ## Plan to Implementation Flow

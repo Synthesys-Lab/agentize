@@ -1,0 +1,47 @@
+@import url('../plan/styles.css');
+
+.settings-root {
+  padding: 24px 18px;
+  min-height: calc(100vh - 48px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-placeholder {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  max-width: 320px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.settings-placeholder-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.settings-placeholder-title {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-size: 18px;
+}
+
+.settings-placeholder-subtitle {
+  margin-top: 4px;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.settings-placeholder-body {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
