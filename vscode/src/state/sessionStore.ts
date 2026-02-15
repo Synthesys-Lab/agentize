@@ -51,6 +51,10 @@ export class SessionStore {
       implStatus: 'idle',
       implLogs: [],
       implCollapsed: false,
+      refinePrompt: '',
+      refineStatus: 'idle',
+      refineLogs: [],
+      refineCollapsed: false,
       logs: [],
       createdAt: now,
       updatedAt: now,
@@ -97,6 +101,19 @@ export class SessionStore {
     return this.cloneSession(session);
   }
 
+  appendRefineLogs(id: string, lines: string[]): PlanSession | undefined {
+    const session = this.state.sessions.find((item) => item.id === id);
+    if (!session) {
+      return undefined;
+    }
+
+    const existing = session.refineLogs ?? [];
+    session.refineLogs = this.trimLogs([...existing, ...lines]);
+    session.updatedAt = Date.now();
+    this.persist();
+    return this.cloneSession(session);
+  }
+
   toggleSessionCollapse(id: string): PlanSession | undefined {
     const session = this.state.sessions.find((item) => item.id === id);
     if (!session) {
@@ -116,6 +133,18 @@ export class SessionStore {
     }
 
     session.implCollapsed = !session.implCollapsed;
+    session.updatedAt = Date.now();
+    this.persist();
+    return this.cloneSession(session);
+  }
+
+  toggleRefineCollapse(id: string): PlanSession | undefined {
+    const session = this.state.sessions.find((item) => item.id === id);
+    if (!session) {
+      return undefined;
+    }
+
+    session.refineCollapsed = !(session.refineCollapsed ?? false);
     session.updatedAt = Date.now();
     this.persist();
     return this.cloneSession(session);
@@ -175,6 +204,10 @@ export class SessionStore {
       implStatus: session.implStatus ?? 'idle',
       implLogs: session.implLogs ? [...session.implLogs] : [],
       implCollapsed: session.implCollapsed ?? false,
+      refinePrompt: session.refinePrompt ?? '',
+      refineStatus: session.refineStatus ?? 'idle',
+      refineLogs: session.refineLogs ? [...session.refineLogs] : [],
+      refineCollapsed: session.refineCollapsed ?? false,
     };
   }
 }

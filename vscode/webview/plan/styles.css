@@ -242,6 +242,36 @@ button:disabled {
   margin-top: 0;
 }
 
+.refine-panel {
+  background: rgba(15, 110, 110, 0.05);
+  border: 1px dashed rgba(15, 110, 110, 0.35);
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.refine-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.refine-textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  box-sizing: border-box;
+  font-family: "Fira Sans", "Segoe UI", sans-serif;
+  resize: vertical;
+}
+
+.refine-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .prompt {
   font-size: 13px;
   color: var(--muted);

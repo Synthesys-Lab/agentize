@@ -6,14 +6,14 @@ Contracts for Plan command execution events.
 
 ### RunPlanInput
 - `sessionId`: session identifier to associate with the run.
-- `command`: which CLI subcommand to execute (`plan` or `impl`).
-- `prompt`: prompt text passed to the CLI (required for `plan`).
+- `command`: which command to execute (`plan`, `refine`, or `impl`).
+- `prompt`: prompt text passed to the CLI (required for `plan` and `refine`).
 - `issueNumber`: issue number passed to the CLI (required for `impl`).
 - `cwd`: working directory for the command.
-- `refineIssueNumber`: optional issue number enabling `lol plan --refine <issue> "<prompt>"`.
+- `refineIssueNumber`: required issue number enabling `lol plan --refine <issue> "<prompt>"` when `command=refine` (optional field to keep `RunPlanInput` compact).
 
 ### RunCommandType
-Union of `plan` and `impl` command identifiers used by the runner and webview routing.
+Union of `plan`, `refine`, and `impl` command identifiers used by the runner and webview routing.
 
 ### RunEvent
 Union of events emitted during execution:

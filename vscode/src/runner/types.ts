@@ -1,4 +1,4 @@
-export type RunCommandType = 'plan' | 'impl';
+export type RunCommandType = 'plan' | 'refine' | 'impl';
 
 export interface RunPlanInput {
   sessionId: string;
