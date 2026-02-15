@@ -536,13 +536,14 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     implLogsBox.appendChild(implLogsBody);
 
     body.appendChild(prompt);
-    body.appendChild(refinePanel);
-    body.appendChild(refineFocus);
-    body.appendChild(refineLogsBox);
-    body.appendChild(refineStepIndicators);
     body.appendChild(stepIndicators);
     body.appendChild(rawLogsBox);
     body.appendChild(implLogsBox);
+    // Refinement UI lives at the end of the session body so it reads like a thread.
+    body.appendChild(refineFocus);
+    body.appendChild(refineStepIndicators);
+    body.appendChild(refineLogsBox);
+    body.appendChild(refinePanel);
 
     container.appendChild(header);
     container.appendChild(body);
