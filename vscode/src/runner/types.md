@@ -11,6 +11,7 @@ Contracts for Plan command execution events.
 - `issueNumber`: issue number passed to the CLI (required for `impl`).
 - `cwd`: working directory for the command.
 - `refineIssueNumber`: required issue number enabling `lol plan --refine <issue> "<prompt>"` when `command=refine` (optional field to keep `RunPlanInput` compact).
+- `runId`: optional run identifier used to associate streamed output with a specific UI sub-pane (e.g., a specific refinement run within a session).
 
 ### RunCommandType
 Union of `plan`, `refine`, and `impl` command identifiers used by the runner and webview routing.

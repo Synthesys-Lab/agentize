@@ -1,5 +1,5 @@
 import type { Memento } from 'vscode';
-import type { AppState, PlanSession, PlanState } from './types';
+import type { AppState, PlanSession, PlanState, RefineRun, SessionStatus } from './types';
 
 const STORAGE_KEY = 'agentize.planState';
 const MAX_LOG_LINES = 1000;
@@ -51,10 +51,7 @@ export class SessionStore {
       implStatus: 'idle',
       implLogs: [],
       implCollapsed: false,
-      refinePrompt: '',
-      refineStatus: 'idle',
-      refineLogs: [],
-      refineCollapsed: false,
+      refineRuns: [],
       logs: [],
       createdAt: now,
       updatedAt: now,
@@ -101,14 +98,81 @@ export class SessionStore {
     return this.cloneSession(session);
   }
 
-  appendRefineLogs(id: string, lines: string[]): PlanSession | undefined {
+  addRefineRun(id: string, run: RefineRun): PlanSession | undefined {
     const session = this.state.sessions.find((item) => item.id === id);
     if (!session) {
       return undefined;
     }
 
-    const existing = session.refineLogs ?? [];
-    session.refineLogs = this.trimLogs([...existing, ...lines]);
+    const existingRuns = Array.isArray(session.refineRuns) ? session.refineRuns : [];
+    session.refineRuns = [...existingRuns, this.cloneRefineRun(run)];
+    session.updatedAt = Date.now();
+    this.persist();
+    return this.cloneSession(session);
+  }
+
+  appendRefineRunLogs(id: string, runId: string, lines: string[]): PlanSession | undefined {
+    const session = this.state.sessions.find((item) => item.id === id);
+    if (!session) {
+      return undefined;
+    }
+
+    const runs = Array.isArray(session.refineRuns) ? session.refineRuns : [];
+    session.refineRuns = runs.map((run) => {
+      if (run.id !== runId) {
+        return this.cloneRefineRun(run);
+      }
+      const existing = Array.isArray(run.logs) ? run.logs : [];
+      return this.cloneRefineRun({
+        ...run,
+        logs: this.trimLogs([...existing, ...lines]),
+        updatedAt: Date.now(),
+      });
+    });
+    session.updatedAt = Date.now();
+    this.persist();
+    return this.cloneSession(session);
+  }
+
+  updateRefineRunStatus(id: string, runId: string, status: SessionStatus): PlanSession | undefined {
+    const session = this.state.sessions.find((item) => item.id === id);
+    if (!session) {
+      return undefined;
+    }
+
+    const runs = Array.isArray(session.refineRuns) ? session.refineRuns : [];
+    session.refineRuns = runs.map((run) => {
+      if (run.id !== runId) {
+        return this.cloneRefineRun(run);
+      }
+      return this.cloneRefineRun({
+        ...run,
+        status,
+        updatedAt: Date.now(),
+      });
+    });
+    session.updatedAt = Date.now();
+    this.persist();
+    return this.cloneSession(session);
+  }
+
+  toggleRefineRunCollapse(id: string, runId: string): PlanSession | undefined {
+    const session = this.state.sessions.find((item) => item.id === id);
+    if (!session) {
+      return undefined;
+    }
+
+    const runs = Array.isArray(session.refineRuns) ? session.refineRuns : [];
+    session.refineRuns = runs.map((run) => {
+      if (run.id !== runId) {
+        return this.cloneRefineRun(run);
+      }
+      return this.cloneRefineRun({
+        ...run,
+        collapsed: !run.collapsed,
+        updatedAt: Date.now(),
+      });
+    });
     session.updatedAt = Date.now();
     this.persist();
     return this.cloneSession(session);
@@ -133,18 +197,6 @@ export class SessionStore {
     }
 
     session.implCollapsed = !session.implCollapsed;
-    session.updatedAt = Date.now();
-    this.persist();
-    return this.cloneSession(session);
-  }
-
-  toggleRefineCollapse(id: string): PlanSession | undefined {
-    const session = this.state.sessions.find((item) => item.id === id);
-    if (!session) {
-      return undefined;
-    }
-
-    session.refineCollapsed = !(session.refineCollapsed ?? false);
     session.updatedAt = Date.now();
     this.persist();
     return this.cloneSession(session);
@@ -198,16 +250,46 @@ export class SessionStore {
   }
 
   private cloneSession(session: PlanSession): PlanSession {
+    const legacyPrompt = (session as unknown as { refinePrompt?: string }).refinePrompt ?? '';
+    const legacyStatus = (session as unknown as { refineStatus?: SessionStatus }).refineStatus ?? 'idle';
+    const legacyLogs = (session as unknown as { refineLogs?: string[] }).refineLogs ?? [];
+    const legacyCollapsed = (session as unknown as { refineCollapsed?: boolean }).refineCollapsed ?? false;
+    const legacyHasRun = Boolean(legacyPrompt.trim() || (Array.isArray(legacyLogs) && legacyLogs.length > 0) || legacyStatus !== 'idle');
+
+    const runs = Array.isArray(session.refineRuns) ? session.refineRuns : [];
+    const refineRuns: RefineRun[] = runs.map((run) => this.cloneRefineRun(run));
+    if (refineRuns.length === 0 && legacyHasRun) {
+      const now = Date.now();
+      refineRuns.push(this.cloneRefineRun({
+        id: 'legacy-refine',
+        prompt: legacyPrompt,
+        status: legacyStatus,
+        logs: Array.isArray(legacyLogs) ? legacyLogs : [],
+        collapsed: legacyCollapsed,
+        createdAt: now,
+        updatedAt: now,
+      }));
+    }
+
     return {
       ...session,
       logs: [...session.logs],
       implStatus: session.implStatus ?? 'idle',
       implLogs: session.implLogs ? [...session.implLogs] : [],
       implCollapsed: session.implCollapsed ?? false,
-      refinePrompt: session.refinePrompt ?? '',
-      refineStatus: session.refineStatus ?? 'idle',
-      refineLogs: session.refineLogs ? [...session.refineLogs] : [],
-      refineCollapsed: session.refineCollapsed ?? false,
+      refineRuns,
+    };
+  }
+
+  private cloneRefineRun(run: RefineRun): RefineRun {
+    return {
+      ...run,
+      prompt: run.prompt ?? '',
+      status: run.status ?? 'idle',
+      logs: Array.isArray(run.logs) ? [...run.logs] : [],
+      collapsed: Boolean(run.collapsed),
+      createdAt: run.createdAt ?? Date.now(),
+      updatedAt: run.updatedAt ?? Date.now(),
     };
   }
 }

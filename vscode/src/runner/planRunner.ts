@@ -34,6 +34,7 @@ export class PlanRunner {
         sessionId: input.sessionId,
         commandType: input.command,
         line: this.formatSpawnError(error, spec.command),
+        runId: input.runId,
         timestamp: Date.now(),
       });
       onEvent({
@@ -42,6 +43,7 @@ export class PlanRunner {
         commandType: input.command,
         code: 1,
         signal: null,
+        runId: input.runId,
         timestamp: Date.now(),
       });
       return false;
@@ -54,6 +56,7 @@ export class PlanRunner {
       command: spec.display,
       commandType: input.command,
       cwd: input.cwd,
+      runId: input.runId,
       timestamp: startedAt,
     });
 
@@ -71,6 +74,7 @@ export class PlanRunner {
         commandType: input.command,
         code,
         signal,
+        runId: input.runId,
         timestamp: Date.now(),
       });
     };
@@ -82,6 +86,7 @@ export class PlanRunner {
           sessionId: input.sessionId,
           commandType: input.command,
           line,
+          runId: input.runId,
           timestamp: Date.now(),
         });
       });
@@ -94,6 +99,7 @@ export class PlanRunner {
           sessionId: input.sessionId,
           commandType: input.command,
           line,
+          runId: input.runId,
           timestamp: Date.now(),
         });
       });
@@ -105,6 +111,7 @@ export class PlanRunner {
         sessionId: input.sessionId,
         commandType: input.command,
         line: this.formatSpawnError(error, spec.command),
+        runId: input.runId,
         timestamp: Date.now(),
       });
       emitExit(1, null);

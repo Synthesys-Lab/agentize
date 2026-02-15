@@ -12,6 +12,7 @@ interface IncomingMessage {
   prompt?: string;
   value?: string;
   issueNumber?: string;
+  runId?: string;
   url?: string;
   path?: string;
 }
@@ -129,10 +130,22 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
           return;
         }
 
+        const runId = (message.runId ?? '').trim() || this.createRunId('refine');
+        const now = Date.now();
+        this.store.addRefineRun(sessionId, {
+          id: runId,
+          prompt: focus,
+          status: 'idle',
+          logs: [],
+          collapsed: false,
+          createdAt: now,
+          updatedAt: now,
+        });
+
         const issueCandidate = (message.issueNumber ?? baseSession.issueNumber ?? '').trim();
         if (!/^\d+$/.test(issueCandidate)) {
-          this.appendSystemLog(sessionId, 'Missing issue number for refinement.', true, 'refine');
-          this.store.updateSession(sessionId, { refineStatus: 'error' });
+          this.store.updateRefineRunStatus(sessionId, runId, 'error');
+          this.store.appendRefineRunLogs(sessionId, runId, ['Missing issue number for refinement.']);
           const updated = this.store.getSession(sessionId);
           if (updated) {
             this.postSessionUpdate(updated.id, updated);
@@ -142,8 +155,8 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
 
         const refineIssueNumber = Number(issueCandidate);
         if (!Number.isInteger(refineIssueNumber) || refineIssueNumber <= 0) {
-          this.appendSystemLog(sessionId, 'Invalid issue number for refinement.', true, 'refine');
-          this.store.updateSession(sessionId, { refineStatus: 'error' });
+          this.store.updateRefineRunStatus(sessionId, runId, 'error');
+          this.store.appendRefineRunLogs(sessionId, runId, ['Invalid issue number for refinement.']);
           const updated = this.store.getSession(sessionId);
           if (updated) {
             this.postSessionUpdate(updated.id, updated);
@@ -151,19 +164,13 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
           return;
         }
 
-        this.store.updateSession(sessionId, {
-          issueNumber: issueCandidate,
-          refinePrompt: focus,
-          refineStatus: 'idle',
-          refineLogs: [],
-          refineCollapsed: false,
-        });
+        this.store.updateSession(sessionId, { issueNumber: issueCandidate });
         const prepped = this.store.getSession(sessionId);
         if (prepped) {
           this.postSessionUpdate(prepped.id, prepped);
         }
 
-        this.startRun(baseSession, 'refine', undefined, refineIssueNumber, focus);
+        this.startRun(baseSession, 'refine', undefined, refineIssueNumber, focus, runId);
         return;
       }
       case 'plan/toggleCollapse': {
@@ -244,7 +251,7 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
 
       const document = await vscode.workspace.openTextDocument(fullPath);
       await vscode.window.showTextDocument(document);
-  } catch (error) {
+    } catch (error) {
       console.error('[PlanViewProvider] Failed to open file:', filePath, error);
     }
   }
@@ -255,6 +262,7 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
     issueNumber?: string,
     refineIssueNumber?: number,
     promptOverride?: string,
+    runId?: string,
   ): void {
     if (this.runner.isRunning(session.id)) {
       this.appendSystemLog(session.id, 'Session already running.', true, commandType);
@@ -268,18 +276,34 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
       this.appendSystemLog(session.id, 'Implementation already running.', true, commandType);
       return;
     }
-    if (commandType === 'refine' && session.refineStatus === 'running') {
-      this.appendSystemLog(session.id, 'Refinement already running.', true, commandType);
+    if (commandType === 'refine' && this.runner.isRunning(session.id, 'refine')) {
+      if (runId) {
+        this.store.updateRefineRunStatus(session.id, runId, 'error');
+        this.store.appendRefineRunLogs(session.id, runId, ['Refinement already running.']);
+        const updated = this.store.getSession(session.id);
+        if (updated) {
+          this.postSessionUpdate(updated.id, updated);
+        }
+      }
       return;
     }
 
     const cwd = this.resolvePlanCwd();
     if (!cwd) {
-      const update: Partial<PlanSession> =
-        commandType === 'impl' ? { implStatus: 'error' } :
-        commandType === 'refine' ? { refineStatus: 'error' } : { status: 'error' };
-      this.appendSystemLog(session.id, 'Missing workspace or trees/main path.', false, commandType);
-      this.store.updateSession(session.id, update);
+      if (commandType === 'impl') {
+        this.appendSystemLog(session.id, 'Missing workspace or trees/main path.', false, commandType);
+        this.store.updateSession(session.id, { implStatus: 'error' });
+      } else if (commandType === 'refine') {
+        if (runId) {
+          this.store.updateRefineRunStatus(session.id, runId, 'error');
+          this.store.appendRefineRunLogs(session.id, runId, ['Missing workspace or trees/main path.']);
+        } else {
+          this.appendSystemLog(session.id, 'Missing workspace or trees/main path.', false, 'plan');
+        }
+      } else {
+        this.appendSystemLog(session.id, 'Missing workspace or trees/main path.', false, commandType);
+        this.store.updateSession(session.id, { status: 'error' });
+      }
       const updated = this.store.getSession(session.id);
       if (updated) {
         this.postSessionUpdate(updated.id, updated);
@@ -297,9 +321,6 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
     } else if (commandType === 'refine') {
       this.store.updateSession(session.id, {
         issueNumber: typeof refineIssueNumber === 'number' ? refineIssueNumber.toString() : session.issueNumber,
-        refineStatus: 'idle',
-        refineLogs: [],
-        refineCollapsed: false,
       });
     } else {
       this.store.updateSession(session.id, {
@@ -320,21 +341,31 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
         command: commandType,
         prompt:
           commandType === 'plan' ? session.prompt :
-          commandType === 'refine' ? (promptOverride ?? session.refinePrompt ?? '') :
+          commandType === 'refine' ? (promptOverride ?? '') :
           undefined,
         issueNumber: commandType === 'impl' ? issueNumber : undefined,
         cwd,
         refineIssueNumber: commandType === 'refine' ? refineIssueNumber : undefined,
+        runId,
       },
       (event) => this.handleRunEvent(event),
     );
 
     if (!started) {
-      const update: Partial<PlanSession> =
-        commandType === 'impl' ? { implStatus: 'error' } :
-        commandType === 'refine' ? { refineStatus: 'error' } : { status: 'error' };
-      this.appendSystemLog(session.id, 'Unable to start session.', false, commandType);
-      this.store.updateSession(session.id, update);
+      if (commandType === 'impl') {
+        this.appendSystemLog(session.id, 'Unable to start session.', false, commandType);
+        this.store.updateSession(session.id, { implStatus: 'error' });
+      } else if (commandType === 'refine') {
+        if (runId) {
+          this.store.updateRefineRunStatus(session.id, runId, 'error');
+          this.store.appendRefineRunLogs(session.id, runId, ['Unable to start refinement.']);
+        } else {
+          this.appendSystemLog(session.id, 'Unable to start refinement.', false, 'plan');
+        }
+      } else {
+        this.appendSystemLog(session.id, 'Unable to start session.', false, commandType);
+        this.store.updateSession(session.id, { status: 'error' });
+      }
       const updated = this.store.getSession(session.id);
       if (updated) {
         this.postSessionUpdate(updated.id, updated);
@@ -350,16 +381,23 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
 
     const isImpl = event.commandType === 'impl';
     const isRefine = event.commandType === 'refine';
+    const runId = (event.runId ?? '').trim();
 
     switch (event.type) {
       case 'start': {
+        if (isRefine && runId) {
+          this.store.updateRefineRunStatus(event.sessionId, runId, 'running');
+          this.store.appendRefineRunLogs(event.sessionId, runId, [`> ${event.command}`]);
+        } else {
+          this.appendSystemLog(event.sessionId, `> ${event.command}`, false, event.commandType);
+        }
+
         const update: Partial<PlanSession> = isImpl
           ? { implStatus: 'running' }
           : isRefine
-          ? { refineStatus: 'running' }
+          ? {}
           : { status: 'running', command: event.command };
         const updated = this.store.updateSession(event.sessionId, update);
-        this.appendSystemLog(event.sessionId, `> ${event.command}`, false, event.commandType);
         if (updated) {
           this.postSessionUpdate(updated.id, updated);
         }
@@ -370,7 +408,9 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
         if (isImpl) {
           this.store.appendImplLogs(event.sessionId, [event.line]);
         } else if (isRefine) {
-          this.store.appendRefineLogs(event.sessionId, [event.line]);
+          if (runId) {
+            this.store.appendRefineRunLogs(event.sessionId, runId, [event.line]);
+          }
         } else {
           this.store.appendSessionLogs(event.sessionId, [event.line]);
           this.captureIssueNumber(event.sessionId, event.line);
@@ -383,7 +423,9 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
         if (isImpl) {
           this.store.appendImplLogs(event.sessionId, [storedLine]);
         } else if (isRefine) {
-          this.store.appendRefineLogs(event.sessionId, [storedLine]);
+          if (runId) {
+            this.store.appendRefineRunLogs(event.sessionId, runId, [storedLine]);
+          }
         } else {
           this.store.appendSessionLogs(event.sessionId, [storedLine]);
           this.captureIssueNumber(event.sessionId, event.line);
@@ -396,13 +438,16 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
         const update: Partial<PlanSession> = isImpl
           ? { implStatus: status }
           : isRefine
-          ? { refineStatus: status }
+          ? {}
           : { status };
         const line = `Exit code: ${event.code ?? 'null'}`;
         if (isImpl) {
           this.store.appendImplLogs(event.sessionId, [line]);
         } else if (isRefine) {
-          this.store.appendRefineLogs(event.sessionId, [line]);
+          if (runId) {
+            this.store.updateRefineRunStatus(event.sessionId, runId, status);
+            this.store.appendRefineRunLogs(event.sessionId, runId, [line]);
+          }
         } else {
           this.store.appendSessionLogs(event.sessionId, [line]);
         }
@@ -423,11 +468,16 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
     line: string,
     broadcast: boolean,
     commandType: RunCommandType = 'plan',
+    runId?: string,
   ): void {
     if (commandType === 'impl') {
       this.store.appendImplLogs(sessionId, [line]);
     } else if (commandType === 'refine') {
-      this.store.appendRefineLogs(sessionId, [line]);
+      if (runId) {
+        this.store.appendRefineRunLogs(sessionId, runId, [line]);
+      } else {
+        this.store.appendSessionLogs(sessionId, [line]);
+      }
     } else {
       this.store.appendSessionLogs(sessionId, [line]);
     }
@@ -437,9 +487,14 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
         sessionId,
         commandType,
         line,
+        runId,
         timestamp: Date.now(),
       });
     }
+  }
+
+  private createRunId(prefix: string): string {
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   }
 
   private captureIssueNumber(sessionId: string, line: string): void {

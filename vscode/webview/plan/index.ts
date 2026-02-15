@@ -67,14 +67,9 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     implLogs?: HTMLElement;
     body: HTMLElement;
     refineButton?: HTMLButtonElement;
-    refinePanel?: HTMLElement;
+    refineThread?: HTMLElement;
+    refineComposer?: HTMLElement;
     refineTextarea?: HTMLTextAreaElement;
-    refineFocus?: HTMLElement;
-    refineStepIndicators?: HTMLElement;
-    refineLogsBox?: HTMLElement;
-    refineLogsBody?: HTMLElement;
-    refineLogsToggle?: HTMLElement;
-    refineLogs?: HTMLElement;
     stepIndicators?: HTMLElement;
     rawLogsBody?: HTMLElement;
     rawLogsToggle?: HTMLElement;
@@ -85,13 +80,25 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
   }>();
   const logBuffers = new Map<string, string[]>();
   const implLogBuffers = new Map<string, string[]>();
-  const refineLogBuffers = new Map<string, string[]>();
+  const refineLogBuffers = new Map<string, string[]>(); // key: `${sessionId}:${runId}`
   const stepStates = new Map<string, StepState[]>();
-  const refineStepStates = new Map<string, StepState[]>();
+  const refineStepStates = new Map<string, StepState[]>(); // key: `${sessionId}:${runId}`
   const logsCollapsedState = new Map<string, boolean>();
-  const refineLogsCollapsedState = new Map<string, boolean>();
+  const refineLogsCollapsedState = new Map<string, boolean>(); // key: `${sessionId}:${runId}`
   const issueNumbers = new Map<string, string>();
   const sessionCache = new Map<string, SessionSummary>();
+
+  type RefineRunNode = {
+    container: HTMLElement;
+    focus: HTMLElement;
+    stepIndicators: HTMLElement;
+    logsBox: HTMLElement;
+    logsBody: HTMLElement;
+    logsToggle: HTMLButtonElement;
+    logs: HTMLElement;
+  };
+
+  const refineRunNodes = new Map<string, RefineRunNode>(); // key: `${sessionId}:${runId}`
 
   interface StepState {
     stage: number;
@@ -372,6 +379,150 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     }
   };
 
+  type RefineRunSummary = {
+    id: string;
+    prompt: string;
+    status?: string;
+    logs?: string[];
+    collapsed?: boolean;
+  };
+
+  const refineRunKey = (sessionId: string, runId: string): string => `${sessionId}:${runId}`;
+
+  const ensureRefineRunNode = (sessionId: string, thread: HTMLElement, run: RefineRunSummary): RefineRunNode => {
+    const key = refineRunKey(sessionId, run.id);
+    const existing = refineRunNodes.get(key);
+    if (existing) {
+      return existing;
+    }
+
+    const container = document.createElement('div');
+    container.className = 'refine-run';
+    container.dataset.runId = run.id;
+
+    const focus = document.createElement('div');
+    focus.className = 'refine-focus';
+    focus.textContent = `Refine focus: ${run.prompt}`;
+
+    const stepIndicators = document.createElement('div');
+    stepIndicators.className = 'step-indicators refine-step-indicators hidden';
+
+    const logsBox = document.createElement('div');
+    logsBox.className = 'raw-logs-box refine-logs-box hidden';
+
+    const logsHeader = document.createElement('div');
+    logsHeader.className = 'raw-logs-header refine-logs-header';
+
+    const logsToggle = document.createElement('button');
+    logsToggle.className = 'raw-logs-toggle refine-logs-toggle';
+    logsToggle.textContent = '[▼]';
+
+    const logsTitle = document.createElement('span');
+    logsTitle.className = 'raw-logs-title refine-logs-title';
+    logsTitle.textContent = 'Refine Console Log';
+
+    logsHeader.appendChild(logsToggle);
+    logsHeader.appendChild(logsTitle);
+
+    const logsBody = document.createElement('div');
+    logsBody.className = 'raw-logs-body refine-logs-body';
+
+    const logs = document.createElement('pre');
+    logs.className = 'logs refine-logs';
+
+    logsBody.appendChild(logs);
+    logsBox.appendChild(logsHeader);
+    logsBox.appendChild(logsBody);
+
+    logsToggle.addEventListener('click', () => {
+      const isCollapsed = logsBody.classList.toggle('collapsed');
+      logsToggle.textContent = isCollapsed ? '[▶]' : '[▼]';
+      refineLogsCollapsedState.set(key, isCollapsed);
+    });
+
+    logs.addEventListener('click', handleLinkClick);
+
+    container.appendChild(focus);
+    container.appendChild(stepIndicators);
+    container.appendChild(logsBox);
+
+    thread.appendChild(container);
+
+    const node: RefineRunNode = { container, focus, stepIndicators, logsBox, logsBody, logsToggle, logs };
+    refineRunNodes.set(key, node);
+    return node;
+  };
+
+  const recomputeRefineSteps = (key: string, logs: string[]): void => {
+    // Rebuild from scratch so restored state renders correctly.
+    refineStepStates.set(key, []);
+    for (const line of logs) {
+      if (line.startsWith('stderr: ')) {
+        updateStepStatesIn(refineStepStates, key, line.slice('stderr: '.length));
+      }
+    }
+  };
+
+  const renderRefineThread = (sessionId: string, runs: RefineRunSummary[]): void => {
+    const sessionNode = sessionNodes.get(sessionId);
+    if (!sessionNode?.refineThread) {
+      return;
+    }
+
+    const thread = sessionNode.refineThread;
+    const seen = new Set<string>();
+    for (const run of runs) {
+      if (!run || !run.id) {
+        continue;
+      }
+      const key = refineRunKey(sessionId, run.id);
+      seen.add(key);
+      const node = ensureRefineRunNode(sessionId, thread, run);
+      node.focus.textContent = `Refine focus: ${run.prompt}`;
+
+      const buffer = Array.isArray(run.logs) ? run.logs : [];
+      refineLogBuffers.set(key, buffer.slice());
+
+      // Restore collapsed state preference (webview-local overrides state).
+      const isCollapsed = refineLogsCollapsedState.get(key) ?? Boolean(run.collapsed);
+      node.logsBody.classList.toggle('collapsed', isCollapsed);
+      node.logsToggle.textContent = isCollapsed ? '[▶]' : '[▼]';
+
+      if (buffer.length > 0) {
+        node.logsBox.classList.remove('hidden');
+        node.logs.innerHTML = buffer.map(l => renderLinks(l)).join('\n');
+        if (!isCollapsed) {
+          node.logsBody.scrollTop = node.logsBody.scrollHeight;
+        }
+        recomputeRefineSteps(key, buffer);
+        const indicators = renderStepIndicatorsFrom(refineStepStates, key, 'step-indicators refine-step-indicators');
+        node.stepIndicators.innerHTML = '';
+        while (indicators.firstChild) {
+          node.stepIndicators.appendChild(indicators.firstChild);
+        }
+        node.stepIndicators.classList.toggle('hidden', indicators.childElementCount === 0);
+      } else {
+        node.logsBox.classList.add('hidden');
+        node.stepIndicators.classList.add('hidden');
+      }
+    }
+
+    // Remove stale nodes.
+    for (const [key, node] of refineRunNodes.entries()) {
+      if (!key.startsWith(`${sessionId}:`)) {
+        continue;
+      }
+      if (seen.has(key)) {
+        continue;
+      }
+      node.container.remove();
+      refineRunNodes.delete(key);
+      refineLogBuffers.delete(key);
+      refineStepStates.delete(key);
+      refineLogsCollapsedState.delete(key);
+    }
+  };
+
   const ensureSessionNode = (session: { id: string; status: string; title?: string; prompt?: string; logs?: string[]; collapsed?: boolean }) => {
     if (sessionNodes.has(session.id)) {
       return sessionNodes.get(session.id)!;
@@ -423,8 +574,11 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     const prompt = document.createElement('div');
     prompt.className = 'prompt';
 
-    const refinePanel = document.createElement('div');
-    refinePanel.className = 'refine-panel hidden';
+    const refineThread = document.createElement('div');
+    refineThread.className = 'refine-thread';
+
+    const refineComposer = document.createElement('div');
+    refineComposer.className = 'refine-panel hidden';
 
     const refineLabel = document.createElement('div');
     refineLabel.className = 'refine-label';
@@ -439,42 +593,9 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     refineHint.className = 'refine-hint';
     refineHint.textContent = 'Cmd+Enter / Ctrl+Enter to run refinement';
 
-    refinePanel.appendChild(refineLabel);
-    refinePanel.appendChild(refineTextarea);
-    refinePanel.appendChild(refineHint);
-
-    const refineFocus = document.createElement('div');
-    refineFocus.className = 'refine-focus hidden';
-
-    const refineStepIndicators = document.createElement('div');
-    refineStepIndicators.className = 'step-indicators refine-step-indicators hidden';
-
-    const refineLogsBox = document.createElement('div');
-    refineLogsBox.className = 'raw-logs-box refine-logs-box hidden';
-
-    const refineLogsHeader = document.createElement('div');
-    refineLogsHeader.className = 'raw-logs-header refine-logs-header';
-
-    const refineLogsToggle = document.createElement('button');
-    refineLogsToggle.className = 'raw-logs-toggle refine-logs-toggle';
-    refineLogsToggle.textContent = '[▼]';
-
-    const refineLogsTitle = document.createElement('span');
-    refineLogsTitle.className = 'raw-logs-title refine-logs-title';
-    refineLogsTitle.textContent = 'Refine Console Log';
-
-    refineLogsHeader.appendChild(refineLogsToggle);
-    refineLogsHeader.appendChild(refineLogsTitle);
-
-    const refineLogsBody = document.createElement('div');
-    refineLogsBody.className = 'raw-logs-body refine-logs-body';
-
-    const refineLogs = document.createElement('pre');
-    refineLogs.className = 'logs refine-logs';
-
-    refineLogsBody.appendChild(refineLogs);
-    refineLogsBox.appendChild(refineLogsHeader);
-    refineLogsBox.appendChild(refineLogsBody);
+    refineComposer.appendChild(refineLabel);
+    refineComposer.appendChild(refineTextarea);
+    refineComposer.appendChild(refineHint);
 
     // Step indicators container
     const stepIndicators = document.createElement('div');
@@ -540,10 +661,8 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     body.appendChild(rawLogsBox);
     body.appendChild(implLogsBox);
     // Refinement UI lives at the end of the session body so it reads like a thread.
-    body.appendChild(refineFocus);
-    body.appendChild(refineStepIndicators);
-    body.appendChild(refineLogsBox);
-    body.appendChild(refinePanel);
+    body.appendChild(refineThread);
+    body.appendChild(refineComposer);
 
     container.appendChild(header);
     container.appendChild(body);
@@ -572,7 +691,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
       if (container.classList.contains('collapsed') || body.classList.contains('collapsed')) {
         postMessage({ type: 'plan/toggleCollapse', sessionId: session.id });
       }
-      refinePanel.classList.remove('hidden');
+      refineComposer.classList.remove('hidden');
       refineTextarea.focus();
     });
 
@@ -584,17 +703,15 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
           return;
         }
         const issueNumber = refineButton.dataset.issueNumber || '';
+        const runId = `refine-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
         // Immediately transition UI from "editing" to "run/results" mode.
         refineTextarea.value = '';
-        refinePanel.classList.add('hidden');
-        refineFocus.textContent = `Refine focus: ${focus}`;
-        refineFocus.classList.remove('hidden');
-        refineLogs.innerHTML = '';
-        refineLogsBox.classList.add('hidden');
-        refineStepIndicators.classList.add('hidden');
-        refineLogBuffers.set(session.id, []);
-        refineStepStates.delete(session.id);
-        postMessage({ type: 'plan/refine', sessionId: session.id, issueNumber, prompt: focus });
+        refineComposer.classList.add('hidden');
+        const run: RefineRunSummary = { id: runId, prompt: focus, logs: [] };
+        ensureRefineRunNode(session.id, refineThread, run);
+        refineLogBuffers.set(refineRunKey(session.id, runId), []);
+        refineStepStates.delete(refineRunKey(session.id, runId));
+        postMessage({ type: 'plan/refine', sessionId: session.id, issueNumber, prompt: focus, runId });
       }
     });
 
@@ -612,16 +729,9 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
       postImplMessage(message);
     });
 
-    refineLogsToggle.addEventListener('click', () => {
-      const isCollapsed = refineLogsBody.classList.toggle('collapsed');
-      refineLogsToggle.textContent = isCollapsed ? '[▶]' : '[▼]';
-      refineLogsCollapsedState.set(session.id, isCollapsed);
-    });
-
     // Handle link clicks in logs
     logs.addEventListener('click', handleLinkClick);
     implLogs.addEventListener('click', handleLinkClick);
-    refineLogs.addEventListener('click', handleLinkClick);
 
     const node = {
       container,
@@ -640,14 +750,9 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
       implLogsToggle,
       implButton,
       refineButton,
-      refinePanel,
+      refineThread,
+      refineComposer,
       refineTextarea,
-      refineFocus,
-      refineStepIndicators,
-      refineLogsBox,
-      refineLogsBody,
-      refineLogsToggle,
-      refineLogs,
     };
     sessionNodes.set(session.id, node);
     return node;
@@ -670,15 +775,6 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
       node.rawLogsBody?.classList.toggle('collapsed', isLogsCollapsed);
       if (node.rawLogsToggle) {
         node.rawLogsToggle.textContent = isLogsCollapsed ? '[▶]' : '[▼]';
-      }
-    }
-
-    // Restore refine logs collapsed state (webview-local).
-    const isRefineCollapsed = refineLogsCollapsedState.get(session.id);
-    if (isRefineCollapsed !== undefined && node.refineLogsBody) {
-      node.refineLogsBody.classList.toggle('collapsed', isRefineCollapsed);
-      if (node.refineLogsToggle) {
-        node.refineLogsToggle.textContent = isRefineCollapsed ? '[▶]' : '[▼]';
       }
     }
 
@@ -715,38 +811,9 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
       }
     }
 
-    if (typeof session.refinePrompt === 'string' && node.refineTextarea) {
-      node.refineTextarea.value = session.refinePrompt;
-    }
-
-    const hasRefineLogs = Array.isArray(session.refineLogs) && session.refineLogs.length > 0;
-    const refineStatus = session.refineStatus ?? 'idle';
-    const showRefine = hasRefineLogs || refineStatus !== 'idle';
-    if (showRefine) {
-      if (typeof session.refinePrompt === 'string' && session.refinePrompt.trim() && node.refineFocus) {
-        node.refineFocus.textContent = `Refine focus: ${session.refinePrompt.trim()}`;
-        node.refineFocus.classList.remove('hidden');
-      }
-      node.refineLogsBox?.classList.toggle('hidden', !hasRefineLogs);
-    }
-
-    if (Array.isArray(session.refineLogs) && node.refineLogs) {
-      refineLogBuffers.set(session.id, session.refineLogs.slice());
-      node.refineLogs.innerHTML = session.refineLogs.map(line => renderLinks(line)).join('\n');
-      if (node.refineLogsBody) {
-        const isCollapsed = refineLogsCollapsedState.get(session.id) ?? (session.refineCollapsed ?? false);
-        node.refineLogsBody.classList.toggle('collapsed', isCollapsed);
-        if (node.refineLogsToggle) {
-          node.refineLogsToggle.textContent = isCollapsed ? '[▶]' : '[▼]';
-        }
-        if (!isCollapsed) {
-          node.refineLogsBody.scrollTop = node.refineLogsBody.scrollHeight;
-        }
-      }
-    }
-
     updateImplControls(session.id, session);
     updateRefineControls(session.id, session);
+    renderRefineThread(session.id, Array.isArray(session.refineRuns) ? session.refineRuns : []);
   };
 
   const removeSession = (sessionId: string) => {
@@ -758,13 +825,32 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     sessionNodes.delete(sessionId);
     logBuffers.delete(sessionId);
     implLogBuffers.delete(sessionId);
-    refineLogBuffers.delete(sessionId);
     stepStates.delete(sessionId);
-    refineStepStates.delete(sessionId);
     logsCollapsedState.delete(sessionId);
-    refineLogsCollapsedState.delete(sessionId);
     issueNumbers.delete(sessionId);
     sessionCache.delete(sessionId);
+
+    // Clear per-run refine state for this session.
+    for (const key of Array.from(refineRunNodes.keys())) {
+      if (key.startsWith(`${sessionId}:`)) {
+        refineRunNodes.delete(key);
+      }
+    }
+    for (const key of Array.from(refineLogBuffers.keys())) {
+      if (key.startsWith(`${sessionId}:`)) {
+        refineLogBuffers.delete(key);
+      }
+    }
+    for (const key of Array.from(refineStepStates.keys())) {
+      if (key.startsWith(`${sessionId}:`)) {
+        refineStepStates.delete(key);
+      }
+    }
+    for (const key of Array.from(refineLogsCollapsedState.keys())) {
+      if (key.startsWith(`${sessionId}:`)) {
+        refineLogsCollapsedState.delete(key);
+      }
+    }
   };
 
   const appendLogLine = (sessionId: string, line: string, stream?: string) => {
@@ -835,38 +921,44 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     updateImplControls(sessionId);
   };
 
-  const appendRefineLogLine = (sessionId: string, line: string, stream?: string) => {
-    const node = sessionNodes.get(sessionId);
-    if (!node || !node.refineLogs || !node.refineLogsBody) {
+  const appendRefineLogLine = (sessionId: string, runId: string, line: string, stream?: string) => {
+    const sessionNode = sessionNodes.get(sessionId);
+    if (!sessionNode?.refineThread) {
       return;
     }
 
-    // Reveal log panel once output starts streaming (textbox stays hidden).
-    node.refineLogsBox?.classList.remove('hidden');
+    const summary = sessionCache.get(sessionId)?.refineRuns?.find((run) => run.id === runId)
+      ?? { id: runId, prompt: '(refine)' };
+    const runNode = ensureRefineRunNode(sessionId, sessionNode.refineThread, summary);
 
+    runNode.logsBox.classList.remove('hidden');
+
+    const key = refineRunKey(sessionId, runId);
     const prefix = stream === 'stderr' ? 'stderr: ' : '';
     const fullLine = `${prefix}${line}`;
-    const buffer = refineLogBuffers.get(sessionId) || [];
+    const buffer = refineLogBuffers.get(key) || [];
     buffer.push(fullLine);
     if (buffer.length > MAX_LOG_LINES) {
       buffer.splice(0, buffer.length - MAX_LOG_LINES);
     }
-    refineLogBuffers.set(sessionId, buffer);
+    refineLogBuffers.set(key, buffer);
 
     if (stream === 'stderr') {
-      updateStepStatesIn(refineStepStates, sessionId, line);
-      if (node.refineStepIndicators) {
-        node.refineStepIndicators.classList.remove('hidden');
-        const newIndicators = renderStepIndicatorsFrom(refineStepStates, sessionId, 'step-indicators refine-step-indicators');
-        node.refineStepIndicators.innerHTML = '';
-        while (newIndicators.firstChild) {
-          node.refineStepIndicators.appendChild(newIndicators.firstChild);
-        }
+      updateStepStatesIn(refineStepStates, key, line);
+      const newIndicators = renderStepIndicatorsFrom(refineStepStates, key, 'step-indicators refine-step-indicators');
+      runNode.stepIndicators.innerHTML = '';
+      while (newIndicators.firstChild) {
+        runNode.stepIndicators.appendChild(newIndicators.firstChild);
       }
+      runNode.stepIndicators.classList.toggle('hidden', runNode.stepIndicators.childElementCount === 0);
     }
 
-    node.refineLogs.innerHTML = buffer.map(l => renderLinks(l)).join('\n');
-    node.refineLogsBody.scrollTop = node.refineLogsBody.scrollHeight;
+    runNode.logs.innerHTML = buffer.map(l => renderLinks(l)).join('\n');
+
+    const isCollapsed = refineLogsCollapsedState.get(key) ?? false;
+    if (!isCollapsed) {
+      runNode.logsBody.scrollTop = runNode.logsBody.scrollHeight;
+    }
   };
 
   type SessionSummary = {
@@ -880,10 +972,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     implStatus?: string;
     implLogs?: string[];
     implCollapsed?: boolean;
-    refinePrompt?: string;
-    refineStatus?: string;
-    refineLogs?: string[];
-    refineCollapsed?: boolean;
+    refineRuns?: RefineRunSummary[];
   };
 
   type PlanState = {
@@ -901,6 +990,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     line?: string;
     code?: number;
     commandType?: string;
+    runId?: string;
   };
 
   type IncomingWebviewMessage = {
@@ -970,22 +1060,27 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
           if (eventData.commandType === 'impl') {
             appendImplLogLine(eventData.sessionId || '', eventData.line || '', eventData.type);
           } else if (eventData.commandType === 'refine') {
-            appendRefineLogLine(eventData.sessionId || '', eventData.line || '', eventData.type);
+            const sessionId = eventData.sessionId || '';
+            const runId = eventData.runId || '';
+            if (sessionId && runId) {
+              appendRefineLogLine(sessionId, runId, eventData.line || '', eventData.type);
+            }
           } else {
             appendLogLine(eventData.sessionId || '', eventData.line || '', eventData.type);
           }
         }
         if (eventData.type === 'exit') {
-          if (eventData.commandType === 'refine' && eventData.sessionId) {
-            // Complete all running steps when process exits
-            completeAllStepsIn(refineStepStates, eventData.sessionId);
-            const node = sessionNodes.get(eventData.sessionId);
-            if (node?.refineStepIndicators) {
-              const newIndicators = renderStepIndicatorsFrom(refineStepStates, eventData.sessionId, 'step-indicators refine-step-indicators');
-              node.refineStepIndicators.innerHTML = '';
-              while (newIndicators.firstChild) {
-                node.refineStepIndicators.appendChild(newIndicators.firstChild);
+          if (eventData.commandType === 'refine' && eventData.sessionId && eventData.runId) {
+            const key = refineRunKey(eventData.sessionId, eventData.runId);
+            completeAllStepsIn(refineStepStates, key);
+            const runNode = refineRunNodes.get(key);
+            if (runNode) {
+              const indicators = renderStepIndicatorsFrom(refineStepStates, key, 'step-indicators refine-step-indicators');
+              runNode.stepIndicators.innerHTML = '';
+              while (indicators.firstChild) {
+                runNode.stepIndicators.appendChild(indicators.firstChild);
               }
+              runNode.stepIndicators.classList.toggle('hidden', runNode.stepIndicators.childElementCount === 0);
             }
           }
           if (eventData.commandType !== 'impl' && eventData.commandType !== 'refine' && eventData.sessionId) {

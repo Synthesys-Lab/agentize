@@ -1,5 +1,15 @@
 export type SessionStatus = 'idle' | 'running' | 'success' | 'error';
 
+export interface RefineRun {
+  id: string;
+  prompt: string;
+  status: SessionStatus;
+  logs: string[];
+  collapsed: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface PlanSession {
   id: string;
   title: string;
@@ -11,10 +21,7 @@ export interface PlanSession {
   implStatus?: SessionStatus;
   implLogs?: string[];
   implCollapsed?: boolean;
-  refinePrompt?: string;
-  refineStatus?: SessionStatus;
-  refineLogs?: string[];
-  refineCollapsed?: boolean;
+  refineRuns?: RefineRun[];
   logs: string[];
   createdAt: number;
   updatedAt: number;

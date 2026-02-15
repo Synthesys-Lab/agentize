@@ -7,6 +7,7 @@ export interface RunPlanInput {
   issueNumber?: string;
   cwd: string;
   refineIssueNumber?: number;
+  runId?: string;
 }
 
 export type RunEvent =
@@ -16,6 +17,7 @@ export type RunEvent =
       command: string;
       commandType: RunCommandType;
       cwd: string;
+      runId?: string;
       timestamp: number;
     }
   | {
@@ -23,6 +25,7 @@ export type RunEvent =
       sessionId: string;
       commandType: RunCommandType;
       line: string;
+      runId?: string;
       timestamp: number;
     }
   | {
@@ -30,6 +33,7 @@ export type RunEvent =
       sessionId: string;
       commandType: RunCommandType;
       line: string;
+      runId?: string;
       timestamp: number;
     }
   | {
@@ -38,5 +42,6 @@ export type RunEvent =
       commandType: RunCommandType;
       code: number | null;
       signal: NodeJS.Signals | null;
+      runId?: string;
       timestamp: number;
     };
