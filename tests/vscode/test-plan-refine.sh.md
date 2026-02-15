@@ -14,7 +14,7 @@ Validates refinement wiring for the VS Code plan view.
 
 ### buildCommand default branch exists
 **Purpose**: Ensure non-refine runs still push the prompt without refine flags.
-**Expected**: `vscode/src/runner/planRunner.ts` retains the default `args.push(input.prompt)` path.
+**Expected**: `vscode/src/runner/planRunner.ts` retains the default `args.push(prompt)` path.
 
 ### PlanViewProvider handles plan/refine
 **Purpose**: Ensure the extension host accepts `plan/refine` messages.

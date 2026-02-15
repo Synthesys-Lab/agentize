@@ -25,7 +25,7 @@ if ! grep -q "refineIssueNumber" "$RUNNER_FILE"; then
   test_fail "planRunner.ts missing refineIssueNumber usage"
 fi
 
-if ! grep -q "args.push(input.prompt)" "$RUNNER_FILE"; then
+if ! grep -q "args.push(prompt)" "$RUNNER_FILE"; then
   test_fail "planRunner.ts missing fallback args for non-refine runs"
 fi
 
