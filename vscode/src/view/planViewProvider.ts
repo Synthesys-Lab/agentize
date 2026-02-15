@@ -130,7 +130,7 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
           return;
         }
 
-        const runId = (message.runId ?? '').trim() || this.createRunId('refine');
+        const runId = message.runId ?? '';
         const now = Date.now();
         this.store.addRefineRun(sessionId, {
           id: runId,
@@ -491,10 +491,6 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
         timestamp: Date.now(),
       });
     }
-  }
-
-  private createRunId(prefix: string): string {
-    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   }
 
   private captureIssueNumber(sessionId: string, line: string): void {

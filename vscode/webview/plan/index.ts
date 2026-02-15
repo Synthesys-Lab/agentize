@@ -813,7 +813,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
 
     updateImplControls(session.id, session);
     updateRefineControls(session.id, session);
-    renderRefineThread(session.id, Array.isArray(session.refineRuns) ? session.refineRuns : []);
+    renderRefineThread(session.id, session.refineRuns);
   };
 
   const removeSession = (sessionId: string) => {
@@ -927,8 +927,10 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
       return;
     }
 
-    const summary = sessionCache.get(sessionId)?.refineRuns?.find((run) => run.id === runId)
-      ?? { id: runId, prompt: '(refine)' };
+    const summary = sessionCache.get(sessionId)?.refineRuns.find((run) => run.id === runId);
+    if (!summary) {
+      return;
+    }
     const runNode = ensureRefineRunNode(sessionId, sessionNode.refineThread, summary);
 
     runNode.logsBox.classList.remove('hidden');
@@ -972,7 +974,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     implStatus?: string;
     implLogs?: string[];
     implCollapsed?: boolean;
-    refineRuns?: RefineRunSummary[];
+    refineRuns: RefineRunSummary[];
   };
 
   type PlanState = {

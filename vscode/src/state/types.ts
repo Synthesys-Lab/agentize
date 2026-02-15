@@ -21,7 +21,7 @@ export interface PlanSession {
   implStatus?: SessionStatus;
   implLogs?: string[];
   implCollapsed?: boolean;
-  refineRuns?: RefineRun[];
+  refineRuns: RefineRun[];
   logs: string[];
   createdAt: number;
   updatedAt: number;
