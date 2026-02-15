@@ -2,6 +2,13 @@
 
 Webview script that renders the Plan session list and handles user input.
 
+## File Organization
+
+- `index.ts`: Webview entry point that renders sessions, handles input, and posts messages.
+- `utils.ts`: Pure rendering and parsing helpers for steps, links, and issue extraction.
+- `types.ts`: Message shapes exchanged with the extension host.
+- `styles.css`: Plan tab styling.
+
 ## External Interface
 
 ### UI Actions
@@ -17,6 +24,17 @@ Webview script that renders the Plan session list and handles user input.
 - `Cmd+Enter` (macOS) or `Ctrl+Enter` (Linux/Windows) submits the plan input.
 
 ## Internal Helpers
+
+### ensureSessionNode(session)
+Builds the session DOM using a sequential append pattern so the visual order is explicit:
+
+1. Create the session container and header.
+2. Create the session body.
+3. Append the prompt text.
+4. Append step indicators.
+5. Append the raw console log panel.
+6. Append the implementation log panel.
+7. Append refinement thread and composer.
 
 ### renderState(appState)
 Initial render for all sessions and the draft input.
@@ -80,3 +98,5 @@ interface StepState {
   endTime?: number;       // Timestamp when step completed
 }
 ```
+
+`StepState` is defined in `utils.ts` alongside the parsing and rendering helpers that build the indicator UI.

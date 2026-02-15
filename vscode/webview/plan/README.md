@@ -6,5 +6,6 @@ This folder provides the Plan Activity Bar UI implementation for the webview.
 
 - `index.ts` renders sessions, handles input (including refinement actions), and posts messages. It is compiled to `out/index.js`
   for the webview runtime.
+- `utils.ts` provides shared helpers for step parsing, indicator rendering, and link detection.
 - `types.ts` defines message shapes used by the plan webview.
 - `styles.css` defines the minimal readable styling for the Plan tab.
