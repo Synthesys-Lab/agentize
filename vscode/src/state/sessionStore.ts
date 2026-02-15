@@ -250,27 +250,8 @@ export class SessionStore {
   }
 
   private cloneSession(session: PlanSession): PlanSession {
-    const legacyPrompt = (session as unknown as { refinePrompt?: string }).refinePrompt ?? '';
-    const legacyStatus = (session as unknown as { refineStatus?: SessionStatus }).refineStatus ?? 'idle';
-    const legacyLogs = (session as unknown as { refineLogs?: string[] }).refineLogs ?? [];
-    const legacyCollapsed = (session as unknown as { refineCollapsed?: boolean }).refineCollapsed ?? false;
-    const legacyHasRun = Boolean(legacyPrompt.trim() || (Array.isArray(legacyLogs) && legacyLogs.length > 0) || legacyStatus !== 'idle');
-
     const runs = Array.isArray(session.refineRuns) ? session.refineRuns : [];
     const refineRuns: RefineRun[] = runs.map((run) => this.cloneRefineRun(run));
-    if (refineRuns.length === 0 && legacyHasRun) {
-      const now = Date.now();
-      refineRuns.push(this.cloneRefineRun({
-        id: 'legacy-refine',
-        prompt: legacyPrompt,
-        status: legacyStatus,
-        logs: Array.isArray(legacyLogs) ? legacyLogs : [],
-        collapsed: legacyCollapsed,
-        createdAt: now,
-        updatedAt: now,
-      }));
-    }
-
     return {
       ...session,
       logs: [...session.logs],
