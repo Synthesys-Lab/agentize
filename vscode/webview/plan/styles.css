@@ -272,6 +272,15 @@ button:disabled {
   color: var(--muted);
 }
 
+.refine-focus {
+  font-size: 13px;
+  padding: 8px 10px;
+  border-left: 3px solid rgba(15, 110, 110, 0.6);
+  background: rgba(15, 110, 110, 0.04);
+  border-radius: 6px;
+  white-space: pre-wrap;
+}
+
 .prompt {
   font-size: 13px;
   color: var(--muted);

@@ -69,6 +69,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     refineButton?: HTMLButtonElement;
     refinePanel?: HTMLElement;
     refineTextarea?: HTMLTextAreaElement;
+    refineFocus?: HTMLElement;
     refineStepIndicators?: HTMLElement;
     refineLogsBox?: HTMLElement;
     refineLogsBody?: HTMLElement;
@@ -442,6 +443,9 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     refinePanel.appendChild(refineTextarea);
     refinePanel.appendChild(refineHint);
 
+    const refineFocus = document.createElement('div');
+    refineFocus.className = 'refine-focus hidden';
+
     const refineStepIndicators = document.createElement('div');
     refineStepIndicators.className = 'step-indicators refine-step-indicators hidden';
 
@@ -533,8 +537,9 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
 
     body.appendChild(prompt);
     body.appendChild(refinePanel);
-    body.appendChild(refineStepIndicators);
+    body.appendChild(refineFocus);
     body.appendChild(refineLogsBox);
+    body.appendChild(refineStepIndicators);
     body.appendChild(stepIndicators);
     body.appendChild(rawLogsBox);
     body.appendChild(implLogsBox);
@@ -578,6 +583,16 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
           return;
         }
         const issueNumber = refineButton.dataset.issueNumber || '';
+        // Immediately transition UI from "editing" to "run/results" mode.
+        refineTextarea.value = '';
+        refinePanel.classList.add('hidden');
+        refineFocus.textContent = `Refine focus: ${focus}`;
+        refineFocus.classList.remove('hidden');
+        refineLogs.innerHTML = '';
+        refineLogsBox.classList.add('hidden');
+        refineStepIndicators.classList.add('hidden');
+        refineLogBuffers.set(session.id, []);
+        refineStepStates.delete(session.id);
         postMessage({ type: 'plan/refine', sessionId: session.id, issueNumber, prompt: focus });
       }
     });
@@ -626,6 +641,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
       refineButton,
       refinePanel,
       refineTextarea,
+      refineFocus,
       refineStepIndicators,
       refineLogsBox,
       refineLogsBody,
@@ -706,16 +722,18 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     const refineStatus = session.refineStatus ?? 'idle';
     const showRefine = hasRefineLogs || refineStatus !== 'idle';
     if (showRefine) {
-      node.refinePanel?.classList.remove('hidden');
+      if (typeof session.refinePrompt === 'string' && session.refinePrompt.trim() && node.refineFocus) {
+        node.refineFocus.textContent = `Refine focus: ${session.refinePrompt.trim()}`;
+        node.refineFocus.classList.remove('hidden');
+      }
       node.refineLogsBox?.classList.toggle('hidden', !hasRefineLogs);
-      node.refineStepIndicators?.classList.remove('hidden');
     }
 
     if (Array.isArray(session.refineLogs) && node.refineLogs) {
       refineLogBuffers.set(session.id, session.refineLogs.slice());
       node.refineLogs.innerHTML = session.refineLogs.map(line => renderLinks(line)).join('\n');
       if (node.refineLogsBody) {
-        const isCollapsed = session.refineCollapsed ?? false;
+        const isCollapsed = refineLogsCollapsedState.get(session.id) ?? (session.refineCollapsed ?? false);
         node.refineLogsBody.classList.toggle('collapsed', isCollapsed);
         if (node.refineLogsToggle) {
           node.refineLogsToggle.textContent = isCollapsed ? '[▶]' : '[▼]';
@@ -822,10 +840,8 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
       return;
     }
 
-    // Ensure refine UI is visible once logs start streaming.
-    node.refinePanel?.classList.remove('hidden');
+    // Reveal log panel once output starts streaming (textbox stays hidden).
     node.refineLogsBox?.classList.remove('hidden');
-    node.refineStepIndicators?.classList.remove('hidden');
 
     const prefix = stream === 'stderr' ? 'stderr: ' : '';
     const fullLine = `${prefix}${line}`;
@@ -839,6 +855,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     if (stream === 'stderr') {
       updateStepStatesIn(refineStepStates, sessionId, line);
       if (node.refineStepIndicators) {
+        node.refineStepIndicators.classList.remove('hidden');
         const newIndicators = renderStepIndicatorsFrom(refineStepStates, sessionId, 'step-indicators refine-step-indicators');
         node.refineStepIndicators.innerHTML = '';
         while (newIndicators.firstChild) {
