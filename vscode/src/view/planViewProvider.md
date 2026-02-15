@@ -24,7 +24,7 @@ Consumes UI messages:
 - `link/openExternal` - Opens GitHub issue URLs in default browser
 - `link/openFile` - Opens local markdown files in VSCode editor
 
-`plan/refine` collects refinement focus via VS Code input boxes and starts a new run in refinement mode. It uses the captured issue number when available, and prompts for one when missing.
+`plan/refine` collects refinement focus inline in the session UI (webview) and starts a refinement run within the same session. The issue number is captured from the plan output and forwarded by the webview.
 
 `plan/delete` stops an in-flight session before removing it from storage.
 `plan/impl` starts an implementation run for the captured issue number and stores output in a

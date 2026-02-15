@@ -57,8 +57,8 @@ When a plan session completes (success or error), a Refine button appears on the
 session card.
 
 1. Click Refine on the completed session.
-1. Enter the issue number to refine.
-1. Enter the refinement focus or instructions.
+1. An inline textbox appears inside the session (expand the session if needed).
+1. Type the refinement focus or instructions, then press Cmd+Enter / Ctrl+Enter.
 
 The extension runs `lol plan --refine <issue> "<focus>"` and streams the
 refinement session in the plan view like any other run.

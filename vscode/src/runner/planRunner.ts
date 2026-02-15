@@ -157,9 +157,10 @@ export class PlanRunner {
     const args = [wrapperPath, 'plan'];
     let display = 'lol plan';
 
-    if (typeof input.refineIssueNumber === 'number') {
-      args.push('--refine', input.refineIssueNumber.toString(), prompt);
-      display = `${display} --refine ${input.refineIssueNumber} ${this.quoteArg(prompt)}`.trim();
+    if (input.command === 'refine') {
+      const issueNumber = input.refineIssueNumber ?? NaN;
+      args.push('--refine', String(issueNumber), prompt);
+      display = `${display} --refine ${issueNumber} ${this.quoteArg(prompt)}`.trim();
     } else {
       args.push(prompt);
       display = `${display} ${this.quoteArg(prompt)}`.trim();
