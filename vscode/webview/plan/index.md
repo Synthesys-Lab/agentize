@@ -47,6 +47,12 @@ update widget state/handles.
 Route stdout/stderr lines into the active terminal widget for a session, preserving the maximum
 log buffer and emitting link-rendered markup.
 
+## Collapsible Raw Console Log
+
+Each session has a collapsible raw console log widget that captures all stdout/stderr output.
+The log box can be expanded/collapsed via the toggle button in its header, and the collapsed
+state is persisted per-session.
+
 ## Step Progress Indicators
 
 Progress widgets listen to terminal output lines that match:
@@ -67,6 +73,12 @@ is removed on Esc or after successful submission, and the session transitions in
 
 When implementation exits with code 0, a View PR button is appended. When the exit code is non-zero,
 a Re-implement button is appended to the widget timeline instead.
+
+## Closed Issue Button State
+
+When a plan's associated GitHub issue is closed, the Implement button displays "Closed" and is
+disabled to prevent further implementation attempts. The issue state is checked via the GitHub CLI
+and cached per session.
 
 ## Interactive Links
 
