@@ -4,6 +4,8 @@ import type { AppState, PlanSession, PlanState, RefineRun, SessionStatus, Widget
 const STORAGE_KEY = 'agentize.planState';
 const MAX_LOG_LINES = 1000;
 const SESSION_SCHEMA_VERSION = 2;
+const WIDGET_ROLE_PLAN_TERMINAL = 'plan-terminal';
+const WIDGET_ROLE_PROMPT = 'prompt';
 
 const DEFAULT_PLAN_STATE: PlanState = {
   sessions: [],
@@ -42,6 +44,14 @@ export class SessionStore {
   createSession(prompt: string): PlanSession {
     const now = Date.now();
     const trimmed = prompt.trim();
+    const promptWidget: WidgetState = {
+      id: this.createWidgetId('text'),
+      type: 'text',
+      content: [trimmed],
+      metadata: { role: WIDGET_ROLE_PROMPT },
+      createdAt: now,
+    };
+
     const session: PlanSession = {
       id: this.createSessionId(),
       title: this.deriveTitle(trimmed),
@@ -50,13 +60,15 @@ export class SessionStore {
       prompt: trimmed,
       issueNumber: undefined,
       issueState: undefined,
+      planPath: undefined,
+      prUrl: undefined,
       implStatus: 'idle',
       implLogs: [],
       implCollapsed: false,
       refineRuns: [],
       logs: [],
       version: SESSION_SCHEMA_VERSION,
-      widgets: [],
+      widgets: [promptWidget],
       phase: 'idle',
       activeTerminalHandle: undefined,
       createdAt: now,
@@ -135,6 +147,84 @@ export class SessionStore {
         logs: this.trimLogs([...existing, ...lines]),
         updatedAt: Date.now(),
       });
+    });
+    session.updatedAt = Date.now();
+    this.persist();
+    return this.cloneSession(session);
+  }
+
+  appendWidgetLines(id: string, widgetId: string, lines: string[]): PlanSession | undefined {
+    const session = this.state.sessions.find((item) => item.id === id);
+    if (!session || !session.widgets) {
+      return undefined;
+    }
+
+    let updatedWidget = false;
+    session.widgets = session.widgets.map((widget) => {
+      if (widget.id !== widgetId || widget.type !== 'terminal') {
+        return widget;
+      }
+      const existing = Array.isArray(widget.content) ? widget.content : [];
+      updatedWidget = true;
+      return {
+        ...widget,
+        content: this.trimLogs([...existing, ...lines]),
+      };
+    });
+
+    if (!updatedWidget) {
+      return undefined;
+    }
+
+    session.updatedAt = Date.now();
+    this.persist();
+    return this.cloneSession(session);
+  }
+
+  addWidget(id: string, widget: Omit<WidgetState, 'id' | 'createdAt'> & { id?: string; createdAt?: number }):
+    | WidgetState
+    | undefined {
+    const session = this.state.sessions.find((item) => item.id === id);
+    if (!session) {
+      return undefined;
+    }
+
+    if (!session.widgets) {
+      session.widgets = [];
+    }
+
+    const created: WidgetState = {
+      ...widget,
+      id: widget.id ?? this.createWidgetId(widget.type),
+      createdAt: widget.createdAt ?? Date.now(),
+    };
+    session.widgets = [...session.widgets, created];
+    if (created.type === 'terminal' && created.metadata?.role === WIDGET_ROLE_PLAN_TERMINAL) {
+      session.activeTerminalHandle = created.id;
+    }
+    session.updatedAt = Date.now();
+    this.persist();
+    return this.cloneWidget(created);
+  }
+
+  updateWidgetMetadata(id: string, widgetId: string, metadata: Record<string, unknown>): PlanSession | undefined {
+    const session = this.state.sessions.find((item) => item.id === id);
+    if (!session) {
+      return undefined;
+    }
+
+    if (!session.widgets) {
+      return this.cloneSession(session);
+    }
+
+    session.widgets = session.widgets.map((widget) => {
+      if (widget.id !== widgetId) {
+        return widget;
+      }
+      return {
+        ...widget,
+        metadata: { ...(widget.metadata ?? {}), ...metadata },
+      };
     });
     session.updatedAt = Date.now();
     this.persist();
@@ -288,6 +378,8 @@ export class SessionStore {
       widgets,
       phase: session.phase,
       activeTerminalHandle: session.activeTerminalHandle,
+      planPath: session.planPath,
+      prUrl: session.prUrl,
       refineRuns,
     };
   }
@@ -321,6 +413,15 @@ export class SessionStore {
     }
 
     if (!session.activeTerminalHandle) {
+      const existing = session.widgets.find(
+        (widget) => widget.type === 'terminal' && widget.metadata?.role === WIDGET_ROLE_PLAN_TERMINAL,
+      );
+      if (existing) {
+        session.activeTerminalHandle = existing.id;
+      }
+    }
+
+    if (!session.activeTerminalHandle) {
       const widgetId = this.createWidgetId('terminal');
       session.widgets = [
         ...session.widgets,
@@ -329,6 +430,7 @@ export class SessionStore {
           type: 'terminal',
           title: 'Plan Log',
           content: [],
+          metadata: { role: WIDGET_ROLE_PLAN_TERMINAL },
           createdAt: Date.now(),
         },
       ];
@@ -352,6 +454,17 @@ export class SessionStore {
     const widgets = Array.isArray(migrated.widgets) ? migrated.widgets : [];
     let activeTerminalHandle = migrated.activeTerminalHandle;
 
+    const hasPromptWidget = widgets.some((widget) => widget.metadata?.role === WIDGET_ROLE_PROMPT);
+    if (!hasPromptWidget && migrated.prompt) {
+      widgets.unshift({
+        id: this.createWidgetId('text'),
+        type: 'text',
+        content: [migrated.prompt],
+        metadata: { role: WIDGET_ROLE_PROMPT },
+        createdAt: migrated.createdAt ?? Date.now(),
+      });
+    }
+
     if (widgets.length === 0 && migrated.logs.length > 0) {
       const widgetId = this.createWidgetId('terminal');
       widgets.push({
@@ -359,6 +472,7 @@ export class SessionStore {
         type: 'terminal',
         title: 'Plan Log',
         content: [...migrated.logs],
+        metadata: { role: WIDGET_ROLE_PLAN_TERMINAL },
         createdAt: Date.now(),
       });
       activeTerminalHandle = widgetId;

@@ -2,6 +2,8 @@ export type SessionStatus = 'idle' | 'running' | 'success' | 'error';
 
 export type WidgetType = 'text' | 'terminal' | 'progress' | 'buttons' | 'input' | 'status';
 
+export type PlanSessionPhase = 'idle' | 'planning' | 'plan-completed' | 'refining' | 'implementing' | 'completed';
+
 export interface WidgetState {
   id: string;
   type: WidgetType;
@@ -30,6 +32,8 @@ export interface PlanSession {
   command?: string;
   issueNumber?: string;
   issueState?: 'open' | 'closed' | 'unknown';
+  planPath?: string;
+  prUrl?: string;
   implStatus?: SessionStatus;
   implLogs?: string[];
   implCollapsed?: boolean;
@@ -37,7 +41,7 @@ export interface PlanSession {
   logs: string[];
   version?: number;
   widgets?: WidgetState[];
-  phase?: string;
+  phase?: PlanSessionPhase;
   activeTerminalHandle?: string;
   createdAt: number;
   updatedAt: number;
