@@ -25,9 +25,9 @@ if ! grep -q "@keyframes dot-cycle" "$WEBVIEW_DIR/styles.css"; then
   test_fail "styles.css missing dot-cycle animation"
 fi
 
-# Test 4: Check index.ts has step parsing logic
-if ! grep -q "parseStageLine" "$WEBVIEW_DIR/index.ts"; then
-  test_fail "index.ts missing parseStageLine function"
+# Test 4: Check webview has step parsing logic (in utils.ts)
+if ! grep -q "parseStageLine" "$WEBVIEW_DIR/utils.ts"; then
+  test_fail "utils.ts missing parseStageLine function"
 fi
 
 # Test 5: Check index.ts has link detection
