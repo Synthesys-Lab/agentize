@@ -1,4 +1,4 @@
-import type { PlanImplMessage, PlanToggleImplCollapseMessage } from './types.js';
+import type { PlanImplMessage, PlanToggleImplCollapseMessage, WidgetState, WidgetButton } from './types.js';
 import type { StepState } from './utils.js';
 import {
   completeAllStepsIn,
@@ -7,6 +7,16 @@ import {
   renderStepIndicatorsFrom,
   updateStepStatesIn,
 } from './utils.js';
+import {
+  appendPlainText,
+  appendTerminalBox,
+  appendProgressWidget,
+  appendButtons,
+  appendStatusBadge,
+  registerSessionContainer,
+  getWidgetHandle,
+} from './widgets.js';
+import type { TerminalHandle, ButtonsHandle, ProgressHandle } from './widgets.js';
 
 // Provided by VS Code in the webview environment.
 declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
@@ -868,6 +878,12 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     runId?: string;
   };
 
+  type WidgetUpdatePayload =
+    | { type: 'appendLines'; lines: string[] }
+    | { type: 'replaceButtons'; buttons: WidgetButton[] }
+    | { type: 'complete' }
+    | { type: 'metadata'; metadata: Record<string, unknown> };
+
   type IncomingWebviewMessage = {
     type?: string;
     state?: AppState;
@@ -875,6 +891,9 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     deleted?: boolean;
     session?: SessionSummary;
     event?: RunEventData;
+    widget?: WidgetState;
+    widgetId?: string;
+    update?: WidgetUpdatePayload;
   };
 
   const renderState = (appState: AppState) => {
@@ -969,6 +988,105 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
                 node.stepIndicators.appendChild(newIndicators.firstChild);
               }
             }
+          }
+        }
+        return;
+      }
+      case 'widget/append': {
+        const sessionId = message.sessionId ?? '';
+        const widget = message.widget;
+        if (!sessionId || !widget) {
+          return;
+        }
+        // Ensure session container is registered
+        const node = sessionNodes.get(sessionId);
+        if (node?.body) {
+          registerSessionContainer(sessionId, node.body);
+        }
+        // Create the widget based on type
+        switch (widget.type) {
+          case 'text':
+            appendPlainText(sessionId, widget.content?.[0] ?? '', { widgetId: widget.id });
+            break;
+          case 'terminal':
+            appendTerminalBox(sessionId, widget.title ?? 'Terminal', {
+              widgetId: widget.id,
+              collapsed: (widget.metadata?.collapsed as boolean) ?? false,
+            });
+            break;
+          case 'progress': {
+            const terminalId = widget.metadata?.terminalId as string;
+            if (terminalId) {
+              const terminal = getWidgetHandle(sessionId, terminalId);
+              if (terminal?.type === 'terminal') {
+                appendProgressWidget(sessionId, terminal as TerminalHandle, { widgetId: widget.id });
+              }
+            }
+            break;
+          }
+          case 'buttons':
+            appendButtons(sessionId, (widget.metadata?.buttons as WidgetButton[])?.map((b) => ({
+              id: b.id,
+              label: b.label,
+              variant: (b.variant === 'secondary' ? 'ghost' : b.variant) ?? 'primary',
+              disabled: b.disabled,
+              onClick: () => {
+                postMessage({ type: b.action, sessionId });
+              },
+            })) ?? [], { widgetId: widget.id });
+            break;
+          case 'status':
+            appendStatusBadge(sessionId, widget.content?.[0] ?? '', { widgetId: widget.id });
+            break;
+        }
+        return;
+      }
+      case 'widget/update': {
+        const sessionId = message.sessionId ?? '';
+        const widgetId = message.widgetId ?? '';
+        const update = message.update;
+        if (!sessionId || !widgetId || !update) {
+          return;
+        }
+        const handle = getWidgetHandle(sessionId, widgetId);
+        if (!handle) {
+          return;
+        }
+        switch (update.type) {
+          case 'appendLines': {
+            if (handle.type === 'terminal') {
+              const terminalHandle = handle as TerminalHandle;
+              update.lines?.forEach((line) => {
+                const stream = line.startsWith('stderr: ') ? 'stderr' : undefined;
+                const cleanLine = line.startsWith('stderr: ') ? line.slice('stderr: '.length) : line;
+                terminalHandle.appendLine(cleanLine, stream);
+              });
+            }
+            break;
+          }
+          case 'replaceButtons': {
+            if (handle.type === 'buttons' && update.buttons) {
+              const buttonsHandle = handle as ButtonsHandle;
+              import('./widgets.js').then((widgets) => {
+                widgets.replaceButtons(buttonsHandle, update.buttons?.map((b) => ({
+                  id: b.id,
+                  label: b.label,
+                  variant: (b.variant === 'secondary' ? 'ghost' : b.variant) ?? 'primary',
+                  disabled: b.disabled,
+                  onClick: () => {
+                    postMessage({ type: b.action, sessionId });
+                  },
+                })) ?? []);
+              });
+            }
+            break;
+          }
+          case 'complete': {
+            if (handle.type === 'progress') {
+              const progressHandle = handle as ProgressHandle;
+              progressHandle.complete();
+            }
+            break;
           }
         }
         return;

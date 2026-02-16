@@ -489,9 +489,9 @@ export class SessionStore {
     };
   }
 
-  private derivePhase(session: PlanSession): string {
+  private derivePhase(session: PlanSession): import('./types').PlanSessionPhase {
     const hasRefineRunning = Array.isArray(session.refineRuns)
-      ? session.refineRuns.some((run) => run.status === 'running')
+      ? session.refineRuns.some((run: import('./types').RefineRun) => run.status === 'running')
       : false;
 
     if (session.implStatus === 'running') {

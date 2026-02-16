@@ -1028,7 +1028,6 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
 
   private buildActionButtons(session: PlanSession): WidgetButton[] {
     const hasPlanPath = Boolean(session.planPath?.trim());
-    const hasIssue = Boolean(session.issueNumber?.trim());
     const planDone = session.status === 'success' || session.status === 'error';
     const planSuccess = session.status === 'success';
     const implRunning = session.implStatus === 'running';
