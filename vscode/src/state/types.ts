@@ -1,5 +1,16 @@
 export type SessionStatus = 'idle' | 'running' | 'success' | 'error';
 
+export type WidgetType = 'text' | 'terminal' | 'progress' | 'buttons' | 'input' | 'status';
+
+export interface WidgetState {
+  id: string;
+  type: WidgetType;
+  title?: string;
+  content?: string[];
+  metadata?: Record<string, unknown>;
+  createdAt: number;
+}
+
 export interface RefineRun {
   id: string;
   prompt: string;
@@ -24,6 +35,10 @@ export interface PlanSession {
   implCollapsed?: boolean;
   refineRuns: RefineRun[];
   logs: string[];
+  version?: number;
+  widgets?: WidgetState[];
+  phase?: string;
+  activeTerminalHandle?: string;
   createdAt: number;
   updatedAt: number;
 }

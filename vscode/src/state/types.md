@@ -26,8 +26,24 @@ Shared state contracts for the Plan Activity Bar view and related tabs.
 - `implStatus`: implementation run status (`idle`, `running`, `success`, `error`).
 - `implLogs`: implementation log lines captured for this session (optional).
 - `implCollapsed`: whether the implementation log panel is collapsed (optional).
-- `logs`: log lines captured for this session.
+- `refineRuns`: refinement run history for this session.
+- `logs`: plan log lines captured for this session.
+- `version`: schema version for persistence (optional, defaults to 1 for legacy sessions).
+- `widgets`: widget timeline for the session (optional).
+- `phase`: UI phase string (`idle`, `planning`, `plan-completed`, `refining`, `implementing`, `completed`) (optional).
+- `activeTerminalHandle`: widget id of the active terminal handle used for log routing (optional).
 - `createdAt`, `updatedAt`: timestamps.
+
+### WidgetState
+- `id`: stable widget identifier.
+- `type`: widget type discriminator.
+- `title`: optional widget title (terminal widgets).
+- `content`: optional widget content payload (text/terminal lines).
+- `metadata`: widget-specific configuration payload.
+- `createdAt`: timestamp for ordering.
+
+### WidgetType
+Union of `text`, `terminal`, `progress`, `buttons`, `input`, and `status`.
 
 ### SessionStatus
 Union of `idle`, `running`, `success`, and `error`.

@@ -9,3 +9,4 @@ webview UI expectations, link handling, and plan execution helpers.
 - `test-plan-view-ui.sh` validates webview UI structure and documentation.
 - `test-plan-refine.sh` validates refinement wiring for the Plan view.
 - `test-step-progress-parser.sh` validates step progress parsing for plan logs.
+- `test-widget-system.sh` validates widget-based session UI scaffolding.

@@ -9,7 +9,7 @@ Plan session persistence and CRUD helper used by the extension backend.
 - `getPlanState()`: returns the current PlanState snapshot.
 - `createSession(prompt: string)`: creates a new session and persists it.
 - `updateSession(id: string, update: Partial<PlanSession>)`: updates a session and persists it.
-- `appendSessionLogs(id: string, lines: string[])`: appends log lines with trimming.
+- `appendSessionLogs(id: string, lines: string[])`: appends plan log lines with trimming and widget sync.
 - `appendImplLogs(id: string, lines: string[])`: appends implementation log lines with trimming.
 - `toggleSessionCollapse(id: string)`: flips the collapsed flag.
 - `toggleImplCollapse(id: string)`: flips the implementation log collapse flag.
@@ -27,3 +27,8 @@ Builds a readable title from the prompt using a fixed-length slice.
 
 ### trimLogs(lines: string[])
 Enforces the maximum number of stored log lines per session.
+
+### migrateSession(session)
+Normalizes persisted sessions into the latest schema version:
+- Converts legacy log arrays into terminal widgets.
+- Ensures `version`, `phase`, and widget defaults are populated.
