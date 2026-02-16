@@ -772,7 +772,7 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
       border: 1px solid var(--border);
       border-bottom: none;
       background: var(--panel);
-      color: var(--muted);
+      color: #928779;
       padding: 8px 12px;
       border-radius: 8px 8px 0 0;
       cursor: pointer;
