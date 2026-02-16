@@ -1,12 +1,12 @@
-import type { PlanImplMessage, PlanToggleImplCollapseMessage } from './types';
-import type { StepState } from './utils';
+import type { PlanImplMessage, PlanToggleImplCollapseMessage } from './types.js';
+import type { StepState } from './utils.js';
 import {
   completeAllStepsIn,
   extractIssueNumber,
   renderLinks,
   renderStepIndicatorsFrom,
   updateStepStatesIn,
-} from './utils';
+} from './utils.js';
 
 // Provided by VS Code in the webview environment.
 declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
