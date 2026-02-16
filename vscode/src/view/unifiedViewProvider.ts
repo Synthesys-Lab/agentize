@@ -765,12 +765,13 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
       position: sticky;
       top: 0;
       z-index: 2;
+      background: var(--bg-start);
     }
 
     .unified-tab {
       border: 1px solid var(--border);
       border-bottom: none;
-      background: rgba(255, 255, 255, 0.7);
+      background: var(--panel);
       color: var(--muted);
       padding: 8px 12px;
       border-radius: 8px 8px 0 0;

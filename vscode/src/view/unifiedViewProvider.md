@@ -44,6 +44,8 @@ Builds the unified HTML shell with a tab strip and three panels:
 
 The method assembles CSP-safe script/style URIs and injects a shared bootloader that
 surfaces asset or runtime errors through each panel's skeleton status line.
+The tab strip uses a sticky, opaque background so panel content does not bleed through
+while scrolling.
 
 ### buildPlanSkeleton(hasAssets: boolean)
 Loads `webview/plan/skeleton.html` and injects an asset-missing banner when compiled
