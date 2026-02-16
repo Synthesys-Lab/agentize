@@ -76,11 +76,6 @@ vscode-plugin: setup
 	@echo "Installing VSCode plugin dependencies..."
 	make -C vscode build
 
-vscode-debug-plugin: vscode-plugin
-	@echo "Setting up VSCode plugin for debugging..."
-	@echo "Assuming you have the bare github repo organization cloned for this repo!"
-	code ... --extensionDevelopmentPath=$(CURDIR)/vscode
-
 help:
 	@echo "Available targets:"
 	@echo "  make test                - Run all tests (bash only)"
