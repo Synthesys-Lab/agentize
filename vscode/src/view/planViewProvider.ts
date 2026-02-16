@@ -26,6 +26,7 @@ interface SessionUpdateMessage {
 
 export class PlanViewProvider implements vscode.WebviewViewProvider {
   static readonly viewType = 'agentize.planView';
+  private static readonly skeletonPlaceholder = '{{SKELETON_ERROR}}';
 
   private view?: vscode.WebviewView;
 
@@ -644,11 +645,7 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
 </head>
 <body>
   <div id="plan-root" class="plan-root">
-    <div class="plan-skeleton">
-      <div class="plan-skeleton-title">Agentize</div>
-      <div id="plan-skeleton-status" class="plan-skeleton-subtitle">Loading webview UI...</div>
-      ${hasScript && hasStyle ? '' : '<div class="plan-skeleton-error">Webview assets missing. Run <code>make vscode-plugin</code> and reload VS Code.</div>'}
-    </div>
+    ${this.buildSkeletonHtml(hasScript && hasStyle)}
   </div>
   <script nonce="${nonce}">window.__INITIAL_STATE__ = ${initialState};</script>
   <script nonce="${nonce}">
@@ -695,6 +692,33 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
   </script>
 </body>
 </html>`;
+  }
+
+  private buildSkeletonHtml(hasAssets: boolean): string {
+    const templatePath = path.join(this.extensionUri.fsPath, 'webview', 'plan', 'skeleton.html');
+    const fallbackTemplate = [
+      '<div class="plan-skeleton">',
+      '  <div class="plan-skeleton-title">Agentize</div>',
+      '  <div id="plan-skeleton-status" class="plan-skeleton-subtitle">Loading webview UI...</div>',
+      `  ${PlanViewProvider.skeletonPlaceholder}`,
+      '</div>',
+    ].join('\n');
+    const errorHtml = hasAssets
+      ? ''
+      : '<div class="plan-skeleton-error">Webview assets missing. Run <code>make vscode-plugin</code> and reload VS Code.</div>';
+
+    let template = fallbackTemplate;
+    try {
+      template = fs.readFileSync(templatePath, 'utf8');
+    } catch (error) {
+      this.output.appendLine(`[planView] failed to read skeleton template (${templatePath}): ${String(error)}`);
+    }
+
+    if (template.includes(PlanViewProvider.skeletonPlaceholder)) {
+      return template.split(PlanViewProvider.skeletonPlaceholder).join(errorHtml);
+    }
+
+    return errorHtml ? `${template}\n${errorHtml}` : template;
   }
 
   private getNonce(): string {

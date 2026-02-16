@@ -44,9 +44,11 @@ The provider loads the compiled webview script `webview/plan/out/index.js` (buil
 `webview/plan/index.ts`) because webviews execute JavaScript only.
 
 The HTML includes a small static skeleton inside `#plan-root` so the view never appears
-as a totally blank panel when scripts fail to load or are blocked. The provider also
-checks for the presence of compiled webview assets on disk and emits diagnostic output
-to the extension OutputChannel when they are missing.
+as a totally blank panel when scripts fail to load or are blocked. The skeleton markup
+is loaded from `webview/plan/skeleton.html` so VS Code runtime rendering and standalone
+harness rendering share the same template. The provider checks for the presence of
+compiled webview assets on disk and emits diagnostic output to the extension OutputChannel
+when they are missing.
 
 The webview script is loaded via a tiny inline bootloader so the view can surface
 `onerror` and other runtime errors in the skeleton status line rather than failing

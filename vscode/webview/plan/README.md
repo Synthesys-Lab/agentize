@@ -9,3 +9,4 @@ This folder provides the Plan Activity Bar UI implementation for the webview.
 - `utils.ts` provides shared helpers for step parsing, indicator rendering, and link detection.
 - `types.ts` defines message shapes used by the plan webview.
 - `styles.css` defines the minimal readable styling for the Plan tab.
+- `skeleton.html` defines shared boot skeleton markup consumed by both VS Code webview HTML and the screenshot harness.
