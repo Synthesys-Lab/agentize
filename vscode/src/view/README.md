@@ -1,9 +1,7 @@
 # Webview Provider
 
-This folder implements the webview providers that render the Activity Bar tabs.
+This folder implements the unified webview provider that renders the Activity Bar view.
 
 ## Organization
 
-- `planViewProvider.ts` builds the webview HTML, injects initial state, and routes messages.
-- `worktreeViewProvider.ts` renders the Worktree placeholder tab.
-- `settingsViewProvider.ts` renders the Settings placeholder tab.
+- `unifiedViewProvider.ts` renders the tabbed Plan/Worktree/Settings experience and routes messages.

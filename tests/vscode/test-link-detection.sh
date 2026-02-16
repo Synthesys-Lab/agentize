@@ -17,7 +17,7 @@ const githubRegex = /https:\/\/github\.com\/([^\/\s]+)\/([^\/\s]+)\/issues\/(\d+
 // Local markdown paths: .tmp/issue-N.md or /path/to/file.md
 const mdPathRegex = /(?<=\s|^)(\.tmp\/[^\s\n]+\.md|[\w\-\/]+\.tmp\/[^\s\n]+\.md)(?=\s|$)/g;
 
-// isValidGitHubUrl from vscode/src/view/planViewProvider.ts
+// isValidGitHubUrl from vscode/src/view/unifiedViewProvider.ts
 function isValidGitHubUrl(url) {
   return /^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/\d+$/.test(url);
 }

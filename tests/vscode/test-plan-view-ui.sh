@@ -7,7 +7,7 @@ test_info "Testing plan view UI structure and components"
 
 # Check that the webview files exist and have the expected content
 WEBVIEW_DIR="$PROJECT_ROOT/vscode/webview/plan"
-PROVIDER_FILE="$PROJECT_ROOT/vscode/src/view/planViewProvider.ts"
+PROVIDER_FILE="$PROJECT_ROOT/vscode/src/view/unifiedViewProvider.ts"
 STATE_TYPES_FILE="$PROJECT_ROOT/vscode/src/state/types.ts"
 
 # Test 1: Check CSS has step indicator styles
@@ -40,23 +40,23 @@ if ! grep -q "logsCollapsedState" "$WEBVIEW_DIR/index.ts"; then
   test_fail "index.ts missing logsCollapsedState tracking"
 fi
 
-# Test 7: Check planViewProvider.ts has link handlers
+# Test 7: Check unifiedViewProvider.ts has link handlers
 if ! grep -q "link/openExternal" "$PROVIDER_FILE"; then
-  test_fail "planViewProvider.ts missing link/openExternal handler"
+  test_fail "unifiedViewProvider.ts missing link/openExternal handler"
 fi
 
 if ! grep -q "link/openFile" "$PROVIDER_FILE"; then
-  test_fail "planViewProvider.ts missing link/openFile handler"
+  test_fail "unifiedViewProvider.ts missing link/openFile handler"
 fi
 
-# Test 8: Check planViewProvider.ts has URL validation
+# Test 8: Check unifiedViewProvider.ts has URL validation
 if ! grep -q "isValidGitHubUrl" "$PROVIDER_FILE"; then
-  test_fail "planViewProvider.ts missing isValidGitHubUrl function"
+  test_fail "unifiedViewProvider.ts missing isValidGitHubUrl function"
 fi
 
 # Test 9: Ensure webview loads compiled JS (loading TS directly breaks rendering)
 if ! grep -q "'webview', 'plan', 'out', 'index.js'" "$PROVIDER_FILE"; then
-  test_fail "planViewProvider.ts should load compiled webview/plan/out/index.js"
+  test_fail "unifiedViewProvider.ts should load compiled webview/plan/out/index.js"
 fi
 
 # Test 10: Check documentation exists
@@ -89,7 +89,7 @@ fi
 
 # Test 14: Check plan view provider handles issue state validation
 if ! grep -q "checkIssueState" "$PROVIDER_FILE"; then
-  test_fail "planViewProvider.ts missing checkIssueState handler"
+  test_fail "unifiedViewProvider.ts missing checkIssueState handler"
 fi
 
 # Test 15: Check webview handles closed issue state

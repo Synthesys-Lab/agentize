@@ -16,9 +16,9 @@ Validates refinement wiring for the VS Code plan view.
 **Purpose**: Ensure non-refine runs still push the prompt without refine flags.
 **Expected**: `vscode/src/runner/planRunner.ts` retains the default `args.push(prompt)` path.
 
-### PlanViewProvider handles plan/refine
+### UnifiedViewProvider handles plan/refine
 **Purpose**: Ensure the extension host accepts `plan/refine` messages.
-**Expected**: `vscode/src/view/planViewProvider.ts` contains a `plan/refine` handler.
+**Expected**: `vscode/src/view/unifiedViewProvider.ts` contains a `plan/refine` handler.
 
 ### Webview triggers refinement
 **Purpose**: Ensure the webview posts the refine message and styles the button.
