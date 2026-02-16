@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
 import * as vscode from 'vscode';
-import type { PlanSession } from '../state/types';
+import type { PlanSession, PlanSessionPhase, WidgetState } from '../state/types';
 import { SessionStore } from '../state/sessionStore';
 import { PlanRunner } from '../runner/planRunner';
 import type { RunCommandType, RunEvent } from '../runner/types';
@@ -26,7 +26,45 @@ interface SessionUpdateMessage {
   deleted?: boolean;
 }
 
+interface WidgetButton {
+  id: string;
+  label: string;
+  action: string;
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  disabled?: boolean;
+}
+
+interface WidgetAppendMessage {
+  type: 'widget/append';
+  sessionId: string;
+  widget: WidgetState;
+}
+
+type WidgetUpdatePayload =
+  | { type: 'appendLines'; lines: string[] }
+  | { type: 'replaceButtons'; buttons: WidgetButton[] }
+  | { type: 'complete' }
+  | { type: 'metadata'; metadata: Record<string, unknown> };
+
+interface WidgetUpdateMessage {
+  type: 'widget/update';
+  sessionId: string;
+  widgetId: string;
+  update: WidgetUpdatePayload;
+}
+
 const execFileAsync = promisify(execFile);
+
+const WIDGET_ROLES = {
+  prompt: 'prompt',
+  planTerminal: 'plan-terminal',
+  planProgress: 'plan-progress',
+  implTerminal: 'impl-terminal',
+  implProgress: 'impl-progress',
+  refineTerminal: 'refine-terminal',
+  refineProgress: 'refine-progress',
+  actions: 'session-actions',
+} as const;
 
 export class UnifiedViewProvider implements vscode.WebviewViewProvider {
   static readonly viewType = 'agentize.unifiedView';
@@ -150,7 +188,7 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
 
         const runId = message.runId ?? '';
         const now = Date.now();
-        this.store.addRefineRun(sessionId, {
+        const afterRun = this.store.addRefineRun(sessionId, {
           id: runId,
           prompt: focus,
           status: 'idle',
@@ -159,26 +197,32 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
           createdAt: now,
           updatedAt: now,
         });
+        if (afterRun) {
+          this.postSessionUpdate(afterRun.id, afterRun);
+        }
+        this.ensureRefineWidgets(sessionId, runId, focus);
 
         const issueCandidate = (message.issueNumber ?? baseSession.issueNumber ?? '').trim();
         if (!/^\d+$/.test(issueCandidate)) {
           this.store.updateRefineRunStatus(sessionId, runId, 'error');
-          this.store.appendRefineRunLogs(sessionId, runId, ['Missing issue number for refinement.']);
+          this.appendRefineLines(sessionId, runId, ['Missing issue number for refinement.']);
           const updated = this.store.getSession(sessionId);
           if (updated) {
             this.postSessionUpdate(updated.id, updated);
           }
+          this.syncActionButtons(sessionId);
           return;
         }
 
         const refineIssueNumber = Number(issueCandidate);
         if (!Number.isInteger(refineIssueNumber) || refineIssueNumber <= 0) {
           this.store.updateRefineRunStatus(sessionId, runId, 'error');
-          this.store.appendRefineRunLogs(sessionId, runId, ['Invalid issue number for refinement.']);
+          this.appendRefineLines(sessionId, runId, ['Invalid issue number for refinement.']);
           const updated = this.store.getSession(sessionId);
           if (updated) {
             this.postSessionUpdate(updated.id, updated);
           }
+          this.syncActionButtons(sessionId);
           return;
         }
 
@@ -187,8 +231,9 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         if (prepped) {
           this.postSessionUpdate(prepped.id, prepped);
         }
+        this.syncActionButtons(sessionId);
 
-        this.startRun(baseSession, 'refine', undefined, refineIssueNumber, focus, runId);
+        this.startRun(prepped ?? baseSession, 'refine', undefined, refineIssueNumber, focus, runId);
         return;
       }
       case 'plan/toggleCollapse': {
@@ -210,6 +255,13 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         const session = this.store.toggleImplCollapse(sessionId);
         if (session) {
           this.postSessionUpdate(session.id, session);
+          const terminal = this.findWidgetByRole(session, WIDGET_ROLES.implTerminal, 'terminal');
+          if (terminal) {
+            this.postWidgetUpdate(session.id, terminal.id, {
+              type: 'metadata',
+              metadata: { collapsed: session.implCollapsed ?? false },
+            });
+          }
         }
         return;
       }
@@ -228,6 +280,33 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
       }
       case 'plan/updateDraft': {
         this.store.updateDraftInput(message.value ?? '');
+        return;
+      }
+      case 'plan/view-plan': {
+        const sessionId = message.sessionId ?? '';
+        if (!sessionId) {
+          return;
+        }
+        const session = this.store.getSession(sessionId);
+        if (!session) {
+          return;
+        }
+        const planPath = this.resolvePlanPath(session);
+        if (planPath) {
+          void this.openLocalFile(planPath);
+        }
+        return;
+      }
+      case 'plan/view-pr': {
+        const sessionId = message.sessionId ?? '';
+        if (!sessionId) {
+          return;
+        }
+        const session = this.store.getSession(sessionId);
+        if (!session || !session.prUrl) {
+          return;
+        }
+        void vscode.env.openExternal(vscode.Uri.parse(session.prUrl));
         return;
       }
       case 'link/openExternal': {
@@ -261,17 +340,37 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         return;
       }
 
-      // Resolve path relative to workspace root
       const workspaceRoot = workspaceFolders[0].uri.fsPath;
-      const fullPath = path.isAbsolute(filePath)
-        ? filePath
-        : path.join(workspaceRoot, filePath);
+      const candidates: string[] = [];
+
+      if (path.isAbsolute(filePath)) {
+        candidates.push(filePath);
+      } else {
+        candidates.push(path.join(workspaceRoot, filePath));
+        const planRoot = this.resolvePlanCwd();
+        if (planRoot && planRoot !== workspaceRoot) {
+          candidates.push(path.join(planRoot, filePath));
+        }
+      }
+
+      const fullPath = candidates.find((candidate) => fs.existsSync(candidate)) ?? candidates[0];
+      if (!fullPath) {
+        return;
+      }
 
       const document = await vscode.workspace.openTextDocument(fullPath);
       await vscode.window.showTextDocument(document);
     } catch (error) {
       console.error('[UnifiedViewProvider] Failed to open file:', filePath, error);
     }
+  }
+
+  private resolvePlanPath(session: PlanSession): string | null {
+    const planPath = session.planPath?.trim();
+    if (planPath) {
+      return planPath;
+    }
+    return null;
   }
 
   private startRun(
@@ -310,49 +409,55 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
     if (!cwd) {
       if (commandType === 'impl') {
         this.appendSystemLog(session.id, 'Missing workspace or trees/main path.', false, commandType);
-        this.store.updateSession(session.id, { implStatus: 'error' });
+        this.store.updateSession(session.id, { implStatus: 'error', phase: 'completed' });
       } else if (commandType === 'refine') {
         if (runId) {
           this.store.updateRefineRunStatus(session.id, runId, 'error');
-          this.store.appendRefineRunLogs(session.id, runId, ['Missing workspace or trees/main path.']);
+          this.appendRefineLines(session.id, runId, ['Missing workspace or trees/main path.']);
         } else {
           this.appendSystemLog(session.id, 'Missing workspace or trees/main path.', false, 'plan');
         }
+        this.store.updateSession(session.id, { phase: 'plan-completed' });
       } else {
         this.appendSystemLog(session.id, 'Missing workspace or trees/main path.', false, commandType);
-        this.store.updateSession(session.id, { status: 'error' });
+        this.store.updateSession(session.id, { status: 'error', phase: 'plan-completed' });
       }
       const updated = this.store.getSession(session.id);
       if (updated) {
         this.postSessionUpdate(updated.id, updated);
       }
+      this.syncActionButtons(session.id);
       return;
     }
 
     if (commandType === 'plan') {
+      this.ensurePlanWidgets(session.id);
       this.store.updateSession(session.id, {
         implStatus: 'idle',
-        implLogs: [],
         implCollapsed: false,
+        phase: 'planning',
       });
     } else if (commandType === 'refine') {
       this.store.updateSession(session.id, {
         issueNumber: typeof refineIssueNumber === 'number' ? refineIssueNumber.toString() : session.issueNumber,
+        phase: 'refining',
       });
     } else {
+      this.ensureImplWidgets(session.id);
       const resolvedIssueNumber = issueNumber ?? session.issueNumber;
       this.store.updateSession(session.id, {
         issueNumber: resolvedIssueNumber,
         issueState: resolvedIssueNumber === session.issueNumber ? session.issueState : undefined,
         implStatus: 'idle',
-        implLogs: [],
         implCollapsed: false,
+        phase: 'implementing',
       });
     }
     const prepped = this.store.getSession(session.id);
     if (prepped) {
       this.postSessionUpdate(prepped.id, prepped);
     }
+    this.syncActionButtons(session.id);
 
     const started = this.runner.run(
       {
@@ -373,22 +478,24 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
     if (!started) {
       if (commandType === 'impl') {
         this.appendSystemLog(session.id, 'Unable to start session.', false, commandType);
-        this.store.updateSession(session.id, { implStatus: 'error' });
+        this.store.updateSession(session.id, { implStatus: 'error', phase: 'completed' });
       } else if (commandType === 'refine') {
         if (runId) {
           this.store.updateRefineRunStatus(session.id, runId, 'error');
-          this.store.appendRefineRunLogs(session.id, runId, ['Unable to start refinement.']);
+          this.appendRefineLines(session.id, runId, ['Unable to start refinement.']);
         } else {
           this.appendSystemLog(session.id, 'Unable to start refinement.', false, 'plan');
         }
+        this.store.updateSession(session.id, { phase: 'plan-completed' });
       } else {
         this.appendSystemLog(session.id, 'Unable to start session.', false, commandType);
-        this.store.updateSession(session.id, { status: 'error' });
+        this.store.updateSession(session.id, { status: 'error', phase: 'plan-completed' });
       }
       const updated = this.store.getSession(session.id);
       if (updated) {
         this.postSessionUpdate(updated.id, updated);
       }
+      this.syncActionButtons(session.id);
     }
   }
 
@@ -406,33 +513,39 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
       case 'start': {
         if (isRefine && runId) {
           this.store.updateRefineRunStatus(event.sessionId, runId, 'running');
-          this.store.appendRefineRunLogs(event.sessionId, runId, [`> ${event.command}`]);
+          this.appendRefineLines(event.sessionId, runId, [`> ${event.command}`]);
+        } else if (isImpl) {
+          this.appendImplLines(event.sessionId, [`> ${event.command}`]);
         } else {
-          this.appendSystemLog(event.sessionId, `> ${event.command}`, false, event.commandType);
+          this.appendPlanLines(event.sessionId, [`> ${event.command}`]);
         }
 
         const update: Partial<PlanSession> = isImpl
-          ? { implStatus: 'running' }
+          ? { implStatus: 'running', phase: 'implementing' }
           : isRefine
-          ? {}
-          : { status: 'running', command: event.command };
+          ? { phase: 'refining' }
+          : { status: 'running', command: event.command, phase: 'planning' };
         const updated = this.store.updateSession(event.sessionId, update);
         if (updated) {
           this.postSessionUpdate(updated.id, updated);
         }
+        this.syncActionButtons(event.sessionId);
         this.postRunEvent(event);
         return;
       }
       case 'stdout': {
         if (isImpl) {
-          this.store.appendImplLogs(event.sessionId, [event.line]);
+          this.appendImplLines(event.sessionId, [event.line]);
+          this.capturePrUrl(event.sessionId, event.line);
         } else if (isRefine) {
           if (runId) {
-            this.store.appendRefineRunLogs(event.sessionId, runId, [event.line]);
+            this.appendRefineLines(event.sessionId, runId, [event.line]);
           }
+          this.capturePlanPath(event.sessionId, event.line);
         } else {
-          this.store.appendSessionLogs(event.sessionId, [event.line]);
+          this.appendPlanLines(event.sessionId, [event.line]);
           this.captureIssueNumber(event.sessionId, event.line);
+          this.capturePlanPath(event.sessionId, event.line);
         }
         this.postRunEvent(event);
         return;
@@ -440,40 +553,51 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
       case 'stderr': {
         const storedLine = `stderr: ${event.line}`;
         if (isImpl) {
-          this.store.appendImplLogs(event.sessionId, [storedLine]);
+          this.appendImplLines(event.sessionId, [storedLine]);
+          this.capturePrUrl(event.sessionId, event.line);
         } else if (isRefine) {
           if (runId) {
-            this.store.appendRefineRunLogs(event.sessionId, runId, [storedLine]);
+            this.appendRefineLines(event.sessionId, runId, [storedLine]);
           }
+          this.capturePlanPath(event.sessionId, event.line);
         } else {
-          this.store.appendSessionLogs(event.sessionId, [storedLine]);
+          this.appendPlanLines(event.sessionId, [storedLine]);
           this.captureIssueNumber(event.sessionId, event.line);
+          this.capturePlanPath(event.sessionId, event.line);
         }
         this.postRunEvent(event);
         return;
       }
       case 'exit': {
         const status = event.code === 0 ? 'success' : 'error';
+        const refinePhase: PlanSessionPhase =
+          session.implStatus === 'success' || session.implStatus === 'error'
+            ? 'completed'
+            : 'plan-completed';
         const update: Partial<PlanSession> = isImpl
-          ? { implStatus: status }
+          ? { implStatus: status, phase: 'completed' }
           : isRefine
-          ? {}
-          : { status };
+          ? { phase: refinePhase }
+          : { status, phase: 'plan-completed' };
         const line = `Exit code: ${event.code ?? 'null'}`;
         if (isImpl) {
-          this.store.appendImplLogs(event.sessionId, [line]);
+          this.appendImplLines(event.sessionId, [line]);
+          this.completeProgress(event.sessionId, WIDGET_ROLES.implProgress);
         } else if (isRefine) {
           if (runId) {
             this.store.updateRefineRunStatus(event.sessionId, runId, status);
-            this.store.appendRefineRunLogs(event.sessionId, runId, [line]);
+            this.appendRefineLines(event.sessionId, runId, [line]);
+            this.completeProgress(event.sessionId, WIDGET_ROLES.refineProgress, runId);
           }
         } else {
-          this.store.appendSessionLogs(event.sessionId, [line]);
+          this.appendPlanLines(event.sessionId, [line]);
+          this.completeProgress(event.sessionId, WIDGET_ROLES.planProgress);
         }
         const updated = this.store.updateSession(event.sessionId, update);
         if (updated) {
           this.postSessionUpdate(updated.id, updated);
         }
+        this.syncActionButtons(event.sessionId);
         this.postRunEvent(event);
         return;
       }
@@ -490,15 +614,15 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
     runId?: string,
   ): void {
     if (commandType === 'impl') {
-      this.store.appendImplLogs(sessionId, [line]);
+      this.appendImplLines(sessionId, [line]);
     } else if (commandType === 'refine') {
       if (runId) {
-        this.store.appendRefineRunLogs(sessionId, runId, [line]);
+        this.appendRefineLines(sessionId, runId, [line]);
       } else {
-        this.store.appendSessionLogs(sessionId, [line]);
+        this.appendPlanLines(sessionId, [line]);
       }
     } else {
-      this.store.appendSessionLogs(sessionId, [line]);
+      this.appendPlanLines(sessionId, [line]);
     }
     if (broadcast) {
       this.postRunEvent({
@@ -522,6 +646,7 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
     if (updated) {
       this.postSessionUpdate(updated.id, updated);
     }
+    this.syncActionButtons(sessionId);
   }
 
   private async refreshIssueStates(): Promise<void> {
@@ -549,6 +674,7 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         if (updated) {
           this.postSessionUpdate(updated.id, updated);
         }
+        this.syncActionButtons(session.id);
       }),
     );
   }
@@ -595,6 +721,61 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
     return null;
   }
 
+  private capturePlanPath(sessionId: string, line: string): void {
+    const planPath = this.extractPlanPath(line);
+    if (!planPath) {
+      return;
+    }
+
+    const current = this.store.getSession(sessionId);
+    if (current?.planPath === planPath) {
+      return;
+    }
+
+    const updated = this.store.updateSession(sessionId, { planPath });
+    if (updated) {
+      this.postSessionUpdate(updated.id, updated);
+    }
+    this.syncActionButtons(sessionId);
+  }
+
+  private extractPlanPath(line: string): string | null {
+    const localMatch = /See the full plan locally at:\s+(.+)$/.exec(line);
+    if (localMatch) {
+      return localMatch[1].trim();
+    }
+
+    const dumpMatch = /consensus dumped to\s+(.+)$/.exec(line);
+    if (dumpMatch) {
+      return dumpMatch[1].trim();
+    }
+
+    return null;
+  }
+
+  private capturePrUrl(sessionId: string, line: string): void {
+    const prUrl = this.extractPrUrl(line);
+    if (!prUrl) {
+      return;
+    }
+
+    const current = this.store.getSession(sessionId);
+    if (current?.prUrl === prUrl) {
+      return;
+    }
+
+    const updated = this.store.updateSession(sessionId, { prUrl });
+    if (updated) {
+      this.postSessionUpdate(updated.id, updated);
+    }
+    this.syncActionButtons(sessionId);
+  }
+
+  private extractPrUrl(line: string): string | null {
+    const match = /https:\/\/github\.com\/[^/]+\/[^/]+\/pull\/\d+/.exec(line);
+    return match ? match[0] : null;
+  }
+
   private resolvePlanCwd(): string | null {
     const workspaces = vscode.workspace.workspaceFolders;
     if (!workspaces || workspaces.length === 0) {
@@ -637,6 +818,11 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
+    const sessions = this.store.getPlanState().sessions;
+    sessions.forEach((session) => {
+      this.syncActionButtons(session.id);
+    });
+
     this.view.webview.postMessage({
       type: 'state/replace',
       state: this.store.getAppState(),
@@ -667,6 +853,305 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
       deleted: true,
     };
     this.view.webview.postMessage(message);
+  }
+
+  private postWidgetAppend(sessionId: string, widget: WidgetState): void {
+    if (!this.view) {
+      return;
+    }
+
+    const message: WidgetAppendMessage = {
+      type: 'widget/append',
+      sessionId,
+      widget,
+    };
+    this.view.webview.postMessage(message);
+  }
+
+  private postWidgetUpdate(sessionId: string, widgetId: string, update: WidgetUpdateMessage['update']): void {
+    if (!this.view) {
+      return;
+    }
+
+    const message: WidgetUpdateMessage = {
+      type: 'widget/update',
+      sessionId,
+      widgetId,
+      update,
+    };
+    this.view.webview.postMessage(message);
+  }
+
+  private findWidgetByRole(session: PlanSession, role: string, type?: WidgetState['type']): WidgetState | undefined {
+    if (!Array.isArray(session.widgets)) {
+      return undefined;
+    }
+    return session.widgets.find((widget) => {
+      if (type && widget.type !== type) {
+        return false;
+      }
+      return widget.metadata?.role === role;
+    });
+  }
+
+  private findWidgetByRoleAndRunId(
+    session: PlanSession,
+    role: string,
+    runId: string,
+    type?: WidgetState['type'],
+  ): WidgetState | undefined {
+    if (!Array.isArray(session.widgets)) {
+      return undefined;
+    }
+    return session.widgets.find((widget) => {
+      if (type && widget.type !== type) {
+        return false;
+      }
+      return widget.metadata?.role === role && widget.metadata?.runId === runId;
+    });
+  }
+
+  private ensurePlanWidgets(sessionId: string): void {
+    const session = this.store.getSession(sessionId);
+    if (!session) {
+      return;
+    }
+
+    let terminal = this.findWidgetByRole(session, WIDGET_ROLES.planTerminal, 'terminal');
+    if (!terminal) {
+      terminal = this.store.addWidget(sessionId, {
+        type: 'terminal',
+        title: 'Plan Console Log',
+        content: [],
+        metadata: { role: WIDGET_ROLES.planTerminal },
+      });
+      if (terminal) {
+        this.postWidgetAppend(sessionId, terminal);
+      }
+    }
+
+    if (terminal) {
+      const progress = this.findWidgetByRole(session, WIDGET_ROLES.planProgress, 'progress');
+      if (!progress) {
+        const widget = this.store.addWidget(sessionId, {
+          type: 'progress',
+          metadata: { role: WIDGET_ROLES.planProgress, terminalId: terminal.id },
+        });
+        if (widget) {
+          this.postWidgetAppend(sessionId, widget);
+        }
+      }
+    }
+  }
+
+  private ensureImplWidgets(sessionId: string): void {
+    const session = this.store.getSession(sessionId);
+    if (!session) {
+      return;
+    }
+
+    let terminal = this.findWidgetByRole(session, WIDGET_ROLES.implTerminal, 'terminal');
+    if (!terminal) {
+      terminal = this.store.addWidget(sessionId, {
+        type: 'terminal',
+        title: 'Implementation Log',
+        content: [],
+        metadata: { role: WIDGET_ROLES.implTerminal, collapsed: session.implCollapsed ?? false },
+      });
+      if (terminal) {
+        this.postWidgetAppend(sessionId, terminal);
+      }
+    }
+
+    if (terminal) {
+      const progress = this.findWidgetByRole(session, WIDGET_ROLES.implProgress, 'progress');
+      if (!progress) {
+        const widget = this.store.addWidget(sessionId, {
+          type: 'progress',
+          metadata: { role: WIDGET_ROLES.implProgress, terminalId: terminal.id },
+        });
+        if (widget) {
+          this.postWidgetAppend(sessionId, widget);
+        }
+      }
+    }
+  }
+
+  private ensureRefineWidgets(sessionId: string, runId: string, focus: string): void {
+    const session = this.store.getSession(sessionId);
+    if (!session) {
+      return;
+    }
+
+    let terminal = this.findWidgetByRoleAndRunId(session, WIDGET_ROLES.refineTerminal, runId, 'terminal');
+    if (!terminal) {
+      terminal = this.store.addWidget(sessionId, {
+        type: 'terminal',
+        title: 'Refinement Log',
+        content: [],
+        metadata: { role: WIDGET_ROLES.refineTerminal, runId, focus },
+      });
+      if (terminal) {
+        this.postWidgetAppend(sessionId, terminal);
+      }
+    }
+
+    if (terminal) {
+      const progress = this.findWidgetByRoleAndRunId(session, WIDGET_ROLES.refineProgress, runId, 'progress');
+      if (!progress) {
+        const widget = this.store.addWidget(sessionId, {
+          type: 'progress',
+          metadata: { role: WIDGET_ROLES.refineProgress, terminalId: terminal.id, runId },
+        });
+        if (widget) {
+          this.postWidgetAppend(sessionId, widget);
+        }
+      }
+    }
+  }
+
+  private ensureActionWidget(sessionId: string, session: PlanSession): WidgetState | undefined {
+    const existing = this.findWidgetByRole(session, WIDGET_ROLES.actions, 'buttons');
+    if (existing) {
+      return existing;
+    }
+    const buttons = this.buildActionButtons(session);
+    const widget = this.store.addWidget(sessionId, {
+      type: 'buttons',
+      metadata: { role: WIDGET_ROLES.actions, buttons },
+    });
+    if (widget) {
+      this.postWidgetAppend(sessionId, widget);
+    }
+    return widget ?? undefined;
+  }
+
+  private buildActionButtons(session: PlanSession): WidgetButton[] {
+    const hasPlanPath = Boolean(session.planPath?.trim());
+    const hasIssue = Boolean(session.issueNumber?.trim());
+    const planDone = session.status === 'success' || session.status === 'error';
+    const planSuccess = session.status === 'success';
+    const implRunning = session.implStatus === 'running';
+    const implSuccess = session.implStatus === 'success';
+    const implError = session.implStatus === 'error';
+    const issueClosed = session.issueState === 'closed';
+    const isPlanning = session.phase === 'planning';
+    const isRefining = session.phase === 'refining';
+    const isImplementing = session.phase === 'implementing';
+
+    const buttons: WidgetButton[] = [];
+
+    if (hasPlanPath) {
+      buttons.push({
+        id: 'view-plan',
+        label: 'View Plan',
+        action: 'plan/view-plan',
+        variant: 'secondary',
+        disabled: false,
+      });
+    }
+
+    const implLabel = implRunning ? 'Running...' : implError ? 'Re-implement' : issueClosed ? 'Closed' : 'Implement';
+    const implDisabled = !planSuccess || issueClosed || isPlanning || isRefining || implRunning;
+    buttons.push({
+      id: 'implement',
+      label: implLabel,
+      action: 'plan/impl',
+      variant: 'primary',
+      disabled: implDisabled,
+    });
+
+    const refineDisabled = !planDone || isPlanning || isImplementing || session.phase === 'refining';
+    buttons.push({
+      id: 'refine',
+      label: 'Refine',
+      action: 'plan/refine',
+      variant: 'secondary',
+      disabled: refineDisabled,
+    });
+
+    if (implSuccess) {
+      buttons.push({
+        id: 'view-pr',
+        label: 'View PR',
+        action: 'plan/view-pr',
+        variant: 'primary',
+        disabled: false,
+      });
+    }
+
+    return buttons;
+  }
+
+  private syncActionButtons(sessionId: string): PlanSession | undefined {
+    const session = this.store.getSession(sessionId);
+    if (!session) {
+      return undefined;
+    }
+
+    const actionWidget = this.ensureActionWidget(sessionId, session);
+    if (!actionWidget) {
+      return session;
+    }
+
+    const buttons = this.buildActionButtons(session);
+    this.store.updateWidgetMetadata(sessionId, actionWidget.id, { buttons });
+    this.postWidgetUpdate(sessionId, actionWidget.id, { type: 'replaceButtons', buttons });
+    return this.store.getSession(sessionId) ?? session;
+  }
+
+  private appendPlanLines(sessionId: string, lines: string[]): void {
+    this.ensurePlanWidgets(sessionId);
+    const updated = this.store.appendSessionLogs(sessionId, lines);
+    if (!updated) {
+      return;
+    }
+    const terminal = this.findWidgetByRole(updated, WIDGET_ROLES.planTerminal, 'terminal');
+    if (terminal) {
+      this.postWidgetUpdate(sessionId, terminal.id, { type: 'appendLines', lines });
+    }
+  }
+
+  private appendImplLines(sessionId: string, lines: string[]): void {
+    this.ensureImplWidgets(sessionId);
+    const updated = this.store.appendImplLogs(sessionId, lines);
+    if (!updated) {
+      return;
+    }
+    const terminal = this.findWidgetByRole(updated, WIDGET_ROLES.implTerminal, 'terminal');
+    if (terminal) {
+      this.store.appendWidgetLines(sessionId, terminal.id, lines);
+      this.postWidgetUpdate(sessionId, terminal.id, { type: 'appendLines', lines });
+    }
+  }
+
+  private appendRefineLines(sessionId: string, runId: string, lines: string[]): void {
+    const session = this.store.getSession(sessionId);
+    const focus = session?.refineRuns.find((run) => run.id === runId)?.prompt ?? 'Refinement';
+    this.ensureRefineWidgets(sessionId, runId, focus);
+    const updated = this.store.appendRefineRunLogs(sessionId, runId, lines);
+    if (!updated) {
+      return;
+    }
+    const terminal = this.findWidgetByRoleAndRunId(updated, WIDGET_ROLES.refineTerminal, runId, 'terminal');
+    if (terminal) {
+      this.store.appendWidgetLines(sessionId, terminal.id, lines);
+      this.postWidgetUpdate(sessionId, terminal.id, { type: 'appendLines', lines });
+    }
+  }
+
+  private completeProgress(sessionId: string, role: string, runId?: string): void {
+    const session = this.store.getSession(sessionId);
+    if (!session) {
+      return;
+    }
+    const widget = runId
+      ? this.findWidgetByRoleAndRunId(session, role, runId, 'progress')
+      : this.findWidgetByRole(session, role, 'progress');
+    if (!widget) {
+      return;
+    }
+    this.postWidgetUpdate(sessionId, widget.id, { type: 'complete' });
   }
 
   private postRunEvent(event: RunEvent): void {
@@ -954,6 +1439,7 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
 
 export const UnifiedViewProviderMessages = {
   incoming: [
+    'webview/ready',
     'plan/new',
     'plan/run',
     'plan/refine',
@@ -962,8 +1448,10 @@ export const UnifiedViewProviderMessages = {
     'plan/toggleImplCollapse',
     'plan/delete',
     'plan/updateDraft',
+    'plan/view-plan',
+    'plan/view-pr',
     'link/openExternal',
     'link/openFile',
   ],
-  outgoing: ['state/replace', 'plan/sessionUpdated', 'plan/runEvent'],
+  outgoing: ['state/replace', 'plan/sessionUpdated', 'plan/runEvent', 'widget/append', 'widget/update'],
 };
