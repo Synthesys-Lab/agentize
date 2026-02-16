@@ -6,7 +6,7 @@ Shared skeleton markup for the Plan webview shell.
 
 ### Placeholder contract
 - `{{SKELETON_ERROR}}` is replaced by the host runtime.
-- In VS Code runtime, `planViewProvider.ts` injects an asset-missing message when needed.
+- In VS Code runtime, `unifiedViewProvider.ts` injects an asset-missing message when needed.
 - In harness runtime, the placeholder is replaced with an empty string.
 
 ## Internal Helpers

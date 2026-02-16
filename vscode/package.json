@@ -13,9 +13,7 @@
   ],
   "main": "./out/extension.js",
   "activationEvents": [
-    "onView:agentize.planView",
-    "onView:agentize.worktreeView",
-    "onView:agentize.settingsView"
+    "onView:agentize.unifiedView"
   ],
   "contributes": {
     "viewsContainers": {
@@ -30,22 +28,10 @@
     "views": {
       "agentize-plan": [
         {
-          "id": "agentize.planView",
+          "id": "agentize.unifiedView",
           "name": "Agentize",
           "type": "webview",
           "icon": "resources/plan.svg"
-        },
-        {
-          "id": "agentize.worktreeView",
-          "name": "Worktree",
-          "type": "webview",
-          "icon": "resources/worktree.svg"
-        },
-        {
-          "id": "agentize.settingsView",
-          "name": "Settings",
-          "type": "webview",
-          "icon": "resources/settings.svg"
         }
       ]
     }

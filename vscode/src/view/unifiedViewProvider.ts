@@ -28,8 +28,8 @@ interface SessionUpdateMessage {
 
 const execFileAsync = promisify(execFile);
 
-export class PlanViewProvider implements vscode.WebviewViewProvider {
-  static readonly viewType = 'agentize.planView';
+export class UnifiedViewProvider implements vscode.WebviewViewProvider {
+  static readonly viewType = 'agentize.unifiedView';
   private static readonly skeletonPlaceholder = '{{SKELETON_ERROR}}';
 
   private view?: vscode.WebviewView;
@@ -44,7 +44,7 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
   resolveWebviewView(view: vscode.WebviewView): void {
     this.view = view;
 
-    this.output.appendLine(`[planView] resolveWebviewView: extensionUri=${this.extensionUri.toString()}`);
+    this.output.appendLine(`[unifiedView] resolveWebviewView: extensionUri=${this.extensionUri.toString()}`);
 
     view.webview.options = {
       enableScripts: true,
@@ -73,7 +73,7 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
   private async handleMessage(message: IncomingMessage): Promise<void> {
     switch (message.type) {
       case 'webview/ready': {
-        this.output.appendLine('[planView] webview ready');
+        this.output.appendLine('[unifiedView] webview ready');
         return;
       }
       case 'plan/new': {
@@ -218,7 +218,7 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
         if (!sessionId) {
           return;
         }
-        console.log('[PlanViewProvider] Handling plan/delete for:', sessionId);
+        console.log('[UnifiedViewProvider] Handling plan/delete for:', sessionId);
         if (this.runner.isRunning(sessionId)) {
           this.runner.stop(sessionId);
         }
@@ -270,7 +270,7 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
       const document = await vscode.workspace.openTextDocument(fullPath);
       await vscode.window.showTextDocument(document);
     } catch (error) {
-      console.error('[PlanViewProvider] Failed to open file:', filePath, error);
+      console.error('[UnifiedViewProvider] Failed to open file:', filePath, error);
     }
   }
 
@@ -575,7 +575,7 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
       return 'unknown';
     } catch (error) {
       this.output.appendLine(
-        `[planView] issue state check failed for #${issueNumber}: ${String(error)}`,
+        `[unifiedView] issue state check failed for #${issueNumber}: ${String(error)}`,
       );
       return 'unknown';
     }
@@ -683,19 +683,48 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
   private buildHtml(webview: vscode.Webview): string {
     // The webview runs in a browser context and must load JavaScript, not TypeScript.
     // `npm --prefix vscode run compile` compiles `webview/plan/index.ts` to `webview/plan/out/index.js`.
-    const scriptPath = vscode.Uri.joinPath(this.extensionUri, 'webview', 'plan', 'out', 'index.js');
-    const stylePath = vscode.Uri.joinPath(this.extensionUri, 'webview', 'plan', 'styles.css');
-    const scriptUri = webview.asWebviewUri(scriptPath);
-    const styleUri = webview.asWebviewUri(stylePath);
+    const planScriptPath = vscode.Uri.joinPath(this.extensionUri, 'webview', 'plan', 'out', 'index.js');
+    const planStylePath = vscode.Uri.joinPath(this.extensionUri, 'webview', 'plan', 'styles.css');
+    const worktreeScriptPath = vscode.Uri.joinPath(this.extensionUri, 'webview', 'worktree', 'out', 'index.js');
+    const worktreeStylePath = vscode.Uri.joinPath(this.extensionUri, 'webview', 'worktree', 'styles.css');
+    const settingsScriptPath = vscode.Uri.joinPath(this.extensionUri, 'webview', 'settings', 'out', 'index.js');
+    const settingsStylePath = vscode.Uri.joinPath(this.extensionUri, 'webview', 'settings', 'styles.css');
+    const planScriptUri = webview.asWebviewUri(planScriptPath);
+    const planStyleUri = webview.asWebviewUri(planStylePath);
+    const worktreeScriptUri = webview.asWebviewUri(worktreeScriptPath);
+    const worktreeStyleUri = webview.asWebviewUri(worktreeStylePath);
+    const settingsScriptUri = webview.asWebviewUri(settingsScriptPath);
+    const settingsStyleUri = webview.asWebviewUri(settingsStylePath);
     const nonce = this.getNonce();
-    const scriptFsPath = path.join(this.extensionUri.fsPath, 'webview', 'plan', 'out', 'index.js');
-    const styleFsPath = path.join(this.extensionUri.fsPath, 'webview', 'plan', 'styles.css');
-    const hasScript = fs.existsSync(scriptFsPath);
-    const hasStyle = fs.existsSync(styleFsPath);
+    const planScriptFsPath = path.join(this.extensionUri.fsPath, 'webview', 'plan', 'out', 'index.js');
+    const planStyleFsPath = path.join(this.extensionUri.fsPath, 'webview', 'plan', 'styles.css');
+    const worktreeScriptFsPath = path.join(this.extensionUri.fsPath, 'webview', 'worktree', 'out', 'index.js');
+    const worktreeStyleFsPath = path.join(this.extensionUri.fsPath, 'webview', 'worktree', 'styles.css');
+    const settingsScriptFsPath = path.join(this.extensionUri.fsPath, 'webview', 'settings', 'out', 'index.js');
+    const settingsStyleFsPath = path.join(this.extensionUri.fsPath, 'webview', 'settings', 'styles.css');
+    const hasPlanScript = fs.existsSync(planScriptFsPath);
+    const hasPlanStyle = fs.existsSync(planStyleFsPath);
+    const hasWorktreeScript = fs.existsSync(worktreeScriptFsPath);
+    const hasWorktreeStyle = fs.existsSync(worktreeStyleFsPath);
+    const hasSettingsScript = fs.existsSync(settingsScriptFsPath);
+    const hasSettingsStyle = fs.existsSync(settingsStyleFsPath);
+    const hasPlanAssets = hasPlanScript && hasPlanStyle;
+    const hasWorktreeAssets = hasWorktreeScript && hasWorktreeStyle;
+    const hasSettingsAssets = hasSettingsScript && hasSettingsStyle;
 
-    if (!hasScript || !hasStyle) {
+    if (!hasPlanAssets) {
       this.output.appendLine(
-        `[planView] missing webview assets: script=${hasScript ? 'ok' : scriptFsPath} style=${hasStyle ? 'ok' : styleFsPath}`,
+        `[unifiedView] missing plan webview assets: script=${hasPlanScript ? 'ok' : planScriptFsPath} style=${hasPlanStyle ? 'ok' : planStyleFsPath}`,
+      );
+    }
+    if (!hasWorktreeAssets) {
+      this.output.appendLine(
+        `[unifiedView] missing worktree webview assets: script=${hasWorktreeScript ? 'ok' : worktreeScriptFsPath} style=${hasWorktreeStyle ? 'ok' : worktreeStyleFsPath}`,
+      );
+    }
+    if (!hasSettingsAssets) {
+      this.output.appendLine(
+        `[unifiedView] missing settings webview assets: script=${hasSettingsScript ? 'ok' : settingsScriptFsPath} style=${hasSettingsStyle ? 'ok' : settingsStyleFsPath}`,
       );
     }
 
@@ -706,8 +735,12 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
         .replace(/\u2028/g, '\\u2028')
         .replace(/\u2029/g, '\\u2029');
     } catch (error) {
-      this.output.appendLine(`[planView] failed to serialize initial state: ${String(error)}`);
+      this.output.appendLine(`[unifiedView] failed to serialize initial state: ${String(error)}`);
     }
+
+    const planSkeleton = this.buildPlanSkeleton(hasPlanAssets);
+    const worktreeSkeleton = this.buildPlaceholderSkeleton('Worktree', 'worktree-skeleton-status', hasWorktreeAssets);
+    const settingsSkeleton = this.buildPlaceholderSkeleton('Settings', 'settings-skeleton-status', hasSettingsAssets);
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -715,67 +748,163 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https: data:; font-src ${webview.cspSource}; style-src ${webview.cspSource} 'unsafe-inline'; script-src ${webview.cspSource} 'nonce-${nonce}';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="${styleUri}" rel="stylesheet" />
+  <link href="${planStyleUri}" rel="stylesheet" />
+  <link href="${worktreeStyleUri}" rel="stylesheet" />
+  <link href="${settingsStyleUri}" rel="stylesheet" />
+  <style>
+    .unified-view {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .unified-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px 0;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    .unified-tab {
+      border: 1px solid var(--border);
+      border-bottom: none;
+      background: rgba(255, 255, 255, 0.7);
+      color: var(--muted);
+      padding: 8px 12px;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      box-shadow: none;
+    }
+
+    .unified-tab.is-active {
+      color: var(--text);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .unified-panel {
+      display: none;
+    }
+
+    .unified-panel.is-active {
+      display: block;
+    }
+  </style>
   <title>Agentize</title>
 </head>
 <body>
-  <div id="plan-root" class="plan-root">
-    ${this.buildSkeletonHtml(hasScript && hasStyle)}
+  <div class="unified-view">
+    <div class="unified-tabs" role="tablist" aria-label="Agentize panels">
+      <button id="tab-plan" class="unified-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="panel-plan" data-tab="plan">Plan</button>
+      <button id="tab-worktree" class="unified-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-worktree" data-tab="worktree">Worktree</button>
+      <button id="tab-settings" class="unified-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-settings" data-tab="settings">Settings</button>
+    </div>
+    <section id="panel-plan" class="unified-panel is-active" role="tabpanel" aria-labelledby="tab-plan" data-panel="plan">
+      <div id="plan-root" class="plan-root">
+        ${planSkeleton}
+      </div>
+    </section>
+    <section id="panel-worktree" class="unified-panel" role="tabpanel" aria-labelledby="tab-worktree" data-panel="worktree">
+      <div id="worktree-root" class="worktree-root">
+        ${worktreeSkeleton}
+      </div>
+    </section>
+    <section id="panel-settings" class="unified-panel" role="tabpanel" aria-labelledby="tab-settings" data-panel="settings">
+      <div id="settings-root" class="settings-root">
+        ${settingsSkeleton}
+      </div>
+    </section>
   </div>
   <script nonce="${nonce}">window.__INITIAL_STATE__ = ${initialState};</script>
   <script nonce="${nonce}">
     (function() {
-      const statusEl = document.getElementById('plan-skeleton-status');
-      const initialStatus = statusEl ? statusEl.textContent : '';
-      const setStatus = (text) => {
-        if (statusEl) statusEl.textContent = text;
-      };
-      const setStatusIfUnchanged = (text) => {
-        if (!statusEl) return;
-        if (statusEl.textContent === initialStatus) {
-          statusEl.textContent = text;
-        }
+      const tabs = Array.from(document.querySelectorAll('.unified-tab'));
+      const panels = Array.from(document.querySelectorAll('.unified-panel'));
+
+      const setActive = (tabId) => {
+        tabs.forEach((tab) => {
+          const isActive = tab.dataset.tab === tabId;
+          tab.classList.toggle('is-active', isActive);
+          tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+        panels.forEach((panel) => {
+          panel.classList.toggle('is-active', panel.dataset.panel === tabId);
+        });
       };
 
-      window.addEventListener('error', (event) => {
-        const message = event && event.message ? event.message : 'Unknown error';
-        setStatus('Webview error: ' + message);
+      tabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          if (tab.dataset.tab) {
+            setActive(tab.dataset.tab);
+          }
+        });
       });
+    })();
+  </script>
+  <script nonce="${nonce}">
+    (function() {
+      const loadPanelScript = (statusId, scriptUri) => {
+        const statusEl = document.getElementById(statusId);
+        const initialStatus = statusEl ? statusEl.textContent : '';
+        const setStatus = (text) => {
+          if (statusEl) statusEl.textContent = text;
+        };
+        const setStatusIfUnchanged = (text) => {
+          if (!statusEl) return;
+          if (statusEl.textContent === initialStatus) {
+            statusEl.textContent = text;
+          }
+        };
 
-      window.addEventListener('unhandledrejection', (event) => {
-        let reason = 'Unknown rejection';
-        if (event && event.reason) {
-          try { reason = String(event.reason); } catch (_) {}
-        }
-        setStatus('Webview rejection: ' + reason);
-      });
+        window.addEventListener('error', (event) => {
+          const message = event && event.message ? event.message : 'Unknown error';
+          setStatus('Webview error: ' + message);
+        });
 
-      const script = document.createElement('script');
-      script.src = "${scriptUri}";
-      script.type = "module";
-      script.nonce = "${nonce}";
-      script.onload = () => {
-        // Don't overwrite a more specific status written by the webview code.
-        setStatusIfUnchanged('Webview script loaded; waiting for init...');
-        setTimeout(() => {
-          setStatusIfUnchanged('Webview script loaded but did not initialize.');
-        }, 2000);
+        window.addEventListener('unhandledrejection', (event) => {
+          let reason = 'Unknown rejection';
+          if (event && event.reason) {
+            try { reason = String(event.reason); } catch (_) {}
+          }
+          setStatus('Webview rejection: ' + reason);
+        });
+
+        const script = document.createElement('script');
+        script.src = scriptUri;
+        script.type = 'module';
+        script.nonce = "${nonce}";
+        script.onload = () => {
+          setStatusIfUnchanged('Webview script loaded; waiting for init...');
+          setTimeout(() => {
+            setStatusIfUnchanged('Webview script loaded but did not initialize.');
+          }, 2000);
+        };
+        script.onerror = () => setStatus('Failed to load webview script.');
+        document.body.appendChild(script);
       };
-      script.onerror = () => setStatus('Failed to load webview script.');
-      document.body.appendChild(script);
+
+      loadPanelScript('plan-skeleton-status', "${planScriptUri}");
+      loadPanelScript('worktree-skeleton-status', "${worktreeScriptUri}");
+      loadPanelScript('settings-skeleton-status', "${settingsScriptUri}");
     })();
   </script>
 </body>
 </html>`;
   }
 
-  private buildSkeletonHtml(hasAssets: boolean): string {
+  private buildPlanSkeleton(hasAssets: boolean): string {
     const templatePath = path.join(this.extensionUri.fsPath, 'webview', 'plan', 'skeleton.html');
     const fallbackTemplate = [
       '<div class="plan-skeleton">',
       '  <div class="plan-skeleton-title">Agentize</div>',
       '  <div id="plan-skeleton-status" class="plan-skeleton-subtitle">Loading webview UI...</div>',
-      `  ${PlanViewProvider.skeletonPlaceholder}`,
+      `  ${UnifiedViewProvider.skeletonPlaceholder}`,
       '</div>',
     ].join('\n');
     const errorHtml = hasAssets
@@ -786,14 +915,30 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
     try {
       template = fs.readFileSync(templatePath, 'utf8');
     } catch (error) {
-      this.output.appendLine(`[planView] failed to read skeleton template (${templatePath}): ${String(error)}`);
+      this.output.appendLine(`[unifiedView] failed to read skeleton template (${templatePath}): ${String(error)}`);
     }
 
-    if (template.includes(PlanViewProvider.skeletonPlaceholder)) {
-      return template.split(PlanViewProvider.skeletonPlaceholder).join(errorHtml);
+    if (template.includes(UnifiedViewProvider.skeletonPlaceholder)) {
+      return template.split(UnifiedViewProvider.skeletonPlaceholder).join(errorHtml);
     }
 
     return errorHtml ? `${template}\n${errorHtml}` : template;
+  }
+
+  private buildPlaceholderSkeleton(title: string, statusId: string, hasAssets: boolean): string {
+    const errorHtml = hasAssets
+      ? ''
+      : '<div class="plan-skeleton-error">Webview assets missing. Run <code>make vscode-plugin</code> and reload VS Code.</div>';
+
+    return [
+      '<div class="plan-skeleton">',
+      `  <div class="plan-skeleton-title">${title}</div>`,
+      `  <div id="${statusId}" class="plan-skeleton-subtitle">Loading webview UI...</div>`,
+      errorHtml ? `  ${errorHtml}` : '',
+      '</div>',
+    ]
+      .filter(Boolean)
+      .join('\n');
   }
 
   private getNonce(): string {
@@ -806,7 +951,7 @@ export class PlanViewProvider implements vscode.WebviewViewProvider {
   }
 }
 
-export const PlanViewProviderMessages = {
+export const UnifiedViewProviderMessages = {
   incoming: [
     'plan/new',
     'plan/run',

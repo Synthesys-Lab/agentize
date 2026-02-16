@@ -7,7 +7,7 @@ test_info "Testing plan refine wiring"
 
 RUNNER_FILE="$PROJECT_ROOT/vscode/src/runner/planRunner.ts"
 TYPES_FILE="$PROJECT_ROOT/vscode/src/runner/types.ts"
-VIEW_FILE="$PROJECT_ROOT/vscode/src/view/planViewProvider.ts"
+VIEW_FILE="$PROJECT_ROOT/vscode/src/view/unifiedViewProvider.ts"
 WEBVIEW_FILE="$PROJECT_ROOT/vscode/webview/plan/index.ts"
 STYLE_FILE="$PROJECT_ROOT/vscode/webview/plan/styles.css"
 
@@ -31,7 +31,7 @@ fi
 
 # Test 3: PlanViewProvider handles plan/refine messages
 if ! grep -q "plan/refine" "$VIEW_FILE"; then
-  test_fail "planViewProvider.ts missing plan/refine handler"
+  test_fail "unifiedViewProvider.ts missing plan/refine handler"
 fi
 
 # Test 4: Webview posts plan/refine from session actions

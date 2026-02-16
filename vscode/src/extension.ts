@@ -1,24 +1,18 @@
 import * as vscode from 'vscode';
 import { PlanRunner } from './runner/planRunner';
 import { SessionStore } from './state/sessionStore';
-import { PlanViewProvider } from './view/planViewProvider';
-import { SettingsViewProvider } from './view/settingsViewProvider';
-import { WorktreeViewProvider } from './view/worktreeViewProvider';
+import { UnifiedViewProvider } from './view/unifiedViewProvider';
 
 export function activate(context: vscode.ExtensionContext): void {
   const output = vscode.window.createOutputChannel('Agentize Plan');
   output.appendLine('[activate] Agentize Plan extension activating');
   const store = new SessionStore(context.workspaceState);
   const runner = new PlanRunner();
-  const provider = new PlanViewProvider(context.extensionUri, store, runner, output);
-  const worktreeProvider = new WorktreeViewProvider(context.extensionUri);
-  const settingsProvider = new SettingsViewProvider(context.extensionUri);
+  const provider = new UnifiedViewProvider(context.extensionUri, store, runner, output);
 
   context.subscriptions.push(
     output,
-    vscode.window.registerWebviewViewProvider(PlanViewProvider.viewType, provider),
-    vscode.window.registerWebviewViewProvider(WorktreeViewProvider.viewType, worktreeProvider),
-    vscode.window.registerWebviewViewProvider(SettingsViewProvider.viewType, settingsProvider),
+    vscode.window.registerWebviewViewProvider(UnifiedViewProvider.viewType, provider),
   );
 }
 
