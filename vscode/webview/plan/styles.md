@@ -10,15 +10,17 @@ Minimal readable styles for the Plan webview UI.
 - `.toolbar`: header actions for New Plan.
 - `.session`: container for a single plan session.
 - `.session-header`: row with title, status, and actions.
-- `.session-body`: contains prompt and logs.
+- `.session-body`: contains the widget timeline for a session.
+- `.widget`: base class for appended widgets.
+- `.widget-terminal`: terminal widget container.
+- `.widget-progress`: step progress indicator widget.
+- `.widget-buttons`: action button groups.
+- `.widget-input`: inline refinement input widget.
+- `.widget-status`: compact status badge widget.
 - `.logs`: monospace log display.
 - `.hidden`: utility class to hide optional UI elements.
-- `.impl-button`: primary action for starting implementation runs.
-- `.impl-button.closed`: disabled styling when the linked issue is closed.
-- `.impl-logs-box`: container for implementation logs and header.
-- `.impl-logs-header`, `.impl-logs-toggle`, `.impl-logs-title`, `.impl-logs-body`: implementation log panel chrome.
+- `.button-disabled`: grayed-out button state.
 - `#plan-textarea`: uses border-box sizing to keep padding within the panel.
-- `.refine`: action button for revealing the inline refinement textbox on completed sessions.
 
 ### Status Modifiers
 - `[data-status="idle"]`, `[data-status="running"]`, `[data-status="success"]`,
@@ -30,9 +32,6 @@ No internal helpers; this file only provides static styles.
 
 ### Animation
 
-- `.session-body` uses CSS transitions to keep the collapse/expand interaction smooth while
+- `.widget` uses CSS transitions to keep the append animation lightweight while
   preserving layout flow for the header area.
-- Transitioned properties:
-  - `max-height`: 0 ↔ 2000px to accommodate variable content without JS measurement.
-  - `margin-top`: 0 ↔ 10px to collapse spacing cleanly.
-- Timing: `0.25s ease-out` to match the raw logs collapse cadence used elsewhere in the view.
+- `.widget-progress` uses `@keyframes` for the loading dot indicator.

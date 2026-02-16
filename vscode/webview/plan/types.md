@@ -13,6 +13,19 @@ Message payload definitions for the Plan webview.
 - `type`: `plan/toggleImplCollapse`.
 - `sessionId`: Plan session identifier.
 
+### WidgetAppendMessage
+- `type`: `widget/append`.
+- `sessionId`: session identifier owning the widget.
+- `widgetType`: widget type discriminator.
+- `widgetId`: stable widget identifier for updates.
+- `config`: widget-specific configuration payload.
+
+### WidgetUpdateMessage
+- `type`: `widget/update`.
+- `sessionId`: session identifier owning the widget.
+- `widgetId`: widget identifier to update.
+- `update`: widget-specific update payload.
+
 ## Internal Helpers
 
 No internal helpers; this module only exports types.

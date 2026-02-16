@@ -1,8 +1,9 @@
 import type { Memento } from 'vscode';
-import type { AppState, PlanSession, PlanState, RefineRun, SessionStatus } from './types';
+import type { AppState, PlanSession, PlanState, RefineRun, SessionStatus, WidgetState } from './types';
 
 const STORAGE_KEY = 'agentize.planState';
 const MAX_LOG_LINES = 1000;
+const SESSION_SCHEMA_VERSION = 2;
 
 const DEFAULT_PLAN_STATE: PlanState = {
   sessions: [],
@@ -54,6 +55,10 @@ export class SessionStore {
       implCollapsed: false,
       refineRuns: [],
       logs: [],
+      version: SESSION_SCHEMA_VERSION,
+      widgets: [],
+      phase: 'idle',
+      activeTerminalHandle: undefined,
       createdAt: now,
       updatedAt: now,
     };
@@ -81,6 +86,7 @@ export class SessionStore {
     }
 
     session.logs = this.trimLogs([...session.logs, ...lines]);
+    this.appendLinesToActiveWidget(session, lines);
     session.updatedAt = Date.now();
     this.persist();
     return this.cloneSession(session);
@@ -219,10 +225,24 @@ export class SessionStore {
       return { ...DEFAULT_PLAN_STATE };
     }
 
-    return {
-      sessions: Array.isArray(stored.sessions) ? stored.sessions.map((session) => this.cloneSession(session)) : [],
-      draftInput: typeof stored.draftInput === 'string' ? stored.draftInput : '',
-    };
+    let migrated = false;
+    const sessions = Array.isArray(stored.sessions)
+      ? stored.sessions.map((session) => {
+          const version = typeof session.version === 'number' ? session.version : 1;
+          if (version < SESSION_SCHEMA_VERSION) {
+            migrated = true;
+            return this.migrateSession(session);
+          }
+          return this.cloneSession(session);
+        })
+      : [];
+    const draftInput = typeof stored.draftInput === 'string' ? stored.draftInput : '';
+    const state = { sessions, draftInput };
+    if (migrated) {
+      this.state = state;
+      this.persist();
+    }
+    return state;
   }
 
   private persist(): void {
@@ -231,6 +251,10 @@ export class SessionStore {
 
   private createSessionId(): string {
     return `plan-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  private createWidgetId(type: string): string {
+    return `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   }
 
   private deriveTitle(prompt: string): string {
@@ -253,13 +277,29 @@ export class SessionStore {
   private cloneSession(session: PlanSession): PlanSession {
     const runs = Array.isArray(session.refineRuns) ? session.refineRuns : [];
     const refineRuns: RefineRun[] = runs.map((run) => this.cloneRefineRun(run));
+    const widgets = Array.isArray(session.widgets) ? session.widgets.map((widget) => this.cloneWidget(widget)) : [];
     return {
       ...session,
-      logs: [...session.logs],
+      logs: Array.isArray(session.logs) ? [...session.logs] : [],
       implStatus: session.implStatus ?? 'idle',
       implLogs: session.implLogs ? [...session.implLogs] : [],
       implCollapsed: session.implCollapsed ?? false,
+      version: typeof session.version === 'number' ? session.version : undefined,
+      widgets,
+      phase: session.phase,
+      activeTerminalHandle: session.activeTerminalHandle,
       refineRuns,
+    };
+  }
+
+  private cloneWidget(widget: WidgetState): WidgetState {
+    return {
+      id: widget.id ?? this.createWidgetId('widget'),
+      type: widget.type,
+      title: widget.title,
+      content: Array.isArray(widget.content) ? [...widget.content] : undefined,
+      metadata: widget.metadata ? { ...widget.metadata } : undefined,
+      createdAt: widget.createdAt ?? Date.now(),
     };
   }
 
@@ -273,6 +313,89 @@ export class SessionStore {
       createdAt: run.createdAt ?? Date.now(),
       updatedAt: run.updatedAt ?? Date.now(),
     };
+  }
+
+  private appendLinesToActiveWidget(session: PlanSession, lines: string[]): void {
+    if (!session.widgets) {
+      session.widgets = [];
+    }
+
+    if (!session.activeTerminalHandle) {
+      const widgetId = this.createWidgetId('terminal');
+      session.widgets = [
+        ...session.widgets,
+        {
+          id: widgetId,
+          type: 'terminal',
+          title: 'Plan Log',
+          content: [],
+          createdAt: Date.now(),
+        },
+      ];
+      session.activeTerminalHandle = widgetId;
+    }
+
+    session.widgets = session.widgets.map((widget) => {
+      if (widget.id !== session.activeTerminalHandle || widget.type !== 'terminal') {
+        return widget;
+      }
+      const existing = Array.isArray(widget.content) ? widget.content : [];
+      return {
+        ...widget,
+        content: this.trimLogs([...existing, ...lines]),
+      };
+    });
+  }
+
+  private migrateSession(session: PlanSession): PlanSession {
+    const migrated = this.cloneSession(session);
+    const widgets = Array.isArray(migrated.widgets) ? migrated.widgets : [];
+    let activeTerminalHandle = migrated.activeTerminalHandle;
+
+    if (widgets.length === 0 && migrated.logs.length > 0) {
+      const widgetId = this.createWidgetId('terminal');
+      widgets.push({
+        id: widgetId,
+        type: 'terminal',
+        title: 'Plan Log',
+        content: [...migrated.logs],
+        createdAt: Date.now(),
+      });
+      activeTerminalHandle = widgetId;
+    }
+
+    const phase = this.derivePhase(migrated);
+
+    return {
+      ...migrated,
+      version: SESSION_SCHEMA_VERSION,
+      widgets,
+      phase,
+      activeTerminalHandle,
+    };
+  }
+
+  private derivePhase(session: PlanSession): string {
+    const hasRefineRunning = Array.isArray(session.refineRuns)
+      ? session.refineRuns.some((run) => run.status === 'running')
+      : false;
+
+    if (session.implStatus === 'running') {
+      return 'implementing';
+    }
+    if (session.implStatus === 'success' || session.implStatus === 'error') {
+      return 'completed';
+    }
+    if (hasRefineRunning) {
+      return 'refining';
+    }
+    if (session.status === 'running') {
+      return 'planning';
+    }
+    if (session.status === 'success' || session.status === 'error') {
+      return 'plan-completed';
+    }
+    return 'idle';
   }
 }
 

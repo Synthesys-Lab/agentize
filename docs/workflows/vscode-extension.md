@@ -6,33 +6,67 @@ across future updates.
 
 ## Goals
 
-- Provide a single-click transition from planning to implementation.
-- Capture the GitHub issue number as soon as the planner emits it.
-- Keep plan and implementation logs visually separate to reduce confusion.
+- Present Plan, Implementation, and Refinement output as an append-only timeline of widgets.
+- Keep user actions mutually exclusive so only one active phase can run at a time.
+- Preserve a lightweight UI model that is easy to extend without introducing new frameworks.
+- Capture issue numbers early so downstream actions remain frictionless.
 
-## Plan Session Lifecycle
+## Widget-Based Session Model
 
-1. The user creates a Plan session in the Activity Bar panel.
-2. The extension launches `lol plan` via the CLI wrapper and streams stdout/stderr into
-   the session log buffer.
-3. The session status transitions through `running` to `success` or `error`.
+Each session maintains an ordered list of widgets. Widgets are appended as the session
+progresses, rather than being pre-created. This keeps the UI layout explicit and allows
+different phases to reuse the same widget types.
+
+Widget types include:
+- `text`: short status or prompt summaries.
+- `terminal`: titled terminal boxes that accept appended log lines via a handle.
+- `progress`: stage indicator widgets that listen to terminal output and track elapsed time.
+- `buttons`: action groups (Plan, Implement, Refine, View Plan, View PR, Re-implement).
+- `input`: inline input widgets for refinement focus.
+- `status`: compact status badges for phase transitions.
+
+Terminal widgets expose handles so subsequent updates can target the correct widget without
+rebuilding the DOM. Progress widgets subscribe to terminal handles and update themselves
+when stage lines are detected.
+
+## Session Phases
+
+Sessions track a phase string to coordinate UI actions:
+
+1. `idle`: session exists but no plan has started.
+2. `planning`: the plan run is executing.
+3. `plan-completed`: the plan run finished (success or error), actions are available.
+4. `refining`: refinement run is active.
+5. `implementing`: implementation run is active.
+6. `completed`: implementation run finished.
+
+Phase changes drive button state updates so that Refine and Implement are mutually exclusive
+and only enabled at appropriate times.
 
 ## Issue Number Capture
 
 The planner emits lines such as `Created placeholder issue #N` or a GitHub issue URL.
 The extension scans stdout/stderr lines in real time and stores the first matching issue
 number on the session. Capturing the issue number during execution ensures the UI can
-surface the Implement action immediately after the plan completes.
+surface the Implement and View PR actions immediately after the plan completes.
 
-## Implementation Launch
+When a plan emits a local markdown path (for example, `.tmp/issue-928.md`), the UI
+surfaces a View Plan button that opens the file inside the workspace.
 
-When a plan succeeds and an issue number exists, the UI displays an Implement button in
-that session header. Clicking it launches `lol impl <issue-number>` and tracks the run
-status separately from the plan. The UI disables the button while the implementation run
-is active to prevent overlapping runs.
+## Refinement Flow
 
-## Log Separation
+When a plan finishes, the user can initiate a refinement run. Clicking Refine appends an
+inline input widget. Submitting via Cmd+Enter / Ctrl+Enter starts refinement and appends a
+new terminal widget for refinement logs. Esc closes the input widget without starting a
+run.
 
-Implementation output is streamed into a dedicated Implementation Log panel. Keeping the
-plan and implementation logs separate avoids mixing the planner transcript with code
-changes, which makes it easier to scan each phase independently.
+## Implementation Flow
+
+Implementation runs are gated on a valid issue number and a successful plan. When the
+implementation completes, the UI appends a View PR button if the exit code is zero, or a
+Re-implement button if the exit code is non-zero.
+
+## Backward Compatibility
+
+Session persistence uses schema versioning. Stored sessions are migrated on load so older
+log arrays are converted into terminal widgets without data loss.

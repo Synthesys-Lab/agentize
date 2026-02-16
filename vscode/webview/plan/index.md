@@ -5,6 +5,7 @@ Webview script that renders the Plan session list and handles user input.
 ## File Organization
 
 - `index.ts`: Webview entry point that renders sessions, handles input, and posts messages.
+- `widgets.ts`: Widget append helpers and widget handle routing.
 - `utils.ts`: Pure rendering and parsing helpers for steps, links, and issue extraction.
 - `types.ts`: Message shapes exchanged with the extension host.
 - `styles.css`: Plan tab styling.
@@ -15,73 +16,62 @@ Webview script that renders the Plan session list and handles user input.
 - Creates new Plan sessions and posts `plan/new` to the extension.
 - Sends `plan/toggleCollapse`, `plan/delete`, and `plan/updateDraft` messages.
 - Sends `plan/impl` when the Implement button is pressed for a completed plan.
-- Sends `plan/toggleImplCollapse` when the implementation log panel is collapsed or expanded.
 - Sends `plan/refine` when the inline refinement textbox is submitted (Cmd+Enter / Ctrl+Enter).
 - Sends `link/openExternal` and `link/openFile` for clickable links in logs.
-- Deletes are immediate; running sessions are stopped by the extension host.
+- Sends `widget/append` and `widget/update` events into the session timeline when user actions require
+  new UI widgets (input widgets, button groups, progress widgets).
 
 ### Keyboard Shortcuts
 - `Cmd+Enter` (macOS) or `Ctrl+Enter` (Linux/Windows) submits the plan input.
+- `Cmd+Enter` / `Ctrl+Enter` submits the refinement input widget.
+- `Esc` closes an inline refinement input widget without submitting.
 
 ## Internal Helpers
 
 ### ensureSessionNode(session)
-Builds the session DOM using a sequential append pattern so the visual order is explicit:
-
-1. Create the session container and header.
-2. Create the session body.
-3. Append the prompt text.
-4. Append step indicators.
-5. Append the raw console log panel.
-6. Append the implementation log panel.
-7. Append refinement thread and composer.
+Creates a session container and a widget timeline body. Widgets are appended as the session
+progresses, keeping the visual order explicit and avoiding pre-created DOM structure.
 
 ### renderState(appState)
 Initial render for all sessions and the draft input.
 
 ### updateSession(session)
-Updates a single session row without re-rendering the full list.
+Updates a single session row without re-rendering the full list, and replays the widget timeline
+state for that session.
 
-### appendLogLine(sessionId, line, stream)
-Appends a log line with a per-session buffer limit. Parses stderr lines for stage progress and updates step indicators.
+### handleWidgetAppend / handleWidgetUpdate
+Respond to widget append or update messages from the extension host, create widget DOM nodes, and
+update widget state/handles.
 
-### appendImplLogLine(sessionId, line, stream)
-Appends a log line to the implementation log buffer and keeps the implementation log panel scrolled.
+### appendLogLine / appendImplLogLine
+Route stdout/stderr lines into the active terminal widget for a session, preserving the maximum
+log buffer and emitting link-rendered markup.
 
-### Step Progress Indicators
+## Step Progress Indicators
 
-Step indicators are rendered above the raw logs box by parsing stderr lines matching the pattern:
+Progress widgets listen to terminal output lines that match:
 ```
 Stage N/5: Running {name} ({provider}:{model})
 Stage M-N/5: Running {name} ({provider}:{model})  // parallel stages
 ```
 
-Running steps display animated dots cycling from 1 to 3 using CSS `@keyframes`. When a step completes, the elapsed time is calculated from the start timestamp and displayed as "done in XXs".
+Running steps display animated dots cycling from 1 to 3 using CSS `@keyframes`. When a step
+completes, the elapsed time is calculated from the start timestamp and displayed as "done in XXs".
 
-### Collapsible Raw Console Log
+## Inline Refinement Input
 
-The raw console log box can be collapsed/expanded independently of the session collapse. Clicking the toggle button updates the local state; the collapse state is maintained in the webview and persists across state updates.
+Refinement input is represented by an `input` widget appended when Refine is clicked. The widget
+is removed on Esc or after successful submission, and the session transitions into a refining phase.
 
-### Implement Button + Implementation Logs
+## Implementation Completion Actions
 
-When a plan finishes successfully and an issue number has been captured, the session header shows an Implement button.
-Clicking it triggers `plan/impl` with the issue number, and a separate "Implementation Log" panel streams the output.
-The button is disabled while the implementation run is active.
-If the session `issueState` is `closed`, the button text changes to "Closed" and stays disabled to prevent
-implementation runs on closed issues.
+When implementation exits with code 0, a View PR button is appended. When the exit code is non-zero,
+a Re-implement button is appended to the widget timeline instead.
 
-### Issue Number Extraction (UI)
+## Interactive Links
 
-The webview parses incoming log lines for:
-- `Created placeholder issue #N`
-- `https://github.com/<owner>/<repo>/issues/N`
-
-This acts as a UI-side fallback to surface the Implement button even if the extension state has
-not yet persisted the issue number.
-
-### Interactive Links
-
-GitHub issue URLs (`https://github.com/.../issues/N`) and local markdown file paths (`.tmp/*.md`) are detected via regex and rendered as clickable links. Clicking sends:
+GitHub issue URLs (`https://github.com/.../issues/N`) and local markdown file paths (`.tmp/*.md`) are
+detected via regex and rendered as clickable links. Clicking sends:
 - `link/openExternal` with the URL for GitHub links
 - `link/openFile` with the path for local markdown files
 
@@ -101,4 +91,5 @@ interface StepState {
 }
 ```
 
-`StepState` is defined in `utils.ts` alongside the parsing and rendering helpers that build the indicator UI.
+`StepState` is defined in `utils.ts` alongside the parsing and rendering helpers that build the
+indicator UI.
