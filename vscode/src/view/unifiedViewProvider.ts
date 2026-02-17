@@ -18,6 +18,7 @@ interface IncomingMessage {
   runId?: string;
   url?: string;
   path?: string;
+  createIfMissing?: boolean;
   payload?: unknown;
 }
 
@@ -496,7 +497,9 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
       case 'link/openFile': {
         const filePath = message.path ?? '';
         if (filePath) {
-          void this.openLocalFile(filePath);
+          void this.openLocalFile(filePath, {
+            createIfMissing: message.createIfMissing === true,
+          });
         }
         return;
       }
@@ -510,7 +513,10 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
     return /^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/\d+$/.test(url);
   }
 
-  private async openLocalFile(filePath: string): Promise<void> {
+  private async openLocalFile(
+    filePath: string,
+    options?: { createIfMissing?: boolean },
+  ): Promise<void> {
     try {
       const workspaceFolders = vscode.workspace.workspaceFolders;
       if (!workspaceFolders || workspaceFolders.length === 0) {
@@ -518,15 +524,16 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
       }
 
       const workspaceRoot = workspaceFolders[0].uri.fsPath;
+      const normalizedPath = filePath.startsWith('~/') ? path.join(os.homedir(), filePath.slice(2)) : filePath;
       const candidates: string[] = [];
 
-      if (path.isAbsolute(filePath)) {
-        candidates.push(filePath);
+      if (path.isAbsolute(normalizedPath)) {
+        candidates.push(normalizedPath);
       } else {
-        candidates.push(path.join(workspaceRoot, filePath));
+        candidates.push(path.join(workspaceRoot, normalizedPath));
         const planRoot = this.resolvePlanCwd();
         if (planRoot && planRoot !== workspaceRoot) {
-          candidates.push(path.join(planRoot, filePath));
+          candidates.push(path.join(planRoot, normalizedPath));
         }
       }
 
@@ -535,8 +542,16 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         return;
       }
 
+      if (options?.createIfMissing && !fs.existsSync(fullPath)) {
+        fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+        fs.writeFileSync(fullPath, '');
+      }
+
       const document = await vscode.workspace.openTextDocument(fullPath);
-      await vscode.window.showTextDocument(document);
+      await vscode.window.showTextDocument(document, {
+        viewColumn: vscode.ViewColumn.Active,
+        preview: false,
+      });
     } catch (error) {
       console.error('[UnifiedViewProvider] Failed to open file:', filePath, error);
     }
