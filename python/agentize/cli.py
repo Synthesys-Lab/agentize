@@ -107,6 +107,52 @@ def handle_simp(args: argparse.Namespace) -> int:
         return 1
 
 
+def handle_rebase(args: argparse.Namespace) -> int:
+    """Handle rebase command — fetch and rebase onto target branch."""
+    import subprocess
+
+    target_branch = getattr(args, "target_branch", None) or "main"
+    remote = "origin"
+
+    # Detect default branch if not explicitly provided
+    if not getattr(args, "target_branch", None):
+        for candidate in ("main", "master"):
+            result = subprocess.run(
+                ["git", "rev-parse", "--verify", f"{remote}/{candidate}"],
+                capture_output=True,
+            )
+            if result.returncode == 0:
+                target_branch = candidate
+                break
+
+    # Fetch
+    print(f"Fetching from {remote}...")
+    fetch_result = subprocess.run(["git", "fetch", remote], capture_output=True, text=True)
+    if fetch_result.returncode != 0:
+        print(f"Error: Failed to fetch from {remote}", file=sys.stderr)
+        if fetch_result.stderr:
+            print(fetch_result.stderr, file=sys.stderr)
+        return 1
+
+    # Rebase
+    ref = f"{remote}/{target_branch}"
+    print(f"Rebasing onto {ref}...")
+    rebase_result = subprocess.run(["git", "rebase", ref], capture_output=True, text=True)
+    if rebase_result.returncode != 0:
+        print(f"Error: Rebase conflict detected against {ref}.", file=sys.stderr)
+        if rebase_result.stderr:
+            print(rebase_result.stderr, file=sys.stderr)
+        # Abort the failed rebase to leave the branch clean
+        subprocess.run(["git", "rebase", "--abort"], capture_output=True)
+        return 1
+
+    if "is up to date" in (rebase_result.stdout or ""):
+        print(f"Already up to date with {ref}.")
+    else:
+        print(f"Successfully rebased onto {ref}.")
+    return 0
+
+
 def handle_usage(args: argparse.Namespace) -> int:
     """Handle usage command."""
     mode = "week" if args.week else "today"
@@ -253,6 +299,16 @@ def main() -> int:
         help="Issue number to publish the report when approved",
     )
 
+    # rebase command
+    rebase_parser = subparsers.add_parser(
+        "rebase", help="Rebase current branch onto target branch"
+    )
+    rebase_parser.add_argument(
+        "--target-branch",
+        dest="target_branch",
+        help="Target branch to rebase onto (default: auto-detect main/master)",
+    )
+
     # version command
     subparsers.add_parser("version", help="Display version information")
 
@@ -282,6 +338,8 @@ def main() -> int:
         return handle_impl(args)
     elif args.command == "simp":
         return handle_simp(args)
+    elif args.command == "rebase":
+        return handle_rebase(args)
     elif args.command == "version":
         return handle_version(agentize_home)
     else:

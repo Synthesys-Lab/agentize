@@ -615,3 +615,47 @@ _lol_parse_simp() {
 
     _lol_cmd_simp "$file_path" "$issue_number" "$focus"
 }
+
+# Parse rebase command arguments and call _lol_cmd_rebase
+_lol_parse_rebase() {
+    local target_branch=""
+
+    # Handle --help
+    if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+        echo "lol rebase: Rebase current branch onto target branch"
+        echo ""
+        echo "Usage: lol rebase [--target-branch <branch>]"
+        echo ""
+        echo "Options:"
+        echo "  --target-branch <branch>  Target branch to rebase onto (default: auto-detect main/master)"
+        echo "  --help                    Show this help message"
+        return 0
+    fi
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --target-branch)
+                shift
+                if [ -z "$1" ]; then
+                    echo "Error: --target-branch requires a branch name" >&2
+                    echo "Usage: lol rebase [--target-branch <branch>]" >&2
+                    return 1
+                fi
+                target_branch="$1"
+                shift
+                ;;
+            -*)
+                echo "Error: Unknown option '$1'" >&2
+                echo "Usage: lol rebase [--target-branch <branch>]" >&2
+                return 1
+                ;;
+            *)
+                echo "Error: Unexpected argument '$1'" >&2
+                echo "Usage: lol rebase [--target-branch <branch>]" >&2
+                return 1
+                ;;
+        esac
+    done
+
+    _lol_cmd_rebase "$target_branch"
+}

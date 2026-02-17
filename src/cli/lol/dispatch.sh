@@ -91,6 +91,9 @@ lol() {
         usage)
             _lol_parse_usage "$@"
             ;;
+        rebase)
+            _lol_parse_rebase "$@"
+            ;;
         version)
             _lol_log_version
             _lol_cmd_version
@@ -114,6 +117,7 @@ lol() {
             echo "  lol simp [file] --editor"
             echo "  lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo] [--wait-for-ci]"
             echo "  lol usage [--today | --week] [--cache] [--cost]"
+            echo "  lol rebase [--target-branch <branch>]"
             echo "  lol claude-clean [--dry-run]"
             echo ""
             echo "Flags:"
