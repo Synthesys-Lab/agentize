@@ -64,9 +64,12 @@ const settingsLinks: SettingsLinkConfig[] = [
         ${settingsLinks
           .map(
             (item) => `
-          <a class="settings-link" href="#" data-settings-link="${item.id}" data-path="${item.path}">
-            ${item.label}: <span class="settings-link-path">${item.path}</span>
-          </a>`,
+          <article class="settings-entry" data-settings-entry="${item.id}">
+            <div class="settings-entry-title">${item.label}</div>
+            <a class="settings-link" href="#" data-settings-link="${item.id}" data-path="${item.path}">
+              Open <span class="settings-link-path">${item.path}</span>
+            </a>
+          </article>`,
           )
           .join('')}
       </section>

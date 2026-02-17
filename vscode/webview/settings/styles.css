@@ -45,6 +45,13 @@
 }
 
 .settings-links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.settings-entry {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -52,15 +59,20 @@
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  animation: fadeIn 0.2s ease-out;
+  gap: 8px;
+}
+
+.settings-entry-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .settings-link {
-  border: 1px solid transparent;
+  border: 1px solid rgba(15, 110, 110, 0.18);
   border-radius: 10px;
   padding: 10px 12px;
-  background: rgba(15, 110, 110, 0.03);
+  background: rgba(15, 110, 110, 0.04);
   color: var(--text);
   font-size: 13px;
   line-height: 1.5;
@@ -71,8 +83,8 @@
 }
 
 .settings-link:hover {
-  border-color: rgba(15, 110, 110, 0.35);
-  background: rgba(15, 110, 110, 0.07);
+  border-color: rgba(15, 110, 110, 0.42);
+  background: rgba(15, 110, 110, 0.08);
 }
 
 .settings-link:focus-visible {

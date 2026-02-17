@@ -11,10 +11,11 @@ webview API acquisition remains single-instance for the page lifecycle.
 ## External Interface
 
 ### UI Rendering
-- Replaces `#settings-root` with three file links:
+- Replaces `#settings-root` with three independent file cards:
   - `Metadata: .agentize.yaml`
   - `Repo Local: .agentize.local.yaml`
   - `User Local: ~/.agentize.local.yaml`
+- Each card has its own container, so future card-specific controls can be added without reworking the layout.
 - Keeps path labels short and stable instead of rendering absolute filesystem paths.
 - Uses a status line for quick open feedback.
 
