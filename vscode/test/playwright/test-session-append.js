@@ -459,6 +459,17 @@ const run = async () => {
     });
 
     await page.waitForSelector('.widget-buttons button:has-text("Running...")', { timeout: 10000 });
+    await softCheck('refine running -> stop button is visible in refinement terminal', async () => {
+      const refineStop = page
+        .locator('.widget-terminal')
+        .filter({ has: page.locator('.terminal-title', { hasText: 'Refinement Log' }) })
+        .last()
+        .locator('.terminal-stop-button');
+      const visible = await refineStop.isVisible();
+      if (!visible) {
+        throw new Error('Refinement stop button is not visible while refine is running');
+      }
+    });
     await page.screenshot({ path: nextScreenshotPath(), fullPage: true });
 
     await sleep(600);
@@ -604,6 +615,17 @@ const run = async () => {
         throw new Error('Archived Refined marker not visible in old action row');
       }
     });
+    await softCheck('refine completed -> refinement stop button is hidden', async () => {
+      const refineStop = page
+        .locator('.widget-terminal')
+        .filter({ has: page.locator('.terminal-title', { hasText: 'Refinement Log' }) })
+        .last()
+        .locator('.terminal-stop-button');
+      const visible = await refineStop.isVisible();
+      if (visible) {
+        throw new Error('Refinement stop button should be hidden after refine completion');
+      }
+    });
 
     await page.screenshot({ path: nextScreenshotPath(), fullPage: true });
 
@@ -689,6 +711,17 @@ const run = async () => {
     });
 
     await page.waitForSelector('.widget-buttons button:has-text("Running...")', { timeout: 10000 });
+    await softCheck('implement running -> stop button is visible in implementation terminal', async () => {
+      const implStop = page
+        .locator('.widget-terminal')
+        .filter({ has: page.locator('.terminal-title', { hasText: 'Implementation Log' }) })
+        .last()
+        .locator('.terminal-stop-button');
+      const visible = await implStop.isVisible();
+      if (!visible) {
+        throw new Error('Implementation stop button is not visible while implement is running');
+      }
+    });
     await page.screenshot({ path: nextScreenshotPath(), fullPage: true });
 
     const implTerminalDone = {
@@ -826,6 +859,324 @@ const run = async () => {
       });
       if (!isTailButtons) {
         throw new Error('Latest action row is not appended at the end of the session timeline');
+      }
+    });
+    await softCheck('implement completed -> implementation stop button is hidden', async () => {
+      const implStop = page
+        .locator('.widget-terminal')
+        .filter({ has: page.locator('.terminal-title', { hasText: 'Implementation Log' }) })
+        .last()
+        .locator('.terminal-stop-button');
+      const visible = await implStop.isVisible();
+      if (visible) {
+        throw new Error('Implementation stop button should be hidden after implementation completion');
+      }
+    });
+
+    await page.screenshot({ path: nextScreenshotPath(), fullPage: true });
+
+    const rerunSessionId = 'plan-soft-session-rerun-recover';
+    const t1 = t0 + 60000;
+    const rerunPromptWidget = {
+      id: 'text-rerun-prompt',
+      type: 'text',
+      content: ['rerun recovery prompt'],
+      metadata: { role: 'prompt' },
+      createdAt: t1,
+    };
+
+    const rerunPlanTerminalFailed = {
+      id: 'terminal-rerun-plan',
+      type: 'terminal',
+      title: 'Plan Console Log',
+      content: [
+        'stderr: Stage 1/5: Running understander (kimi:default)',
+        "stderr: Error: Stage 'reducer' failed after 1 attempts: Stage 'reducer' failed with exit code 1",
+        'Exit code: 2',
+      ],
+      metadata: { role: 'plan-terminal' },
+      createdAt: t1 + 1,
+    };
+
+    const rerunPlanProgressFailed = {
+      id: 'progress-rerun-plan',
+      type: 'progress',
+      metadata: {
+        role: 'plan-progress',
+        terminalId: 'terminal-rerun-plan',
+        progressEvents: [
+          {
+            type: 'stage',
+            line: 'Stage 1/5: Running understander (kimi:default)',
+            timestamp: t1 + 1000,
+          },
+          {
+            type: 'exit',
+            timestamp: t1 + 9000,
+          },
+        ],
+      },
+      createdAt: t1 + 2,
+    };
+
+    const rerunActionFailed = {
+      id: 'actions-rerun-1',
+      type: 'buttons',
+      metadata: {
+        role: 'session-actions',
+        buttons: [
+          button('view-plan', 'View Plan', 'plan/view-plan', 'secondary', false),
+          button('view-issue', 'View Issue', 'plan/view-issue', 'secondary', false),
+          button('implement', 'Implement', 'plan/impl', 'primary', true),
+          button('refine', 'Refine', 'plan/refine', 'secondary', false),
+          button('rerun', 'Rerun', 'plan/rerun', 'secondary', false),
+        ],
+      },
+      createdAt: t1 + 3,
+    };
+
+    await postSessionUpdate(page, rerunSessionId, {
+      id: rerunSessionId,
+      title: 'rerun recovery prompt',
+      collapsed: false,
+      status: 'error',
+      prompt: 'rerun recovery prompt',
+      issueNumber: '950',
+      issueState: 'open',
+      planPath: '.tmp/issue-950-consensus.md',
+      prUrl: undefined,
+      implStatus: 'idle',
+      refineRuns: [],
+      version: 3,
+      widgets: [rerunPromptWidget, rerunPlanTerminalFailed, rerunPlanProgressFailed, rerunActionFailed],
+      phase: 'plan-completed',
+      actionMode: 'default',
+      rerun: {
+        commandType: 'refine',
+        prompt: 'rerun recovery prompt',
+        issueNumber: '950',
+        lastExitCode: 2,
+        updatedAt: t1 + 9000,
+      },
+      createdAt: t1,
+      updatedAt: t1 + 9000,
+    });
+
+    const rerunSession = page.locator(`.session[data-session-id="${rerunSessionId}"]`);
+    await rerunSession.waitFor({ timeout: 10000 });
+    const rerunLatestRow = rerunSession.locator('.widget-buttons').last();
+    await rerunLatestRow.locator('button:has-text("Rerun")').waitFor({ timeout: 10000 });
+
+    await softCheck('rerun recovery baseline -> Implement disabled after failed plan', async () => {
+      const disabled = await rerunLatestRow.locator('button:has-text("Implement")').isDisabled();
+      if (!disabled) {
+        throw new Error('Implement should be disabled before rerun recovery');
+      }
+    });
+
+    const rerunRefineTerminalRunning = {
+      id: 'terminal-rerun-refine-1',
+      type: 'terminal',
+      title: 'Refinement Log',
+      content: ['stderr: Stage 1/5: Running consensus (kimi:default)'],
+      metadata: { role: 'refine-terminal', runId: 'rerun-refine-soft-1', focus: 'rerun recovery prompt' },
+      createdAt: t1 + 9100,
+    };
+
+    const rerunRefineProgressRunning = {
+      id: 'progress-rerun-refine-1',
+      type: 'progress',
+      metadata: {
+        role: 'refine-progress',
+        terminalId: 'terminal-rerun-refine-1',
+        runId: 'rerun-refine-soft-1',
+        progressEvents: [
+          {
+            type: 'stage',
+            line: 'Stage 1/5: Running consensus (kimi:default)',
+            timestamp: t1 + 9300,
+          },
+        ],
+      },
+      createdAt: t1 + 9101,
+    };
+
+    const rerunActionRunning = {
+      ...rerunActionFailed,
+      metadata: {
+        role: 'session-actions',
+        buttons: [
+          button('rerun', 'Rerunning...', 'plan/rerun', 'primary', true),
+        ],
+      },
+    };
+
+    await postSessionUpdate(page, rerunSessionId, {
+      id: rerunSessionId,
+      title: 'rerun recovery prompt',
+      collapsed: false,
+      status: 'error',
+      prompt: 'rerun recovery prompt',
+      issueNumber: '950',
+      issueState: 'open',
+      planPath: '.tmp/issue-refine-950-consensus.md',
+      prUrl: undefined,
+      implStatus: 'idle',
+      refineRuns: [
+        {
+          id: 'rerun-refine-soft-1',
+          prompt: 'rerun recovery prompt',
+          status: 'running',
+          logs: ['stderr: Stage 1/5: Running consensus (kimi:default)'],
+          collapsed: false,
+          createdAt: t1 + 9100,
+          updatedAt: t1 + 9300,
+        },
+      ],
+      version: 3,
+      widgets: [
+        rerunPromptWidget,
+        rerunPlanTerminalFailed,
+        rerunPlanProgressFailed,
+        rerunActionRunning,
+        rerunRefineTerminalRunning,
+        rerunRefineProgressRunning,
+      ],
+      phase: 'refining',
+      actionMode: 'rerun',
+      rerun: {
+        commandType: 'refine',
+        prompt: 'rerun recovery prompt',
+        issueNumber: '950',
+        updatedAt: t1 + 9300,
+      },
+      createdAt: t1,
+      updatedAt: t1 + 9300,
+    });
+
+    await rerunSession.locator('.widget-buttons button:has-text("Rerunning...")').waitFor({ timeout: 10000 });
+    await softCheck('rerun in progress -> only single Rerunning button is visible', async () => {
+      const count = await rerunSession.locator('.widget-buttons').last().locator('button').count();
+      if (count !== 1) {
+        throw new Error(`Expected exactly 1 button while rerunning, got ${count}`);
+      }
+    });
+
+    const rerunRefineTerminalDone = {
+      ...rerunRefineTerminalRunning,
+      content: [
+        'stderr: Stage 1/5: Running consensus (kimi:default)',
+        'See the full plan locally at: .tmp/issue-refine-950-consensus.md',
+        'Exit code: 0',
+      ],
+    };
+
+    const rerunRefineProgressDone = {
+      ...rerunRefineProgressRunning,
+      metadata: {
+        role: 'refine-progress',
+        terminalId: 'terminal-rerun-refine-1',
+        runId: 'rerun-refine-soft-1',
+        progressEvents: [
+          {
+            type: 'stage',
+            line: 'Stage 1/5: Running consensus (kimi:default)',
+            timestamp: t1 + 9300,
+          },
+          {
+            type: 'exit',
+            timestamp: t1 + 15000,
+          },
+        ],
+      },
+    };
+
+    const rerunActionArchived = {
+      ...rerunActionFailed,
+      metadata: {
+        role: 'session-actions-archived',
+        buttons: [
+          button('reran', 'Reran', 'plan/rerun', 'secondary', true),
+        ],
+        archivedAt: t1 + 15100,
+      },
+    };
+
+    const rerunActionFresh = {
+      id: 'actions-rerun-2',
+      type: 'buttons',
+      metadata: {
+        role: 'session-actions',
+        buttons: [
+          button('view-plan', 'View Plan', 'plan/view-plan', 'secondary', false),
+          button('view-issue', 'View Issue', 'plan/view-issue', 'secondary', false),
+          button('implement', 'Implement', 'plan/impl', 'primary', false),
+          button('refine', 'Refine', 'plan/refine', 'secondary', false),
+          button('rerun', 'Rerun', 'plan/rerun', 'secondary', true),
+        ],
+      },
+      createdAt: t1 + 15101,
+    };
+
+    await postSessionUpdate(page, rerunSessionId, {
+      id: rerunSessionId,
+      title: 'rerun recovery prompt',
+      collapsed: false,
+      status: 'success',
+      prompt: 'rerun recovery prompt',
+      issueNumber: '950',
+      issueState: 'open',
+      planPath: '.tmp/issue-refine-950-consensus.md',
+      prUrl: undefined,
+      implStatus: 'idle',
+      refineRuns: [
+        {
+          id: 'rerun-refine-soft-1',
+          prompt: 'rerun recovery prompt',
+          status: 'success',
+          logs: rerunRefineTerminalDone.content,
+          collapsed: false,
+          createdAt: t1 + 9100,
+          updatedAt: t1 + 15000,
+        },
+      ],
+      version: 3,
+      widgets: [
+        rerunPromptWidget,
+        rerunPlanTerminalFailed,
+        rerunPlanProgressFailed,
+        rerunActionArchived,
+        rerunRefineTerminalDone,
+        rerunRefineProgressDone,
+        rerunActionFresh,
+      ],
+      phase: 'plan-completed',
+      actionMode: 'default',
+      rerun: {
+        commandType: 'refine',
+        prompt: 'rerun recovery prompt',
+        issueNumber: '950',
+        lastExitCode: 0,
+        updatedAt: t1 + 15000,
+      },
+      createdAt: t1,
+      updatedAt: t1 + 15101,
+    });
+
+    const rerunLatestAfterRecover = rerunSession.locator('.widget-buttons').last();
+    await rerunLatestAfterRecover.locator('button:has-text("Implement")').waitFor({ timeout: 10000 });
+
+    await softCheck('rerun completed -> archived row shows Reran marker', async () => {
+      const visible = await rerunSession.locator('.widget-buttons').first().locator('button:has-text("Reran")').isVisible();
+      if (!visible) {
+        throw new Error('Archived Reran marker not visible');
+      }
+    });
+
+    await softCheck('rerun completed -> recovered row enables Implement', async () => {
+      const disabled = await rerunLatestAfterRecover.locator('button:has-text("Implement")').isDisabled();
+      if (disabled) {
+        throw new Error('Implement is still disabled after successful rerun recovery');
       }
     });
 

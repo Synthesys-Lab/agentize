@@ -23,7 +23,7 @@ messages from the extension host.
 - `plan/impl` from action widgets
 - `plan/refine` from inline refine input widget submission
 - `plan/rerun` from rerun action widgets
-- `plan/stop` from the Plan terminal stop control
+- `plan/stop` from terminal stop controls (Plan/Refine/Implementation)
 - `link/openExternal` and `link/openFile` from terminal link clicks
 
 ### Incoming Messages
@@ -49,6 +49,7 @@ over raw log replay, so elapsed stage timings remain stable across reloads.
 
 ## Process Control
 
-The plan terminal header includes a stop control that posts `plan/stop`. The button is
-only surfaced when the session status indicates an active plan run, and the UI disables
-it immediately to prevent repeated stop requests.
+Terminal headers include stop controls that post `plan/stop`. The stop button is surfaced
+only on the currently running terminal (plan, refine, or implementation) and is hidden on
+non-running or archived terminal widgets. Clicking stop disables the control immediately to
+avoid repeated requests while the host waits for the real process exit event.

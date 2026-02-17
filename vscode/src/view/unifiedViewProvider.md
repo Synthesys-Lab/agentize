@@ -40,7 +40,8 @@ issue number and focus prompt from the webview. `plan/impl` validates the issue 
 before launching implementation output into terminal widgets. `plan/rerun` reuses the
 stored rerun context to retry failed `plan`/`refine`/`impl` runs without requiring
 manual prompt re-entry.
-`plan/stop` sends a stop request to the runner and logs the request immediately.
+`plan/stop` sends a stop request to whichever command is currently running for the
+session (`plan`, `refine`, or `impl`) and logs the request immediately.
 Final session state changes now wait for the real runner `exit` event, which prevents
 the UI from presenting a completed stop before the process has actually terminated.
 `plan/view-issue` resolves the canonical GitHub issue URL via `gh issue view` and opens it.
@@ -76,7 +77,7 @@ timing can be reconstructed accurately after reload.
 
 ### Action Row State
 `buildActionButtons` uses two states:
-- While `implement`, `refine`, or `rerun` is running, the row is locked to that single action button.
+- While `implement`, `refine`, or `rerun` is running, the row is locked to that single action button (`rerun` shows `Rerunning...`).
 - After the run exits, the row always returns to the five core buttons:
   `View Plan`, `View Issue`, `Implement`, `Refine`, and `Rerun`.
 
@@ -85,6 +86,8 @@ When a direct `refine` run exits, the in-place running button is archived as a d
 to the end of the session timeline so follow-up actions stay near the most recent output.
 Direct `implement` runs follow the same append behavior, archiving the running button as
 `Implemented` (or `Implement failed`) before appending the fresh action row.
+`rerun` follows the same archival pattern: the active rerun row is frozen as `Reran`
+or `Rerun failed`, and a fresh core action row is appended at the timeline tail.
 
 `Rerun` is always rendered in the core row and is enabled only when the latest related
 run exit code is non-zero; otherwise it is disabled. A successful implementation run

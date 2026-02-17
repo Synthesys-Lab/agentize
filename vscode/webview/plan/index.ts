@@ -83,6 +83,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     prUrl?: string;
     implStatus?: string;
     phase?: string;
+    refineRuns?: Array<{ id: string; status: string; updatedAt?: number }>;
     widgets?: WidgetState[];
   };
 
@@ -117,46 +118,82 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
   const sessionNodes = new Map<string, SessionNode>();
   const sessionCache = new Map<string, SessionSummary>();
   const WIDGET_ROLE_PLAN_TERMINAL = 'plan-terminal';
+  const WIDGET_ROLE_IMPL_TERMINAL = 'impl-terminal';
+  const WIDGET_ROLE_REFINE_TERMINAL = 'refine-terminal';
 
-  const getPlanTerminalId = (session: SessionSummary): string | undefined => {
-    const widgets = session.widgets;
-    if (!Array.isArray(widgets)) {
-      return undefined;
+  const resetStopButton = (button: HTMLButtonElement, hidden: boolean): void => {
+    if (hidden) {
+      button.classList.add('hidden');
+      button.disabled = true;
+      button.classList.remove('button-disabled');
+      button.textContent = 'Stop';
+      delete button.dataset.stopping;
+      return;
     }
-    const terminal = widgets.find(
-      (widget) => widget.type === 'terminal' && widget.metadata?.role === WIDGET_ROLE_PLAN_TERMINAL,
-    );
-    return terminal?.id;
+    button.classList.remove('hidden');
+    if (button.dataset.stopping !== 'true') {
+      button.disabled = false;
+      button.classList.remove('button-disabled');
+      button.textContent = 'Stop';
+    }
   };
 
-  const syncPlanStopButton = (session: SessionSummary): void => {
-    const terminalId = getPlanTerminalId(session);
-    if (!terminalId) {
-      return;
+  const resolveRunningRefineRunId = (session: SessionSummary): string | undefined => {
+    const runs = Array.isArray(session.refineRuns) ? session.refineRuns : [];
+    const running = runs
+      .filter((run) => run.status === 'running')
+      .sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+    if (running.length > 0) {
+      return running[0].id;
     }
-    const handle = getWidgetHandle(session.id, terminalId);
-    if (!handle || handle.type !== 'terminal') {
-      return;
+    const widgets = Array.isArray(session.widgets) ? session.widgets : [];
+    const latestRefineTerminal = widgets
+      .filter((widget) => widget.type === 'terminal' && widget.metadata?.role === WIDGET_ROLE_REFINE_TERMINAL)
+      .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))[0];
+    const runIdCandidate = latestRefineTerminal?.metadata?.runId;
+    return typeof runIdCandidate === 'string' ? runIdCandidate : undefined;
+  };
+
+  const shouldShowStopForTerminal = (session: SessionSummary, widget: WidgetState): boolean => {
+    if (widget.type !== 'terminal') {
+      return false;
     }
-    const stopButton = handle.element.querySelector<HTMLButtonElement>('.terminal-stop-button');
-    if (!stopButton) {
-      return;
+    const role = widget.metadata?.role;
+    if (role === WIDGET_ROLE_PLAN_TERMINAL) {
+      return session.status === 'running' || session.phase === 'planning';
     }
-    const shouldShow = session.status === 'running';
-    if (shouldShow) {
-      stopButton.classList.remove('hidden');
-      if (stopButton.dataset.stopping !== 'true') {
-        stopButton.disabled = false;
-        stopButton.classList.remove('button-disabled');
-        stopButton.textContent = 'Stop';
+    if (role === WIDGET_ROLE_IMPL_TERMINAL) {
+      return session.implStatus === 'running' || session.phase === 'implementing';
+    }
+    if (role === WIDGET_ROLE_REFINE_TERMINAL) {
+      if (session.phase !== 'refining') {
+        return false;
       }
-      return;
+      const runningRunId = resolveRunningRefineRunId(session);
+      if (!runningRunId) {
+        return true;
+      }
+      return widget.metadata?.runId === runningRunId;
     }
-    stopButton.classList.add('hidden');
-    stopButton.disabled = true;
-    stopButton.classList.remove('button-disabled');
-    stopButton.textContent = 'Stop';
-    delete stopButton.dataset.stopping;
+    return false;
+  };
+
+  const syncStopButtons = (session: SessionSummary): void => {
+    const widgets = Array.isArray(session.widgets) ? session.widgets : [];
+    for (const widget of widgets) {
+      if (widget.type !== 'terminal') {
+        continue;
+      }
+      const handle = getWidgetHandle(session.id, widget.id);
+      if (!handle || handle.type !== 'terminal') {
+        continue;
+      }
+      const stopButton = handle.element.querySelector<HTMLButtonElement>('.terminal-stop-button');
+      if (!stopButton) {
+        continue;
+      }
+      resetStopButton(stopButton, !shouldShowStopForTerminal(session, widget));
+    }
   };
 
   const showInputPanel = () => {
@@ -353,16 +390,13 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
         return;
       }
       case 'terminal': {
-        const isPlanTerminal = widget.metadata?.role === WIDGET_ROLE_PLAN_TERMINAL;
         const terminal = appendTerminalBox(sessionId, widget.title ?? 'Terminal', {
           widgetId: widget.id,
           collapsed: Boolean(widget.metadata?.collapsed),
           onLinkClick: handleLinkClick,
-          onStop: isPlanTerminal
-            ? () => {
-                postMessage({ type: 'plan/stop', sessionId });
-              }
-            : undefined,
+          onStop: () => {
+            postMessage({ type: 'plan/stop', sessionId });
+          },
         });
         if (terminal && Array.isArray(widget.content)) {
           terminal.setLines(widget.content);
@@ -548,7 +582,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
 
     registerSessionContainer(session.id, node.body);
     syncWidgets(session.id, session.widgets);
-    syncPlanStopButton(session);
+    syncStopButtons(session);
   };
 
   const removeSession = (sessionId: string): void => {

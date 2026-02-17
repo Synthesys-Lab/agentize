@@ -153,19 +153,51 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
           return;
         }
         const session = this.store.getSession(sessionId);
-        if (!session || session.status !== 'running') {
+        if (!session) {
+          return;
+        }
+        const implRunning = this.runner.isRunning(sessionId, 'impl');
+        const refineRunning = this.runner.isRunning(sessionId, 'refine');
+        const planRunning = this.runner.isRunning(sessionId, 'plan');
+        const activeCommandType: RunCommandType | undefined =
+          implRunning ? 'impl' : refineRunning ? 'refine' : planRunning ? 'plan' : undefined;
+        if (!activeCommandType) {
           return;
         }
         const stopped = this.runner.stop(sessionId);
         if (!stopped) {
           this.output.appendLine(`[unifiedView] stop requested but no process found for session ${sessionId}`);
-          this.appendSystemLog(sessionId, 'Unable to stop: no active process found.', true, 'plan');
+          if (activeCommandType === 'refine') {
+            const runningRefine = [...(session.refineRuns ?? [])]
+              .sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0))
+              .find((run) => run.status === 'running');
+            if (runningRefine?.id) {
+              this.appendRefineLines(sessionId, runningRefine.id, ['Unable to stop: no active process found.']);
+            } else {
+              this.appendSystemLog(sessionId, 'Unable to stop: no active process found.', true, 'plan');
+            }
+          } else {
+            this.appendSystemLog(sessionId, 'Unable to stop: no active process found.', true, activeCommandType);
+          }
           this.syncActionButtons(sessionId);
           return;
         }
-        this.pendingUserStops.add(sessionId);
+        if (activeCommandType === 'plan') {
+          this.pendingUserStops.add(sessionId);
+        }
         this.output.appendLine(`[unifiedView] stop requested for session ${sessionId}`);
-        this.appendSystemLog(sessionId, 'Stop requested by user.', true, 'plan');
+        if (activeCommandType === 'refine') {
+          const runningRefine = [...(session.refineRuns ?? [])]
+            .sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0))
+            .find((run) => run.status === 'running');
+          if (runningRefine?.id) {
+            this.appendRefineLines(sessionId, runningRefine.id, ['Stop requested by user.']);
+          } else {
+            this.appendSystemLog(sessionId, 'Stop requested by user.', true, 'plan');
+          }
+        } else {
+          this.appendSystemLog(sessionId, 'Stop requested by user.', true, activeCommandType);
+        }
         return;
       }
       case 'plan/impl': {
@@ -922,10 +954,13 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
           session.implStatus === 'success' || session.implStatus === 'error'
             ? 'completed'
             : 'plan-completed';
+        const isRerunAction = session.actionMode === 'rerun';
         const update: Partial<PlanSession> = isImpl
           ? { implStatus: status, phase: 'completed' }
           : isRefine
-          ? { phase: refinePhase }
+          ? isRerunAction
+            ? { status, phase: refinePhase }
+            : { phase: refinePhase }
           : { status, phase: 'plan-completed' };
         const line = event.signal ? `Exit signal: ${event.signal}` : `Exit code: ${event.code ?? 'null'}`;
         if (isImpl) {
@@ -967,7 +1002,15 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         if (updated) {
           this.postSessionUpdate(updated.id, updated);
         }
-        if (isRefine && session.actionMode === 'refine') {
+        if (session.actionMode === 'rerun') {
+          this.archiveActiveActionWidget(event.sessionId, {
+            id: 'reran',
+            label: status === 'success' ? 'Reran' : 'Rerun failed',
+            action: 'plan/rerun',
+            variant: 'secondary',
+            disabled: true,
+          });
+        } else if (isRefine && session.actionMode === 'refine') {
           this.archiveActiveActionWidget(event.sessionId, {
             id: 'refined',
             label: status === 'success' ? 'Refined' : 'Refine failed',
@@ -1443,7 +1486,7 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
     if (isBusy && actionMode === 'rerun') {
       buttons.push({
         id: 'rerun',
-        label: 'Running...',
+        label: 'Rerunning...',
         action: 'plan/rerun',
         variant: 'primary',
         disabled: true,

@@ -20,6 +20,8 @@ node vscode/test/playwright/test-session-append.js
   4. Wait for simulated planner completion and verify action buttons are enabled.
   5. Click `Refine`, submit the same prompt, simulate refine run, and wait for completion.
   6. Simulate `Implement` running/completion and verify the running row is archived while a fresh action row is appended at the timeline tail.
+  7. Simulate a failed plan session that requires `Rerun`, verify rerun-in-progress shows only `Rerunning...`, then verify successful rerun archives as `Reran` and restores an enabled `Implement` button.
+- During running refine/implement states, verify terminal stop controls are visible; verify they hide again after completion.
 - Dumps screenshots for every key step into worktree `.tmp` with deterministic names:
   - `.tmp/test-session-append-1.png`
   - `.tmp/test-session-append-2.png`
