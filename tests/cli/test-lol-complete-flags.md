@@ -5,6 +5,7 @@ Validates `lol --complete <topic>` returns the expected flag sets.
 ## Coverage
 
 - Existing flag topics return the documented flags.
+- `plan-flags` includes `--backend`.
 - `impl-flags` includes `--wait-for-ci`.
 - `upgrade-flags` includes `--keep-branch`.
 - Unknown or removed topics return empty output.

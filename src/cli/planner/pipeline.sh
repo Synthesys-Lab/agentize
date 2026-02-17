@@ -3,12 +3,13 @@
 # Delegates multi-agent pipeline execution to the Python backend
 
 # Run the full multi-agent debate pipeline
-# Usage: _planner_run_pipeline "<feature-description>" [issue-mode] [verbose] [refine-issue-number]
+# Usage: _planner_run_pipeline "<feature-description>" [issue-mode] [verbose] [refine-issue-number] [backend]
 _planner_run_pipeline() {
     local feature_desc="$1"
     local issue_mode="${2:-true}"
     local verbose="${3:-false}"
     local refine_issue_number="${4:-}"
+    local backend="${5:-}"
 
     local repo_root="${AGENTIZE_HOME:-$(git rev-parse --show-toplevel 2>/dev/null)}"
     if [ -z "$repo_root" ] || [ ! -d "$repo_root" ]; then
@@ -34,6 +35,9 @@ _planner_run_pipeline() {
 
     if [ -n "$refine_issue_number" ]; then
         args+=(--refine-issue-number "$refine_issue_number")
+    fi
+    if [ -n "$backend" ]; then
+        args+=(--backend "$backend")
     fi
 
     python "${args[@]}"

@@ -174,6 +174,10 @@ export class PlanRunner {
     const prompt = input.prompt ?? '';
     const args = [wrapperPath, 'plan'];
     let display = 'lol plan';
+    if (backend) {
+      args.push('--backend', backend);
+      display = `${display} --backend ${this.quoteArg(backend)}`.trim();
+    }
 
     if (input.command === 'refine') {
       const issueNumber = input.refineIssueNumber ?? NaN;

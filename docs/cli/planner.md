@@ -49,6 +49,8 @@ planner:
 
 Stage-specific keys override `planner.backend`. Defaults remain `claude:sonnet` (understander) and `claude:opus` (others).
 
+`lol plan --backend <provider:model>` forwards an override to the Python backend, replacing `planner.backend` for that run while leaving stage-specific keys untouched.
+
 ### Default Issue Creation
 
 By default, `lol plan` creates a placeholder GitHub issue before the pipeline runs using a truncated placeholder title (`[plan] placeholder: <first 50 chars>...`), and uses `issue-{N}` artifact naming. After the consensus stage completes, the issue body is updated with the final plan plus a trailing provenance footer (`Plan based on commit <hash>`), the title is set from the first `Implementation Plan:` or `Consensus Plan:` header in the consensus file (fallback: truncated feature description), and the `agentize:plan` label is applied.

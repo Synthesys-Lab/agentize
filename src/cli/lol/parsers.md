@@ -30,8 +30,9 @@ Handles `--dry-run` and calls `_lol_cmd_claude_clean`.
 Parses `--today`, `--week`, `--cache`, `--cost` before calling `_lol_cmd_usage`.
 
 ### _lol_parse_plan()
-Supports `--dry-run`, `--verbose`, `--editor`, and `--refine` flags, then calls
-`_lol_cmd_plan` with normalized arguments.
+Supports `--dry-run`, `--verbose`, `--editor`, `--backend`, and `--refine` flags, then calls
+`_lol_cmd_plan` with normalized arguments. Stage-specific backend flags remain rejected
+and point users to `.agentize.local.yaml` for per-stage configuration.
 
 In refine mode, editor-provided `feature_desc` is preserved; if both editor text
 and `refine_instructions` are present, they are concatenated with a blank line

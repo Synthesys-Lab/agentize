@@ -3,12 +3,13 @@
 # Delegates to planner pipeline for multi-agent debate
 
 # Run the multi-agent debate pipeline
-# Usage: _lol_cmd_plan <feature_desc_or_refine_instructions> <issue_mode> <verbose> <refine_issue_number>
+# Usage: _lol_cmd_plan <feature_desc_or_refine_instructions> <issue_mode> <verbose> <refine_issue_number> <backend>
 _lol_cmd_plan() {
     local feature_desc="$1"
     local issue_mode="$2"
     local verbose="$3"
     local refine_issue_number="$4"
+    local backend="$5"
 
     # Validate feature description
     if [ -z "$feature_desc" ] && [ -z "$refine_issue_number" ]; then
@@ -29,5 +30,5 @@ _lol_cmd_plan() {
     fi
 
     # Delegate to planner pipeline
-    _planner_run_pipeline "$feature_desc" "$issue_mode" "$verbose" "$refine_issue_number"
+    _planner_run_pipeline "$feature_desc" "$issue_mode" "$verbose" "$refine_issue_number" "$backend"
 }

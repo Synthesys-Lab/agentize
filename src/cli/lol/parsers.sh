@@ -236,6 +236,7 @@ _lol_parse_plan() {
     local feature_desc=""
     local refine_issue_number=""
     local refine_instructions=""
+    local backend=""
 
     # Handle --help
     if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
@@ -250,6 +251,7 @@ _lol_parse_plan() {
         echo "  --verbose    Print detailed stage logs (quiet by default)"
         echo "  --editor     Open \$EDITOR to compose feature description"
         echo "  --refine     Refine an existing plan issue by number"
+        echo "  --backend    Backend in provider:model form (overrides planner.backend)"
         echo "  --help       Show this help message"
         return 0
     fi
@@ -279,8 +281,18 @@ _lol_parse_plan() {
                 refine_issue_number="$1"
                 shift
                 ;;
-            --backend|--understander|--bold|--critique|--reducer)
-                echo "Error: Backend flags are no longer supported for lol plan." >&2
+            --backend)
+                shift
+                if [ -z "$1" ]; then
+                    echo "Error: --backend requires provider:model" >&2
+                    echo "Usage: lol plan [options] \"<feature-description>\"" >&2
+                    return 1
+                fi
+                backend="$1"
+                shift
+                ;;
+            --understander|--bold|--critique|--reducer)
+                echo "Error: Stage-specific backend flags are not supported for lol plan." >&2
                 echo "Configure planner backends in .agentize.local.yaml (planner.backend, planner.understander, planner.bold, planner.critique, planner.reducer)." >&2
                 echo "Usage: lol plan [options] \"<feature-description>\"" >&2
                 return 1
@@ -382,7 +394,7 @@ _lol_parse_plan() {
         issue_mode="false"
     fi
 
-    _lol_cmd_plan "$feature_desc" "$issue_mode" "$verbose" "$refine_issue_number"
+    _lol_cmd_plan "$feature_desc" "$issue_mode" "$verbose" "$refine_issue_number" "$backend"
 }
 
 # Parse impl command arguments and call _lol_cmd_impl

@@ -134,7 +134,7 @@ lol usage --week
 Run the multi-agent debate pipeline.
 
 ```bash
-lol plan [--dry-run] [--verbose] [--editor] [--refine <issue-no> [refinement-instructions]] \
+lol plan [--dry-run] [--verbose] [--editor] [--backend <provider:model>] [--refine <issue-no> [refinement-instructions]] \
   [<feature-description>]
 lol plan --refine <issue-no> [refinement-instructions]
 ```
@@ -148,6 +148,7 @@ Runs the full multi-agent debate pipeline for a feature description, producing a
 | `--dry-run` | No | - | Skip GitHub issue creation; use timestamp-based artifacts |
 | `--verbose` | No | - | Print detailed stage logs (quiet by default) |
 | `--editor` | No | - | Open $EDITOR to compose feature description; when combined with `--refine`, the editor text becomes the refinement focus |
+| `--backend <provider:model>` | No | - | Override `planner.backend` for this run |
 | `--refine <issue-no> [refinement-instructions]` | No | - | Refine an existing plan issue; if positional instructions are provided with `--editor`, they are appended after the editor text |
 
 By default, `lol plan` creates a GitHub issue when `gh` is available and applies the `agentize:plan` label (creating it on demand if missing). Use `--dry-run` to skip issue creation and use timestamp-based artifact naming instead.
@@ -169,6 +170,8 @@ planner:
 ```
 
 Stage-specific keys override `planner.backend`. If a key is missing, defaults remain `claude:sonnet` for understander and `claude:opus` for bold/critique/reducer.
+
+Use `--backend <provider:model>` to override `planner.backend` for a single run without changing the YAML file.
 
 #### Example
 

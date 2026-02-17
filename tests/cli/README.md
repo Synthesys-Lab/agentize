@@ -36,7 +36,7 @@ Tests for the `lol` (agentize) command:
 ### Plan Pipeline Tests (`test-lol-plan-*`)
 
 - `test-lol-plan-missing-args.sh` - Missing args error handling for `lol plan`
-- `test-lol-plan-backend-flags.sh` - Backend flag format validation
+- `test-lol-plan-backend-flags.sh` - Backend override handling for `lol plan`
 - `test-lol-plan-issue-mode.sh` - Issue creation vs `--dry-run` behavior
 - `test-lol-plan-pipeline-stubbed.sh` - Pipeline flow with stubbed `acw` and consensus
 

@@ -220,6 +220,11 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--issue-mode", default="true", choices=["true", "false"])
     parser.add_argument("--verbose", default="false", choices=["true", "false"])
     parser.add_argument("--refine-issue-number", default="")
+    parser.add_argument(
+        "--backend",
+        default="",
+        help="Backend in provider:model form (overrides planner.backend)",
+    )
     args = parser.parse_args(argv)
 
     issue_mode = args.issue_mode == "true"
@@ -246,6 +251,9 @@ def main(argv: list[str]) -> int:
 
     try:
         backend_config = _load_planner_backend_config(repo_root, Path.cwd())
+        backend_override = args.backend.strip()
+        if backend_override:
+            backend_config["backend"] = backend_override
         stage_backends = _resolve_stage_backends(backend_config)
     except (RuntimeError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)

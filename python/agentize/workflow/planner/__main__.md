@@ -10,10 +10,11 @@ CLI backend for `python -m agentize.workflow.planner`, delegating pipeline execu
 def main(argv: list[str]) -> int
 ```
 
-CLI entrypoint for the planner backend. Parses args, resolves repo root and backend
-configuration, runs stages, publishes plan updates with a trailing commit provenance
-footer (when enabled), and prints plain-text progress output. Refinement fetches strip
-the footer before reuse as debate context. Returns process exit code.
+CLI entrypoint for the planner backend. Parses args (including optional backend
+overrides), resolves repo root and backend configuration, runs stages, publishes plan
+updates with a trailing commit provenance footer (when enabled), and prints plain-text
+progress output. Refinement fetches strip the footer before reuse as debate context.
+Returns process exit code.
 
 Command semantics are documented in `docs/cli/planner.md` and
 `docs/feat/core/ultra-planner.md`.
@@ -39,6 +40,8 @@ helpers for prompt rendering and ACW invocation.
 
 - `_load_planner_backend_config()`, `_resolve_stage_backends()`: Reads
   `.agentize.local.yaml` and resolves provider/model pairs per stage.
+- `--backend <provider:model>` overrides `planner.backend` after config is loaded,
+  allowing `lol plan --backend ...` to pin a single backend for the run.
 
 ### Repo root resolution
 

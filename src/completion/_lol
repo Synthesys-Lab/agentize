@@ -100,6 +100,7 @@ _lol_plan() {
         '--dry-run[Skip GitHub issue creation; use timestamp-based artifacts]' \
         '--verbose[Print detailed stage logs]' \
         '--editor[Open $EDITOR to compose feature description]' \
+        '--backend[Backend in provider:model form]:backend:' \
         '--refine[Refine an existing plan issue]:issue-number:' \
         ':feature description:'
 }

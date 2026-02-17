@@ -5,7 +5,7 @@ Thin adapter that forwards `lol plan` execution to the Python planner backend. T
 
 ## External Interface
 
-### _planner_run_pipeline "<feature-description>" [issue-mode] [verbose] [refine-issue-number]
+### _planner_run_pipeline "<feature-description>" [issue-mode] [verbose] [refine-issue-number] [backend]
 
 Delegates to `python -m agentize.workflow.planner` with the provided arguments.
 
@@ -14,6 +14,7 @@ Delegates to `python -m agentize.workflow.planner` with the provided arguments.
 - `issue-mode`: `"true"` to create/publish to a GitHub issue when possible; `"false"` for timestamp-only artifacts.
 - `verbose`: `"true"` to print detailed progress messages to stderr.
 - `refine-issue-number`: Optional issue number to refine an existing plan.
+- `backend`: Optional `provider:model` override forwarded as `--backend`.
 
 **Behavior**:
 - Resolves repo root and sets `AGENTIZE_HOME` and `PYTHONPATH` for Python imports.

@@ -51,6 +51,7 @@ _lol_complete() {
             echo "--dry-run"
             echo "--verbose"
             echo "--editor"
+            echo "--backend"
             echo "--refine"
             ;;
         impl-flags)
