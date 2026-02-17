@@ -30,6 +30,13 @@ Agentize uses two configuration files with distinct purposes:
 
 For the complete configuration schema and environment variable mapping, see [Configuration Reference](../envvar.md).
 
+## Settings UI
+
+The VS Code extension includes a Settings UI that surfaces these files for backend
+configuration. It presents `.agentize.yaml` as read-only metadata and lets you edit
+`planner.backend` values in the repo and user scopes. See
+[`docs/vscode/settings-ui.md`](../vscode/settings-ui.md) for usage details.
+
 ## Location
 
 The metadata file is located at the project root:

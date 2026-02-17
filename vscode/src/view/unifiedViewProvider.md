@@ -2,7 +2,7 @@
 
 Unified webview provider that renders a single Activity Bar view with tab navigation for
 Plan, Worktree, and Settings. It routes plan-related messages between the webview UI,
-session store, and runner while keeping auxiliary panels in the same webview.
+session store, runner, and now handles settings file I/O for backend configuration.
 
 ## External Interface
 
@@ -26,6 +26,8 @@ Consumes UI messages:
 - `plan/view-plan`
 - `plan/view-issue`
 - `plan/view-pr`
+- `settings/load`
+- `settings/save`
 - `link/openExternal` (GitHub issue URLs)
 - `link/openFile` (local markdown paths)
 
@@ -34,6 +36,9 @@ Emits UI messages:
 - `plan/sessionUpdated`
 - `widget/append`
 - `widget/update`
+- `settings/loaded`
+- `settings/saved`
+- `settings/error`
 
 `plan/refine` starts a refinement run for the selected session, using the captured
 issue number and focus prompt from the webview. `plan/impl` validates the issue state
@@ -52,7 +57,7 @@ the UI from presenting a completed stop before the process has actually terminat
 Builds the unified HTML shell with a tab strip and three panels:
 - `#plan-root` loads the compiled Plan webview script and initial state.
 - `#worktree-root` loads the Worktree placeholder script.
-- `#settings-root` loads the Settings placeholder script.
+- `#settings-root` loads the Settings webview script.
 
 The method assembles CSP-safe script/style URIs and injects a shared bootloader that
 surfaces asset or runtime errors through each panel's skeleton status line.
@@ -68,6 +73,20 @@ assets are not present on disk.
 ### buildPlaceholderSkeleton(title: string, statusId: string, hasAssets: boolean)
 Creates a lightweight skeleton for Worktree and Settings panels while reusing the
 Plan styling tokens.
+
+### handleSettingsLoad()
+Reads `.agentize.yaml`, repo `.agentize.local.yaml`, and `~/.agentize.local.yaml` and
+posts a `settings/loaded` payload with the YAML snapshots and any `planner.backend`
+values discovered.
+
+### handleSettingsSave()
+Validates `provider:model` input, updates `planner.backend` inside the selected scope,
+then reloads and emits `settings/saved` so the UI can refresh its previews.
+
+### resolveBackendForRun()
+Searches for `planner.backend` using the standard `.agentize.local.yaml` precedence
+(repo → `$AGENTIZE_HOME` → `$HOME`) and returns the first valid backend spec for
+implementation runs.
 
 ### handleRunEvent(event: RunEvent)
 Transforms runner events into session updates and widget updates, routing stdout/stderr

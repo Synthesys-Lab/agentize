@@ -8,6 +8,7 @@ export interface RunPlanInput {
   cwd: string;
   refineIssueNumber?: number;
   runId?: string;
+  backend?: string;
 }
 
 export type RunEvent =

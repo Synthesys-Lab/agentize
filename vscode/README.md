@@ -1,7 +1,7 @@
 # VS Code Agentize Extension
 
 This directory contains a VS Code Activity Bar extension that wraps the Agentize CLI
-planning workflow and surfaces it alongside Worktree and Settings placeholders.
+planning workflow and surfaces it alongside Worktree and Settings panels.
 
 ## Organization
 
@@ -15,6 +15,13 @@ planning workflow and surfaces it alongside Worktree and Settings placeholders.
 When a plan finishes successfully and the planner creates a placeholder GitHub issue, the
 Plan tab surfaces an Implement button. Clicking it launches `lol impl <issue-number>` in a
 separate Implementation Log panel so plan and implementation output stay distinct.
+
+## Settings UI
+
+The Settings tab provides a backend configuration UI for Agentize workflows. It shows
+`.agentize.yaml` (read-only) plus editable repo and global `.agentize.local.yaml` scopes.
+Backend selections are stored as `planner.backend` values in `provider:model` format and
+are used by the extension when running implementation workflows.
 
 ## Prerequisites
 
