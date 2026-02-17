@@ -19,12 +19,11 @@ Even if user is telling you "build...", "add...", "create...", "implement...", o
 you must interpret these as making a plan for how to have these achieved, not actually doing them!
   - **DO NOT** make any changes to the codebase!
 
-2. This command uses a **multi-agent debate system** to generate high-quality plans.
-**No matter** how simple you think the request is, always strictly follow the multi-agent
-debate workflow below to do a thorough analysis of the request throughout the whole code base.
-Sometimes what seems simple at first may have hidden complexities or breaking changes that
-need to be uncovered via a debate and thorough codebase analysis.
-  - **DO** follow the following multi-agent debate workflow exactly as specified.
+2. This command uses **automatic routing** to select the right planning path:
+  - **Lite path** (planner-lite) for simple, repo-only changes that meet the thresholds
+  - **Full debate path** for anything that needs deeper analysis or external research
+Follow the routing logic in Step 4a. Do not override it unless `--force-full` is used or
+you are in `--refine` mode.
 
 Create implementation plans through multi-agent debate, combining innovation, critical analysis,
 and simplification into a balanced consensus plan.
@@ -33,13 +32,13 @@ Invoke the command: `/ultra-planner [feature-description]` or `/ultra-planner --
 
 ## What This Command Does
 
-This command orchestrates a multi-agent debate system to generate high-quality implementation plans:
+This command orchestrates a multi-agent planning system to generate high-quality implementation plans:
 
 1. **Context gathering**: Launch understander agent to gather codebase context
-2. **Three-agent debate**: Launch bold-proposer (with context) first, then critique and reducer analyze its output
-3. **Combine reports**: Merge all three perspectives into single document
-4. **External consensus**: Invoke external-consensus skill to synthesize balanced plan
-5. **Draft issue creation**: Automatically create draft GitHub issue via open-issue skill
+2. **Routing**: Use understander output to choose lite or full path
+3. **Lite path** (if eligible): Launch planner-lite to produce a single-agent plan
+4. **Full path** (otherwise): Launch bold-proposer, then critique + reducer, then synthesize consensus
+5. **Issue update**: Update the placeholder or existing issue with the plan (or print dry-run summary)
 
 ## Inputs
 
@@ -100,7 +99,7 @@ This command orchestrates a multi-agent debate system to generate high-quality i
 Accept the $ARGUMENTS.
 
 **Dry-run mode:** If we have `--dry-run` anywhere in the arguments, set `DRY_RUN=true` and remove `--dry-run` from the arguments. In dry-run mode:
-- All agents run normally (understander, bold-proposer, critique, reducer, consensus)
+- Agents run normally according to routing (understander + lite path OR full debate path)
 - Plan files are saved to `.tmp/` as usual
 - **Skip** placeholder issue creation (Step 3)
 - **Skip** issue update (Step 8)
