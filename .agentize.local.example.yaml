@@ -37,6 +37,13 @@ server:
   num_workers: 5                   # Worker pool size (default: 5)
 
 # -----------------------------------------------------------------------------
+# Impl Defaults - lol impl configuration
+# -----------------------------------------------------------------------------
+impl:
+  model: codex:gpt-5.2-codex       # Default backend for lol impl (provider:model)
+  max_iter: 10                     # Default maximum iterations for lol impl
+
+# -----------------------------------------------------------------------------
 # Workflow Model Assignments - Model selection per workflow type
 # -----------------------------------------------------------------------------
 workflows:
