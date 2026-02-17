@@ -111,11 +111,11 @@ def handle_rebase(args: argparse.Namespace) -> int:
     """Handle rebase command — fetch and rebase onto target branch."""
     import subprocess
 
-    target_branch = getattr(args, "target_branch", None) or "main"
+    target_branch = args.target_branch or "main"
     remote = "origin"
 
     # Detect default branch if not explicitly provided
-    if not getattr(args, "target_branch", None):
+    if not args.target_branch:
         for candidate in ("main", "master"):
             result = subprocess.run(
                 ["git", "rev-parse", "--verify", f"{remote}/{candidate}"],

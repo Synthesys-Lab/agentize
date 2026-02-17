@@ -8,10 +8,9 @@
 _lol_cmd_rebase() {
     local target_branch="$1"
 
-    local target_flag=""
     if [ -n "$target_branch" ]; then
-        target_flag="--target-branch $target_branch"
+        python -m agentize.cli rebase --target-branch "$target_branch"
+    else
+        python -m agentize.cli rebase
     fi
-
-    python -m agentize.cli rebase $target_flag
 }
