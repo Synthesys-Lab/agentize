@@ -58,6 +58,7 @@ export interface TerminalWidgetOptions {
   maxLines?: number;
   onToggle?: (collapsed: boolean) => void;
   onLinkClick?: (event: Event) => void;
+  onStop?: () => void;
   hidden?: boolean;
 }
 
@@ -207,6 +208,24 @@ export const appendTerminalBox = (
 
   header.appendChild(toggle);
   header.appendChild(titleEl);
+
+  if (options.onStop) {
+    const stopButton = document.createElement('button');
+    stopButton.type = 'button';
+    stopButton.className = 'widget-button widget-button-danger terminal-stop-button hidden';
+    stopButton.textContent = 'Stop';
+    stopButton.addEventListener('click', () => {
+      if (stopButton.disabled) {
+        return;
+      }
+      stopButton.disabled = true;
+      stopButton.classList.add('button-disabled');
+      stopButton.textContent = 'Stopping...';
+      stopButton.dataset.stopping = 'true';
+      options.onStop?.();
+    });
+    header.appendChild(stopButton);
+  }
 
   const body = document.createElement('div');
   body.className = 'terminal-body';

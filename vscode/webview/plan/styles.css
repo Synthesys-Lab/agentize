@@ -278,6 +278,10 @@ button:disabled {
   flex: 1;
 }
 
+.terminal-stop-button {
+  margin-left: auto;
+}
+
 .terminal-body {
   max-height: 220px;
   overflow-y: auto;

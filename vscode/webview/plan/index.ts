@@ -122,6 +122,48 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
 
   const sessionNodes = new Map<string, SessionNode>();
   const sessionCache = new Map<string, SessionSummary>();
+  const WIDGET_ROLE_PLAN_TERMINAL = 'plan-terminal';
+
+  const getPlanTerminalId = (session: SessionSummary): string | undefined => {
+    const widgets = session.widgets;
+    if (!Array.isArray(widgets)) {
+      return undefined;
+    }
+    const terminal = widgets.find(
+      (widget) => widget.type === 'terminal' && widget.metadata?.role === WIDGET_ROLE_PLAN_TERMINAL,
+    );
+    return terminal?.id;
+  };
+
+  const syncPlanStopButton = (session: SessionSummary): void => {
+    const terminalId = getPlanTerminalId(session);
+    if (!terminalId) {
+      return;
+    }
+    const handle = getWidgetHandle(session.id, terminalId);
+    if (!handle || handle.type !== 'terminal') {
+      return;
+    }
+    const stopButton = handle.element.querySelector<HTMLButtonElement>('.terminal-stop-button');
+    if (!stopButton) {
+      return;
+    }
+    const shouldShow = session.status === 'running';
+    if (shouldShow) {
+      stopButton.classList.remove('hidden');
+      if (stopButton.dataset.stopping !== 'true') {
+        stopButton.disabled = false;
+        stopButton.classList.remove('button-disabled');
+        stopButton.textContent = 'Stop';
+      }
+      return;
+    }
+    stopButton.classList.add('hidden');
+    stopButton.disabled = true;
+    stopButton.classList.remove('button-disabled');
+    stopButton.textContent = 'Stop';
+    delete stopButton.dataset.stopping;
+  };
 
   const showInputPanel = () => {
     inputPanel?.classList.remove('hidden');
@@ -321,10 +363,16 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
         return;
       }
       case 'terminal': {
+        const isPlanTerminal = widget.metadata?.role === WIDGET_ROLE_PLAN_TERMINAL;
         const terminal = appendTerminalBox(sessionId, widget.title ?? 'Terminal', {
           widgetId: widget.id,
           collapsed: Boolean(widget.metadata?.collapsed),
           onLinkClick: handleLinkClick,
+          onStop: isPlanTerminal
+            ? () => {
+                postMessage({ type: 'plan/stop', sessionId });
+              }
+            : undefined,
         });
         if (terminal && Array.isArray(widget.content)) {
           terminal.setLines(widget.content);
@@ -510,6 +558,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
 
     registerSessionContainer(session.id, node.body);
     syncWidgets(session.id, session.widgets);
+    syncPlanStopButton(session);
   };
 
   const removeSession = (sessionId: string): void => {

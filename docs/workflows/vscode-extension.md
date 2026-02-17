@@ -43,6 +43,13 @@ Sessions track a phase string to coordinate UI actions:
 Phase changes drive button state updates so that Refine and Implement are mutually exclusive
 and only enabled at appropriate times.
 
+## Process Control
+
+During an active plan run, the terminal header exposes a Stop control that posts a
+`plan/stop` message. The extension terminates the running plan process, records a stop
+marker in the plan log, and marks the session as `error` with phase `plan-completed` so
+the action row returns immediately while keeping Implement disabled for interrupted runs.
+
 ## Issue Number Capture
 
 The planner emits lines such as `Created placeholder issue #N` or a GitHub issue URL.

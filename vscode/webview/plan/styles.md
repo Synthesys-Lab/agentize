@@ -13,6 +13,7 @@ Minimal readable styles for the Plan webview UI.
 - `.session-body`: contains the widget timeline for a session.
 - `.widget`: base class for appended widgets.
 - `.widget-terminal`: terminal widget container.
+- `.terminal-stop-button`: stop control aligned to the right edge of the terminal header.
 - `.widget-progress`: step progress indicator widget.
 - `.widget-buttons`: action button groups.
 - `.widget-input`: inline refinement input widget.

@@ -146,6 +146,36 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         this.startRun(session, 'plan');
         return;
       }
+      case 'plan/stop': {
+        const sessionId = message.sessionId ?? '';
+        if (!sessionId) {
+          return;
+        }
+        const session = this.store.getSession(sessionId);
+        if (!session || session.status !== 'running') {
+          return;
+        }
+        const stoppedAt = Date.now();
+        const stopped = this.runner.stop(sessionId);
+        if (!stopped) {
+          this.output.appendLine(`[unifiedView] stop requested but no process found for session ${sessionId}`);
+        }
+        this.appendSystemLog(sessionId, 'Plan run stopped by user.', true, 'plan');
+        this.recordProgressExit(sessionId, WIDGET_ROLES.planProgress, stoppedAt);
+        this.completeProgress(sessionId, WIDGET_ROLES.planProgress);
+        const rerun = this.buildRerunStateFromFailure(session, 'plan', 1, '');
+        const updated = this.store.updateSession(sessionId, {
+          status: 'error',
+          phase: 'plan-completed',
+          actionMode: 'default',
+          rerun,
+        });
+        if (updated) {
+          this.postSessionUpdate(updated.id, updated);
+        }
+        this.syncActionButtons(sessionId);
+        return;
+      }
       case 'plan/impl': {
         const sessionId = message.sessionId ?? '';
         if (!sessionId) {
@@ -1848,6 +1878,7 @@ export const UnifiedViewProviderMessages = {
     'webview/ready',
     'plan/new',
     'plan/run',
+    'plan/stop',
     'plan/refine',
     'plan/impl',
     'plan/toggleCollapse',

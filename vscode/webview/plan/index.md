@@ -23,6 +23,7 @@ messages from the extension host.
 - `plan/impl` from action widgets
 - `plan/refine` from inline refine input widget submission
 - `plan/rerun` from rerun action widgets
+- `plan/stop` from the Plan terminal stop control
 - `link/openExternal` and `link/openFile` from terminal link clicks
 
 ### Incoming Messages
@@ -45,3 +46,9 @@ state and live updates aligned without legacy duplicated UI sections.
 
 For progress widgets, hydration now prefers persisted `metadata.progressEvents` timestamps
 over raw log replay, so elapsed stage timings remain stable across reloads.
+
+## Process Control
+
+The plan terminal header includes a stop control that posts `plan/stop`. The button is
+only surfaced when the session status indicates an active plan run, and the UI disables
+it immediately to prevent repeated stop requests.

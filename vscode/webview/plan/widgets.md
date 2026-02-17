@@ -15,6 +15,13 @@ Appends a `terminal` widget and returns a handle that supports:
 - `appendLine(line)` to append log output.
 - `setCollapsed(collapsed)` to collapse/expand the terminal body.
 
+The terminal header renders an optional Stop button when `TerminalWidgetOptions.onStop`
+is provided. The button disables itself on click so repeated stop requests are not sent.
+
+### TerminalWidgetOptions
+- `onStop`: Optional callback invoked when the terminal Stop button is clicked.
+  When set, the terminal header includes a stop control intended for active runs.
+
 ### appendProgressWidget(sessionId, terminalHandle)
 Creates a `progress` widget that listens to terminal output and updates
 step indicators and elapsed time.
