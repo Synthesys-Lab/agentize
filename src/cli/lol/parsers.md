@@ -39,7 +39,9 @@ and `refine_instructions` are present, they are concatenated with a blank line
 
 ### _lol_parse_impl()
 Validates positional arguments and flags for `lol impl` (including `--wait-for-ci`),
-then calls `_lol_cmd_impl`.
+then calls `_lol_cmd_impl`. The parser forwards `--backend` and
+`--max-iterations` only when explicitly provided, so Python-side defaults can be
+resolved from `.agentize.local.yaml` (`impl.model`, `impl.max_iter`).
 
 ### _lol_parse_simp()
 Accepts an optional file path plus optional focus description via `--editor`,

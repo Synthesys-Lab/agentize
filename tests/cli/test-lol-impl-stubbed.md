@@ -24,6 +24,8 @@ Stubs are defined in a shell override script referenced by `AGENTIZE_SHELL_OVERR
 7. Post-PR monitoring (`--wait-for-ci`) triggers mergeability checks + CI watch
 8. Auto-rebase on conflicting PRs (force-push after rebase)
 9. CI failure triggers a follow-up iteration with new commit
+10. `.agentize.local.yaml` `impl.model` default when `--backend` is omitted
+11. `.agentize.local.yaml` `impl.max_iter` default when `--max-iterations` is omitted
 
 ## Usage
 

@@ -12,8 +12,8 @@ lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
 
 **Parameters**:
 - `issue-no`: Numeric issue identifier.
-- `--backend`: Backend in `provider:model` form (default: `codex:gpt-5.2-codex`).
-- `--max-iterations`: Maximum number of `acw` iterations (default: `10`).
+- `--backend`: Backend in `provider:model` form (default from `.agentize.local.yaml` `impl.model`, fallback `codex:gpt-5.2-codex`).
+- `--max-iterations`: Maximum number of `acw` iterations (default from `.agentize.local.yaml` `impl.max_iter`, fallback `10`).
 - `--yolo`: Pass-through flag to `acw` for autonomous actions.
 - `--wait-for-ci`: After PR creation, monitor mergeability and CI before exiting.
 

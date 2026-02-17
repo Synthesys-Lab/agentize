@@ -5,14 +5,14 @@
 # Main _lol_cmd_impl function
 # Arguments:
 #   $1 - issue_no: Issue number to implement
-#   $2 - backend: Backend in provider:model form (default: codex:gpt-5.2-codex)
-#   $3 - max_iterations: Maximum acw iterations (default: 10)
+#   $2 - backend: Optional backend in provider:model form
+#   $3 - max_iterations: Optional maximum implementation iterations
 #   $4 - yolo: Boolean flag for --yolo passthrough (0 or 1)
 #   $5 - wait_for_ci: Boolean flag for --wait-for-ci (0 or 1)
 _lol_cmd_impl() {
     local issue_no="$1"
-    local backend="${2:-codex:gpt-5.2-codex}"
-    local max_iterations="${3:-10}"
+    local backend="${2:-}"
+    local max_iterations="${3:-}"
     local yolo="${4:-0}"
     local wait_for_ci="${5:-0}"
 
@@ -34,10 +34,19 @@ _lol_cmd_impl() {
         wait_for_ci_flag="--wait-for-ci"
     fi
 
-    python -m agentize.cli impl \
-        "$issue_no" \
-        --backend "$backend" \
-        --max-iterations "$max_iterations" \
-        $yolo_flag \
-        $wait_for_ci_flag
+    local -a cmd=(python -m agentize.cli impl "$issue_no")
+    if [ -n "$backend" ]; then
+        cmd+=(--backend "$backend")
+    fi
+    if [ -n "$max_iterations" ]; then
+        cmd+=(--max-iterations "$max_iterations")
+    fi
+    if [ -n "$yolo_flag" ]; then
+        cmd+=("$yolo_flag")
+    fi
+    if [ -n "$wait_for_ci_flag" ]; then
+        cmd+=("$wait_for_ci_flag")
+    fi
+
+    "${cmd[@]}"
 }

@@ -14,7 +14,25 @@ source "$LOL_CLI"
 
 # Create temp directory for test artifacts
 TMP_DIR=$(make_temp_dir "test-lol-impl-$$")
-trap 'cleanup_dir "$TMP_DIR"' EXIT
+
+LOCAL_CONFIG_PATH="$PROJECT_ROOT/.agentize.local.yaml"
+LOCAL_CONFIG_BACKUP="$TMP_DIR/original-agentize-local.yaml"
+LOCAL_CONFIG_HAD_ORIGINAL=0
+if [ -f "$LOCAL_CONFIG_PATH" ]; then
+    cp "$LOCAL_CONFIG_PATH" "$LOCAL_CONFIG_BACKUP"
+    LOCAL_CONFIG_HAD_ORIGINAL=1
+fi
+rm -f "$LOCAL_CONFIG_PATH"
+
+restore_local_config() {
+    if [ "$LOCAL_CONFIG_HAD_ORIGINAL" = "1" ]; then
+        mv "$LOCAL_CONFIG_BACKUP" "$LOCAL_CONFIG_PATH"
+    else
+        rm -f "$LOCAL_CONFIG_PATH"
+    fi
+}
+
+trap 'restore_local_config; cleanup_dir "$TMP_DIR"' EXIT
 
 # Create stub worktree path
 STUB_WORKTREE="$TMP_DIR/trees/issue-123"
@@ -319,6 +337,7 @@ reset_logs() {
 reset_stub_state() {
     reset_iteration
     reset_logs
+    rm -f "$STUB_WORKTREE/.tmp/"* 2>/dev/null || true
     echo 0 > "$PR_VIEW_COUNT_FILE"
     echo 0 > "$PR_CHECKS_COUNT_FILE"
     unset ACW_COMPLETION_ITER
@@ -341,6 +360,16 @@ reset_stub_state() {
     export GIT_FETCH_FAILS GIT_REBASE_FAILS
     export GH_PR_MERGE_STATE_SEQUENCE GH_PR_MERGEABLE GH_PR_VIEW_URL
     export GH_PR_CHECKS_SEQUENCE GH_PR_CHECKS_JSON
+}
+
+write_impl_local_config() {
+    local model="$1"
+    local max_iter="$2"
+    cat > "$LOCAL_CONFIG_PATH" <<EOF
+impl:
+  model: $model
+  max_iter: $max_iter
+EOF
 }
 
 # ── Test 1: Invalid backend format (missing colon) ──
@@ -626,5 +655,45 @@ output=$(lol impl 123 --backend codex:gpt-5.2-codex --wait-for-ci 2>&1) || {
 if [ "$(cat "$ITERATION_COUNT_FILE")" -lt 2 ]; then
     test_fail "Expected a second iteration after CI failure"
 fi
+
+# ── Test 14: impl.model default comes from .agentize.local.yaml ──
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
+ACW_COMPLETION_ITER=1
+export ACW_COMPLETION_ITER
+write_impl_local_config "cursor:gpt-5.2-codex" "10"
+
+output=$(lol impl 123 2>&1) || {
+    echo "Output: $output" >&2
+    test_fail "lol impl should succeed using impl.model default"
+}
+
+if ! grep -q "^acw cursor gpt-5.2-codex " "$ACW_CALL_LOG"; then
+    echo "ACW call log:" >&2
+    cat "$ACW_CALL_LOG" >&2
+    test_fail "Expected impl.model default backend to be used when --backend is omitted"
+fi
+
+# ── Test 15: impl.max_iter default comes from .agentize.local.yaml ──
+reset_stub_state
+STUB_ISSUE_NO=123
+export STUB_ISSUE_NO
+write_impl_local_config "codex:gpt-5.2-codex" "2"
+
+output=$(lol impl 123 2>&1) && {
+    echo "Output: $output" >&2
+    test_fail "lol impl should fail when completion marker is never reached"
+}
+
+if [ "$(cat "$ITERATION_COUNT_FILE")" -ne 2 ]; then
+    echo "Output: $output" >&2
+    test_fail "Expected exactly 2 iterations from impl.max_iter default"
+fi
+
+echo "$output" | grep -q "Max iteration limit (2) reached" || {
+    echo "Output: $output" >&2
+    test_fail "Expected error to include impl.max_iter limit"
+}
 
 test_pass "lol impl workflow with stubbed dependencies"

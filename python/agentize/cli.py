@@ -12,6 +12,7 @@ Usage:
 import argparse
 import os
 import sys
+from pathlib import Path
 
 from agentize.shell import get_agentize_home, run_shell_function
 from agentize.workflow import ImplError, SimpError, run_impl_workflow, run_simp_workflow
@@ -81,18 +82,100 @@ def handle_claude_clean(args: argparse.Namespace, agentize_home: str) -> int:
     return run_shell_command(cmd, agentize_home)
 
 
-def handle_impl(args: argparse.Namespace) -> int:
+def _coerce_impl_max_iter(value: object, config_path: Path) -> int:
+    """Coerce impl.max_iter config value to positive integer."""
+    if isinstance(value, bool):
+        raise ValueError(
+            f"Error: impl.max_iter in {config_path} must be a positive integer"
+        )
+    if isinstance(value, int):
+        parsed = value
+    elif isinstance(value, str):
+        text = value.strip()
+        if not text:
+            raise ValueError(
+                f"Error: impl.max_iter in {config_path} must be a positive integer"
+            )
+        try:
+            parsed = int(text)
+        except ValueError as exc:
+            raise ValueError(
+                f"Error: impl.max_iter in {config_path} must be a positive integer"
+            ) from exc
+    else:
+        raise ValueError(
+            f"Error: impl.max_iter in {config_path} must be a positive integer"
+        )
+
+    if parsed <= 0:
+        raise ValueError(
+            f"Error: impl.max_iter in {config_path} must be a positive integer"
+        )
+    return parsed
+
+
+def _load_impl_defaults(agentize_home: str) -> tuple[str | None, int | None]:
+    """Load impl defaults from top-level impl section in .agentize.local.yaml."""
+    plugin_dir = Path(agentize_home) / ".claude-plugin"
+    if str(plugin_dir) not in sys.path:
+        sys.path.insert(0, str(plugin_dir))
+
+    try:
+        from lib.local_config_io import find_local_config_file, parse_yaml_file
+    except Exception as exc:
+        raise RuntimeError(f"Error: Failed to load config parser: {exc}") from exc
+
+    config_path = find_local_config_file(Path.cwd())
+    if config_path is None:
+        return None, None
+
+    config = parse_yaml_file(config_path)
+    impl = config.get("impl")
+    if impl is None:
+        return None, None
+    if not isinstance(impl, dict):
+        raise ValueError(f"Error: impl section in {config_path} must be a mapping")
+
+    model_raw = impl.get("model")
+    model: str | None = None
+    if model_raw is not None:
+        if not isinstance(model_raw, str):
+            raise ValueError(f"Error: impl.model in {config_path} must be a string")
+        model = model_raw.strip() or None
+
+    max_iter_raw = impl.get("max_iter")
+    max_iter: int | None = None
+    if max_iter_raw is not None:
+        max_iter = _coerce_impl_max_iter(max_iter_raw, config_path)
+
+    return model, max_iter
+
+
+def handle_impl(args: argparse.Namespace, agentize_home: str) -> int:
     """Handle impl command."""
     try:
+        cfg_model, cfg_max_iter = _load_impl_defaults(agentize_home)
+        impl_model = args.backend if args.backend is not None else cfg_model
+        max_iterations = (
+            args.max_iterations
+            if args.max_iterations is not None
+            else cfg_max_iter
+        )
+
+        if impl_model is None:
+            impl_model = "codex:gpt-5.2-codex"
+        if max_iterations is None:
+            max_iterations = 10
+
         run_impl_workflow(
             args.issue_no,
-            backend=args.backend,
-            max_iterations=args.max_iterations,
+            impl_model=impl_model,
+            max_iterations=max_iterations,
             yolo=args.yolo,
             wait_for_ci=args.wait_for_ci,
         )
         return 0
-    except (ImplError, ValueError) as e:
+    except (ImplError, RuntimeError, ValueError) as e:
         print(str(e), file=sys.stderr)
         return 1
 
@@ -217,15 +300,15 @@ def main() -> int:
     impl_parser.add_argument("issue_no", type=int, help="Issue number to implement")
     impl_parser.add_argument(
         "--backend",
-        default="codex:gpt-5.2-codex",
-        help="Backend in provider:model form",
+        default=None,
+        help="Backend in provider:model form (default: impl.model or codex:gpt-5.2-codex)",
     )
     impl_parser.add_argument(
         "--max-iterations",
         dest="max_iterations",
-        default=10,
+        default=None,
         type=int,
-        help="Maximum acw iterations (default: 10)",
+        help="Maximum implementation iterations (default: impl.max_iter or 10)",
     )
     impl_parser.add_argument(
         "--yolo",
@@ -279,7 +362,7 @@ def main() -> int:
     elif args.command == "claude-clean":
         return handle_claude_clean(args, agentize_home)
     elif args.command == "impl":
-        return handle_impl(args)
+        return handle_impl(args, agentize_home)
     elif args.command == "simp":
         return handle_simp(args)
     elif args.command == "version":

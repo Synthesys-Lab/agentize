@@ -76,6 +76,10 @@ server:
   period: 5m                       # Polling period
   num_workers: 5                   # Worker pool size
 
+impl:
+  model: codex:gpt-5.2-codex       # Default lol impl backend (provider:model)
+  max_iter: 10                     # Default lol impl max iterations
+
 telegram:
   enabled: false                   # Enable Telegram approval (default: false)
   token: "..."                     # Bot API token from @BotFather

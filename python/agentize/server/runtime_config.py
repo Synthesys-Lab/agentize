@@ -31,6 +31,7 @@ from lib.local_config_io import find_local_config_file, parse_yaml_file
 # Extended to include handsoff and metadata keys for unified local configuration
 VALID_TOP_LEVEL_KEYS = {
     "server", "telegram", "workflows",  # Original keys
+    "impl",  # Impl workflow defaults (shared with python -m agentize.cli impl)
     "handsoff",  # Handsoff mode settings
     "project", "git", "agentize", "worktree", "pre_commit",  # Metadata keys (shared with .agentize.yaml)
     "permissions",  # User-configurable permission rules

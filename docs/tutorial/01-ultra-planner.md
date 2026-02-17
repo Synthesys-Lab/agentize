@@ -193,7 +193,7 @@ workflows:
     model: opus                    # Default model for lol impl
 ```
 
-**Note:** `lol impl --backend <provider:model>` overrides `workflows.impl.model` for a single run (see `docs/cli/lol.md`).
+**Note:** `lol impl --backend <provider:model>` overrides `.agentize.local.yaml` `impl.model` for a single run (see `docs/cli/lol.md`).
 
 ## Next Steps
 

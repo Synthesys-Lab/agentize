@@ -388,8 +388,8 @@ _lol_parse_plan() {
 # Parse impl command arguments and call _lol_cmd_impl
 _lol_parse_impl() {
     local issue_no=""
-    local backend="codex:gpt-5.2-codex"
-    local max_iterations="10"
+    local backend=""
+    local max_iterations=""
     local yolo="0"
     local wait_for_ci="0"
 
@@ -400,8 +400,8 @@ _lol_parse_impl() {
         echo "Usage: lol impl <issue-no> [options]"
         echo ""
         echo "Options:"
-        echo "  --backend <provider:model>    Backend in provider:model form (default: codex:gpt-5.2-codex)"
-        echo "  --max-iterations <N>          Maximum acw iterations (default: 10)"
+        echo "  --backend <provider:model>    Backend in provider:model form (default: impl.model or codex:gpt-5.2-codex)"
+        echo "  --max-iterations <N>          Maximum implementation iterations (default: impl.max_iter or 10)"
         echo "  --yolo                        Pass through to provider CLI options"
         echo "  --wait-for-ci                 Wait for PR mergeability and CI completion"
         echo "  --help                        Show this help message"

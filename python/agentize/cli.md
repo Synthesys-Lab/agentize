@@ -46,6 +46,16 @@ This preserves the shell implementation for most commands while enabling:
 - Python scripting integration
 - Non-sourced environment usage
 
+For `impl`, defaults are loaded from `.agentize.local.yaml` top-level `impl` section:
+
+```yaml
+impl:
+  model: codex:gpt-5.2-codex
+  max_iter: 10
+```
+
+`--backend` and `--max-iterations` override these defaults per run.
+
 ## Environment Variables
 
 | Variable | Required | Description |

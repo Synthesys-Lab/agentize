@@ -50,6 +50,11 @@ server:
   period: 5m                       # Polling interval
   num_workers: 5                   # Worker pool size
 
+# Impl defaults - lol impl configuration
+impl:
+  model: codex:gpt-5.2-codex       # Default backend for lol impl (provider:model)
+  max_iter: 10                     # Default maximum iterations for lol impl
+
 # Workflow Model Assignments
 workflows:
   impl:
@@ -108,6 +113,13 @@ See [Telegram Approval](feat/permissions/telegram.md) for detailed documentation
 | `server.period` | string | `5m` | Polling interval (format: Nm or Ns) |
 | `server.num_workers` | int | `5` | Worker pool size |
 
+### Impl Defaults
+
+| YAML Path | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `impl.model` | string | `codex:gpt-5.2-codex` | Default backend for `lol impl` (`provider:model`) |
+| `impl.max_iter` | int | `10` | Default maximum implementation iterations for `lol impl` |
+
 ### Workflow Models
 
 | YAML Path | Type | Default | Description |
@@ -117,7 +129,7 @@ See [Telegram Approval](feat/permissions/telegram.md) for detailed documentation
 | `workflows.dev_req.model` | string | - | Model for dev-req planning |
 | `workflows.rebase.model` | string | - | Model for PR rebase |
 
-**Note:** `workflows.impl.model` sets the default model for impl workflows; `lol impl --backend <provider:model>` overrides per run (see `docs/cli/lol.md`).
+**Note:** `lol impl` defaults come from top-level `impl.model` / `impl.max_iter`, not `workflows.impl.model`.
 
 ### Planner Backends
 

@@ -250,6 +250,10 @@ server:
 telegram:
   token: "test"
 
+impl:
+  model: codex:gpt-5.2-codex
+  max_iter: 10
+
 workflows:
   impl:
     model: opus
@@ -279,6 +283,7 @@ pre_commit:
         assert "handsoff" in config
         assert "server" in config
         assert "telegram" in config
+        assert "impl" in config
         assert "workflows" in config
         assert "project" in config
         assert "git" in config
