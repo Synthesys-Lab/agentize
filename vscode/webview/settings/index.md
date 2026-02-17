@@ -2,6 +2,12 @@
 
 Webview script that renders the Settings UI and manages backend configuration edits.
 
+## VS Code API Lifecycle
+
+The unified webview page can host multiple panel scripts in one document.
+This module uses a shared `globalThis.__agentizeVsCodeApi__` handle so VS Code
+webview API acquisition remains single-instance for the page lifecycle.
+
 ## External Interface
 
 ### UI Rendering
