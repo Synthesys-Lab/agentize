@@ -47,6 +47,9 @@ state and live updates aligned without legacy duplicated UI sections.
 For progress widgets, hydration now prefers persisted `metadata.progressEvents` timestamps
 over raw log replay, so elapsed stage timings remain stable across reloads.
 
+Terminal widgets only apply collapsed state when `metadata.collapsed` is explicitly defined.
+This preserves user-toggled collapse state during session updates.
+
 ## Process Control
 
 Terminal headers include stop controls that post `plan/stop`. The stop button is surfaced
