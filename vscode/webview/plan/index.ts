@@ -474,7 +474,10 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
       if (Array.isArray(widget.content)) {
         terminal.setLines(widget.content);
       }
-      terminal.setCollapsed(Boolean(widget.metadata?.collapsed));
+      // Only apply persisted collapsed state when explicitly defined.
+      if (typeof widget.metadata?.collapsed === 'boolean') {
+        terminal.setCollapsed(widget.metadata.collapsed);
+      }
       return;
     }
 
