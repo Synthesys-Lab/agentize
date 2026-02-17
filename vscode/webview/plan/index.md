@@ -32,6 +32,13 @@ messages from the extension host.
 - `widget/append`: append a widget by id and type
 - `widget/update`: mutate a widget (`appendLines`, `replaceButtons`, `complete`, `metadata`)
 
+## VS Code API Lifecycle
+
+The unified webview page can load multiple panel scripts in one browser document.
+`acquireVsCodeApi()` is treated as a singleton by VS Code, so this module reads and
+reuses a shared API handle from `globalThis.__agentizeVsCodeApi__`.
+If the handle is missing, the module acquires once and stores it for other panels.
+
 ## Refine Flow
 
 When a `Refine` action button is clicked, the webview appends a local `input` widget in the

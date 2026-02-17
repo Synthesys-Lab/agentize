@@ -15,7 +15,22 @@ import {
 import type { ButtonsHandle, ProgressEventEntry, ProgressHandle, TerminalHandle } from './widgets.js';
 
 // Provided by VS Code in the webview environment.
-declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
+type VsCodeApi = { postMessage(message: unknown): void };
+
+declare function acquireVsCodeApi(): VsCodeApi;
+
+const getVsCodeApi = (): VsCodeApi => {
+  const scope = globalThis as typeof globalThis & { __agentizeVsCodeApi__?: VsCodeApi };
+  if (scope.__agentizeVsCodeApi__) {
+    return scope.__agentizeVsCodeApi__;
+  }
+  if (typeof acquireVsCodeApi !== 'function') {
+    throw new Error('VS Code webview API is unavailable.');
+  }
+  const api = acquireVsCodeApi();
+  scope.__agentizeVsCodeApi__ = api;
+  return api;
+};
 
 (() => {
   const statusEl = document.getElementById('plan-skeleton-status');
@@ -23,9 +38,9 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     statusEl.textContent = 'Webview script executing...';
   }
 
-  let vscode: { postMessage(message: unknown): void } | undefined;
+  let vscode: VsCodeApi;
   try {
-    vscode = acquireVsCodeApi();
+    vscode = getVsCodeApi();
   } catch (error) {
     if (statusEl) {
       statusEl.textContent = `Failed to initialize VS Code webview API: ${String(error)}`;
@@ -113,7 +128,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     update?: WidgetUpdatePayload;
   };
 
-  const postMessage = (message: unknown) => vscode?.postMessage(message);
+  const postMessage = (message: unknown) => vscode.postMessage(message);
 
   const sessionNodes = new Map<string, SessionNode>();
   const sessionCache = new Map<string, SessionSummary>();

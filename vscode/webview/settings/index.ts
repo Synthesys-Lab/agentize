@@ -1,4 +1,19 @@
-declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
+type VsCodeApi = { postMessage(message: unknown): void };
+
+declare function acquireVsCodeApi(): VsCodeApi;
+
+const getVsCodeApi = (): VsCodeApi => {
+  const scope = globalThis as typeof globalThis & { __agentizeVsCodeApi__?: VsCodeApi };
+  if (scope.__agentizeVsCodeApi__) {
+    return scope.__agentizeVsCodeApi__;
+  }
+  if (typeof acquireVsCodeApi !== 'function') {
+    throw new Error('VS Code webview API is unavailable.');
+  }
+  const api = acquireVsCodeApi();
+  scope.__agentizeVsCodeApi__ = api;
+  return api;
+};
 
 type SettingsScope = 'repo' | 'global';
 
@@ -27,9 +42,9 @@ type SettingsMessage =
     statusEl.textContent = 'Initializing Settings UI...';
   }
 
-  let vscode: { postMessage(message: unknown): void } | undefined;
+  let vscode: VsCodeApi;
   try {
-    vscode = acquireVsCodeApi();
+    vscode = getVsCodeApi();
   } catch (error) {
     if (statusEl) {
       statusEl.textContent = `Failed to initialize VS Code webview API: ${String(error)}`;
@@ -151,7 +166,7 @@ type SettingsMessage =
   const globalProvider = document.getElementById('global-provider') as HTMLSelectElement | null;
   const globalModel = document.getElementById('global-model') as HTMLInputElement | null;
 
-  const postMessage = (message: unknown) => vscode?.postMessage(message);
+  const postMessage = (message: unknown) => vscode.postMessage(message);
 
   const setStatusLine = (message: string, tone: 'info' | 'error' = 'info') => {
     if (!statusLine) {
