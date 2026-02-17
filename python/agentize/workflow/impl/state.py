@@ -7,18 +7,21 @@ from typing import Any, Literal
 
 STAGE_IMPL = "impl"
 STAGE_REVIEW = "review"
+STAGE_SIMP = "simp"
 STAGE_PR = "pr"
 STAGE_REBASE = "rebase"
 STAGE_FINISH = "finish"
 STAGE_FATAL = "fatal"
 
-Stage = Literal["impl", "review", "pr", "rebase", "finish", "fatal"]
+Stage = Literal["impl", "review", "simp", "pr", "rebase", "finish", "fatal"]
 
 EVENT_IMPL_DONE = "impl_done"
 EVENT_IMPL_NOT_DONE = "impl_not_done"
 EVENT_PARSE_FAIL = "parse_fail"
 EVENT_REVIEW_PASS = "review_pass"
 EVENT_REVIEW_FAIL = "review_fail"
+EVENT_SIMP_PASS = "simp_pass"
+EVENT_SIMP_FAIL = "simp_fail"
 EVENT_PR_PASS = "pr_pass"
 EVENT_PR_FAIL_FIXABLE = "pr_fail_fixable"
 EVENT_PR_FAIL_NEED_REBASE = "pr_fail_need_rebase"
@@ -32,6 +35,8 @@ Event = Literal[
     "parse_fail",
     "review_pass",
     "review_fail",
+    "simp_pass",
+    "simp_fail",
     "pr_pass",
     "pr_fail_fixable",
     "pr_fail_need_rebase",
@@ -43,6 +48,7 @@ Event = Literal[
 STAGES: tuple[Stage, ...] = (
     STAGE_IMPL,
     STAGE_REVIEW,
+    STAGE_SIMP,
     STAGE_PR,
     STAGE_REBASE,
     STAGE_FINISH,
@@ -57,6 +63,8 @@ EVENTS: tuple[Event, ...] = (
     EVENT_PARSE_FAIL,
     EVENT_REVIEW_PASS,
     EVENT_REVIEW_FAIL,
+    EVENT_SIMP_PASS,
+    EVENT_SIMP_FAIL,
     EVENT_PR_PASS,
     EVENT_PR_FAIL_FIXABLE,
     EVENT_PR_FAIL_NEED_REBASE,

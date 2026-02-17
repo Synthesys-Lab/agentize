@@ -24,10 +24,13 @@ from agentize.workflow.impl.state import (
     EVENT_REBASE_OK,
     EVENT_REVIEW_FAIL,
     EVENT_REVIEW_PASS,
+    EVENT_SIMP_FAIL,
+    EVENT_SIMP_PASS,
     STAGE_IMPL,
     STAGE_PR,
     STAGE_REBASE,
     STAGE_REVIEW,
+    STAGE_SIMP,
     Event,
     Stage,
     StageResult,
@@ -295,9 +298,62 @@ def rebase_stage_kernel(context: WorkflowContext) -> StageResult:
     return StageResult(event=event, reason=message)
 
 
+def simp_stage_kernel(context: WorkflowContext) -> StageResult:
+    """FSM stage kernel for simplification stage.
+
+    Handles enable_simp=False shortcut, calls simp_kernel(),
+    tracks simp_attempts (limit max_simps), and emits the appropriate event.
+    """
+    from datetime import datetime
+
+    state: ImplState = context.data["impl_state"]
+    enable_simp = context.data.get("enable_simp", False)
+    max_simps = context.data.get("max_simps", 3)
+
+    if not enable_simp:
+        return StageResult(event=EVENT_SIMP_PASS, reason="simp disabled")
+
+    context.data["simp_attempts"] = context.data.get("simp_attempts", 0) + 1
+    if context.data["simp_attempts"] > max_simps:
+        return StageResult(
+            event=EVENT_SIMP_PASS,
+            reason=f"Max simp attempts ({max_simps}) reached, proceeding to PR",
+        )
+
+    session = context.data["session"]
+    impl_provider = context.data["impl_provider"]
+    impl_model = context.data["impl_model"]
+
+    passed, feedback = simp_kernel(
+        state,
+        session,
+        provider=impl_provider,
+        model=impl_model,
+    )
+
+    state.history.append({
+        "stage": "simp",
+        "iteration": state.iteration,
+        "timestamp": datetime.now().isoformat(),
+        "result": "pass" if passed else "fail",
+        "score": None,
+    })
+
+    if passed:
+        return StageResult(event=EVENT_SIMP_PASS, reason=feedback)
+
+    context.data["retry_context"] = (
+        "Simplification feedback:\n"
+        f"{feedback}"
+    ).strip()
+    state.iteration += 1
+    return StageResult(event=EVENT_SIMP_FAIL, reason=feedback)
+
+
 KERNELS: dict[Stage, Callable[[WorkflowContext], StageResult]] = {
     STAGE_IMPL: impl_stage_kernel,
     STAGE_REVIEW: review_stage_kernel,
+    STAGE_SIMP: simp_stage_kernel,
     STAGE_PR: pr_stage_kernel,
     STAGE_REBASE: rebase_stage_kernel,
 }

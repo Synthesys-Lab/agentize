@@ -67,6 +67,11 @@ def main(argv: list[str]) -> int:
         action="store_true",
         help="Enable the review stage (experimental)",
     )
+    parser.add_argument(
+        "--enable-simp",
+        action="store_true",
+        help="Enable the simplification stage (experimental)",
+    )
     args = parser.parse_args(argv)
 
     # Handle deprecated arguments
@@ -100,6 +105,7 @@ def main(argv: list[str]) -> int:
             impl_model=impl_model,
             review_model=args.review_model,
             enable_review=args.enable_review,
+            enable_simp=args.enable_simp,
         )
     except (ImplError, ValueError) as exc:
         print(str(exc), file=sys.stderr)

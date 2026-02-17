@@ -469,6 +469,7 @@ def run_impl_workflow(
     impl_model: str | None = None,
     review_model: str | None = None,
     enable_review: bool = False,
+    enable_simp: bool = False,
 ) -> None:
     """Run the issue-to-implementation workflow with kernel-based architecture.
 
@@ -488,6 +489,7 @@ def run_impl_workflow(
         impl_model: Model for implementation (format: provider:model).
         review_model: Optional different model for review stage.
         enable_review: Enable the review stage (default: False for compatibility).
+        enable_simp: Enable the simplification stage (default: False).
 
     Raises:
         ImplError: If workflow fails.
@@ -624,6 +626,9 @@ def run_impl_workflow(
             "last_review_score": None,
             "retry_context": None,
             "review_attempts": 0,
+            "enable_simp": enable_simp,
+            "simp_attempts": 0,
+            "max_simps": 3,
             "pr_attempts": 0,
             "rebase_attempts": 0,
         },

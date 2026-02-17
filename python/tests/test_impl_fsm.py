@@ -13,6 +13,7 @@ from agentize.workflow.impl.kernels import (
     rebase_stage_kernel,
     run_parse_gate,
     review_stage_kernel,
+    simp_stage_kernel,
 )
 from agentize.workflow.impl.orchestrator import run_fsm_orchestrator
 from agentize.workflow.impl.state import (
@@ -27,12 +28,15 @@ from agentize.workflow.impl.state import (
     EVENT_REBASE_OK,
     EVENT_REVIEW_FAIL,
     EVENT_REVIEW_PASS,
+    EVENT_SIMP_FAIL,
+    EVENT_SIMP_PASS,
     STAGE_FATAL,
     STAGE_FINISH,
     STAGE_IMPL,
     STAGE_PR,
     STAGE_REBASE,
     STAGE_REVIEW,
+    STAGE_SIMP,
     StageResult,
     WorkflowContext,
 )
@@ -81,7 +85,9 @@ class TestTransitions:
     def test_next_stage_resolves_expected_edges(self):
         assert next_stage(STAGE_IMPL, EVENT_IMPL_NOT_DONE) == STAGE_IMPL
         assert next_stage(STAGE_IMPL, EVENT_IMPL_DONE) == STAGE_REVIEW
-        assert next_stage(STAGE_REVIEW, EVENT_REVIEW_PASS) == STAGE_PR
+        assert next_stage(STAGE_REVIEW, EVENT_REVIEW_PASS) == STAGE_SIMP
+        assert next_stage(STAGE_SIMP, EVENT_SIMP_PASS) == STAGE_PR
+        assert next_stage(STAGE_SIMP, EVENT_SIMP_FAIL) == STAGE_IMPL
         assert next_stage(STAGE_PR, EVENT_PR_PASS) == STAGE_FINISH
 
     def test_next_stage_raises_on_unknown_stage(self):
@@ -123,12 +129,16 @@ class TestOrchestrator:
         def review_kernel(ctx: WorkflowContext) -> StageResult:
             return StageResult(event=EVENT_REVIEW_PASS, reason="review ok")
 
+        def simp_kernel(ctx: WorkflowContext) -> StageResult:
+            return StageResult(event=EVENT_SIMP_PASS, reason="simp ok")
+
         def pr_kernel(ctx: WorkflowContext) -> StageResult:
             return StageResult(event=EVENT_PR_PASS, reason="pr ok")
 
         kernels = {
             STAGE_IMPL: impl_kernel,
             STAGE_REVIEW: review_kernel,
+            STAGE_SIMP: simp_kernel,
             STAGE_PR: pr_kernel,
         }
 
@@ -145,6 +155,7 @@ class TestOrchestrator:
         assert any("stage=impl event=impl_not_done" in line for line in logs)
         assert any("stage=impl event=impl_done" in line for line in logs)
         assert any("stage=review event=review_pass" in line for line in logs)
+        assert any("stage=simp event=simp_pass" in line for line in logs)
         assert any("stage=pr event=pr_pass" in line for line in logs)
 
     def test_run_fsm_orchestrator_marks_fatal_on_missing_kernel(self):
@@ -194,6 +205,7 @@ class TestKernelRegistry:
     def test_registry_has_expected_stage_handlers(self):
         assert KERNELS[STAGE_IMPL] is impl_stage_kernel
         assert KERNELS[STAGE_REVIEW] is review_stage_kernel
+        assert KERNELS[STAGE_SIMP] is simp_stage_kernel
         assert KERNELS[STAGE_PR] is pr_stage_kernel
         assert KERNELS[STAGE_REBASE] is rebase_stage_kernel
 
@@ -218,12 +230,16 @@ class TestPreStepHook:
         def review_kernel(_ctx: WorkflowContext) -> StageResult:
             return StageResult(event=EVENT_REVIEW_PASS, reason="ok")
 
+        def simp_kernel(_ctx: WorkflowContext) -> StageResult:
+            return StageResult(event=EVENT_SIMP_PASS, reason="ok")
+
         def pr_kernel(_ctx: WorkflowContext) -> StageResult:
             return StageResult(event=EVENT_PR_PASS, reason="ok")
 
         kernels = {
             STAGE_IMPL: impl_kernel,
             STAGE_REVIEW: review_kernel,
+            STAGE_SIMP: simp_kernel,
             STAGE_PR: pr_kernel,
         }
 
@@ -234,12 +250,13 @@ class TestPreStepHook:
             pre_step_hook=hook,
         )
 
-        # Hook should be called 4 times: 2x impl, 1x review, 1x pr
-        assert len(hook_calls) == 4
+        # Hook should be called 5 times: 2x impl, 1x review, 1x simp, 1x pr
+        assert len(hook_calls) == 5
         assert hook_calls[0] == STAGE_IMPL
         assert hook_calls[1] == STAGE_IMPL
         assert hook_calls[2] == STAGE_REVIEW
-        assert hook_calls[3] == STAGE_PR
+        assert hook_calls[3] == STAGE_SIMP
+        assert hook_calls[4] == STAGE_PR
 
 
 def _make_impl_context(tmp_path: Path, **overrides) -> WorkflowContext:
@@ -265,6 +282,9 @@ def _make_impl_context(tmp_path: Path, **overrides) -> WorkflowContext:
         "last_review_score": None,
         "retry_context": None,
         "review_attempts": 0,
+        "enable_simp": False,
+        "simp_attempts": 0,
+        "max_simps": 3,
         "pr_attempts": 0,
         "rebase_attempts": 0,
     }
@@ -408,6 +428,60 @@ class TestReviewStageKernel:
         result = review_stage_kernel(context)
         assert result.event == EVENT_REVIEW_PASS
         assert "max" in result.reason.lower()
+
+
+class TestSimpStageKernel:
+    """Tests for simp_stage_kernel."""
+
+    def test_simp_disabled_returns_simp_pass(self, tmp_path: Path):
+        context = _make_impl_context(tmp_path, enable_simp=False)
+
+        result = simp_stage_kernel(context)
+        assert result.event == EVENT_SIMP_PASS
+        assert "disabled" in result.reason
+
+    def test_simp_passes_returns_simp_pass(self, tmp_path: Path, monkeypatch):
+        context = _make_impl_context(tmp_path, enable_simp=True)
+
+        monkeypatch.setattr(
+            "agentize.workflow.impl.kernels.simp_kernel",
+            lambda state, session, **kw: (True, "Simplification completed successfully"),
+        )
+
+        result = simp_stage_kernel(context)
+        assert result.event == EVENT_SIMP_PASS
+
+    def test_simp_fails_returns_simp_fail(self, tmp_path: Path, monkeypatch):
+        context = _make_impl_context(tmp_path, enable_simp=True)
+
+        monkeypatch.setattr(
+            "agentize.workflow.impl.kernels.simp_kernel",
+            lambda state, session, **kw: (False, "Code can be simplified"),
+        )
+
+        result = simp_stage_kernel(context)
+        assert result.event == EVENT_SIMP_FAIL
+        assert context.data.get("retry_context") is not None
+
+    def test_max_simps_returns_simp_pass(self, tmp_path: Path):
+        context = _make_impl_context(tmp_path, enable_simp=True, simp_attempts=3, max_simps=3)
+
+        result = simp_stage_kernel(context)
+        assert result.event == EVENT_SIMP_PASS
+        assert "max" in result.reason.lower()
+
+    def test_simp_fail_increments_iteration(self, tmp_path: Path, monkeypatch):
+        context = _make_impl_context(tmp_path, enable_simp=True)
+        state = context.data["impl_state"]
+        initial_iter = state.iteration
+
+        monkeypatch.setattr(
+            "agentize.workflow.impl.kernels.simp_kernel",
+            lambda state, session, **kw: (False, "Needs simplification"),
+        )
+
+        simp_stage_kernel(context)
+        assert state.iteration == initial_iter + 1
 
 
 class TestPrStageKernel:
