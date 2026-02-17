@@ -63,10 +63,7 @@ export class SessionStore {
       planPath: undefined,
       prUrl: undefined,
       implStatus: 'idle',
-      implLogs: [],
-      implCollapsed: false,
       refineRuns: [],
-      logs: [],
       version: SESSION_SCHEMA_VERSION,
       widgets: [promptWidget],
       phase: 'idle',
@@ -87,32 +84,6 @@ export class SessionStore {
     }
 
     Object.assign(session, update, { updatedAt: Date.now() });
-    this.persist();
-    return this.cloneSession(session);
-  }
-
-  appendSessionLogs(id: string, lines: string[]): PlanSession | undefined {
-    const session = this.state.sessions.find((item) => item.id === id);
-    if (!session) {
-      return undefined;
-    }
-
-    session.logs = this.trimLogs([...session.logs, ...lines]);
-    this.appendLinesToActiveWidget(session, lines);
-    session.updatedAt = Date.now();
-    this.persist();
-    return this.cloneSession(session);
-  }
-
-  appendImplLogs(id: string, lines: string[]): PlanSession | undefined {
-    const session = this.state.sessions.find((item) => item.id === id);
-    if (!session) {
-      return undefined;
-    }
-
-    const existing = session.implLogs ?? [];
-    session.implLogs = this.trimLogs([...existing, ...lines]);
-    session.updatedAt = Date.now();
     this.persist();
     return this.cloneSession(session);
   }
@@ -287,18 +258,6 @@ export class SessionStore {
     return this.cloneSession(session);
   }
 
-  toggleImplCollapse(id: string): PlanSession | undefined {
-    const session = this.state.sessions.find((item) => item.id === id);
-    if (!session) {
-      return undefined;
-    }
-
-    session.implCollapsed = !session.implCollapsed;
-    session.updatedAt = Date.now();
-    this.persist();
-    return this.cloneSession(session);
-  }
-
   deleteSession(id: string): void {
     this.state.sessions = this.state.sessions.filter((item) => item.id !== id);
     this.persist();
@@ -370,10 +329,7 @@ export class SessionStore {
     const widgets = Array.isArray(session.widgets) ? session.widgets.map((widget) => this.cloneWidget(widget)) : [];
     return {
       ...session,
-      logs: Array.isArray(session.logs) ? [...session.logs] : [],
       implStatus: session.implStatus ?? 'idle',
-      implLogs: session.implLogs ? [...session.implLogs] : [],
-      implCollapsed: session.implCollapsed ?? false,
       version: typeof session.version === 'number' ? session.version : undefined,
       widgets,
       phase: session.phase,
@@ -407,48 +363,6 @@ export class SessionStore {
     };
   }
 
-  private appendLinesToActiveWidget(session: PlanSession, lines: string[]): void {
-    if (!session.widgets) {
-      session.widgets = [];
-    }
-
-    if (!session.activeTerminalHandle) {
-      const existing = session.widgets.find(
-        (widget) => widget.type === 'terminal' && widget.metadata?.role === WIDGET_ROLE_PLAN_TERMINAL,
-      );
-      if (existing) {
-        session.activeTerminalHandle = existing.id;
-      }
-    }
-
-    if (!session.activeTerminalHandle) {
-      const widgetId = this.createWidgetId('terminal');
-      session.widgets = [
-        ...session.widgets,
-        {
-          id: widgetId,
-          type: 'terminal',
-          title: 'Plan Log',
-          content: [],
-          metadata: { role: WIDGET_ROLE_PLAN_TERMINAL },
-          createdAt: Date.now(),
-        },
-      ];
-      session.activeTerminalHandle = widgetId;
-    }
-
-    session.widgets = session.widgets.map((widget) => {
-      if (widget.id !== session.activeTerminalHandle || widget.type !== 'terminal') {
-        return widget;
-      }
-      const existing = Array.isArray(widget.content) ? widget.content : [];
-      return {
-        ...widget,
-        content: this.trimLogs([...existing, ...lines]),
-      };
-    });
-  }
-
   private migrateSession(session: PlanSession): PlanSession {
     const migrated = this.cloneSession(session);
     const widgets = Array.isArray(migrated.widgets) ? migrated.widgets : [];
@@ -463,19 +377,6 @@ export class SessionStore {
         metadata: { role: WIDGET_ROLE_PROMPT },
         createdAt: migrated.createdAt ?? Date.now(),
       });
-    }
-
-    if (widgets.length === 0 && migrated.logs.length > 0) {
-      const widgetId = this.createWidgetId('terminal');
-      widgets.push({
-        id: widgetId,
-        type: 'terminal',
-        title: 'Plan Log',
-        content: [...migrated.logs],
-        metadata: { role: WIDGET_ROLE_PLAN_TERMINAL },
-        createdAt: Date.now(),
-      });
-      activeTerminalHandle = widgetId;
     }
 
     const phase = this.derivePhase(migrated);

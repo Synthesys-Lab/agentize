@@ -4,11 +4,6 @@ export interface PlanImplMessage {
   issueNumber: string;
 }
 
-export interface PlanToggleImplCollapseMessage {
-  type: 'plan/toggleImplCollapse';
-  sessionId: string;
-}
-
 export type WidgetType = 'text' | 'terminal' | 'progress' | 'buttons' | 'input' | 'status';
 
 export interface WidgetButton {

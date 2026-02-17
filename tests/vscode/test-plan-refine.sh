@@ -9,7 +9,6 @@ RUNNER_FILE="$PROJECT_ROOT/vscode/src/runner/planRunner.ts"
 TYPES_FILE="$PROJECT_ROOT/vscode/src/runner/types.ts"
 VIEW_FILE="$PROJECT_ROOT/vscode/src/view/unifiedViewProvider.ts"
 WEBVIEW_FILE="$PROJECT_ROOT/vscode/webview/plan/index.ts"
-STYLE_FILE="$PROJECT_ROOT/vscode/webview/plan/styles.css"
 
 # Test 1: RunPlanInput includes refineIssueNumber
 if ! grep -q "refineIssueNumber" "$TYPES_FILE"; then
@@ -39,9 +38,13 @@ if ! grep -q "plan/refine" "$WEBVIEW_FILE"; then
   test_fail "index.ts missing plan/refine message posting"
 fi
 
-# Test 5: Webview styles include refine button
-if ! grep -q "\.refine" "$STYLE_FILE"; then
-  test_fail "styles.css missing .refine button styling"
+# Test 5: Webview uses inline refine input widget flow
+if ! grep -q "openRefineInput" "$WEBVIEW_FILE"; then
+  test_fail "index.ts missing openRefineInput helper"
+fi
+
+if ! grep -q "appendInputWidget" "$WEBVIEW_FILE"; then
+  test_fail "index.ts missing appendInputWidget usage for refine flow"
 fi
 
 test_pass "Plan refine wiring tests passed"

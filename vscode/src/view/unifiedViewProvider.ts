@@ -247,24 +247,6 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         }
         return;
       }
-      case 'plan/toggleImplCollapse': {
-        const sessionId = message.sessionId ?? '';
-        if (!sessionId) {
-          return;
-        }
-        const session = this.store.toggleImplCollapse(sessionId);
-        if (session) {
-          this.postSessionUpdate(session.id, session);
-          const terminal = this.findWidgetByRole(session, WIDGET_ROLES.implTerminal, 'terminal');
-          if (terminal) {
-            this.postWidgetUpdate(session.id, terminal.id, {
-              type: 'metadata',
-              metadata: { collapsed: session.implCollapsed ?? false },
-            });
-          }
-        }
-        return;
-      }
       case 'plan/delete': {
         const sessionId = message.sessionId ?? '';
         if (!sessionId) {
@@ -294,6 +276,22 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         const planPath = this.resolvePlanPath(session);
         if (planPath) {
           void this.openLocalFile(planPath);
+        }
+        return;
+      }
+      case 'plan/view-issue': {
+        const sessionId = message.sessionId ?? '';
+        if (!sessionId) {
+          return;
+        }
+        const session = this.store.getSession(sessionId);
+        const issueNumber = session?.issueNumber?.trim() ?? '';
+        if (!issueNumber) {
+          return;
+        }
+        const issueUrl = await this.resolveIssueUrl(issueNumber);
+        if (issueUrl && this.isValidGitHubUrl(issueUrl)) {
+          void vscode.env.openExternal(vscode.Uri.parse(issueUrl));
         }
         return;
       }
@@ -373,6 +371,28 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
     return null;
   }
 
+  private async resolveIssueUrl(issueNumber: string): Promise<string | null> {
+    const cwd = this.resolvePlanCwd();
+    if (!cwd) {
+      return null;
+    }
+
+    try {
+      const { stdout } = await execFileAsync(
+        'gh',
+        ['issue', 'view', issueNumber, '--json', 'url', '--jq', '.url'],
+        { cwd },
+      );
+      const url = stdout.trim();
+      return url || null;
+    } catch (error) {
+      this.output.appendLine(
+        `[unifiedView] issue URL resolve failed for #${issueNumber}: ${String(error)}`,
+      );
+      return null;
+    }
+  }
+
   private startRun(
     session: PlanSession,
     commandType: RunCommandType,
@@ -434,7 +454,6 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
       this.ensurePlanWidgets(session.id);
       this.store.updateSession(session.id, {
         implStatus: 'idle',
-        implCollapsed: false,
         phase: 'planning',
       });
     } else if (commandType === 'refine') {
@@ -449,7 +468,6 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         issueNumber: resolvedIssueNumber,
         issueState: resolvedIssueNumber === session.issueNumber ? session.issueState : undefined,
         implStatus: 'idle',
-        implCollapsed: false,
         phase: 'implementing',
       });
     }
@@ -530,7 +548,6 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
           this.postSessionUpdate(updated.id, updated);
         }
         this.syncActionButtons(event.sessionId);
-        this.postRunEvent(event);
         return;
       }
       case 'stdout': {
@@ -547,7 +564,6 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
           this.captureIssueNumber(event.sessionId, event.line);
           this.capturePlanPath(event.sessionId, event.line);
         }
-        this.postRunEvent(event);
         return;
       }
       case 'stderr': {
@@ -565,7 +581,6 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
           this.captureIssueNumber(event.sessionId, event.line);
           this.capturePlanPath(event.sessionId, event.line);
         }
-        this.postRunEvent(event);
         return;
       }
       case 'exit': {
@@ -598,7 +613,6 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
           this.postSessionUpdate(updated.id, updated);
         }
         this.syncActionButtons(event.sessionId);
-        this.postRunEvent(event);
         return;
       }
       default:
@@ -624,16 +638,7 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
     } else {
       this.appendPlanLines(sessionId, [line]);
     }
-    if (broadcast) {
-      this.postRunEvent({
-        type: 'stdout',
-        sessionId,
-        commandType,
-        line,
-        runId,
-        timestamp: Date.now(),
-      });
-    }
+    void broadcast;
   }
 
   private captureIssueNumber(sessionId: string, line: string): void {
@@ -956,7 +961,7 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         type: 'terminal',
         title: 'Implementation Log',
         content: [],
-        metadata: { role: WIDGET_ROLES.implTerminal, collapsed: session.implCollapsed ?? false },
+        metadata: { role: WIDGET_ROLES.implTerminal },
       });
       if (terminal) {
         this.postWidgetAppend(sessionId, terminal);
@@ -1028,6 +1033,7 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
 
   private buildActionButtons(session: PlanSession): WidgetButton[] {
     const hasPlanPath = Boolean(session.planPath?.trim());
+    const hasIssueNumber = Boolean(session.issueNumber?.trim());
     const planDone = session.status === 'success' || session.status === 'error';
     const planSuccess = session.status === 'success';
     const implRunning = session.implStatus === 'running';
@@ -1040,15 +1046,22 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
 
     const buttons: WidgetButton[] = [];
 
-    if (hasPlanPath) {
-      buttons.push({
-        id: 'view-plan',
-        label: 'View Plan',
-        action: 'plan/view-plan',
-        variant: 'secondary',
-        disabled: false,
-      });
-    }
+    // Keep the primary action row stable: show View Plan from run start, enable once plan is available.
+    buttons.push({
+      id: 'view-plan',
+      label: 'View Plan',
+      action: 'plan/view-plan',
+      variant: 'secondary',
+      disabled: !hasPlanPath || !planDone,
+    });
+
+    buttons.push({
+      id: 'view-issue',
+      label: 'View Issue',
+      action: 'plan/view-issue',
+      variant: 'secondary',
+      disabled: !hasIssueNumber,
+    });
 
     const implLabel = implRunning ? 'Running...' : implError ? 'Re-implement' : issueClosed ? 'Closed' : 'Implement';
     const implDisabled = !planSuccess || issueClosed || isPlanning || isRefining || implRunning;
@@ -1101,23 +1114,24 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
 
   private appendPlanLines(sessionId: string, lines: string[]): void {
     this.ensurePlanWidgets(sessionId);
-    const updated = this.store.appendSessionLogs(sessionId, lines);
-    if (!updated) {
+    const session = this.store.getSession(sessionId);
+    if (!session) {
       return;
     }
-    const terminal = this.findWidgetByRole(updated, WIDGET_ROLES.planTerminal, 'terminal');
+    const terminal = this.findWidgetByRole(session, WIDGET_ROLES.planTerminal, 'terminal');
     if (terminal) {
+      this.store.appendWidgetLines(sessionId, terminal.id, lines);
       this.postWidgetUpdate(sessionId, terminal.id, { type: 'appendLines', lines });
     }
   }
 
   private appendImplLines(sessionId: string, lines: string[]): void {
     this.ensureImplWidgets(sessionId);
-    const updated = this.store.appendImplLogs(sessionId, lines);
-    if (!updated) {
+    const session = this.store.getSession(sessionId);
+    if (!session) {
       return;
     }
-    const terminal = this.findWidgetByRole(updated, WIDGET_ROLES.implTerminal, 'terminal');
+    const terminal = this.findWidgetByRole(session, WIDGET_ROLES.implTerminal, 'terminal');
     if (terminal) {
       this.store.appendWidgetLines(sessionId, terminal.id, lines);
       this.postWidgetUpdate(sessionId, terminal.id, { type: 'appendLines', lines });
@@ -1151,17 +1165,6 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
       return;
     }
     this.postWidgetUpdate(sessionId, widget.id, { type: 'complete' });
-  }
-
-  private postRunEvent(event: RunEvent): void {
-    if (!this.view) {
-      return;
-    }
-
-    this.view.webview.postMessage({
-      type: 'plan/runEvent',
-      event,
-    });
   }
 
   private buildHtml(webview: vscode.Webview): string {
@@ -1444,13 +1447,13 @@ export const UnifiedViewProviderMessages = {
     'plan/refine',
     'plan/impl',
     'plan/toggleCollapse',
-    'plan/toggleImplCollapse',
     'plan/delete',
     'plan/updateDraft',
     'plan/view-plan',
+    'plan/view-issue',
     'plan/view-pr',
     'link/openExternal',
     'link/openFile',
   ],
-  outgoing: ['state/replace', 'plan/sessionUpdated', 'plan/runEvent', 'widget/append', 'widget/update'],
+  outgoing: ['state/replace', 'plan/sessionUpdated', 'widget/append', 'widget/update'],
 };

@@ -21,5 +21,5 @@ Validates refinement wiring for the VS Code plan view.
 **Expected**: `vscode/src/view/unifiedViewProvider.ts` contains a `plan/refine` handler.
 
 ### Webview triggers refinement
-**Purpose**: Ensure the webview posts the refine message and styles the button.
-**Expected**: `vscode/webview/plan/index.ts` posts `plan/refine`, and `styles.css` defines `.refine`.
+**Purpose**: Ensure the webview posts the refine message through the inline input widget flow.
+**Expected**: `vscode/webview/plan/index.ts` posts `plan/refine` and includes `openRefineInput` + `appendInputWidget`.

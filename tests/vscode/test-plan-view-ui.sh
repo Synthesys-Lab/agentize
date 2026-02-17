@@ -1,46 +1,48 @@
 #!/usr/bin/env bash
-# Test: Plan view UI components (collapsible logs, step indicators, link rendering)
+# Test: Plan view append-only widget UI structure
 
 source "$(dirname "$0")/../common.sh"
 
-test_info "Testing plan view UI structure and components"
+test_info "Testing plan view append-only widget UI"
 
-# Check that the webview files exist and have the expected content
 WEBVIEW_DIR="$PROJECT_ROOT/vscode/webview/plan"
 PROVIDER_FILE="$PROJECT_ROOT/vscode/src/view/unifiedViewProvider.ts"
 STATE_TYPES_FILE="$PROJECT_ROOT/vscode/src/state/types.ts"
 
-# Test 1: Check CSS has step indicator styles
+# Test 1: CSS keeps progress indicator styling.
 if ! grep -q "step-indicator" "$WEBVIEW_DIR/styles.css"; then
   test_fail "styles.css missing step-indicator styles"
 fi
 
-# Test 2: Check CSS has raw logs box styles
-if ! grep -q "raw-logs-box" "$WEBVIEW_DIR/styles.css"; then
-  test_fail "styles.css missing raw-logs-box styles"
-fi
-
-# Test 3: Check CSS has dot-cycle animation
+# Test 2: CSS keeps progress animation.
 if ! grep -q "@keyframes dot-cycle" "$WEBVIEW_DIR/styles.css"; then
   test_fail "styles.css missing dot-cycle animation"
 fi
 
-# Test 4: Check webview has step parsing logic (in utils.ts)
+# Test 3: Stage parser still exists for progress widgets.
 if ! grep -q "parseStageLine" "$WEBVIEW_DIR/utils.ts"; then
   test_fail "utils.ts missing parseStageLine function"
 fi
 
-# Test 5: Check index.ts has link detection
-if ! grep -q "renderLinks" "$WEBVIEW_DIR/index.ts"; then
-  test_fail "index.ts missing renderLinks function"
+# Test 4: index.ts supports input widget based refine flow.
+if ! grep -q "appendInputWidget" "$WEBVIEW_DIR/index.ts"; then
+  test_fail "index.ts missing appendInputWidget usage"
 fi
 
-# Test 6: Check index.ts has collapsible logs state
-if ! grep -q "logsCollapsedState" "$WEBVIEW_DIR/index.ts"; then
-  test_fail "index.ts missing logsCollapsedState tracking"
+if ! grep -q "openRefineInput" "$WEBVIEW_DIR/index.ts"; then
+  test_fail "index.ts missing openRefineInput helper"
 fi
 
-# Test 7: Check unifiedViewProvider.ts has link handlers
+# Test 5: Legacy right-side session implement/refine buttons are removed from webview code.
+if grep -q "impl-button" "$WEBVIEW_DIR/index.ts"; then
+  test_fail "index.ts still references legacy impl-button UI"
+fi
+
+if grep -q "refineButton" "$WEBVIEW_DIR/index.ts"; then
+  test_fail "index.ts still references legacy refineButton UI"
+fi
+
+# Test 6: Host still supports secure link handlers.
 if ! grep -q "link/openExternal" "$PROVIDER_FILE"; then
   test_fail "unifiedViewProvider.ts missing link/openExternal handler"
 fi
@@ -49,70 +51,51 @@ if ! grep -q "link/openFile" "$PROVIDER_FILE"; then
   test_fail "unifiedViewProvider.ts missing link/openFile handler"
 fi
 
-# Test 8: Check unifiedViewProvider.ts has URL validation
+# Test 7: Host still validates GitHub URLs.
 if ! grep -q "isValidGitHubUrl" "$PROVIDER_FILE"; then
   test_fail "unifiedViewProvider.ts missing isValidGitHubUrl function"
 fi
 
-# Test 9: Ensure webview loads compiled JS (loading TS directly breaks rendering)
+# Test 8: Webview script path must point to compiled JS.
 if ! grep -q "'webview', 'plan', 'out', 'index.js'" "$PROVIDER_FILE"; then
   test_fail "unifiedViewProvider.ts should load compiled webview/plan/out/index.js"
 fi
 
-# Test 10: Check documentation exists
+# Test 9: Documentation should describe append-only model.
 if [ ! -f "$WEBVIEW_DIR/index.md" ]; then
   test_fail "index.md documentation missing"
 fi
 
-# Test 11: Check documentation mentions new features
-if ! grep -q "Step Progress Indicators" "$WEBVIEW_DIR/index.md"; then
-  test_fail "index.md missing Step Progress Indicators documentation"
+if ! grep -q "Append-only webview controller" "$WEBVIEW_DIR/index.md"; then
+  test_fail "index.md missing append-only description"
 fi
 
-if ! grep -q "Collapsible Raw Console Log" "$WEBVIEW_DIR/index.md"; then
-  test_fail "index.md missing Collapsible Raw Console Log documentation"
-fi
-
-if ! grep -q "Interactive Links" "$WEBVIEW_DIR/index.md"; then
-  test_fail "index.md missing Interactive Links documentation"
-fi
-
-# Test 12: Check documentation mentions closed issue behavior
-if ! grep -q "Closed" "$WEBVIEW_DIR/index.md"; then
-  test_fail "index.md missing closed issue button documentation"
-fi
-
-# Test 13: Check session type includes issueState
+# Test 10: Session type keeps issue state information.
 if ! grep -q "issueState" "$STATE_TYPES_FILE"; then
   test_fail "types.ts missing issueState field"
 fi
 
-# Test 14: Check plan view provider handles issue state validation
+# Test 11: Provider keeps issue-state validation logic.
 if ! grep -q "checkIssueState" "$PROVIDER_FILE"; then
   test_fail "unifiedViewProvider.ts missing checkIssueState handler"
 fi
 
-# Test 15: Check webview handles closed issue state
-if ! grep -q "Closed" "$WEBVIEW_DIR/index.ts"; then
-  test_fail "index.ts missing Closed button state"
+# Test 12: Host supports View Issue action.
+if ! grep -q "plan/view-issue" "$PROVIDER_FILE"; then
+  test_fail "unifiedViewProvider.ts missing plan/view-issue handler"
 fi
 
-# Test 16: Check CSS has closed issue styling
-if ! grep -q "impl-button.closed" "$WEBVIEW_DIR/styles.css"; then
-  test_fail "styles.css missing impl-button.closed styles"
+if ! grep -q "View Issue" "$PROVIDER_FILE"; then
+  test_fail "unifiedViewProvider.ts missing View Issue action button"
 fi
 
-test_info "All UI structure tests passed"
+test_info "All append-only UI structure tests passed"
 
-# Check TypeScript syntax (if tsc is available)
+# Check TypeScript syntax (if toolchain is available).
 if command -v npx >/dev/null 2>&1; then
   test_info "Checking TypeScript syntax..."
-  
-  cd "$PROJECT_ROOT/vscode"
-  
-  if [ -f "package.json" ]; then
-    # Run tsc to check for syntax errors (no emit)
-    if npx tsc --noEmit 2>/dev/null; then
+  if [ -f "$PROJECT_ROOT/vscode/package.json" ]; then
+    if npx --prefix "$PROJECT_ROOT/vscode" tsc -p "$PROJECT_ROOT/vscode/tsconfig.json" --noEmit 2>/dev/null; then
       test_info "TypeScript syntax check passed"
     else
       test_info "TypeScript check found issues (may be pre-existing or missing dependencies)"
@@ -120,4 +103,4 @@ if command -v npx >/dev/null 2>&1; then
   fi
 fi
 
-test_pass "Plan view UI component tests passed"
+test_pass "Plan view append-only UI tests passed"

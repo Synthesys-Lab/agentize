@@ -9,10 +9,6 @@ Message payload definitions for the Plan webview.
 - `sessionId`: Plan session identifier.
 - `issueNumber`: issue number to pass to `lol impl`.
 
-### PlanToggleImplCollapseMessage
-- `type`: `plan/toggleImplCollapse`.
-- `sessionId`: Plan session identifier.
-
 ### WidgetAppendMessage
 - `type`: `widget/append`.
 - `sessionId`: session identifier owning the widget.

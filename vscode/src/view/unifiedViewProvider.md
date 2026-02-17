@@ -19,20 +19,24 @@ Consumes UI messages:
 - `plan/refine`
 - `plan/impl`
 - `plan/toggleCollapse`
-- `plan/toggleImplCollapse`
 - `plan/delete`
 - `plan/updateDraft`
+- `plan/view-plan`
+- `plan/view-issue`
+- `plan/view-pr`
 - `link/openExternal` (GitHub issue URLs)
 - `link/openFile` (local markdown paths)
 
 Emits UI messages:
 - `state/replace`
 - `plan/sessionUpdated`
-- `plan/runEvent`
+- `widget/append`
+- `widget/update`
 
 `plan/refine` starts a refinement run for the selected session, using the captured
 issue number and focus prompt from the webview. `plan/impl` validates the issue state
-before launching implementation logs in a separate buffer.
+before launching implementation output into terminal widgets.
+`plan/view-issue` resolves the canonical GitHub issue URL via `gh issue view` and opens it.
 
 ## Internal Helpers
 
@@ -58,8 +62,8 @@ Creates a lightweight skeleton for Worktree and Settings panels while reusing th
 Plan styling tokens.
 
 ### handleRunEvent(event: RunEvent)
-Transforms runner events into session updates and webview messages, separating Plan
-and Implementation log streams and capturing issue numbers from output.
+Transforms runner events into session updates and widget updates, routing stdout/stderr
+into terminal widgets and capturing issue numbers from output.
 
 ### resolvePlanCwd()
 Resolves the working directory for Plan/Implementation runs by preferring the

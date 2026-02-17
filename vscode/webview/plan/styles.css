@@ -201,38 +201,6 @@ button:disabled {
   color: var(--error);
 }
 
-.impl-button {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: #ffffff;
-}
-
-.impl-button:hover {
-  filter: brightness(0.95);
-}
-
-.impl-button:disabled {
-  background: var(--border);
-  color: var(--muted);
-  border-color: var(--border);
-}
-
-.impl-button.closed {
-  background-color: #6e7681;
-  color: #c9d1d9;
-  border-color: #6e7681;
-  cursor: not-allowed;
-}
-
-.refine {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.refine:hover {
-  background: rgba(15, 110, 110, 0.08);
-}
-
 .session-body {
   margin-top: 10px;
   display: flex;
@@ -281,6 +249,7 @@ button:disabled {
 .widget-terminal {
   padding: 0;
   overflow: hidden;
+  gap: 0;
 }
 
 .terminal-header {
@@ -333,9 +302,12 @@ button:disabled {
 
 .widget-buttons {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: row;
+  flex-wrap: nowrap;
   gap: 8px;
   align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
   background: transparent;
   border: none;
   padding: 0;
@@ -351,6 +323,8 @@ button:disabled {
   background: var(--panel);
   color: var(--text);
   cursor: pointer;
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .widget-button-primary {
@@ -399,62 +373,6 @@ button:disabled {
 .button-disabled {
   cursor: not-allowed;
   opacity: 0.6;
-}
-
-.refine-panel {
-  background: rgba(15, 110, 110, 0.05);
-  border: 1px dashed rgba(15, 110, 110, 0.35);
-  border-radius: 8px;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.refine-thread {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.refine-run {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.refine-label {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.refine-textarea {
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 8px;
-  box-sizing: border-box;
-  font-family: "Fira Sans", "Segoe UI", sans-serif;
-  resize: vertical;
-}
-
-.refine-hint {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.refine-focus {
-  font-size: 13px;
-  padding: 8px 10px;
-  border-left: 3px solid rgba(15, 110, 110, 0.6);
-  background: rgba(15, 110, 110, 0.04);
-  border-radius: 6px;
-  white-space: pre-wrap;
-}
-
-.prompt {
-  font-size: 13px;
-  color: var(--muted);
 }
 
 .logs {
@@ -553,104 +471,6 @@ button:disabled {
 .step-indicator.running .loading-dots::after {
   content: '...';
   animation: dot-cycle 1.2s infinite;
-}
-
-/* Raw Logs Box */
-.raw-logs-box {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.raw-logs-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  background: var(--bg-end);
-  border-bottom: 1px solid var(--border);
-}
-
-.raw-logs-toggle {
-  border: none;
-  background: none;
-  font-weight: 700;
-  color: var(--accent);
-  padding: 0 4px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.raw-logs-title {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
-  flex: 1;
-}
-
-.raw-logs-body {
-  max-height: 220px;
-  overflow-y: auto;
-  transition: max-height 0.25s ease-out;
-}
-
-.raw-logs-body.collapsed {
-  max-height: 0;
-}
-
-.raw-logs-body .logs {
-  border-radius: 0;
-  max-height: none;
-  margin: 0;
-}
-
-/* Implementation Logs Box */
-.impl-logs-box {
-  border: 1px solid var(--accent);
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.impl-logs-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  background: rgba(15, 110, 110, 0.08);
-  border-bottom: 1px solid var(--accent);
-}
-
-.impl-logs-toggle {
-  border: none;
-  background: none;
-  font-weight: 700;
-  color: var(--accent);
-  padding: 0 4px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.impl-logs-title {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
-  flex: 1;
-}
-
-.impl-logs-body {
-  max-height: 220px;
-  overflow-y: auto;
-  transition: max-height 0.25s ease-out;
-}
-
-.impl-logs-body.collapsed {
-  max-height: 0;
-}
-
-.impl-logs-body .logs {
-  border-radius: 0;
-  max-height: none;
-  margin: 0;
 }
 
 /* Clickable Links in Logs */

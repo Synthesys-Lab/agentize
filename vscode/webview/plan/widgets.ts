@@ -114,6 +114,10 @@ const getWidgetContainer = (sessionId: string): HTMLElement | undefined => {
 
 const registerWidget = (sessionId: string, handle: WidgetHandle): void => {
   const map = getWidgetMap(sessionId);
+  const existing = map.get(handle.id);
+  if (existing && existing.element !== handle.element) {
+    existing.element.remove();
+  }
   map.set(handle.id, handle);
 };
 
@@ -289,6 +293,7 @@ export const appendProgressWidget = (
 
   const stepMap = new Map<string, StepState[]>();
   const key = id;
+  const isExitLine = (line: string): boolean => /^Exit code:\s/.test(line.trim());
 
   const render = () => {
     const indicators = renderStepIndicatorsFrom(stepMap, key, 'step-indicators');
@@ -300,6 +305,11 @@ export const appendProgressWidget = (
   };
 
   const handleLine = (line: string, stream?: string) => {
+    if (isExitLine(line)) {
+      completeAllStepsIn(stepMap, key);
+      render();
+      return;
+    }
     if (stream !== 'stderr') {
       return;
     }
@@ -318,10 +328,18 @@ export const appendProgressWidget = (
 
   const replay = (lines: string[]) => {
     stepMap.set(key, []);
+    let sawExit = false;
     for (const entry of lines) {
+      const normalized = entry.startsWith('stderr: ') ? entry.slice('stderr: '.length) : entry;
       if (entry.startsWith('stderr: ')) {
-        updateStepStatesIn(stepMap, key, entry.slice('stderr: '.length));
+        updateStepStatesIn(stepMap, key, normalized);
       }
+      if (isExitLine(normalized)) {
+        sawExit = true;
+      }
+    }
+    if (sawExit) {
+      completeAllStepsIn(stepMap, key);
     }
     render();
   };

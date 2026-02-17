@@ -35,10 +35,7 @@ export interface PlanSession {
   planPath?: string;
   prUrl?: string;
   implStatus?: SessionStatus;
-  implLogs?: string[];
-  implCollapsed?: boolean;
   refineRuns: RefineRun[];
-  logs: string[];
   version?: number;
   widgets?: WidgetState[];
   phase?: PlanSessionPhase;
