@@ -12,7 +12,7 @@ export interface StepState {
 
 // Parse stage line: "Stage N/5: Running {name} ({provider}:{model})" or "Stage M-N/5: ..."
 // Parallel stages format: "Stage M-N/5: Running {name with spaces} ({provider}:{model}, {provider}:{model})"
-export const parseStageLine = (line: string): StepState | null => {
+export const parseStageLine = (line: string, at: number = Date.now()): StepState | null => {
   const match = line.match(/Stage\s+(\d+)(?:-(\d+))?\/5:\s+Running\s+(.+?)\s*\(([^)]+)\)/);
   if (!match) {
     return null;
@@ -31,12 +31,17 @@ export const parseStageLine = (line: string): StepState | null => {
     provider,
     model,
     status: 'running',
-    startTime: Date.now(),
+    startTime: at,
   };
 };
 
-export const updateStepStatesIn = (stateMap: Map<string, StepState[]>, sessionId: string, line: string): boolean => {
-  const newStep = parseStageLine(line);
+export const updateStepStatesIn = (
+  stateMap: Map<string, StepState[]>,
+  sessionId: string,
+  line: string,
+  at: number = Date.now(),
+): boolean => {
+  const newStep = parseStageLine(line, at);
   if (!newStep) {
     return false;
   }
@@ -45,7 +50,7 @@ export const updateStepStatesIn = (stateMap: Map<string, StepState[]>, sessionId
 
   steps = steps.map((step): StepState => {
     if (step.status === 'running') {
-      return { ...step, status: 'completed' as const, endTime: Date.now() };
+      return { ...step, status: 'completed' as const, endTime: at };
     }
     return step;
   });
@@ -56,10 +61,18 @@ export const updateStepStatesIn = (stateMap: Map<string, StepState[]>, sessionId
 };
 
 export const completeAllStepsIn = (stateMap: Map<string, StepState[]>, sessionId: string): void => {
+  completeAllStepsInAt(stateMap, sessionId, Date.now());
+};
+
+export const completeAllStepsInAt = (
+  stateMap: Map<string, StepState[]>,
+  sessionId: string,
+  at: number,
+): void => {
   const steps = stateMap.get(sessionId) || [];
   const updated = steps.map((step): StepState => {
     if (step.status === 'running') {
-      return { ...step, status: 'completed' as const, endTime: Date.now() };
+      return { ...step, status: 'completed' as const, endTime: at };
     }
     return step;
   });

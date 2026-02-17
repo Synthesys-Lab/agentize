@@ -19,6 +19,10 @@ Appends a `terminal` widget and returns a handle that supports:
 Creates a `progress` widget that listens to terminal output and updates
 step indicators and elapsed time.
 
+The returned progress handle also supports `replay(lines, events?)`; when `events`
+contains persisted stage/exit timestamps, replay uses those timestamps instead of
+`Date.now()` so restored elapsed times remain accurate after reload.
+
 ### appendButtons(sessionId, buttons)
 Appends a `buttons` widget with per-button enabled/disabled state.
 

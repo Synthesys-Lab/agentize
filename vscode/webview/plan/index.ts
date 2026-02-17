@@ -12,7 +12,7 @@ import {
   removeWidget,
   replaceButtons,
 } from './widgets.js';
-import type { ButtonsHandle, ProgressHandle, TerminalHandle } from './widgets.js';
+import type { ButtonsHandle, ProgressEventEntry, ProgressHandle, TerminalHandle } from './widgets.js';
 
 // Provided by VS Code in the webview environment.
 declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
@@ -270,9 +270,39 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
           postMessage(implMessage);
           return;
         }
+        if (button.action === 'plan/rerun') {
+          postMessage({ type: 'plan/rerun', sessionId });
+          return;
+        }
         postMessage({ type: button.action, sessionId });
       },
     }));
+  };
+
+  const parseProgressEvents = (metadata: Record<string, unknown> | undefined): ProgressEventEntry[] => {
+    const raw = metadata?.progressEvents;
+    if (!Array.isArray(raw)) {
+      return [];
+    }
+    const parsed: ProgressEventEntry[] = [];
+    raw.forEach((entry) => {
+      if (!entry || typeof entry !== 'object') {
+        return;
+      }
+      const candidate = entry as { type?: string; line?: string; timestamp?: unknown };
+      if (candidate.type !== 'stage' && candidate.type !== 'exit') {
+        return;
+      }
+      if (typeof candidate.timestamp !== 'number' || !Number.isFinite(candidate.timestamp)) {
+        return;
+      }
+      parsed.push({
+        type: candidate.type,
+        line: typeof candidate.line === 'string' ? candidate.line : undefined,
+        timestamp: candidate.timestamp,
+      });
+    });
+    return parsed;
   };
 
   const appendWidgetFromState = (sessionId: string, widget: WidgetState, allWidgets: WidgetState[]): void => {
@@ -313,7 +343,10 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
         const progress = appendProgressWidget(sessionId, terminalHandle as TerminalHandle, { widgetId: widget.id });
         if (progress) {
           const terminalState = allWidgets.find((entry) => entry.id === terminalId);
-          progress.replay(Array.isArray(terminalState?.content) ? terminalState.content : []);
+          progress.replay(
+            Array.isArray(terminalState?.content) ? terminalState.content : [],
+            parseProgressEvents(widget.metadata as Record<string, unknown> | undefined),
+          );
         }
         return;
       }
@@ -549,6 +582,12 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
 
         const node = sessionNodes.get(sessionId);
         if (!node?.body) {
+          return;
+        }
+
+        // Ignore duplicate append for existing widget ids; updates should come via
+        // widget/update or state/session hydration paths.
+        if (getWidgetHandle(sessionId, widget.id)) {
           return;
         }
 

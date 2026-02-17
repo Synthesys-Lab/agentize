@@ -28,8 +28,17 @@ Shared state contracts for the Plan Activity Bar view and related tabs.
 - `version`: schema version for persistence (optional, defaults to 1 for legacy sessions).
 - `widgets`: widget timeline for the session (optional).
 - `phase`: UI phase string (`idle`, `planning`, `plan-completed`, `refining`, `implementing`, `completed`) (optional).
+- `actionMode`: action-row mode (`default`, `implement`, `refine`, `rerun`) used to keep only the active action button visible.
+- `rerun`: persisted rerun command context (optional).
 - `activeTerminalHandle`: widget id of the active terminal handle used for log routing (optional).
 - `createdAt`, `updatedAt`: timestamps.
+
+### RerunState
+- `commandType`: rerun target command (`plan`, `refine`, or `impl`).
+- `prompt`: prompt reused for rerun refinement/plan paths (optional).
+- `issueNumber`: issue number reused for rerun refinement/implementation paths (optional).
+- `lastExitCode`: latest exit code for this rerun context (`0` disables rerun; non-zero enables rerun).
+- `updatedAt`: timestamp of the latest rerun context refresh.
 
 ### WidgetState
 - `id`: stable widget identifier.

@@ -18,6 +18,7 @@ Consumes UI messages:
 - `plan/run`
 - `plan/refine`
 - `plan/impl`
+- `plan/rerun`
 - `plan/toggleCollapse`
 - `plan/delete`
 - `plan/updateDraft`
@@ -35,7 +36,9 @@ Emits UI messages:
 
 `plan/refine` starts a refinement run for the selected session, using the captured
 issue number and focus prompt from the webview. `plan/impl` validates the issue state
-before launching implementation output into terminal widgets.
+before launching implementation output into terminal widgets. `plan/rerun` reuses the
+stored rerun context to retry failed `plan`/`refine`/`impl` runs without requiring
+manual prompt re-entry.
 `plan/view-issue` resolves the canonical GitHub issue URL via `gh issue view` and opens it.
 
 ## Internal Helpers
@@ -63,7 +66,23 @@ Plan styling tokens.
 
 ### handleRunEvent(event: RunEvent)
 Transforms runner events into session updates and widget updates, routing stdout/stderr
-into terminal widgets and capturing issue numbers from output.
+into terminal widgets and capturing issue numbers from output. The handler also persists
+progress stage/exit timestamps in progress-widget metadata (`progressEvents`) so elapsed
+timing can be reconstructed accurately after reload.
+
+### Action Row State
+`buildActionButtons` uses two states:
+- While `implement`, `refine`, or `rerun` is running, the row is locked to that single action button.
+- After the run exits, the row always returns to the five core buttons:
+  `View Plan`, `View Issue`, `Implement`, `Refine`, and `Rerun`.
+
+When a direct `refine` run exits, the in-place running button is archived as a disabled
+`Refined` (or `Refine failed`) marker, and a fresh five-button action row is appended
+to the end of the session timeline so follow-up actions stay near the most recent output.
+
+`Rerun` is always rendered in the core row and is enabled only when the latest related
+run exit code is non-zero; otherwise it is disabled. A successful implementation run
+with a captured PR URL appends `View PR` so users can open the generated pull request.
 
 ### resolvePlanCwd()
 Resolves the working directory for Plan/Implementation runs by preferring the

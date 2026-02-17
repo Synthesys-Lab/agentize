@@ -27,4 +27,6 @@ Enforces the maximum number of stored log lines per session.
 
 ### migrateSession(session)
 Normalizes persisted sessions into the latest schema version:
-- Ensures `version`, `phase`, and widget defaults are populated.
+- Ensures `version`, `phase`, widget defaults, and action-state defaults are populated.
+- Initializes `actionMode` to `default` for legacy sessions that predate single-action flow locking.
+- Preserves `rerun` context snapshots so rerun button state survives webview reloads.

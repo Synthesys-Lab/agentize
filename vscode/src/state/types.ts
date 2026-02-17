@@ -1,4 +1,6 @@
 export type SessionStatus = 'idle' | 'running' | 'success' | 'error';
+export type SessionActionMode = 'default' | 'implement' | 'refine' | 'rerun';
+export type SessionCommandType = 'plan' | 'refine' | 'impl';
 
 export type WidgetType = 'text' | 'terminal' | 'progress' | 'buttons' | 'input' | 'status';
 
@@ -23,6 +25,14 @@ export interface RefineRun {
   updatedAt: number;
 }
 
+export interface RerunState {
+  commandType: SessionCommandType;
+  prompt?: string;
+  issueNumber?: string;
+  lastExitCode?: number | null;
+  updatedAt: number;
+}
+
 export interface PlanSession {
   id: string;
   title: string;
@@ -39,6 +49,8 @@ export interface PlanSession {
   version?: number;
   widgets?: WidgetState[];
   phase?: PlanSessionPhase;
+  actionMode?: SessionActionMode;
+  rerun?: RerunState;
   activeTerminalHandle?: string;
   createdAt: number;
   updatedAt: number;

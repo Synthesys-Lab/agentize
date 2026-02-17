@@ -3,7 +3,7 @@ import type { AppState, PlanSession, PlanState, RefineRun, SessionStatus, Widget
 
 const STORAGE_KEY = 'agentize.planState';
 const MAX_LOG_LINES = 1000;
-const SESSION_SCHEMA_VERSION = 2;
+const SESSION_SCHEMA_VERSION = 3;
 const WIDGET_ROLE_PLAN_TERMINAL = 'plan-terminal';
 const WIDGET_ROLE_PROMPT = 'prompt';
 
@@ -67,6 +67,8 @@ export class SessionStore {
       version: SESSION_SCHEMA_VERSION,
       widgets: [promptWidget],
       phase: 'idle',
+      actionMode: 'default',
+      rerun: undefined,
       activeTerminalHandle: undefined,
       createdAt: now,
       updatedAt: now,
@@ -333,6 +335,17 @@ export class SessionStore {
       version: typeof session.version === 'number' ? session.version : undefined,
       widgets,
       phase: session.phase,
+      actionMode: session.actionMode ?? 'default',
+      rerun:
+        session.rerun
+          ? {
+              commandType: session.rerun.commandType,
+              prompt: session.rerun.prompt,
+              issueNumber: session.rerun.issueNumber,
+              lastExitCode: session.rerun.lastExitCode,
+              updatedAt: session.rerun.updatedAt,
+            }
+          : undefined,
       activeTerminalHandle: session.activeTerminalHandle,
       planPath: session.planPath,
       prUrl: session.prUrl,
@@ -386,6 +399,8 @@ export class SessionStore {
       version: SESSION_SCHEMA_VERSION,
       widgets,
       phase,
+      actionMode: migrated.actionMode ?? 'default',
+      rerun: migrated.rerun,
       activeTerminalHandle,
     };
   }

@@ -22,6 +22,7 @@ messages from the extension host.
 - `plan/new`, `plan/updateDraft`, `plan/toggleCollapse`, `plan/delete`
 - `plan/impl` from action widgets
 - `plan/refine` from inline refine input widget submission
+- `plan/rerun` from rerun action widgets
 - `link/openExternal` and `link/openFile` from terminal link clicks
 
 ### Incoming Messages
@@ -41,3 +42,6 @@ Esc cancels and removes the input widget.
 On state/session refresh, the webview replays `session.widgets` in creation order. Existing
 handles are updated in-place when possible; missing handles are appended. This keeps recovered
 state and live updates aligned without legacy duplicated UI sections.
+
+For progress widgets, hydration now prefers persisted `metadata.progressEvents` timestamps
+over raw log replay, so elapsed stage timings remain stable across reloads.

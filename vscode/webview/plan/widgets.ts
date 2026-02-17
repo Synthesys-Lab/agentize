@@ -1,4 +1,4 @@
-import { completeAllStepsIn, renderLinks, renderStepIndicatorsFrom, updateStepStatesIn } from './utils.js';
+import { completeAllStepsIn, completeAllStepsInAt, renderLinks, renderStepIndicatorsFrom, updateStepStatesIn } from './utils.js';
 import type { StepState } from './utils.js';
 
 export type WidgetType = 'text' | 'terminal' | 'progress' | 'buttons' | 'input' | 'status';
@@ -20,7 +20,7 @@ export interface TerminalHandle extends WidgetHandle {
 
 export interface ProgressHandle extends WidgetHandle {
   type: 'progress';
-  replay: (lines: string[]) => void;
+  replay: (lines: string[], events?: ProgressEventEntry[]) => void;
   complete: () => void;
 }
 
@@ -64,6 +64,12 @@ export interface TerminalWidgetOptions {
 export interface WidgetAppendOptions {
   widgetId?: string;
   hidden?: boolean;
+}
+
+export interface ProgressEventEntry {
+  type: 'stage' | 'exit';
+  line?: string;
+  timestamp: number;
 }
 
 const sessionContainers = new Map<string, HTMLElement>();
@@ -326,7 +332,23 @@ export const appendProgressWidget = (
     handleLine(line, stream);
   };
 
-  const replay = (lines: string[]) => {
+  const replay = (lines: string[], events?: ProgressEventEntry[]) => {
+    if (Array.isArray(events) && events.length > 0) {
+      stepMap.set(key, []);
+      const ordered = [...events].sort((a, b) => a.timestamp - b.timestamp);
+      for (const entry of ordered) {
+        if (entry.type === 'stage' && typeof entry.line === 'string') {
+          updateStepStatesIn(stepMap, key, entry.line, entry.timestamp);
+          continue;
+        }
+        if (entry.type === 'exit') {
+          completeAllStepsInAt(stepMap, key, entry.timestamp);
+        }
+      }
+      render();
+      return;
+    }
+
     stepMap.set(key, []);
     let sawExit = false;
     for (const entry of lines) {

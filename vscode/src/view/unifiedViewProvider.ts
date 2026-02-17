@@ -53,6 +53,12 @@ interface WidgetUpdateMessage {
   update: WidgetUpdatePayload;
 }
 
+interface ProgressEventEntry {
+  type: 'stage' | 'exit';
+  line?: string;
+  timestamp: number;
+}
+
 const execFileAsync = promisify(execFile);
 
 const WIDGET_ROLES = {
@@ -64,7 +70,10 @@ const WIDGET_ROLES = {
   refineTerminal: 'refine-terminal',
   refineProgress: 'refine-progress',
   actions: 'session-actions',
+  actionsArchived: 'session-actions-archived',
 } as const;
+
+const STAGE_LINE_PATTERN = /Stage\s+\d+(?:-\d+)?\/5:\s+Running\s+.+?\s*\([^)]+\)/;
 
 export class UnifiedViewProvider implements vscode.WebviewViewProvider {
   static readonly viewType = 'agentize.unifiedView';
@@ -168,7 +177,15 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
           this.appendSystemLog(sessionId, `Issue #${issueNumber} is closed.`, true, 'impl');
           return;
         }
-        this.startRun(session, 'impl', issueNumber);
+        const prepped = this.store.updateSession(sessionId, {
+          actionMode: 'implement',
+          rerun: undefined,
+        });
+        if (prepped) {
+          this.postSessionUpdate(prepped.id, prepped);
+        }
+        this.syncActionButtons(sessionId);
+        this.startRun(prepped ?? session, 'impl', issueNumber);
         return;
       }
       case 'plan/refine': {
@@ -186,7 +203,7 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
           return;
         }
 
-        const runId = message.runId ?? '';
+        const runId = (message.runId ?? '').trim() || this.createRunId();
         const now = Date.now();
         const afterRun = this.store.addRefineRun(sessionId, {
           id: runId,
@@ -226,7 +243,11 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
           return;
         }
 
-        this.store.updateSession(sessionId, { issueNumber: issueCandidate });
+        this.store.updateSession(sessionId, {
+          issueNumber: issueCandidate,
+          actionMode: 'refine',
+          rerun: undefined,
+        });
         const prepped = this.store.getSession(sessionId);
         if (prepped) {
           this.postSessionUpdate(prepped.id, prepped);
@@ -234,6 +255,77 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         this.syncActionButtons(sessionId);
 
         this.startRun(prepped ?? baseSession, 'refine', undefined, refineIssueNumber, focus, runId);
+        return;
+      }
+      case 'plan/rerun': {
+        const sessionId = message.sessionId ?? '';
+        if (!sessionId) {
+          return;
+        }
+        const session = this.store.getSession(sessionId);
+        if (!session) {
+          return;
+        }
+        const rerun = this.resolveRerunInvocation(session);
+        if (!rerun) {
+          return;
+        }
+
+        const rerunSeed = this.store.updateSession(sessionId, {
+          actionMode: 'rerun',
+          rerun: {
+            commandType: rerun.commandType,
+            prompt: rerun.prompt,
+            issueNumber: rerun.issueNumber,
+            lastExitCode: undefined,
+            updatedAt: Date.now(),
+          },
+        });
+        if (rerunSeed) {
+          this.postSessionUpdate(rerunSeed.id, rerunSeed);
+        }
+        this.syncActionButtons(sessionId);
+
+        if (rerun.commandType === 'refine') {
+          const prompt = (rerun.prompt ?? '').trim();
+          const issueCandidate = (rerun.issueNumber ?? session.issueNumber ?? '').trim();
+          if (!prompt || !/^\d+$/.test(issueCandidate)) {
+            return;
+          }
+          const refineIssueNumber = Number(issueCandidate);
+          if (!Number.isInteger(refineIssueNumber) || refineIssueNumber <= 0) {
+            return;
+          }
+          const runId = this.createRunId();
+          const now = Date.now();
+          this.store.addRefineRun(sessionId, {
+            id: runId,
+            prompt,
+            status: 'idle',
+            logs: [],
+            collapsed: false,
+            createdAt: now,
+            updatedAt: now,
+          });
+          this.ensureRefineWidgets(sessionId, runId, prompt);
+          const prepared = this.store.getSession(sessionId);
+          if (prepared) {
+            this.postSessionUpdate(prepared.id, prepared);
+          }
+          this.startRun(prepared ?? session, 'refine', undefined, refineIssueNumber, prompt, runId);
+          return;
+        }
+
+        if (rerun.commandType === 'impl') {
+          const issueNumber = (rerun.issueNumber ?? session.issueNumber ?? '').trim();
+          if (!issueNumber) {
+            return;
+          }
+          this.startRun(rerunSeed ?? session, 'impl', issueNumber);
+          return;
+        }
+
+        this.startRun(rerunSeed ?? session, 'plan');
         return;
       }
       case 'plan/toggleCollapse': {
@@ -393,6 +485,185 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  private createRunId(): string {
+    return `refine-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  private resolveRerunInvocation(
+    session: PlanSession,
+  ): { commandType: RunCommandType; prompt?: string; issueNumber?: string } | null {
+    const configured = session.rerun;
+    if (configured?.commandType === 'refine') {
+      const prompt = (configured.prompt ?? '').trim();
+      const issueNumber = (configured.issueNumber ?? session.issueNumber ?? '').trim();
+      if (!prompt || !/^\d+$/.test(issueNumber)) {
+        return null;
+      }
+      return { commandType: 'refine', prompt, issueNumber };
+    }
+    if (configured?.commandType === 'impl') {
+      const issueNumber = (configured.issueNumber ?? session.issueNumber ?? '').trim();
+      if (!issueNumber) {
+        return null;
+      }
+      return { commandType: 'impl', issueNumber };
+    }
+    if (configured?.commandType === 'plan') {
+      return { commandType: 'plan' };
+    }
+
+    if (session.implStatus === 'error') {
+      const issueNumber = (session.issueNumber ?? '').trim();
+      if (!issueNumber) {
+        return null;
+      }
+      return { commandType: 'impl', issueNumber };
+    }
+
+    const failedRefine = [...(session.refineRuns ?? [])]
+      .sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0))
+      .find((run) => run.status === 'error');
+    if (failedRefine) {
+      const issueNumber = (session.issueNumber ?? '').trim();
+      if (!issueNumber) {
+        return null;
+      }
+      return { commandType: 'refine', prompt: failedRefine.prompt, issueNumber };
+    }
+
+    if (session.status === 'error') {
+      if (session.issueNumber?.trim()) {
+        return {
+          commandType: 'refine',
+          prompt: session.prompt,
+          issueNumber: session.issueNumber.trim(),
+        };
+      }
+      return { commandType: 'plan' };
+    }
+
+    return null;
+  }
+
+  private buildRerunStateFromFailure(
+    session: PlanSession,
+    commandType: RunCommandType,
+    exitCode: number | null,
+    runId: string,
+  ): PlanSession['rerun'] {
+    if (commandType === 'impl') {
+      return {
+        commandType: 'impl',
+        issueNumber: session.issueNumber,
+        lastExitCode: exitCode,
+        updatedAt: Date.now(),
+      };
+    }
+
+    if (commandType === 'refine') {
+      const matched = (session.refineRuns ?? []).find((run) => run.id === runId);
+      const fallback = [...(session.refineRuns ?? [])]
+        .sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0))
+        .find((run) => run.status === 'error' || run.status === 'running');
+      const prompt = matched?.prompt ?? fallback?.prompt ?? session.prompt;
+      return {
+        commandType: 'refine',
+        prompt,
+        issueNumber: session.issueNumber,
+        lastExitCode: exitCode,
+        updatedAt: Date.now(),
+      };
+    }
+
+    const hasIssue = Boolean(session.issueNumber?.trim());
+    if (hasIssue) {
+      return {
+        commandType: 'refine',
+        prompt: session.prompt,
+        issueNumber: session.issueNumber,
+        lastExitCode: exitCode,
+        updatedAt: Date.now(),
+      };
+    }
+    return {
+      commandType: 'plan',
+      prompt: session.prompt,
+      lastExitCode: exitCode,
+      updatedAt: Date.now(),
+    };
+  }
+
+  private isStageLine(line: string): boolean {
+    return STAGE_LINE_PATTERN.test(line);
+  }
+
+  private getProgressEvents(widget: WidgetState): ProgressEventEntry[] {
+    const raw = widget.metadata?.progressEvents;
+    if (!Array.isArray(raw)) {
+      return [];
+    }
+    return raw
+      .map((entry) => {
+        if (!entry || typeof entry !== 'object') {
+          return null;
+        }
+        const candidate = entry as { type?: string; line?: string; timestamp?: unknown };
+        if (candidate.type !== 'stage' && candidate.type !== 'exit') {
+          return null;
+        }
+        if (typeof candidate.timestamp !== 'number' || !Number.isFinite(candidate.timestamp)) {
+          return null;
+        }
+        const normalized: ProgressEventEntry = {
+          type: candidate.type,
+          timestamp: candidate.timestamp,
+        };
+        if (candidate.type === 'stage' && typeof candidate.line === 'string') {
+          normalized.line = candidate.line;
+        }
+        return normalized;
+      })
+      .filter((entry): entry is ProgressEventEntry => Boolean(entry));
+  }
+
+  private appendProgressEvent(
+    sessionId: string,
+    role: string,
+    entry: ProgressEventEntry,
+    runId?: string,
+  ): void {
+    const session = this.store.getSession(sessionId);
+    if (!session) {
+      return;
+    }
+    const widget = runId
+      ? this.findWidgetByRoleAndRunId(session, role, runId, 'progress')
+      : this.findWidgetByRole(session, role, 'progress');
+    if (!widget) {
+      return;
+    }
+    const events = this.getProgressEvents(widget);
+    const capped = [...events, entry].slice(-200);
+    this.store.updateWidgetMetadata(sessionId, widget.id, { progressEvents: capped });
+  }
+
+  private recordProgressStage(
+    sessionId: string,
+    role: string,
+    line: string,
+    timestamp: number,
+    runId?: string,
+  ): void {
+    if (!this.isStageLine(line)) {
+      return;
+    }
+    this.appendProgressEvent(sessionId, role, { type: 'stage', line, timestamp }, runId);
+  }
+
+  private recordProgressExit(sessionId: string, role: string, timestamp: number, runId?: string): void {
+    this.appendProgressEvent(sessionId, role, { type: 'exit', timestamp }, runId);
+  }
+
   private startRun(
     session: PlanSession,
     commandType: RunCommandType,
@@ -442,7 +713,21 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         this.appendSystemLog(session.id, 'Missing workspace or trees/main path.', false, commandType);
         this.store.updateSession(session.id, { status: 'error', phase: 'plan-completed' });
       }
-      const updated = this.store.getSession(session.id);
+      let updated = this.store.getSession(session.id);
+      if (updated?.actionMode === 'rerun' && updated.rerun) {
+        this.store.updateSession(session.id, {
+          actionMode: 'default',
+          rerun: {
+            ...updated.rerun,
+            lastExitCode: 1,
+            updatedAt: Date.now(),
+          },
+        });
+        updated = this.store.getSession(session.id);
+      } else if (updated && updated.actionMode !== 'default') {
+        this.store.updateSession(session.id, { actionMode: 'default' });
+        updated = this.store.getSession(session.id);
+      }
       if (updated) {
         this.postSessionUpdate(updated.id, updated);
       }
@@ -509,7 +794,21 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         this.appendSystemLog(session.id, 'Unable to start session.', false, commandType);
         this.store.updateSession(session.id, { status: 'error', phase: 'plan-completed' });
       }
-      const updated = this.store.getSession(session.id);
+      let updated = this.store.getSession(session.id);
+      if (updated?.actionMode === 'rerun' && updated.rerun) {
+        this.store.updateSession(session.id, {
+          actionMode: 'default',
+          rerun: {
+            ...updated.rerun,
+            lastExitCode: 1,
+            updatedAt: Date.now(),
+          },
+        });
+        updated = this.store.getSession(session.id);
+      } else if (updated && updated.actionMode !== 'default') {
+        this.store.updateSession(session.id, { actionMode: 'default' });
+        updated = this.store.getSession(session.id);
+      }
       if (updated) {
         this.postSessionUpdate(updated.id, updated);
       }
@@ -570,14 +869,23 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         const storedLine = `stderr: ${event.line}`;
         if (isImpl) {
           this.appendImplLines(event.sessionId, [storedLine]);
+          this.recordProgressStage(event.sessionId, WIDGET_ROLES.implProgress, event.line, event.timestamp);
           this.capturePrUrl(event.sessionId, event.line);
         } else if (isRefine) {
           if (runId) {
             this.appendRefineLines(event.sessionId, runId, [storedLine]);
+            this.recordProgressStage(
+              event.sessionId,
+              WIDGET_ROLES.refineProgress,
+              event.line,
+              event.timestamp,
+              runId,
+            );
           }
           this.capturePlanPath(event.sessionId, event.line);
         } else {
           this.appendPlanLines(event.sessionId, [storedLine]);
+          this.recordProgressStage(event.sessionId, WIDGET_ROLES.planProgress, event.line, event.timestamp);
           this.captureIssueNumber(event.sessionId, event.line);
           this.capturePlanPath(event.sessionId, event.line);
         }
@@ -597,20 +905,48 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         const line = `Exit code: ${event.code ?? 'null'}`;
         if (isImpl) {
           this.appendImplLines(event.sessionId, [line]);
+          this.recordProgressExit(event.sessionId, WIDGET_ROLES.implProgress, event.timestamp);
           this.completeProgress(event.sessionId, WIDGET_ROLES.implProgress);
         } else if (isRefine) {
           if (runId) {
             this.store.updateRefineRunStatus(event.sessionId, runId, status);
             this.appendRefineLines(event.sessionId, runId, [line]);
+            this.recordProgressExit(event.sessionId, WIDGET_ROLES.refineProgress, event.timestamp, runId);
             this.completeProgress(event.sessionId, WIDGET_ROLES.refineProgress, runId);
           }
         } else {
           this.appendPlanLines(event.sessionId, [line]);
+          this.recordProgressExit(event.sessionId, WIDGET_ROLES.planProgress, event.timestamp);
           this.completeProgress(event.sessionId, WIDGET_ROLES.planProgress);
         }
-        const updated = this.store.updateSession(event.sessionId, update);
+        const rerunUpdate =
+          event.code === 0
+            ? {
+                actionMode: 'default' as const,
+                rerun: session.rerun
+                  ? {
+                      ...session.rerun,
+                      lastExitCode: event.code,
+                      updatedAt: Date.now(),
+                    }
+                  : session.rerun,
+              }
+            : {
+                actionMode: 'default' as const,
+                rerun: this.buildRerunStateFromFailure(session, event.commandType, event.code, runId),
+              };
+        const updated = this.store.updateSession(event.sessionId, { ...update, ...rerunUpdate });
         if (updated) {
           this.postSessionUpdate(updated.id, updated);
+        }
+        if (isRefine && session.actionMode === 'refine') {
+          this.archiveActiveActionWidget(event.sessionId, {
+            id: 'refined',
+            label: status === 'success' ? 'Refined' : 'Refine failed',
+            action: 'plan/refine',
+            variant: 'secondary',
+            disabled: true,
+          });
         }
         this.syncActionButtons(event.sessionId);
         return;
@@ -1031,6 +1367,23 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
     return widget ?? undefined;
   }
 
+  private archiveActiveActionWidget(sessionId: string, frozenButton: WidgetButton): void {
+    const session = this.store.getSession(sessionId);
+    if (!session) {
+      return;
+    }
+    const active = this.findWidgetByRole(session, WIDGET_ROLES.actions, 'buttons');
+    if (!active) {
+      return;
+    }
+    this.store.updateWidgetMetadata(sessionId, active.id, {
+      role: WIDGET_ROLES.actionsArchived,
+      buttons: [frozenButton],
+      archivedAt: Date.now(),
+    });
+    this.postWidgetUpdate(sessionId, active.id, { type: 'replaceButtons', buttons: [frozenButton] });
+  }
+
   private buildActionButtons(session: PlanSession): WidgetButton[] {
     const hasPlanPath = Boolean(session.planPath?.trim());
     const hasIssueNumber = Boolean(session.issueNumber?.trim());
@@ -1043,10 +1396,46 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
     const isPlanning = session.phase === 'planning';
     const isRefining = session.phase === 'refining';
     const isImplementing = session.phase === 'implementing';
+    const isBusy = isPlanning || isRefining || isImplementing;
+    const actionMode = session.actionMode ?? 'default';
+    const rerunTarget = this.resolveRerunInvocation(session);
+    const rerunLastExitCode = session.rerun?.lastExitCode;
 
     const buttons: WidgetButton[] = [];
 
-    // Keep the primary action row stable: show View Plan from run start, enable once plan is available.
+    // While a selected action is running, keep only that action visible.
+    if (isBusy && actionMode === 'rerun') {
+      buttons.push({
+        id: 'rerun',
+        label: 'Running...',
+        action: 'plan/rerun',
+        variant: 'primary',
+        disabled: true,
+      });
+      return buttons;
+    }
+    if (isBusy && actionMode === 'refine') {
+      buttons.push({
+        id: 'refine',
+        label: 'Running...',
+        action: 'plan/refine',
+        variant: 'secondary',
+        disabled: true,
+      });
+      return buttons;
+    }
+    if (isBusy && actionMode === 'implement') {
+      buttons.push({
+        id: 'implement',
+        label: 'Running...',
+        action: 'plan/impl',
+        variant: 'primary',
+        disabled: true,
+      });
+      return buttons;
+    }
+
+    // Idle/completed state: always render the full 5-button action row.
     buttons.push({
       id: 'view-plan',
       label: 'View Plan',
@@ -1054,7 +1443,6 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
       variant: 'secondary',
       disabled: !hasPlanPath || !planDone,
     });
-
     buttons.push({
       id: 'view-issue',
       label: 'View Issue',
@@ -1073,7 +1461,7 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
       disabled: implDisabled,
     });
 
-    const refineDisabled = !planDone || isPlanning || isImplementing || session.phase === 'refining';
+    const refineDisabled = !planDone || isPlanning || isImplementing || isRefining;
     buttons.push({
       id: 'refine',
       label: 'Refine',
@@ -1082,7 +1470,15 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
       disabled: refineDisabled,
     });
 
-    if (implSuccess) {
+    buttons.push({
+      id: 'rerun',
+      label: 'Rerun',
+      action: 'plan/rerun',
+      variant: 'secondary',
+      disabled: isBusy || rerunLastExitCode === 0 || !rerunTarget,
+    });
+
+    if (implSuccess && Boolean(session.prUrl)) {
       buttons.push({
         id: 'view-pr',
         label: 'View PR',
