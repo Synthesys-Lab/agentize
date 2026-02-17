@@ -17,6 +17,7 @@ Per-command implementation files for the `lol` CLI. Each file exports exactly on
 | `usage.sh` | `_lol_cmd_usage` | Report Claude Code token usage statistics |
 | `plan.sh` | `_lol_cmd_plan` | Run multi-agent debate pipeline |
 | `impl.sh` | `_lol_cmd_impl` | Automate issue-to-implementation loop |
+| `rebase.sh` | `_lol_cmd_rebase` | Rebase current branch onto target branch |
 
 ## Design
 
