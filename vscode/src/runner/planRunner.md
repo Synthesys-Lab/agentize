@@ -24,6 +24,8 @@ It supports both `plan` and `impl` CLI subcommands.
 ### buildCommand(input: RunPlanInput)
 Returns the executable and arguments used to invoke the CLI (`lol plan`, `lol plan --refine <issue> "<prompt>"`, or `lol impl <issue>`), using `node`
 to run the wrapper script while preserving the user-facing display string.
+When `input.backend` is provided, `buildCommand` appends `--backend <provider:model>`
+to `lol impl` runs.
 
 ### attachLineReaders()
 Converts stdout/stderr streams into line-based run events.

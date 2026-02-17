@@ -1,5 +1,6 @@
 import { execFile } from 'child_process';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import { promisify } from 'util';
 import * as vscode from 'vscode';
@@ -17,6 +18,30 @@ interface IncomingMessage {
   runId?: string;
   url?: string;
   path?: string;
+  payload?: unknown;
+}
+
+type SettingsScope = 'repo' | 'global';
+
+interface SettingsFileSnapshot {
+  path: string;
+  exists: boolean;
+  content: string;
+}
+
+interface LocalSettingsSnapshot extends SettingsFileSnapshot {
+  backend?: string;
+}
+
+interface SettingsPayload {
+  agentize: SettingsFileSnapshot;
+  repo: LocalSettingsSnapshot;
+  global: LocalSettingsSnapshot;
+}
+
+interface SettingsSavePayload {
+  scope: SettingsScope;
+  backend: string;
 }
 
 interface SessionUpdateMessage {
@@ -453,6 +478,14 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         void vscode.env.openExternal(vscode.Uri.parse(session.prUrl));
         return;
       }
+      case 'settings/load': {
+        await this.handleSettingsLoad();
+        return;
+      }
+      case 'settings/save': {
+        await this.handleSettingsSave(message.payload);
+        return;
+      }
       case 'link/openExternal': {
         const url = message.url ?? '';
         if (this.isValidGitHubUrl(url)) {
@@ -507,6 +540,260 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
     } catch (error) {
       console.error('[UnifiedViewProvider] Failed to open file:', filePath, error);
     }
+  }
+
+  private async handleSettingsLoad(): Promise<void> {
+    if (!this.view) {
+      return;
+    }
+    try {
+      const settings = await this.loadSettingsPayload();
+      this.view.webview.postMessage({ type: 'settings/loaded', payload: settings });
+    } catch (error) {
+      this.postSettingsError(`Failed to load settings: ${String(error)}`);
+    }
+  }
+
+  private async handleSettingsSave(payload: unknown): Promise<void> {
+    if (!this.view) {
+      return;
+    }
+    const savePayload = payload as SettingsSavePayload | undefined;
+    if (!savePayload?.scope || !savePayload.backend) {
+      this.postSettingsError('Missing settings payload.');
+      return;
+    }
+    try {
+      await this.saveBackendSetting(savePayload);
+      const settings = await this.loadSettingsPayload();
+      this.view.webview.postMessage({
+        type: 'settings/saved',
+        payload: { scope: savePayload.scope, settings },
+      });
+    } catch (error) {
+      this.postSettingsError(`Failed to save settings: ${String(error)}`, savePayload.scope);
+    }
+  }
+
+  private postSettingsError(message: string, scope?: SettingsScope): void {
+    if (!this.view) {
+      return;
+    }
+    this.view.webview.postMessage({ type: 'settings/error', payload: { message, scope } });
+  }
+
+  private async loadSettingsPayload(): Promise<SettingsPayload> {
+    const repoRoot = this.resolvePlanCwd();
+    const agentizePath = repoRoot ? path.join(repoRoot, '.agentize.yaml') : '';
+    const repoLocalPath = repoRoot ? path.join(repoRoot, '.agentize.local.yaml') : '';
+    const globalPath = path.join(os.homedir(), '.agentize.local.yaml');
+
+    const agentize = await this.readSettingsFileSnapshot(agentizePath);
+    const repo = await this.readSettingsFileSnapshot(repoLocalPath);
+    const global = await this.readSettingsFileSnapshot(globalPath);
+
+    return {
+      agentize,
+      repo: { ...repo, backend: this.extractPlannerBackend(repo.content) },
+      global: { ...global, backend: this.extractPlannerBackend(global.content) },
+    };
+  }
+
+  private async readSettingsFileSnapshot(filePath: string): Promise<SettingsFileSnapshot> {
+    if (!filePath) {
+      return { path: '', exists: false, content: '' };
+    }
+    try {
+      const content = await fs.promises.readFile(filePath, 'utf8');
+      return { path: filePath, exists: true, content };
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return { path: filePath, exists: false, content: '' };
+      }
+      throw error;
+    }
+  }
+
+  private async saveBackendSetting(payload: SettingsSavePayload): Promise<void> {
+    const backend = payload.backend.trim();
+    if (!this.isValidBackendSpec(backend)) {
+      throw new Error('Backend must be in provider:model format.');
+    }
+
+    let filePath = '';
+    if (payload.scope === 'repo') {
+      const repoRoot = this.resolvePlanCwd();
+      if (!repoRoot) {
+        throw new Error('Open a workspace to edit repo settings.');
+      }
+      filePath = path.join(repoRoot, '.agentize.local.yaml');
+    } else {
+      filePath = path.join(os.homedir(), '.agentize.local.yaml');
+    }
+
+    const snapshot = await this.readSettingsFileSnapshot(filePath);
+    const updated = this.updatePlannerBackend(snapshot.content, backend);
+
+    await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+    await fs.promises.writeFile(filePath, updated, 'utf8');
+  }
+
+  private resolveBackendForRun(planRoot: string): string | undefined {
+    const searchPaths = this.buildLocalConfigSearchPaths(planRoot);
+    for (const candidate of searchPaths) {
+      if (!fs.existsSync(candidate)) {
+        continue;
+      }
+      try {
+        const content = fs.readFileSync(candidate, 'utf8');
+        const backend = this.extractPlannerBackend(content);
+        if (backend && this.isValidBackendSpec(backend)) {
+          return backend;
+        }
+        if (backend) {
+          this.output.appendLine(`[unifiedView] invalid backend spec in ${candidate}, ignoring.`);
+        }
+      } catch (error) {
+        this.output.appendLine(`[unifiedView] failed to read ${candidate}: ${String(error)}`);
+      }
+    }
+    return undefined;
+  }
+
+  private buildLocalConfigSearchPaths(planRoot: string): string[] {
+    const candidates: string[] = [];
+    if (planRoot) {
+      candidates.push(path.join(planRoot, '.agentize.local.yaml'));
+    }
+    const agentizeHome = process.env.AGENTIZE_HOME;
+    if (agentizeHome && agentizeHome !== planRoot) {
+      candidates.push(path.join(agentizeHome, '.agentize.local.yaml'));
+    }
+    candidates.push(path.join(os.homedir(), '.agentize.local.yaml'));
+    return candidates;
+  }
+
+  private extractPlannerBackend(content: string): string | undefined {
+    if (!content) {
+      return undefined;
+    }
+    const lines = content.split(/\r?\n/);
+    let inPlanner = false;
+    let plannerIndent = 0;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) {
+        continue;
+      }
+      if (!inPlanner) {
+        const match = /^\s*planner\s*:\s*(?:#.*)?$/.exec(line);
+        if (match) {
+          inPlanner = true;
+          plannerIndent = line.match(/^\s*/)?.[0].length ?? 0;
+        }
+        continue;
+      }
+
+      const indent = line.match(/^\s*/)?.[0].length ?? 0;
+      if (indent <= plannerIndent) {
+        inPlanner = false;
+        continue;
+      }
+
+      const backendMatch = /^\s*backend\s*:\s*(.+?)\s*(?:#.*)?$/.exec(line);
+      if (backendMatch) {
+        return this.stripQuotes(backendMatch[1].trim());
+      }
+    }
+    return undefined;
+  }
+
+  private stripQuotes(value: string): string {
+    const trimmed = value.trim();
+    if (
+      (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+      (trimmed.startsWith("'") && trimmed.endsWith("'"))
+    ) {
+      return trimmed.slice(1, -1);
+    }
+    return trimmed;
+  }
+
+  private isValidBackendSpec(spec: string): boolean {
+    const trimmed = spec.trim();
+    const separator = trimmed.indexOf(':');
+    if (separator <= 0 || separator >= trimmed.length - 1) {
+      return false;
+    }
+    const provider = trimmed.slice(0, separator);
+    const model = trimmed.slice(separator + 1);
+    if (!provider || !model) {
+      return false;
+    }
+    if (/\s/.test(provider) || /\s/.test(model)) {
+      return false;
+    }
+    return true;
+  }
+
+  private updatePlannerBackend(content: string, backend: string): string {
+    const base = content ?? '';
+    const newline = base.includes('\r\n') ? '\r\n' : '\n';
+    const lines = base.split(/\r?\n/);
+    let plannerIndex = -1;
+    let plannerIndent = 0;
+
+    for (let i = 0; i < lines.length; i += 1) {
+      if (/^\s*planner\s*:\s*(?:#.*)?$/.test(lines[i])) {
+        plannerIndex = i;
+        plannerIndent = lines[i].match(/^\s*/)?.[0].length ?? 0;
+        break;
+      }
+    }
+
+    if (plannerIndex === -1) {
+      const trimmed = base.trimEnd();
+      const prefix = trimmed ? `${trimmed}${newline}${newline}` : '';
+      return `${prefix}planner:${newline}  backend: ${backend}${newline}`;
+    }
+
+    let backendIndex = -1;
+    let insertIndex = plannerIndex + 1;
+
+    for (let i = plannerIndex + 1; i < lines.length; i += 1) {
+      const line = lines[i];
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) {
+        continue;
+      }
+      const indent = line.match(/^\s*/)?.[0].length ?? 0;
+      if (indent <= plannerIndent) {
+        insertIndex = i;
+        break;
+      }
+      insertIndex = i + 1;
+      if (/^\s*backend\s*:\s*/.test(line)) {
+        backendIndex = i;
+        break;
+      }
+    }
+
+    const indentPrefix =
+      backendIndex >= 0 ? lines[backendIndex].match(/^\s*/)?.[0] ?? '' : ' '.repeat(plannerIndent + 2);
+    const backendLine = `${indentPrefix}backend: ${backend}`;
+
+    if (backendIndex >= 0) {
+      lines[backendIndex] = backendLine;
+    } else {
+      lines.splice(insertIndex, 0, backendLine);
+    }
+
+    let updated = lines.join(newline);
+    if (!updated.endsWith(newline)) {
+      updated += newline;
+    }
+    return updated;
   }
 
   private resolvePlanPath(session: PlanSession): string | null {
@@ -816,6 +1103,7 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
     }
     this.syncActionButtons(session.id);
 
+    const backend = this.resolveBackendForRun(cwd);
     const started = this.runner.run(
       {
         sessionId: session.id,
@@ -828,6 +1116,7 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         cwd,
         refineIssueNumber: commandType === 'refine' ? refineIssueNumber : undefined,
         runId,
+        backend,
       },
       (event) => this.handleRunEvent(event),
     );
@@ -1928,8 +2217,18 @@ export const UnifiedViewProviderMessages = {
     'plan/view-plan',
     'plan/view-issue',
     'plan/view-pr',
+    'settings/load',
+    'settings/save',
     'link/openExternal',
     'link/openFile',
   ],
-  outgoing: ['state/replace', 'plan/sessionUpdated', 'widget/append', 'widget/update'],
+  outgoing: [
+    'state/replace',
+    'plan/sessionUpdated',
+    'widget/append',
+    'widget/update',
+    'settings/loaded',
+    'settings/saved',
+    'settings/error',
+  ],
 };

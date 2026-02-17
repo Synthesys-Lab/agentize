@@ -159,10 +159,15 @@ export class PlanRunner {
   private buildCommand(input: RunPlanInput): CommandSpec {
     const command = 'node';
     const wrapperPath = path.join(__dirname, '..', '..', 'bin', 'lol-wrapper.js');
+    const backend = input.backend?.trim();
     if (input.command === 'impl') {
       const issueNumber = input.issueNumber ?? '';
       const args = [wrapperPath, 'impl', issueNumber];
-      const display = `lol impl ${this.quoteArg(issueNumber)}`.trim();
+      let display = `lol impl ${this.quoteArg(issueNumber)}`.trim();
+      if (backend) {
+        args.push('--backend', backend);
+        display = `${display} --backend ${this.quoteArg(backend)}`.trim();
+      }
       return { command, args, display };
     }
 
