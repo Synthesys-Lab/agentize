@@ -294,6 +294,9 @@ def rebase_stage_kernel(context: WorkflowContext) -> StageResult:
 
     if event == EVENT_REBASE_OK:
         state.iteration += 1
+        context.data["review_fail_streak"] = 0
+        context.data["review_attempts"] = 0
+        context.data["last_review_score"] = None
 
     return StageResult(event=event, reason=message)
 
