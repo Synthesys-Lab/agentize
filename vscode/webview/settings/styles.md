@@ -1,27 +1,18 @@
 # styles.css
 
-Styles for the Settings UI layout, form fields, and YAML previews.
+Styles for the Settings launcher layout and file-link rows.
 
 ## External Interface
 
 ### Layout Classes
 - `.settings-root`: main layout container for the settings panel.
-- `.settings-shell`: width-constrained column layout for sections.
+- `.settings-shell`: width-constrained column layout.
 - `.settings-header`: header stack with title, subtitle, and status line.
-- `.settings-section`: card-style container for each settings scope.
-- `.settings-section-header`: top row with titles and scope tags.
+- `.settings-links`: card container for the three settings links.
 
-### Form + Status Classes
-- `.settings-summary`: summary line for the currently configured backend.
-- `.settings-field-grid`: grid layout for provider/model inputs.
-- `.settings-input`, `.settings-select`: input styling for backend editing.
-- `.settings-actions`: row for save button + inline status.
-- `.settings-inline-status`: save feedback text with success/error modifiers.
-- `.settings-note`: small helper text describing where values are written.
-
-### Content Preview Classes
-- `.settings-code`: YAML preview block.
-- `.settings-code.is-empty`: empty-state styling for missing content.
+### Link Classes
+- `.settings-link`: clickable row used to open a file in the editor.
+- `.settings-link-path`: monospace span for the short path label.
 
 ## Internal Helpers
 

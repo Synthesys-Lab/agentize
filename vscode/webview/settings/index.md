@@ -1,6 +1,6 @@
 # index.ts
 
-Webview script that renders the Settings UI and manages backend configuration edits.
+Webview script that renders a minimal Settings launcher UI.
 
 ## VS Code API Lifecycle
 
@@ -11,35 +11,20 @@ webview API acquisition remains single-instance for the page lifecycle.
 ## External Interface
 
 ### UI Rendering
-- Replaces `#settings-root` with three sections: `.agentize.yaml` (read-only), repo `.agentize.local.yaml`, and `~/.agentize.local.yaml`.
-- Shows provider dropdown and model text input for each editable scope.
-- Displays YAML snapshots in read-only `<pre>` blocks for quick context.
+- Replaces `#settings-root` with three file links:
+  - `Metadata: .agentize.yaml`
+  - `Repo Local: .agentize.local.yaml`
+  - `User Local: ~/.agentize.local.yaml`
+- Keeps path labels short and stable instead of rendering absolute filesystem paths.
+- Uses a status line for quick open feedback.
 
 ### Webview Messages
 Sends messages:
-- `settings/load`: request settings payload from the extension host.
-- `settings/save`: persist a backend update with `{ scope, backend }`.
-
-Receives messages:
-- `settings/loaded`: payload with YAML snapshots + backend values for each scope.
-- `settings/saved`: payload with updated snapshots after a save.
-- `settings/error`: payload with error text (and optional scope) for UI messaging.
-
-### Validation Behavior
-- Requires both provider and model before saving.
-- Normalizes `provider:model` format for the outgoing `backend` value.
-- Injects custom provider options when existing YAML uses an unrecognized provider.
+- `link/openFile` with:
+  - `path`: selected settings path.
+  - `createIfMissing: true`: request creation of missing files before opening.
 
 ## Internal Helpers
 
-### applySettings(payload)
-Maps the incoming snapshots into file path labels, YAML previews, and form fields.
-
-### applyBackend(scope, backend)
-Splits `provider:model` strings and updates the provider select + model input.
-
-### saveScope(scope)
-Validates input, disables the save button, and posts `settings/save` to the extension host.
-
-### applySnapshot(snapshot, pathEl, contentEl, emptyLabel)
-Renders YAML content or an empty-state placeholder when files are missing.
+### settingsLinks
+Static metadata describing the three file links shown in the panel.
