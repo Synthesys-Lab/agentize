@@ -125,16 +125,9 @@ button:disabled {
   resize: vertical;
 }
 
-.input-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.hint {
+.input-hint {
   font-size: 12px;
   color: var(--muted);
-  margin-left: auto;
 }
 
 .session-list {
@@ -491,9 +484,5 @@ button:disabled {
 
   .session-header {
     flex-wrap: wrap;
-  }
-
-  .hint {
-    margin-left: 0;
   }
 }

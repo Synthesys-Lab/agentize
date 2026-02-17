@@ -155,6 +155,26 @@ const run = async () => {
     await page.waitForSelector('#plan-textarea', { timeout: 10000 });
     await page.screenshot({ path: nextScreenshotPath(), fullPage: true });
 
+    const hintText = await page.locator('.input-hint').textContent();
+    if (!hintText || !hintText.includes('Esc to cancel')) {
+      throw new Error(`Plan input hint text missing Esc guidance: ${hintText || 'empty'}`);
+    }
+
+    const planButtonCount = await page.locator('#plan-input button').count();
+    if (planButtonCount !== 0) {
+      throw new Error(`Plan input should not include buttons; found ${planButtonCount}`);
+    }
+
+    await page.press('#plan-textarea', 'Escape');
+    await page.waitForFunction(() => {
+      const panel = document.getElementById('plan-input');
+      return Boolean(panel && panel.classList.contains('hidden'));
+    }, { timeout: 10000 });
+    await page.screenshot({ path: nextScreenshotPath(), fullPage: true });
+
+    await page.click('#new-plan');
+    await page.waitForSelector('#plan-textarea', { timeout: 10000 });
+
     await page.fill('#plan-textarea', PLAN_PROMPT);
     const submitShortcut = process.platform === 'darwin' ? 'Meta+Enter' : 'Control+Enter';
     await page.press('#plan-textarea', submitShortcut);

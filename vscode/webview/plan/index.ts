@@ -52,11 +52,7 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     <div id="plan-input" class="plan-input hidden">
       <label class="input-label" for="plan-textarea">Plan prompt</label>
       <textarea id="plan-textarea" rows="6" placeholder="Describe the plan you want to run..."></textarea>
-      <div class="input-actions">
-        <button id="plan-run" class="primary">Run Plan</button>
-        <button id="plan-cancel">Cancel</button>
-        <span class="hint">Cmd+Enter / Ctrl+Enter to run</span>
-      </div>
+      <div class="input-hint">Cmd+Enter / Ctrl+Enter to run, Esc to cancel.</div>
     </div>
     <div id="session-list" class="session-list"></div>
   `;
@@ -66,8 +62,6 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
   const newPlanButton = document.getElementById('new-plan');
   const inputPanel = document.getElementById('plan-input');
   const textarea = document.getElementById('plan-textarea') as HTMLTextAreaElement;
-  const runButton = document.getElementById('plan-run');
-  const cancelButton = document.getElementById('plan-cancel');
   const sessionList = document.getElementById('session-list');
 
   type SessionNode = {
@@ -150,18 +144,14 @@ declare function acquireVsCodeApi(): { postMessage(message: unknown): void };
     showInputPanel();
   });
 
-  runButton?.addEventListener('click', () => {
-    submitPlan();
-  });
-
-  cancelButton?.addEventListener('click', () => {
-    hideInputPanel();
-  });
-
   textarea?.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
       submitPlan();
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      hideInputPanel();
     }
   });
 
