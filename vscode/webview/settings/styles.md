@@ -8,7 +8,9 @@ Styles for the Settings launcher layout and file-link rows.
 - `.settings-root`: main layout container for the settings panel.
 - `.settings-shell`: width-constrained column layout.
 - `.settings-header`: header stack with title, subtitle, and status line.
-- `.settings-links`: card container for the three settings links.
+- `.settings-links`: vertical list container for the settings cards.
+- `.settings-entry`: one independent card per settings target.
+- `.settings-entry-title`: title row inside each card.
 
 ### Link Classes
 - `.settings-link`: clickable row used to open a file in the editor.
