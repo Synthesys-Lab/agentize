@@ -19,6 +19,7 @@ node vscode/test/playwright/test-session-append.js
   3. Submit with `Cmd+Enter` (or `Ctrl+Enter` on non-macOS).
   4. Wait for simulated planner completion and verify action buttons are enabled.
   5. Click `Refine`, submit the same prompt, simulate refine run, and wait for completion.
+  6. Simulate `Implement` running/completion and verify the running row is archived while a fresh action row is appended at the timeline tail.
 - Dumps screenshots for every key step into worktree `.tmp` with deterministic names:
   - `.tmp/test-session-append-1.png`
   - `.tmp/test-session-append-2.png`

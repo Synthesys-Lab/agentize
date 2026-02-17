@@ -587,6 +587,230 @@ const run = async () => {
 
     await page.screenshot({ path: nextScreenshotPath(), fullPage: true });
 
+    const implTerminalRunning = {
+      id: 'terminal-impl-1',
+      type: 'terminal',
+      title: 'Implementation Log',
+      content: ['stderr: Stage 1/5: Running coder (kimi:default)'],
+      metadata: { role: 'impl-terminal' },
+      createdAt: t0 + 44000,
+    };
+
+    const implProgressRunning = {
+      id: 'progress-impl-1',
+      type: 'progress',
+      metadata: {
+        role: 'impl-progress',
+        terminalId: 'terminal-impl-1',
+        progressEvents: [
+          {
+            type: 'stage',
+            line: 'Stage 1/5: Running coder (kimi:default)',
+            timestamp: t0 + 44500,
+          },
+        ],
+      },
+      createdAt: t0 + 44001,
+    };
+
+    const actionImplementRunning = {
+      ...actionFresh,
+      metadata: {
+        role: 'session-actions',
+        buttons: [
+          button('implement', 'Running...', 'plan/impl', 'primary', true),
+        ],
+      },
+    };
+
+    await postSessionUpdate(page, sessionId, {
+      id: sessionId,
+      title: 'test prompt, end this...',
+      collapsed: false,
+      status: 'success',
+      prompt: PLAN_PROMPT,
+      issueNumber: '934',
+      issueState: 'open',
+      planPath: '.tmp/issue-934-plan.md',
+      prUrl: undefined,
+      implStatus: 'running',
+      refineRuns: [
+        {
+          id: 'refine-soft-1',
+          prompt: REFINE_PROMPT,
+          status: 'success',
+          logs: refineTerminalDone.content,
+          collapsed: false,
+          createdAt: t0 + 23000,
+          updatedAt: t0 + 43000,
+        },
+      ],
+      version: 3,
+      widgets: [
+        promptWidget,
+        planTerminalDone,
+        planProgressDone,
+        actionRefinedArchived,
+        refineTerminalDone,
+        refineProgressDone,
+        actionImplementRunning,
+        implTerminalRunning,
+        implProgressRunning,
+      ],
+      phase: 'implementing',
+      actionMode: 'implement',
+      rerun: {
+        commandType: 'impl',
+        issueNumber: '934',
+        updatedAt: t0 + 44500,
+      },
+      createdAt: t0,
+      updatedAt: t0 + 44500,
+    });
+
+    await page.waitForSelector('.widget-buttons button:has-text("Running...")', { timeout: 10000 });
+    await page.screenshot({ path: nextScreenshotPath(), fullPage: true });
+
+    const implTerminalDone = {
+      ...implTerminalRunning,
+      content: [
+        'stderr: Stage 1/5: Running coder (kimi:default)',
+        'Issue-934 implementation is done',
+        'Find the PR at: https://github.com/Synthesys-Lab/agentize/pull/940',
+        'Exit code: 0',
+      ],
+    };
+
+    const implProgressDone = {
+      ...implProgressRunning,
+      metadata: {
+        role: 'impl-progress',
+        terminalId: 'terminal-impl-1',
+        progressEvents: [
+          {
+            type: 'stage',
+            line: 'Stage 1/5: Running coder (kimi:default)',
+            timestamp: t0 + 44500,
+          },
+          {
+            type: 'exit',
+            timestamp: t0 + 50000,
+          },
+        ],
+      },
+    };
+
+    const actionImplementedArchived = {
+      ...actionFresh,
+      metadata: {
+        role: 'session-actions-archived',
+        buttons: [
+          button('implemented', 'Implemented', 'plan/impl', 'primary', true),
+        ],
+        archivedAt: t0 + 50001,
+      },
+    };
+
+    const actionAfterImpl = {
+      id: 'actions-3',
+      type: 'buttons',
+      metadata: {
+        role: 'session-actions',
+        buttons: [
+          button('view-plan', 'View Plan', 'plan/view-plan', 'secondary', false),
+          button('view-issue', 'View Issue', 'plan/view-issue', 'secondary', false),
+          button('implement', 'Implement', 'plan/impl', 'primary', false),
+          button('refine', 'Refine', 'plan/refine', 'secondary', false),
+          button('rerun', 'Rerun', 'plan/rerun', 'secondary', true),
+          button('view-pr', 'View PR', 'plan/view-pr', 'primary', false),
+        ],
+      },
+      createdAt: t0 + 50002,
+    };
+
+    await postSessionUpdate(page, sessionId, {
+      id: sessionId,
+      title: 'test prompt, end this...',
+      collapsed: false,
+      status: 'success',
+      prompt: PLAN_PROMPT,
+      issueNumber: '934',
+      issueState: 'open',
+      planPath: '.tmp/issue-934-plan.md',
+      prUrl: 'https://github.com/Synthesys-Lab/agentize/pull/940',
+      implStatus: 'success',
+      refineRuns: [
+        {
+          id: 'refine-soft-1',
+          prompt: REFINE_PROMPT,
+          status: 'success',
+          logs: refineTerminalDone.content,
+          collapsed: false,
+          createdAt: t0 + 23000,
+          updatedAt: t0 + 43000,
+        },
+      ],
+      version: 3,
+      widgets: [
+        promptWidget,
+        planTerminalDone,
+        planProgressDone,
+        actionRefinedArchived,
+        refineTerminalDone,
+        refineProgressDone,
+        actionImplementedArchived,
+        implTerminalDone,
+        implProgressDone,
+        actionAfterImpl,
+      ],
+      phase: 'completed',
+      actionMode: 'default',
+      rerun: {
+        commandType: 'impl',
+        issueNumber: '934',
+        lastExitCode: 0,
+        updatedAt: t0 + 50000,
+      },
+      createdAt: t0,
+      updatedAt: t0 + 50002,
+    });
+
+    const latestAfterImpl = page.locator('.widget-buttons').last();
+    await latestAfterImpl.locator('button:has-text("View PR")').waitFor({ timeout: 10000 });
+
+    await softCheck('implement completed -> old row archived as Implemented', async () => {
+      const archivedCount = await page.locator('.widget-buttons button:has-text("Implemented")').count();
+      if (archivedCount < 1) {
+        throw new Error('Archived Implemented marker not found');
+      }
+    });
+
+    await softCheck('implement completed -> latest row has View PR', async () => {
+      const disabled = await latestAfterImpl.locator('button:has-text("View PR")').isDisabled();
+      if (disabled) {
+        throw new Error('View PR is disabled in latest action row');
+      }
+    });
+
+    await softCheck('implement completed -> fresh action row appended at the tail', async () => {
+      const isTailButtons = await page.evaluate(() => {
+        const body = document.querySelector('.session .session-body');
+        if (!body) {
+          return false;
+        }
+        const last = body.lastElementChild;
+        if (!last || !last.classList.contains('widget-buttons')) {
+          return false;
+        }
+        return Array.from(last.querySelectorAll('button')).some((btn) => btn.textContent?.trim() === 'View PR');
+      });
+      if (!isTailButtons) {
+        throw new Error('Latest action row is not appended at the end of the session timeline');
+      }
+    });
+
+    await page.screenshot({ path: nextScreenshotPath(), fullPage: true });
+
     addReport(`INFO: harnessUrl=${harnessUrl}`);
     addReport(`INFO: screenshots=.tmp/${TEST_NAME}-1.png ... .tmp/${TEST_NAME}-${stepIndex}.png`);
   } finally {

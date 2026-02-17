@@ -947,6 +947,14 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
             variant: 'secondary',
             disabled: true,
           });
+        } else if (isImpl && session.actionMode === 'implement') {
+          this.archiveActiveActionWidget(event.sessionId, {
+            id: 'implemented',
+            label: status === 'success' ? 'Implemented' : 'Implement failed',
+            action: 'plan/impl',
+            variant: 'primary',
+            disabled: true,
+          });
         }
         this.syncActionButtons(event.sessionId);
         return;
