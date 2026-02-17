@@ -79,6 +79,8 @@ timing can be reconstructed accurately after reload.
 When a direct `refine` run exits, the in-place running button is archived as a disabled
 `Refined` (or `Refine failed`) marker, and a fresh five-button action row is appended
 to the end of the session timeline so follow-up actions stay near the most recent output.
+Direct `implement` runs follow the same append behavior, archiving the running button as
+`Implemented` (or `Implement failed`) before appending the fresh action row.
 
 `Rerun` is always rendered in the core row and is enabled only when the latest related
 run exit code is non-zero; otherwise it is disabled. A successful implementation run
