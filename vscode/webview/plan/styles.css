@@ -321,7 +321,9 @@ button:disabled {
   color: var(--text);
   cursor: pointer;
   white-space: nowrap;
-  flex: 0 0 auto;
+  /* Equal-width buttons: flex distributes space evenly, min-width prevents truncation. */
+  flex: 1 1 0;
+  min-width: 70px;
 }
 
 .widget-button-primary {
