@@ -20,8 +20,10 @@ The Python CLI supports the same commands as the shell implementation:
 | `usage` | Report Claude Code token usage statistics (--cache, --cost) |
 | `claude-clean` | Remove stale project entries from `~/.claude.json` |
 | `version` | Display version information |
+| `plan` | Run multi-agent debate pipeline (optional `--dry-run`, `--verbose`) |
 | `impl` | Issue-to-implementation loop (Python workflow, optional `--wait-for-ci`) |
 | `simp` | Simplify code without changing semantics (optional `--focus`, `--issue`) |
+| `rebase` | Rebase current branch onto target branch (optional `--target-branch`) |
 
 ## Top-level Flags
 
