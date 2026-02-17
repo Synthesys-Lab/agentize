@@ -80,6 +80,7 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
   private static readonly skeletonPlaceholder = '{{SKELETON_ERROR}}';
 
   private view?: vscode.WebviewView;
+  private readonly pendingUserStops = new Set<string>();
 
   constructor(
     private readonly extensionUri: vscode.Uri,
@@ -155,25 +156,16 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         if (!session || session.status !== 'running') {
           return;
         }
-        const stoppedAt = Date.now();
         const stopped = this.runner.stop(sessionId);
         if (!stopped) {
           this.output.appendLine(`[unifiedView] stop requested but no process found for session ${sessionId}`);
+          this.appendSystemLog(sessionId, 'Unable to stop: no active process found.', true, 'plan');
+          this.syncActionButtons(sessionId);
+          return;
         }
-        this.appendSystemLog(sessionId, 'Plan run stopped by user.', true, 'plan');
-        this.recordProgressExit(sessionId, WIDGET_ROLES.planProgress, stoppedAt);
-        this.completeProgress(sessionId, WIDGET_ROLES.planProgress);
-        const rerun = this.buildRerunStateFromFailure(session, 'plan', 1, '');
-        const updated = this.store.updateSession(sessionId, {
-          status: 'error',
-          phase: 'plan-completed',
-          actionMode: 'default',
-          rerun,
-        });
-        if (updated) {
-          this.postSessionUpdate(updated.id, updated);
-        }
-        this.syncActionButtons(sessionId);
+        this.pendingUserStops.add(sessionId);
+        this.output.appendLine(`[unifiedView] stop requested for session ${sessionId}`);
+        this.appendSystemLog(sessionId, 'Stop requested by user.', true, 'plan');
         return;
       }
       case 'plan/impl': {
@@ -922,7 +914,10 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         return;
       }
       case 'exit': {
+        const stopRequestedPlan = !isImpl && !isRefine && this.pendingUserStops.delete(event.sessionId);
+        const userStoppedPlan = stopRequestedPlan && event.code !== 0;
         const status = event.code === 0 ? 'success' : 'error';
+        const normalizedExitCode = event.code ?? 1;
         const refinePhase: PlanSessionPhase =
           session.implStatus === 'success' || session.implStatus === 'error'
             ? 'completed'
@@ -932,7 +927,7 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
           : isRefine
           ? { phase: refinePhase }
           : { status, phase: 'plan-completed' };
-        const line = `Exit code: ${event.code ?? 'null'}`;
+        const line = event.signal ? `Exit signal: ${event.signal}` : `Exit code: ${event.code ?? 'null'}`;
         if (isImpl) {
           this.appendImplLines(event.sessionId, [line]);
           this.recordProgressExit(event.sessionId, WIDGET_ROLES.implProgress, event.timestamp);
@@ -945,6 +940,9 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
             this.completeProgress(event.sessionId, WIDGET_ROLES.refineProgress, runId);
           }
         } else {
+          if (userStoppedPlan) {
+            this.appendPlanLines(event.sessionId, ['Plan run stopped by user.']);
+          }
           this.appendPlanLines(event.sessionId, [line]);
           this.recordProgressExit(event.sessionId, WIDGET_ROLES.planProgress, event.timestamp);
           this.completeProgress(event.sessionId, WIDGET_ROLES.planProgress);
@@ -963,7 +961,7 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
               }
             : {
                 actionMode: 'default' as const,
-                rerun: this.buildRerunStateFromFailure(session, event.commandType, event.code, runId),
+                rerun: this.buildRerunStateFromFailure(session, event.commandType, normalizedExitCode, runId),
               };
         const updated = this.store.updateSession(event.sessionId, { ...update, ...rerunUpdate });
         if (updated) {
