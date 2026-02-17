@@ -40,8 +40,9 @@ issue number and focus prompt from the webview. `plan/impl` validates the issue 
 before launching implementation output into terminal widgets. `plan/rerun` reuses the
 stored rerun context to retry failed `plan`/`refine`/`impl` runs without requiring
 manual prompt re-entry.
-`plan/stop` terminates a running plan process, logs a user-stop marker, and updates
-the session to `error` so the action row returns in a non-running state.
+`plan/stop` sends a stop request to the runner and logs the request immediately.
+Final session state changes now wait for the real runner `exit` event, which prevents
+the UI from presenting a completed stop before the process has actually terminated.
 `plan/view-issue` resolves the canonical GitHub issue URL via `gh issue view` and opens it.
 
 ## Internal Helpers

@@ -22,11 +22,13 @@ export class PlanRunner {
     const startedAt = Date.now();
 
     let child: ReturnType<typeof spawn>;
+    const useProcessGroup = process.platform !== 'win32';
     try {
       child = spawn(spec.command, spec.args, {
         cwd: input.cwd,
         env: process.env,
         shell: false,
+        detached: useProcessGroup,
       });
     } catch (error) {
       onEvent({
@@ -130,9 +132,13 @@ export class PlanRunner {
       if (!key.startsWith(`${sessionId}:`)) {
         continue;
       }
-      child.kill();
-      this.processes.delete(key);
-      stopped = true;
+      if (child.exitCode !== null || child.signalCode !== null) {
+        this.processes.delete(key);
+        continue;
+      }
+      if (this.terminateProcess(key, child)) {
+        stopped = true;
+      }
     }
     return stopped;
   }
@@ -183,6 +189,39 @@ export class PlanRunner {
 
     reader.on('line', onLine);
     stream.on('close', () => reader.close());
+  }
+
+  private terminateProcess(key: string, child: ReturnType<typeof spawn>): boolean {
+    const pid = child.pid;
+    if (process.platform !== 'win32' && typeof pid === 'number' && pid > 0) {
+      try {
+        process.kill(-pid, 'SIGTERM');
+        this.scheduleForceKill(key, pid);
+        return true;
+      } catch {
+        // Fall back to direct child termination when group signaling is unavailable.
+      }
+    }
+
+    try {
+      return child.kill('SIGTERM');
+    } catch {
+      return false;
+    }
+  }
+
+  private scheduleForceKill(key: string, pid: number): void {
+    const timer = setTimeout(() => {
+      if (!this.processes.has(key)) {
+        return;
+      }
+      try {
+        process.kill(-pid, 'SIGKILL');
+      } catch {
+        // Ignore ESRCH and permission errors during cleanup.
+      }
+    }, 1500);
+    timer.unref?.();
   }
 
   private quoteArg(value: string): string {

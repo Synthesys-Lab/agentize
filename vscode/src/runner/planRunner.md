@@ -14,6 +14,10 @@ It supports both `plan` and `impl` CLI subcommands.
 - CLI execution is routed through `vscode/bin/lol-wrapper.js` so the shell-based
   `lol` function can be invoked from a subprocess.
 - Each emitted event includes `commandType` so callers can route plan and implementation logs separately.
+- On POSIX systems, runs are started in a dedicated process group so `stop()` can signal
+  the whole group (`SIGTERM`, then `SIGKILL` fallback) instead of only the wrapper PID.
+- Stopped processes remain tracked until their actual `exit` event arrives, which keeps
+  running-state checks aligned with real process lifetime.
 
 ## Internal Helpers
 
