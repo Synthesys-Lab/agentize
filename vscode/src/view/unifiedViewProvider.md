@@ -61,6 +61,14 @@ while scrolling.
 Inactive tabs intentionally use a lighter muted label color to keep focus emphasis on
 the active tab.
 
+Tab Styling:
+The `.unified-tab` class uses flexbox with `flex: 1` to distribute equal width to all tabs,
+ensuring the Plan, Worktree, and Settings tabs maintain consistent proportions regardless
+of label text length. Tab labels are centered via `text-align: center`. To prevent layout
+issues in narrow sidebars, overflow protection is applied: `white-space: nowrap` prevents
+text wrapping, `overflow: hidden` clips excess content, and `text-overflow: ellipsis`
+displays an ellipsis ("...") when labels are truncated due to insufficient space.
+
 ### buildPlanSkeleton(hasAssets: boolean)
 Loads `webview/plan/skeleton.html` and injects an asset-missing banner when compiled
 assets are not present on disk.
