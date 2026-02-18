@@ -79,12 +79,20 @@
   text-decoration: none;
   transition:
     border-color 120ms ease-out,
-    background 120ms ease-out;
+    background 120ms ease-out,
+    color 150ms ease,
+    transform 120ms ease-out;
 }
 
 .settings-link:hover {
   border-color: rgba(15, 110, 110, 0.42);
   background: rgba(15, 110, 110, 0.08);
+  color: var(--accent);
+  transform: translateX(2px);
+}
+
+.settings-link:active {
+  transform: translateX(4px);
 }
 
 .settings-link:focus-visible {
@@ -101,5 +109,13 @@
 @media (max-width: 720px) {
   .settings-root {
     padding: 18px 14px;
+  }
+}
+
+/* Accessibility: disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .settings-link {
+    transition: none;
+    transform: none;
   }
 }

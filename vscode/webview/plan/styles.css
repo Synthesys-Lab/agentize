@@ -78,6 +78,18 @@ button {
   color: var(--text);
   padding: 6px 10px;
   cursor: pointer;
+  /* Tactile feedback: smooth transitions for hover/active states */
+  transition: transform 120ms ease-out, box-shadow 120ms ease-out, background-color 120ms ease-out;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+button:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 button.primary {
@@ -187,6 +199,18 @@ button:disabled {
   font-weight: 700;
   color: var(--accent);
   padding: 0 6px;
+  /* Borderless buttons use opacity/scale instead of shadow for tactile feedback */
+  transition: opacity 120ms ease-out, transform 120ms ease-out;
+}
+
+.toggle:hover {
+  opacity: 0.8;
+  transform: scale(1.05);
+}
+
+.toggle:active {
+  opacity: 0.6;
+  transform: scale(0.95);
 }
 
 .delete {
@@ -262,6 +286,18 @@ button:disabled {
   padding: 0 4px;
   cursor: pointer;
   font-size: 12px;
+  /* Borderless buttons use opacity/scale instead of shadow for tactile feedback */
+  transition: opacity 120ms ease-out, transform 120ms ease-out;
+}
+
+.terminal-toggle:hover {
+  opacity: 0.8;
+  transform: scale(1.05);
+}
+
+.terminal-toggle:active {
+  opacity: 0.6;
+  transform: scale(0.95);
 }
 
 .terminal-title {
@@ -324,24 +360,72 @@ button:disabled {
   /* Equal-width buttons: flex distributes space evenly, min-width prevents truncation. */
   flex: 1 1 0;
   min-width: 70px;
+  /* Tactile feedback: smooth transitions for hover/active states */
+  transition: transform 120ms ease-out, box-shadow 120ms ease-out, background-color 120ms ease-out;
+}
+
+.widget-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.widget-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .widget-button-primary {
   border-color: var(--accent);
   background: var(--accent);
   color: #ffffff;
+  /* Tactile feedback: smooth transitions for hover/active states */
+  transition: transform 120ms ease-out, box-shadow 120ms ease-out, background-color 120ms ease-out;
+}
+
+.widget-button-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.widget-button-primary:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .widget-button-danger {
   border-color: var(--error);
   color: var(--error);
   background: rgba(156, 42, 42, 0.08);
+  /* Tactile feedback: smooth transitions for hover/active states */
+  transition: transform 120ms ease-out, box-shadow 120ms ease-out, background-color 120ms ease-out;
+}
+
+.widget-button-danger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.widget-button-danger:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .widget-button-ghost {
   border-color: var(--border);
   color: var(--accent);
   background: rgba(15, 110, 110, 0.08);
+  /* Tactile feedback: smooth transitions for hover/active states */
+  transition: transform 120ms ease-out, box-shadow 120ms ease-out, background-color 120ms ease-out;
+}
+
+.widget-button-ghost:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.widget-button-ghost:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .widget-input {
@@ -490,5 +574,14 @@ button:disabled {
 
   .session-header {
     flex-wrap: wrap;
+  }
+}
+
+/* Accessibility: disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  button, .widget-button, .widget-button-primary, .widget-button-danger,
+  .widget-button-ghost, .toggle, .terminal-toggle {
+    transition: none;
+    transform: none;
   }
 }
