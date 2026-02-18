@@ -462,8 +462,8 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
           return;
         }
         const issueUrl = await this.resolveIssueUrl(issueNumber);
-        if (issueUrl && this.isValidGitHubUrl(issueUrl)) {
-          void vscode.env.openExternal(vscode.Uri.parse(issueUrl));
+        if (issueUrl) {
+          this.openExternalGitHubUrl(issueUrl);
         }
         return;
       }
@@ -476,7 +476,7 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         if (!session || !session.prUrl) {
           return;
         }
-        void vscode.env.openExternal(vscode.Uri.parse(session.prUrl));
+        this.openExternalGitHubUrl(session.prUrl);
         return;
       }
       case 'settings/load': {
@@ -488,10 +488,7 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
         return;
       }
       case 'link/openExternal': {
-        const url = message.url ?? '';
-        if (this.isValidGitHubUrl(url)) {
-          void vscode.env.openExternal(vscode.Uri.parse(url));
-        }
+        this.openExternalGitHubUrl(message.url ?? '');
         return;
       }
       case 'link/openFile': {
@@ -508,9 +505,16 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  private openExternalGitHubUrl(url: string): void {
+    if (!this.isValidGitHubUrl(url)) {
+      return;
+    }
+    void vscode.env.openExternal(vscode.Uri.parse(url));
+  }
+
   private isValidGitHubUrl(url: string): boolean {
-    // Validate GitHub issue URLs: https://github.com/owner/repo/issues/N
-    return /^https:\/\/github\.com\/[^/]+\/[^/]+\/issues\/\d+$/.test(url);
+    // Allow only canonical GitHub issue/PR URLs.
+    return /^https:\/\/github\.com\/[^/]+\/[^/]+\/(?:issues|pull)\/\d+$/.test(url);
   }
 
   private async openLocalFile(

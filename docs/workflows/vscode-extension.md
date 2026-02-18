@@ -57,6 +57,10 @@ The extension scans stdout/stderr lines in real time and stores the first matchi
 number on the session. Capturing the issue number during execution ensures the UI can
 surface the Implement and View PR actions immediately after the plan completes.
 
+Plan and implementation logs also linkify canonical GitHub issue and pull request URLs.
+External opening is restricted to canonical `github.com/<owner>/<repo>/issues/<id>` and
+`github.com/<owner>/<repo>/pull/<id>` routes.
+
 When a plan emits a local markdown path (for example, `.tmp/issue-928.md`), the UI
 surfaces a View Plan button that opens the file inside the workspace.
 

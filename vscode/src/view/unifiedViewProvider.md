@@ -26,7 +26,7 @@ Consumes UI messages:
 - `plan/view-plan`
 - `plan/view-issue`
 - `plan/view-pr`
-- `link/openExternal` (GitHub issue URLs)
+- `link/openExternal` (canonical GitHub issue/PR URLs)
 - `link/openFile` (local markdown paths)
 
 Emits UI messages:
@@ -111,7 +111,10 @@ Resolves the working directory for Plan/Implementation runs by preferring the
 `trees/main` layout and falling back to an Agentize worktree root when needed.
 
 ### Link Handling
-- `isValidGitHubUrl(url: string)`: validates GitHub issue URLs.
+- `isValidGitHubUrl(url: string)`: validates canonical GitHub issue/PR URLs
+  (`/issues/<id>` or `/pull/<id>`).
+- `openExternalGitHubUrl(url: string)`: central allowlist gate for external URL open
+  paths (`plan/view-issue`, `plan/view-pr`, and `link/openExternal`).
 - `openLocalFile(filePath: string, options?)`: resolves relative paths from workspace
   roots, expands `~/...`, optionally creates missing files, and opens in the current
   editor group as a non-preview tab.
