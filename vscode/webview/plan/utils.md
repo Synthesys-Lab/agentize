@@ -45,8 +45,10 @@ Builds and returns a DOM container with step indicators for the given session ke
 Uses `className` when provided; defaults to `step-indicators`.
 
 ### renderLinks(text)
-Converts GitHub issue URLs and local `.tmp/*.md` paths in a log line into clickable links
-for the webview message handlers.
+Converts canonical GitHub issue/PR URLs and local `.tmp/*.md` paths in a log line into
+clickable links for the webview message handlers. Only canonical routes are linkified:
+`https://github.com/<owner>/<repo>/issues/<id>` and
+`https://github.com/<owner>/<repo>/pull/<id>`.
 
 ### extractIssueNumber(line)
 Extracts an issue number from placeholder creation logs or GitHub issue URLs.

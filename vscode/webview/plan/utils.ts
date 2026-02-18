@@ -124,7 +124,7 @@ export const renderStepIndicatorsFrom = (
 };
 
 export const renderLinks = (text: string): string => {
-  const githubRegex = /https:\/\/github\.com\/([^\/\s]+)\/([^\/\s]+)\/issues\/(\d+)/g;
+  const githubRegex = /https:\/\/github\.com\/[^/\s]+\/[^/\s]+\/(?:issues|pull)\/\d+(?=$|[^\w/?#])/g;
   const mdPathRegex = /(?<=\s|^)(\.tmp\/[^\s\n]+\.md|[\w\-\/]+\.tmp\/[^\s\n]+\.md)(?=\s|$)/g;
 
   let result = escapeHtml(text);

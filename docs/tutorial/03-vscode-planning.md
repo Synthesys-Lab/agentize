@@ -50,6 +50,8 @@ Click it to run `lol impl <issue-number>`.
 The implementation output appears in a separate **Implementation Log** panel, and the
 button is disabled while the implementation run is active.
 
+Both logs render canonical GitHub issue and PR URLs as clickable links.
+
 ## Next Steps
 
 - [Tutorial 02: Issue to Implementation](./02-issue-to-impl.md) for the CLI flow
