@@ -2047,6 +2047,11 @@ export class UnifiedViewProvider implements vscode.WebviewViewProvider {
       letter-spacing: 0.12em;
       text-transform: uppercase;
       box-shadow: none;
+      flex: 1;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .unified-tab.is-active {
