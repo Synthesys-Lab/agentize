@@ -34,6 +34,8 @@ The script is intentionally non-strict for UI semantics:
 - It records warnings in the report instead of hard-failing on every UI mismatch.
 - It still fails on hard runtime blockers (missing Playwright, server startup failure,
   page bootstrap failure).
+- One hard assertion validates stop control sizing: terminal stop buttons must be narrower
+  than action-row buttons to prevent the over-wide stop button regression.
 
 This design keeps the flow debuggable in CI while preserving human review of screenshots.
 

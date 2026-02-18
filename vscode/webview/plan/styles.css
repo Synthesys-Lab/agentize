@@ -309,6 +309,9 @@ button:disabled {
 
 .terminal-stop-button {
   margin-left: auto;
+  /* Intrinsic width: do not stretch like action-row buttons. */
+  flex: 0 0 auto;
+  min-width: auto;
 }
 
 .terminal-body {
@@ -357,7 +360,10 @@ button:disabled {
   color: var(--text);
   cursor: pointer;
   white-space: nowrap;
-  /* Equal-width buttons: flex distributes space evenly, min-width prevents truncation. */
+}
+
+/* Equal-width buttons in action rows: flex distributes space evenly, min-width prevents truncation. */
+.widget-buttons .widget-button {
   flex: 1 1 0;
   min-width: 70px;
   /* Tactile feedback: smooth transitions for hover/active states */

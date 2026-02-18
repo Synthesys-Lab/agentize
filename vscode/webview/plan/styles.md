@@ -13,9 +13,10 @@ Minimal readable styles for the Plan webview UI.
 - `.session-body`: contains the widget timeline for a session.
 - `.widget`: base class for appended widgets.
 - `.widget-terminal`: terminal widget container.
-- `.terminal-stop-button`: stop control aligned to the right edge of the terminal header.
+- `.terminal-stop-button`: stop control aligned to the right edge of the terminal header. Uses intrinsic width (`flex: 0 0 auto`) rather than equal-width sizing.
 - `.widget-progress`: step progress indicator widget.
-- `.widget-buttons`: action button groups.
+- `.widget-buttons`: action button groups. Contains `.widget-button` elements that are sized equally using flexbox (`flex: 1 1 0; min-width: 70px`).
+- `.widget-button`: shared visual button style used across contexts. Equal-width behavior only applies when inside `.widget-buttons`.
 - `.widget-input`: inline refinement input widget.
 - `.widget-status`: compact status badge widget.
 - `.logs`: monospace log display.
