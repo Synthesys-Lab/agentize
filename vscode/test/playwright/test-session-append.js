@@ -722,6 +722,27 @@ const run = async () => {
         throw new Error('Implementation stop button is not visible while implement is running');
       }
     });
+
+    // Hard regression guard: terminal stop must be narrower than action-row equal-width button.
+    const stopWidth = await page
+      .locator('.widget-terminal')
+      .filter({ has: page.locator('.terminal-title', { hasText: 'Implementation Log' }) })
+      .last()
+      .locator('.terminal-stop-button')
+      .evaluate((el) => el.getBoundingClientRect().width);
+    const actionWidth = await page
+      .locator('.widget-buttons')
+      .last()
+      .locator('button')
+      .first()
+      .evaluate((el) => el.getBoundingClientRect().width);
+    if (!(stopWidth < actionWidth)) {
+      throw new Error(
+        `Terminal stop button width (${stopWidth}px) should be less than action-row button width (${actionWidth}px). ` +
+          'The stop button may have inherited equal-width flex behavior.',
+      );
+    }
+
     await page.screenshot({ path: nextScreenshotPath(), fullPage: true });
 
     const implTerminalDone = {
