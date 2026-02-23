@@ -19,6 +19,7 @@ _lol_complete() {
             echo "plan"
             echo "impl"
             echo "simp"
+            echo "rebase"
             ;;
         upgrade-flags)
             echo "--keep-branch"
@@ -64,6 +65,9 @@ _lol_complete() {
             echo "--editor"
             echo "--focus"
             echo "--issue"
+            ;;
+        rebase-flags)
+            echo "--target-branch"
             ;;
         *)
             # Unknown topic, return empty

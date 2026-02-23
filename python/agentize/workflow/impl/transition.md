@@ -31,7 +31,7 @@ The table includes the expected implementation flow:
 - `review -> simp/impl/fatal`
 - `simp -> pr/impl/fatal`
 - `pr -> finish/impl/rebase/fatal`
-- `rebase -> impl/fatal`
+- `rebase -> review/fatal`
 
 Terminal stages (`finish`, `fatal`) currently only accept `fatal` as an explicit
 fallback route.
