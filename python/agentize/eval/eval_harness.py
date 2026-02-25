@@ -167,8 +167,7 @@ def run_impl(
 
     Uses ``claude -p`` in headless mode with JSON output for token tracking.
     """
-    env = os.environ.copy()
-    env["AGENTIZE_SHELL_OVERRIDES"] = overrides_path
+    env = _make_clean_env(overrides_path)
 
     start_time = time.time()
     result = {
@@ -208,6 +207,8 @@ def run_impl(
             except json.JSONDecodeError:
                 pass
 
+        if proc.returncode != 0 and proc.stderr:
+            print(f"  claude stderr: {proc.stderr[:200]}", file=sys.stderr)
         result["status"] = "completed" if proc.returncode == 0 else "failed"
     except subprocess.TimeoutExpired:
         result["status"] = "timeout"
@@ -364,6 +365,9 @@ def _run_full_impl_body(
     tmp_dir = wt / ".tmp"
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
+    # Clean nesting guards so claude subprocesses can launch
+    for var in _NESTING_VARS:
+        os.environ.pop(var, None)
     os.environ["AGENTIZE_SHELL_OVERRIDES"] = overrides_path
 
     # Run planning phase and write issue file where impl_kernel expects it
@@ -709,6 +713,19 @@ def _print_summary(metrics: dict) -> None:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+# Env vars that prevent claude from launching inside an existing session.
+_NESTING_VARS = ("CLAUDECODE", "CLAUDE_CODE_SESSION")
+
+
+def _make_clean_env(overrides_path: str) -> dict[str, str]:
+    """Build a subprocess env with nesting guards removed and overrides set."""
+    env = os.environ.copy()
+    for var in _NESTING_VARS:
+        env.pop(var, None)
+    env["AGENTIZE_SHELL_OVERRIDES"] = overrides_path
+    return env
+
 
 def _run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
     """Run a subprocess command, printing it for visibility."""
