@@ -21,6 +21,7 @@ import json
 import os
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -295,8 +296,65 @@ def run_full_impl(
     """Run the full agentize pipeline (planning + FSM impl) against a task.
 
     Uses kernel substitution to skip PR/rebase stages while reusing the
-    production transition table unchanged.
+    production transition table unchanged. Enforces a wall-clock timeout
+    via a daemon thread — if the pipeline exceeds ``timeout`` seconds the
+    task is marked as timed-out and the main loop moves on.
     """
+    start_time = time.time()
+    result = {
+        "instance_id": instance_id,
+        "status": "error",
+        "wall_time": 0.0,
+        "tokens": 0,
+    }
+
+    # Run the pipeline body in a daemon thread so we can enforce a timeout.
+    # A daemon thread is killed when the main thread moves on; this is
+    # acceptable because each task runs in its own isolated worktree.
+    exc_bucket: list[Exception] = []
+    status_bucket: list[str] = []
+
+    def _run_pipeline():
+        try:
+            status = _run_full_impl_body(
+                wt_path, overrides_path, instance_id,
+                problem_statement, model,
+                enable_review, enable_simp, max_iterations,
+            )
+            status_bucket.append(status)
+        except Exception as exc:
+            exc_bucket.append(exc)
+
+    worker = threading.Thread(target=_run_pipeline, daemon=True)
+    worker.start()
+    worker.join(timeout=timeout)
+
+    if worker.is_alive():
+        print(f"  Timeout after {timeout}s — moving on", file=sys.stderr)
+        result["status"] = "timeout"
+        result["wall_time"] = float(timeout)
+    elif exc_bucket:
+        print(f"  Full mode error: {exc_bucket[0]}", file=sys.stderr)
+        result["status"] = "error"
+        result["wall_time"] = time.time() - start_time
+    else:
+        result["status"] = status_bucket[0] if status_bucket else "error"
+        result["wall_time"] = time.time() - start_time
+
+    return result
+
+
+def _run_full_impl_body(
+    wt_path: str | Path,
+    overrides_path: str,
+    instance_id: str,
+    problem_statement: str,
+    model: str,
+    enable_review: bool,
+    enable_simp: bool,
+    max_iterations: int,
+) -> str:
+    """Inner body of run_full_impl — runs planning + FSM, returns status string."""
     from agentize.workflow.api import Session
     from agentize.workflow.impl.checkpoint import create_initial_state
     from agentize.workflow.impl.orchestrator import run_fsm_orchestrator
@@ -306,74 +364,58 @@ def run_full_impl(
     tmp_dir = wt / ".tmp"
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
-    env = os.environ.copy()
-    env["AGENTIZE_SHELL_OVERRIDES"] = overrides_path
+    os.environ["AGENTIZE_SHELL_OVERRIDES"] = overrides_path
 
-    start_time = time.time()
-    result = {
-        "instance_id": instance_id,
-        "status": "error",
-        "wall_time": 0.0,
-        "tokens": 0,
-    }
+    # Run planning phase and write issue file where impl_kernel expects it
+    issue_content = run_planning_phase(problem_statement, tmp_dir, model)
+    issue_file = tmp_dir / "issue-1.md"
+    issue_file.write_text(issue_content, encoding="utf-8")
 
-    try:
-        # Run planning phase and write issue file where impl_kernel expects it
-        issue_content = run_planning_phase(problem_statement, tmp_dir, model)
-        issue_file = tmp_dir / "issue-1.md"
-        issue_file.write_text(issue_content, encoding="utf-8")
+    # Build state and context
+    state = create_initial_state(issue_no=1, worktree=wt)
+    session = Session(output_dir=tmp_dir, prefix=f"eval-{instance_id}")
 
-        # Build state and context
-        state = create_initial_state(issue_no=1, worktree=wt)
-        session = Session(output_dir=tmp_dir, prefix=f"eval-{instance_id}")
+    # Resolve template path (same one used by production impl)
+    from agentize.workflow.impl.impl import rel_path
+    template_path = rel_path("continue-prompt.md")
 
-        # Resolve template path (same one used by production impl)
-        from agentize.workflow.impl.impl import rel_path
-        template_path = rel_path("continue-prompt.md")
+    context = WorkflowContext(
+        plan="",
+        upstream_instruction="",
+        current_stage="impl",
+        data={
+            "impl_state": state,
+            "session": session,
+            "template_path": template_path,
+            "impl_provider": "claude",
+            "impl_model": model,
+            "review_provider": "claude",
+            "review_model": model,
+            "yolo": False,
+            "enable_review": enable_review,
+            "enable_simp": enable_simp,
+            "max_iterations": max_iterations,
+            "max_reviews": 8,
+            "push_remote": None,
+            "base_branch": None,
+            "checkpoint_path": tmp_dir / "impl-checkpoint.json",
+            "parse_fail_streak": 0,
+            "review_fail_streak": 0,
+            "last_review_score": None,
+            "retry_context": None,
+            "review_attempts": 0,
+            "simp_attempts": 0,
+            "max_simps": 3,
+            "pr_attempts": 0,
+            "rebase_attempts": 0,
+        },
+    )
 
-        context = WorkflowContext(
-            plan="",
-            upstream_instruction="",
-            current_stage="impl",
-            data={
-                "impl_state": state,
-                "session": session,
-                "template_path": template_path,
-                "impl_provider": "claude",
-                "impl_model": model,
-                "review_provider": "claude",
-                "review_model": model,
-                "yolo": False,
-                "enable_review": enable_review,
-                "enable_simp": enable_simp,
-                "max_iterations": max_iterations,
-                "max_reviews": 8,
-                "push_remote": None,
-                "base_branch": None,
-                "checkpoint_path": tmp_dir / "impl-checkpoint.json",
-                "parse_fail_streak": 0,
-                "review_fail_streak": 0,
-                "last_review_score": None,
-                "retry_context": None,
-                "review_attempts": 0,
-                "simp_attempts": 0,
-                "max_simps": 3,
-                "pr_attempts": 0,
-                "rebase_attempts": 0,
-            },
-        )
+    # Run FSM with eval kernels (PR/rebase are no-ops)
+    eval_kernels = _build_eval_kernels()
+    context = run_fsm_orchestrator(context, kernels=eval_kernels)
 
-        # Run FSM with eval kernels (PR/rebase are no-ops)
-        eval_kernels = _build_eval_kernels()
-        context = run_fsm_orchestrator(context, kernels=eval_kernels)
-
-        result["status"] = "completed" if context.current_stage == STAGE_FINISH else "failed"
-    except Exception as exc:
-        print(f"  Full mode error: {exc}", file=sys.stderr)
-        result["status"] = "error"
-
-    result["wall_time"] = time.time() - start_time
-    return result
+    return "completed" if context.current_stage == STAGE_FINISH else "failed"
 
 
 # ---------------------------------------------------------------------------

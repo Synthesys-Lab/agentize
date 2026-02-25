@@ -41,6 +41,14 @@ stubs that emit pass events. The production transition table is reused
 unchanged — the FSM still traverses PR and rebase, but the kernels return
 instantly.
 
+### Timeout Enforcement
+
+Both modes enforce the `--timeout` flag. Raw mode uses `subprocess.run(timeout=...)`
+natively. Full mode runs the planning + FSM body in a daemon thread and joins
+with a deadline — if the thread is still alive after `timeout` seconds, the task
+is marked as `"timeout"` and the main loop moves to the next task. The daemon
+thread is abandoned (acceptable because each task runs in an isolated worktree).
+
 ## Why a Single File
 
 SWE-bench evaluation is a linear pipeline: load → setup → run → extract → score.

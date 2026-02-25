@@ -12,6 +12,7 @@ import pytest
 from agentize.eval.eval_harness import (
     aggregate_metrics,
     extract_patch,
+    run_full_impl,
     write_overrides,
     main,
     _eval_pr_kernel,
@@ -233,6 +234,31 @@ class TestWriteOverridesFullMode:
 # ---------------------------------------------------------------------------
 # CLI (main)
 # ---------------------------------------------------------------------------
+
+
+class TestFullImplTimeout:
+    def test_timeout_returns_timeout_status(self, tmp_path, monkeypatch):
+        """run_full_impl should return 'timeout' when the pipeline exceeds the limit."""
+        import time as _time
+
+        # Monkeypatch _run_full_impl_body to sleep forever
+        def _slow_body(*args, **kwargs):
+            _time.sleep(60)
+            return "completed"
+
+        from agentize.eval import eval_harness
+        monkeypatch.setattr(eval_harness, "_run_full_impl_body", _slow_body)
+
+        overrides = write_overrides(tmp_path, "timeout-test")
+        result = run_full_impl(
+            wt_path=str(tmp_path),
+            overrides_path=overrides,
+            instance_id="timeout-test",
+            problem_statement="test",
+            timeout=1,  # 1 second timeout
+        )
+        assert result["status"] == "timeout"
+        assert result["wall_time"] <= 3.0  # should return promptly after 1s
 
 
 class TestCLI:
