@@ -4,13 +4,18 @@ Single-file harness that loads SWE-bench tasks from HuggingFace, runs the
 agentize impl pipeline against each task in an isolated git worktree, extracts
 patches, and scores them via the SWE-bench Docker evaluator.
 
-Supports two execution modes:
-  - raw:  baseline Claude via ``claude -p`` (tests the model alone)
-  - full: agentize planning pipeline + FSM orchestrator (tests the framework)
+Supports four execution modes:
+  - raw:   baseline Claude via ``claude -p`` (tests the model alone)
+  - impl:  FSM orchestrator only, no planning (tests the impl kernel loop)
+  - full:  agentize planning pipeline + FSM orchestrator (tests the framework)
+  - nlcmd: natural-language command planning via ``claude -p`` + FSM (tests NL orchestration)
+
+All modes track per-task cost in USD via ``agentize.usage.MODEL_PRICING``.
 
 Usage:
     python -m agentize.eval.eval_harness run --mode raw --limit 1 --dry-run
     python -m agentize.eval.eval_harness run --mode full --limit 1
+    python -m agentize.eval.eval_harness run --mode nlcmd --limit 1
     python -m agentize.eval.eval_harness score --predictions .tmp/eval/predictions.jsonl
 """
 
@@ -24,6 +29,74 @@ import sys
 import threading
 import time
 from pathlib import Path
+
+
+# ---------------------------------------------------------------------------
+# Cost tracking helpers
+# ---------------------------------------------------------------------------
+
+# Model short-name → full model ID mapping for cost lookups.
+# Keys match the --model CLI values; values match MODEL_PRICING prefixes.
+_MODEL_ID_MAP = {
+    "sonnet": "claude-sonnet-4",
+    "opus": "claude-opus-4",
+    "haiku": "claude-haiku-4-5",
+}
+
+
+def _make_result(instance_id: str) -> dict:
+    """Create a blank per-task result dict with cost fields."""
+    return {
+        "instance_id": instance_id,
+        "status": "error",
+        "wall_time": 0.0,
+        "tokens": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost_usd": 0.0,
+    }
+
+
+def _compute_cost(input_tokens: int, output_tokens: int, model: str) -> float:
+    """Compute estimated USD cost from token counts and model short-name.
+
+    Falls back to 0.0 if the model is not in the pricing table.
+    """
+    from agentize.usage import match_model_pricing
+
+    model_id = _MODEL_ID_MAP.get(model, model)
+    rates = match_model_pricing(model_id)
+    if not rates:
+        return 0.0
+    return (
+        input_tokens * rates["input"] / 1_000_000
+        + output_tokens * rates["output"] / 1_000_000
+    )
+
+
+def _parse_claude_usage(stdout: str, model: str) -> dict:
+    """Parse ``claude -p --output-format json`` output for token/cost data.
+
+    Returns a dict with keys: input_tokens, output_tokens, tokens, cost_usd.
+    Returns zeroes on parse failure.
+    """
+    result = {"input_tokens": 0, "output_tokens": 0, "tokens": 0, "cost_usd": 0.0}
+    if not stdout:
+        return result
+    try:
+        data = json.loads(stdout)
+        usage = data.get("usage", {})
+        inp = usage.get("input_tokens", 0)
+        out = usage.get("output_tokens", 0)
+        result["input_tokens"] = inp
+        result["output_tokens"] = out
+        result["tokens"] = inp + out
+        # Use model from JSON if available, else fall back to caller's model
+        json_model = data.get("model", "")
+        result["cost_usd"] = _compute_cost(inp, out, json_model or model)
+    except (json.JSONDecodeError, KeyError):
+        pass
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -170,12 +243,7 @@ def run_impl(
     env = _make_clean_env(overrides_path)
 
     start_time = time.time()
-    result = {
-        "instance_id": instance_id,
-        "status": "error",
-        "wall_time": 0.0,
-        "tokens": 0,
-    }
+    result = _make_result(instance_id)
 
     prompt = (
         "Read .issue.md and implement the fix described. "
@@ -195,17 +263,8 @@ def run_impl(
         )
         result["wall_time"] = time.time() - start_time
 
-        # Parse Claude JSON output for token usage
-        if proc.stdout:
-            try:
-                claude_output = json.loads(proc.stdout)
-                usage = claude_output.get("usage", {})
-                result["tokens"] = (
-                    usage.get("input_tokens", 0)
-                    + usage.get("output_tokens", 0)
-                )
-            except json.JSONDecodeError:
-                pass
+        usage = _parse_claude_usage(proc.stdout, model)
+        result.update(usage)
 
         if proc.returncode != 0 and proc.stderr:
             print(f"  claude stderr: {proc.stderr[:200]}", file=sys.stderr)
@@ -293,8 +352,15 @@ def run_full_impl(
     enable_review: bool = False,
     enable_simp: bool = False,
     max_iterations: int = 10,
+    skip_planning: bool = False,
 ) -> dict:
-    """Run the full agentize pipeline (planning + FSM impl) against a task.
+    """Run the agentize pipeline against a task.
+
+    When ``skip_planning`` is False (default), runs the full pipeline:
+    5-agent planning debate followed by FSM orchestrator.
+
+    When ``skip_planning`` is True, feeds the problem statement directly
+    to the FSM orchestrator, bypassing the planning phase entirely.
 
     Uses kernel substitution to skip PR/rebase stages while reusing the
     production transition table unchanged. Enforces a wall-clock timeout
@@ -302,12 +368,12 @@ def run_full_impl(
     task is marked as timed-out and the main loop moves on.
     """
     start_time = time.time()
-    result = {
-        "instance_id": instance_id,
-        "status": "error",
-        "wall_time": 0.0,
-        "tokens": 0,
-    }
+    result = _make_result(instance_id)
+
+    # Estimate planning cost for full mode (ACW doesn't return token data).
+    # Uses model config: understander=sonnet, bold/critique/reducer/consensus=opus.
+    if not skip_planning:
+        result["cost_note"] = "planning costs estimated; ACW subprocess has no token tracking"
 
     # Run the pipeline body in a daemon thread so we can enforce a timeout.
     # A daemon thread is killed when the main thread moves on; this is
@@ -321,6 +387,7 @@ def run_full_impl(
                 wt_path, overrides_path, instance_id,
                 problem_statement, model,
                 enable_review, enable_simp, max_iterations,
+                skip_planning=skip_planning,
             )
             status_bucket.append(status)
         except Exception as exc:
@@ -354,8 +421,15 @@ def _run_full_impl_body(
     enable_review: bool,
     enable_simp: bool,
     max_iterations: int,
+    skip_planning: bool = False,
+    plan_override: str | None = None,
 ) -> str:
-    """Inner body of run_full_impl — runs planning + FSM, returns status string."""
+    """Inner body of run_full_impl — runs planning + FSM, returns status string.
+
+    When ``plan_override`` is provided, it is used as the plan text instead of
+    running the planning pipeline.  This is used by nlcmd mode which generates
+    the plan externally via ``claude -p``.
+    """
     from agentize.workflow.api import Session
     from agentize.workflow.impl.checkpoint import create_initial_state
     from agentize.workflow.impl.orchestrator import run_fsm_orchestrator
@@ -370,9 +444,25 @@ def _run_full_impl_body(
         os.environ.pop(var, None)
     os.environ["AGENTIZE_SHELL_OVERRIDES"] = overrides_path
 
-    # Run planning phase and write issue file where impl_kernel expects it
-    issue_content = run_planning_phase(problem_statement, tmp_dir, model)
+    # Write issue file where impl_kernel expects it
     issue_file = tmp_dir / "issue-1.md"
+    if plan_override:
+        # Use externally-generated plan (nlcmd mode)
+        issue_content = (
+            f"# SWE-bench Task\n\n"
+            f"## Problem Statement\n\n{problem_statement}\n\n"
+            f"## Implementation Plan\n\n{plan_override}\n\n"
+            f"## Instructions\n\nImplement the fix. Follow the plan. Make minimal changes.\n"
+        )
+    elif skip_planning:
+        # Feed problem statement directly to the FSM — no planning phase
+        issue_content = (
+            f"# SWE-bench Task\n\n"
+            f"## Problem Statement\n\n{problem_statement}\n\n"
+            f"## Instructions\n\nImplement the fix. Make minimal changes.\n"
+        )
+    else:
+        issue_content = run_planning_phase(problem_statement, tmp_dir, model)
     issue_file.write_text(issue_content, encoding="utf-8")
 
     # Build state and context
@@ -420,6 +510,200 @@ def _run_full_impl_body(
     context = run_fsm_orchestrator(context, kernels=eval_kernels)
 
     return "completed" if context.current_stage == STAGE_FINISH else "failed"
+
+
+# ---------------------------------------------------------------------------
+# NL-command mode: multi-agent planning via /ultra-planner or /mega-planner
+# ---------------------------------------------------------------------------
+
+# Supported planner commands and their dry-run invocations.
+# ultra-planner: has native --dry-run --force-full (skips GH, forces full debate)
+# mega-planner:  no --dry-run; GH calls are stubbed via eval overrides
+_PLANNER_CMD_TEMPLATES = {
+    "ultra-planner": "/ultra-planner --force-full --dry-run {problem_statement}",
+    "mega-planner": "/mega-planner {problem_statement}",
+}
+
+
+def _find_consensus_plan(tmp_dir: Path) -> str:
+    """Find the most recent consensus plan file in tmp_dir.
+
+    The ultra-planner writes to ``issue-dry-run-<timestamp>-consensus.md``,
+    the mega-planner writes to ``issue-<N>-consensus.md``.  We glob for
+    any ``*-consensus.md`` and pick the newest.
+    """
+    candidates = sorted(
+        tmp_dir.glob("*-consensus.md"),
+        key=lambda p: p.stat().st_mtime,
+    )
+    if candidates:
+        return candidates[-1].read_text(encoding="utf-8")
+    return ""
+
+
+def run_nlcmd_impl(
+    wt_path: str | Path,
+    overrides_path: str,
+    instance_id: str,
+    problem_statement: str,
+    timeout: int = 1800,
+    model: str = "sonnet",
+    planning_model: str = "opus",
+    planner_cmd: str = "ultra-planner",
+    enable_review: bool = False,
+    enable_simp: bool = False,
+    max_iterations: int = 10,
+) -> dict:
+    """Run multi-agent NL planning command + FSM implementation.
+
+    Phase 1: Invoke ``claude -p "/<planner_cmd> ..."`` which triggers the
+    full multi-agent debate flow (understander -> bold-proposer -> critique
+    + reducer -> consensus) via Claude Code's natural-language command
+    orchestration — the same way ``wt spawn --headless`` does it.
+
+    Phase 2: Read the consensus plan from ``.tmp/`` and feed it to the FSM
+    orchestrator for implementation.
+
+    Token tracking captures the **orchestrator session** tokens.  Subagent
+    tokens (spawned via Task tool) run as separate processes and are not
+    included — this is a known limitation noted in the result dict.
+
+    Returns a result dict with combined cost from both phases.
+    """
+    start_time = time.time()
+    result = _make_result(instance_id)
+    result["planner_cmd"] = planner_cmd
+    result["cost_note"] = (
+        "orchestrator tokens tracked; subagent tokens not included "
+        "(they run as separate claude processes via Task tool)"
+    )
+
+    wt = Path(wt_path)
+    tmp_dir = wt / ".tmp"
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+
+    # Write the problem statement so agents can read it
+    issue_path = wt / ".issue.md"
+    if not issue_path.exists():
+        issue_path.write_text(problem_statement, encoding="utf-8")
+
+    # --- Phase 1: NL planning via the actual planner command ---
+    env = _make_clean_env(overrides_path)
+
+    template = _PLANNER_CMD_TEMPLATES.get(planner_cmd)
+    if not template:
+        print(f"  Unknown planner command: {planner_cmd}", file=sys.stderr)
+        result["status"] = "error"
+        result["wall_time"] = time.time() - start_time
+        return result
+
+    cmd_str = template.format(problem_statement=problem_statement)
+    planning_timeout = timeout // 2  # reserve half the budget for impl
+
+    print(f"  Phase 1: NL planning via '{planner_cmd}' (timeout={planning_timeout}s)",
+          file=sys.stderr)
+
+    plan_text = ""
+    try:
+        plan_proc = subprocess.run(
+            ["claude", "-p", "--output-format", "json",
+             "--model", planning_model, cmd_str],
+            cwd=str(wt_path),
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=planning_timeout,
+        )
+
+        # Track orchestrator-level token usage
+        plan_usage = _parse_claude_usage(plan_proc.stdout, planning_model)
+        result["input_tokens"] += plan_usage["input_tokens"]
+        result["output_tokens"] += plan_usage["output_tokens"]
+        result["tokens"] += plan_usage["tokens"]
+        result["cost_usd"] += plan_usage["cost_usd"]
+        result["planning_tokens"] = plan_usage["tokens"]
+        result["planning_cost_usd"] = plan_usage["cost_usd"]
+
+        if plan_proc.returncode != 0:
+            print(f"  NL planning failed (rc={plan_proc.returncode})", file=sys.stderr)
+            if plan_proc.stderr:
+                print(f"  stderr: {plan_proc.stderr[:500]}", file=sys.stderr)
+
+        # Read the consensus plan from .tmp/ (written by the planner command)
+        plan_text = _find_consensus_plan(tmp_dir)
+        if plan_text:
+            print(f"  Consensus plan found ({len(plan_text)} chars)", file=sys.stderr)
+        else:
+            # Fall back: try to extract plan from the JSON response body
+            print("  No consensus file found; extracting from response", file=sys.stderr)
+            if plan_proc.stdout:
+                try:
+                    plan_data = json.loads(plan_proc.stdout)
+                    content = plan_data.get("content", [])
+                    if isinstance(content, list):
+                        plan_text = "\n".join(
+                            block.get("text", "") for block in content
+                            if isinstance(block, dict) and block.get("type") == "text"
+                        )
+                    elif isinstance(content, str):
+                        plan_text = content
+                    if not plan_text:
+                        plan_text = plan_data.get("result", "")
+                except (json.JSONDecodeError, KeyError):
+                    pass
+
+        if not plan_text:
+            print("  No plan produced — falling back to raw problem statement",
+                  file=sys.stderr)
+
+    except subprocess.TimeoutExpired:
+        # Even on timeout, check if a partial consensus was written
+        plan_text = _find_consensus_plan(tmp_dir)
+        if plan_text:
+            print(f"  Planning timed out but partial consensus found ({len(plan_text)} chars)",
+                  file=sys.stderr)
+        else:
+            result["status"] = "timeout"
+            result["wall_time"] = time.time() - start_time
+            return result
+
+    # --- Phase 2: FSM impl with plan ---
+    remaining_timeout = max(60, timeout - int(time.time() - start_time))
+    print(f"  Phase 2: FSM impl (timeout={remaining_timeout}s)", file=sys.stderr)
+
+    exc_bucket: list[Exception] = []
+    status_bucket: list[str] = []
+
+    def _run_impl():
+        try:
+            status = _run_full_impl_body(
+                wt_path, overrides_path, instance_id,
+                problem_statement, model,
+                enable_review, enable_simp, max_iterations,
+                skip_planning=True,
+                plan_override=plan_text,
+            )
+            status_bucket.append(status)
+        except Exception as exc:
+            exc_bucket.append(exc)
+
+    worker = threading.Thread(target=_run_impl, daemon=True)
+    worker.start()
+    worker.join(timeout=remaining_timeout)
+
+    if worker.is_alive():
+        print(f"  Impl timeout after {remaining_timeout}s", file=sys.stderr)
+        result["status"] = "timeout"
+        result["wall_time"] = float(timeout)
+    elif exc_bucket:
+        print(f"  NL impl error: {exc_bucket[0]}", file=sys.stderr)
+        result["status"] = "error"
+        result["wall_time"] = time.time() - start_time
+    else:
+        result["status"] = status_bucket[0] if status_bucket else "error"
+        result["wall_time"] = time.time() - start_time
+
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -487,6 +771,9 @@ def aggregate_metrics(results: list[dict]) -> dict:
     completed = [r for r in results if r["status"] == "completed"]
     tokens = [r["tokens"] for r in completed if r.get("tokens", 0) > 0]
     times = [r["wall_time"] for r in completed if r.get("wall_time", 0) > 0]
+    costs = [r["cost_usd"] for r in results if r.get("cost_usd", 0) > 0]
+    input_tokens = [r["input_tokens"] for r in completed if r.get("input_tokens", 0) > 0]
+    output_tokens = [r["output_tokens"] for r in completed if r.get("output_tokens", 0) > 0]
 
     return {
         "total_tasks": len(results),
@@ -497,8 +784,12 @@ def aggregate_metrics(results: list[dict]) -> dict:
         "tokens_mean": sum(tokens) / len(tokens) if tokens else 0,
         "tokens_median": sorted(tokens)[len(tokens) // 2] if tokens else 0,
         "tokens_total": sum(tokens),
+        "input_tokens_total": sum(input_tokens),
+        "output_tokens_total": sum(output_tokens),
         "time_mean": sum(times) / len(times) if times else 0.0,
         "time_total": sum(times),
+        "cost_total_usd": sum(costs),
+        "cost_mean_usd": sum(costs) / len(costs) if costs else 0.0,
     }
 
 
@@ -534,8 +825,20 @@ def main(argv: list[str] | None = None) -> int:
         help="Claude model to use (default: sonnet)",
     )
     run_p.add_argument(
-        "--mode", choices=["raw", "full"], default="raw",
-        help="Execution mode: raw (bare claude -p) or full (planning + FSM)",
+        "--mode", choices=["raw", "impl", "full", "nlcmd"], default="raw",
+        help=(
+            "Execution mode: raw (bare claude -p), impl (FSM only), "
+            "full (script planning + FSM), nlcmd (NL planning via claude -p + FSM)"
+        ),
+    )
+    run_p.add_argument(
+        "--planning-model", default="opus",
+        help="Model for planning phase in nlcmd/full modes (default: opus)",
+    )
+    run_p.add_argument(
+        "--planner-cmd", default="ultra-planner",
+        choices=["ultra-planner", "mega-planner"],
+        help="NL planner command for nlcmd mode (default: ultra-planner)",
     )
     run_p.add_argument(
         "--enable-review", action="store_true", default=False,
@@ -615,17 +918,23 @@ def _cmd_run(args) -> int:
 
         if args.dry_run:
             print(f"  [dry-run] Skipping implementation")
-            results.append({
-                "instance_id": instance_id,
-                "status": "dry-run",
-                "wall_time": 0.0,
-                "tokens": 0,
-            })
+            results.append(_make_result(instance_id) | {"status": "dry-run"})
             continue
 
         # Run implementation
         print(f"  Running implementation (mode={args.mode}, timeout={args.timeout}s, model={args.model})...")
-        if args.mode == "full":
+        if args.mode == "nlcmd":
+            result = run_nlcmd_impl(
+                wt_path, overrides_path, instance_id,
+                task["problem_statement"],
+                timeout=args.timeout, model=args.model,
+                planning_model=args.planning_model,
+                planner_cmd=args.planner_cmd,
+                enable_review=args.enable_review,
+                enable_simp=args.enable_simp,
+                max_iterations=args.max_iterations,
+            )
+        elif args.mode in ("full", "impl"):
             result = run_full_impl(
                 wt_path, overrides_path, instance_id,
                 task["problem_statement"],
@@ -633,6 +942,7 @@ def _cmd_run(args) -> int:
                 enable_review=args.enable_review,
                 enable_simp=args.enable_simp,
                 max_iterations=args.max_iterations,
+                skip_planning=(args.mode == "impl"),
             )
         else:
             result = run_impl(
@@ -640,9 +950,10 @@ def _cmd_run(args) -> int:
                 timeout=args.timeout, model=args.model,
             )
         results.append(result)
+        cost_str = f", Cost: ${result['cost_usd']:.4f}" if result.get("cost_usd") else ""
         print(f"  Status: {result['status']}, "
               f"Time: {result['wall_time']:.1f}s, "
-              f"Tokens: {result['tokens']}")
+              f"Tokens: {result['tokens']}{cost_str}")
 
         # Extract patch
         if result["status"] == "completed":
@@ -703,11 +1014,16 @@ def _print_summary(metrics: dict) -> None:
     print(f"Errors:       {metrics['errors']}")
     if metrics["tokens_total"] > 0:
         print(f"Tokens total: {metrics['tokens_total']:,}")
+        print(f"  Input:      {metrics['input_tokens_total']:,}")
+        print(f"  Output:     {metrics['output_tokens_total']:,}")
         print(f"Tokens mean:  {metrics['tokens_mean']:,.0f}")
         print(f"Tokens median:{metrics['tokens_median']:,}")
     if metrics["time_total"] > 0:
         print(f"Time total:   {metrics['time_total']:.1f}s")
         print(f"Time mean:    {metrics['time_mean']:.1f}s")
+    if metrics.get("cost_total_usd", 0) > 0:
+        print(f"Cost total:   ${metrics['cost_total_usd']:.4f}")
+        print(f"Cost mean:    ${metrics['cost_mean_usd']:.4f}")
 
 
 # ---------------------------------------------------------------------------
