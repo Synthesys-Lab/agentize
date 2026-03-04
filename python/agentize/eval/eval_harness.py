@@ -1,8 +1,12 @@
-"""SWE-bench evaluation harness for agentize.
+"""Evaluation harness for agentize.
 
-Single-file harness that loads SWE-bench tasks from HuggingFace, runs the
+Single-file harness that loads benchmark tasks (SWE-bench or nginx), runs the
 agentize impl pipeline against each task in an isolated git worktree, extracts
-patches, and scores them via the SWE-bench Docker evaluator.
+patches, and scores them.
+
+Supports two benchmarks via ``--benchmark``:
+  - swebench (default): SWE-bench Verified from HuggingFace, scored via Docker evaluator
+  - nginx: curated nginx bug-fix tasks from nginx_tasks.json, scored via prove
 
 Supports four execution modes:
   - raw:   baseline Claude via ``claude -p`` (tests the model alone)
@@ -14,8 +18,7 @@ All modes track per-task cost in USD via ``agentize.usage.MODEL_PRICING``.
 
 Usage:
     python -m agentize.eval.eval_harness run --mode raw --limit 1 --dry-run
-    python -m agentize.eval.eval_harness run --mode full --limit 1
-    python -m agentize.eval.eval_harness run --mode nlcmd --limit 1
+    python -m agentize.eval.eval_harness run --benchmark nginx --mode raw --limit 1
     python -m agentize.eval.eval_harness score --predictions .tmp/eval/predictions.jsonl
 """
 
@@ -24,6 +27,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -129,6 +133,29 @@ def load_tasks(
     return tasks
 
 
+def load_nginx_tasks(
+    task_file: str,
+    instance_ids: list[str] | None = None,
+    limit: int | None = None,
+) -> list[dict]:
+    """Load nginx benchmark tasks from a JSON file.
+
+    Each task is a dict with keys: instance_id, repo, test_repo, base_commit,
+    fix_commit, test_commit, problem_statement, test_files, modules_required.
+    """
+    with open(task_file, encoding="utf-8") as f:
+        tasks = json.load(f)
+
+    if instance_ids:
+        id_set = set(instance_ids)
+        tasks = [t for t in tasks if t["instance_id"] in id_set]
+
+    if limit:
+        tasks = tasks[:limit]
+
+    return tasks
+
+
 # ---------------------------------------------------------------------------
 # Repository and worktree setup
 # ---------------------------------------------------------------------------
@@ -183,6 +210,195 @@ def cleanup_worktree(
     bare_path = Path(repos_dir) / (repo.replace("/", "__") + ".git")
     _run(["git", "-C", str(bare_path), "worktree", "remove",
           "--force", str(wt_path)], check=False)
+
+
+def setup_nginx_worktree(
+    task: dict,
+    repos_dir: str | Path,
+    worktrees_dir: str | Path,
+) -> str:
+    """Clone nginx source + test repos and create worktree at base_commit.
+
+    Creates two directories under worktrees_dir:
+      - <instance_id>/       — nginx source worktree at base_commit
+      - <instance_id>__tests/ — nginx-tests clone at test_commit
+
+    Returns the source worktree path.
+    """
+    repo = task["repo"]
+    test_repo = task["test_repo"]
+    instance_id = task["instance_id"]
+    base_commit = task["base_commit"]
+    test_commit = task.get("test_commit", "HEAD")
+
+    repos_dir = Path(repos_dir).resolve()
+    worktrees_dir = Path(worktrees_dir).resolve()
+
+    # Clone nginx source bare repo (cache across tasks)
+    bare_path = repos_dir / (repo.replace("/", "__") + ".git")
+    if not bare_path.exists():
+        bare_path.parent.mkdir(parents=True, exist_ok=True)
+        _run(["git", "clone", "--bare",
+              f"https://github.com/{repo}.git", str(bare_path)])
+
+    # Create source worktree at base_commit (skip if exists for resume)
+    wt_path = worktrees_dir / instance_id
+    if not wt_path.exists():
+        wt_path.parent.mkdir(parents=True, exist_ok=True)
+        _run(["git", "-C", str(bare_path), "worktree", "prune"], check=False)
+        _run(["git", "-C", str(bare_path), "worktree", "add",
+              "--detach", str(wt_path), base_commit])
+
+    # Write problem statement as .issue.md
+    issue_path = wt_path / ".issue.md"
+    if not issue_path.exists():
+        issue_path.write_text(task["problem_statement"], encoding="utf-8")
+
+    # Pre-configure nginx so scoring only needs `make`
+    makefile = wt_path / "Makefile"
+    if not makefile.exists():
+        configure_args = ["./auto/configure"]
+        for flag in task.get("modules_required", []):
+            configure_args.append(flag)
+        _run(configure_args + ["--prefix=" + str(wt_path / "install")],
+             check=False)
+
+    # Clone nginx-tests repo (skip if exists for resume)
+    tests_path = worktrees_dir / (instance_id + "__tests")
+    if not tests_path.exists():
+        tests_path.parent.mkdir(parents=True, exist_ok=True)
+        _run(["git", "clone", f"https://github.com/{test_repo}.git",
+              str(tests_path)])
+        if test_commit != "HEAD":
+            _run(["git", "-C", str(tests_path), "checkout", test_commit])
+
+    return str(wt_path)
+
+
+def _strip_todo_blocks(test_file: Path) -> None:
+    """Remove TODO { ... } blocks from a Perl test file, keeping assertions.
+
+    nginx-tests use TODO blocks with has_version() checks that make assertions
+    into expected failures on older nginx versions. Stripping these blocks turns
+    the assertions into real pass/fail checks regardless of nginx version.
+    """
+    content = test_file.read_text(encoding="utf-8")
+    # Match: TODO: { \n local $TODO = ...; \n <assertions> \n }
+    # Keep the assertions, remove the TODO wrapper
+    pattern = (
+        r'TODO:\s*\{\s*\n'           # opening: TODO: {
+        r'\s*local\s+\$TODO\s*=[^;]+;\s*\n'  # local $TODO = ...;
+        r'(.*?)\n'                   # assertions (captured)
+        r'\s*\}'                     # closing }
+    )
+    content = re.sub(pattern, r'\1', content, flags=re.DOTALL)
+    test_file.write_text(content, encoding="utf-8")
+
+
+def score_nginx(
+    wt_path: str,
+    task: dict,
+    tests_path: str,
+) -> dict:
+    """Compile nginx from worktree and score via prove.
+
+    Steps:
+    1. Run ./auto/configure with required modules
+    2. Run make -j
+    3. If compilation fails, return compile_failed
+    4. Strip TODO blocks from test files so assertions are real
+    5. Run prove with TEST_NGINX_BINARY pointing to compiled binary
+    6. Return resolved=True if prove exits 0
+
+    Returns a dict with status and resolved fields.
+    """
+    wt = Path(wt_path)
+    tests = Path(tests_path)
+
+    # Build configure command with required modules
+    configure_args = ["./auto/configure"]
+    for flag in task.get("modules_required", []):
+        configure_args.append(flag)
+
+    # Configure (skip if Makefile already exists from a previous configure)
+    makefile = wt / "Makefile"
+    print(f"  Compiling nginx...")
+    if not makefile.exists():
+        try:
+            subprocess.run(
+                configure_args, cwd=str(wt),
+                capture_output=True, text=True, check=True, timeout=120,
+            )
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+            print(f"  Configure failed: {e}", file=sys.stderr)
+            return {"status": "compile_failed", "resolved": False}
+
+    # Make (always rebuild to pick up source changes)
+    import multiprocessing
+    jobs = str(multiprocessing.cpu_count())
+    try:
+        subprocess.run(
+            ["make", f"-j{jobs}"], cwd=str(wt),
+            capture_output=True, text=True, check=True, timeout=300,
+        )
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+        print(f"  Make failed: {e}", file=sys.stderr)
+        return {"status": "compile_failed", "resolved": False}
+
+    # Verify binary exists
+    binary = wt / "objs" / "nginx"
+    if not binary.exists():
+        print(f"  Binary not found at {binary}", file=sys.stderr)
+        return {"status": "compile_failed", "resolved": False}
+
+    # Reset test files from git (clean state for re-runs), then strip TODOs
+    for test_file_name in task.get("test_files", []):
+        test_file = tests / test_file_name
+        if test_file.exists():
+            subprocess.run(
+                ["git", "checkout", test_file_name], cwd=str(tests),
+                capture_output=True, check=False,
+            )
+            _strip_todo_blocks(test_file)
+
+    # Run prove with the compiled binary
+    env = os.environ.copy()
+    env["TEST_NGINX_BINARY"] = str(binary)
+
+    prove_cmd = ["prove", "-v"] + task.get("test_files", [])
+    print(f"  Running: {' '.join(prove_cmd)}")
+    try:
+        proc = subprocess.run(
+            prove_cmd, cwd=str(tests),
+            env=env, capture_output=True, text=True, timeout=300,
+        )
+
+        # Parse TAP output for individual test results
+        expected = task.get("expected_pass_tests", [])
+        if expected:
+            # Check specific named tests instead of overall exit code.
+            # TAP format: "ok N - test name" or "not ok N - test name"
+            tap_results = {}
+            for line in proc.stdout.split("\n"):
+                m = re.match(r"(ok|not ok)\s+\d+\s+-\s+(.+)", line)
+                if m:
+                    tap_results[m.group(2).strip()] = m.group(1) == "ok"
+            resolved = all(tap_results.get(t, False) for t in expected)
+            if not resolved:
+                for t in expected:
+                    status = "PASS" if tap_results.get(t, False) else "FAIL"
+                    print(f"    {t}: {status}", file=sys.stderr)
+        else:
+            resolved = proc.returncode == 0
+            if not resolved and proc.stdout:
+                lines = proc.stdout.strip().split("\n")
+                for line in lines[-5:]:
+                    print(f"    {line}", file=sys.stderr)
+
+        return {"status": "completed", "resolved": resolved}
+    except subprocess.TimeoutExpired:
+        print(f"  prove timed out", file=sys.stderr)
+        return {"status": "completed", "resolved": False}
 
 
 # ---------------------------------------------------------------------------
@@ -780,6 +996,7 @@ def aggregate_metrics(results: list[dict]) -> dict:
         "completed": len(completed),
         "timeouts": sum(1 for r in results if r["status"] == "timeout"),
         "errors": sum(1 for r in results if r["status"] == "error"),
+        "compile_failed": sum(1 for r in results if r["status"] == "compile_failed"),
         "failed": sum(1 for r in results if r["status"] == "failed"),
         "tokens_mean": sum(tokens) / len(tokens) if tokens else 0,
         "tokens_median": sorted(tokens)[len(tokens) // 2] if tokens else 0,
@@ -806,6 +1023,10 @@ def main(argv: list[str] | None = None) -> int:
 
     # -- run subcommand -----------------------------------------------
     run_p = sub.add_parser("run", help="Run end-to-end evaluation")
+    run_p.add_argument(
+        "--benchmark", choices=["swebench", "nginx"], default="swebench",
+        help="Benchmark to run: swebench (default) or nginx",
+    )
     run_p.add_argument("--dataset", default="princeton-nlp/SWE-bench_Verified")
     run_p.add_argument(
         "--instance-ids", nargs="*",
@@ -858,7 +1079,7 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     # -- score subcommand ---------------------------------------------
-    score_p = sub.add_parser("score", help="Score existing predictions")
+    score_p = sub.add_parser("score", help="Score existing predictions (SWE-bench only)")
     score_p.add_argument("--predictions", required=True)
     score_p.add_argument("--dataset", default="princeton-nlp/SWE-bench_Verified")
     score_p.add_argument("--max-workers", type=int, default=4)
@@ -891,12 +1112,18 @@ def _cmd_run(args) -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Load tasks
-    print(f"Loading tasks from {args.dataset}...")
-    tasks = load_tasks(
-        dataset_name=args.dataset,
-        instance_ids=args.instance_ids,
-        limit=args.limit,
-    )
+    is_nginx = getattr(args, "benchmark", "swebench") == "nginx"
+    if is_nginx:
+        tasks_file = Path(__file__).parent / "nginx_tasks.json"
+        print(f"Loading nginx tasks from {tasks_file}...")
+        tasks = load_nginx_tasks(str(tasks_file), args.instance_ids, args.limit)
+    else:
+        print(f"Loading tasks from {args.dataset}...")
+        tasks = load_tasks(
+            dataset_name=args.dataset,
+            instance_ids=args.instance_ids,
+            limit=args.limit,
+        )
     print(f"Loaded {len(tasks)} tasks")
 
     if not tasks:
@@ -912,7 +1139,10 @@ def _cmd_run(args) -> int:
 
         # Setup worktree
         print(f"  Setting up worktree...")
-        wt_path = setup_worktree(task, repos_dir, worktrees_dir)
+        if is_nginx:
+            wt_path = setup_nginx_worktree(task, repos_dir, worktrees_dir)
+        else:
+            wt_path = setup_worktree(task, repos_dir, worktrees_dir)
         overrides_path = write_overrides(wt_path, instance_id)
         print(f"  Worktree: {wt_path}")
 
@@ -965,6 +1195,13 @@ def _cmd_run(args) -> int:
                     "model_name_or_path": f"agentize-{args.mode}-{args.model}",
                 })
                 print(f"  Patch: {len(patch)} bytes")
+
+                # Nginx: score immediately by compiling + running prove
+                if is_nginx:
+                    tests_path = worktrees_dir / (instance_id + "__tests")
+                    score = score_nginx(wt_path, task, str(tests_path))
+                    result.update(score)
+                    print(f"  Nginx score: resolved={score.get('resolved', False)}")
             else:
                 print(f"  No changes detected")
 
@@ -1012,6 +1249,8 @@ def _print_summary(metrics: dict) -> None:
     print(f"Failed:       {metrics['failed']}")
     print(f"Timeouts:     {metrics['timeouts']}")
     print(f"Errors:       {metrics['errors']}")
+    if metrics.get("compile_failed", 0) > 0:
+        print(f"Compile fail: {metrics['compile_failed']}")
     if metrics["tokens_total"] > 0:
         print(f"Tokens total: {metrics['tokens_total']:,}")
         print(f"  Input:      {metrics['input_tokens_total']:,}")

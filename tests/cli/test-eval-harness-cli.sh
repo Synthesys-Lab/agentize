@@ -55,4 +55,41 @@ OVERRIDES_PATH=$(cat "$TMP_DIR/overrides-path.txt")
 [ -f "$OVERRIDES_PATH" ] || test_fail "overrides file not created"
 bash -n "$OVERRIDES_PATH" || test_fail "overrides file has syntax errors"
 
+# Test 7: --benchmark flag is accepted in run --help
+python -m agentize.eval.eval_harness run --help 2>&1 | grep -q "benchmark" || test_fail "--benchmark flag missing from run --help"
+
+# Test 8: load_nginx_tasks loads and filters tasks from JSON
+output=$(python -c "
+import json
+from agentize.eval.eval_harness import load_nginx_tasks
+tasks_file = '$PROJECT_ROOT/python/agentize/eval/nginx_tasks.json'
+tasks = load_nginx_tasks(tasks_file, None, 2)
+print(json.dumps({'count': len(tasks), 'has_id': 'instance_id' in tasks[0], 'has_repo': 'repo' in tasks[0]}))
+")
+echo "$output" | python -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['count'] <= 2, f'limit not applied: {d[\"count\"]}'
+assert d['has_id'], 'missing instance_id'
+assert d['has_repo'], 'missing repo'
+" || test_fail "load_nginx_tasks failed"
+
+# Test 9: aggregate_metrics supports compile_failed status
+output=$(python -c "
+import json
+from agentize.eval.eval_harness import aggregate_metrics
+results = [
+    {'instance_id': 'a', 'status': 'completed', 'tokens': 100, 'wall_time': 10.0},
+    {'instance_id': 'b', 'status': 'compile_failed', 'tokens': 0, 'wall_time': 5.0},
+]
+m = aggregate_metrics(results)
+print(json.dumps(m))
+")
+echo "$output" | python -c "
+import sys, json
+m = json.load(sys.stdin)
+assert m['compile_failed'] == 1, f'compile_failed={m.get(\"compile_failed\")}'
+assert m['completed'] == 1, f'completed={m[\"completed\"]}'
+" || test_fail "aggregate_metrics compile_failed support failed"
+
 test_pass "eval harness CLI tests"

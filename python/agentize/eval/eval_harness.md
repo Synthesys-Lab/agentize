@@ -1,21 +1,35 @@
 # eval_harness.py
 
-SWE-bench evaluation harness for measuring agentize implementation quality
-against real-world software engineering tasks.
+Evaluation harness for measuring agentize implementation quality against
+real-world software engineering tasks across multiple benchmarks.
 
 ## Architecture Overview
 
 A single-file, function-based pipeline with three logical layers:
 
-1. **Ingestion**: Load tasks from HuggingFace (`load_tasks`)
-2. **Execution**: Clone repos, create worktrees, run implementation (`setup_worktree`, `write_overrides`, `run_impl` or `run_full_impl`, `extract_patch`)
-3. **Scoring**: Delegate to the SWE-bench Docker evaluator (`score_predictions`, `aggregate_metrics`)
+1. **Ingestion**: Load tasks from HuggingFace (`load_tasks`) or JSON (`load_nginx_tasks`)
+2. **Execution**: Clone repos, create worktrees, run implementation (`setup_worktree`/`setup_nginx_worktree`, `write_overrides`, `run_impl` or `run_full_impl`, `extract_patch`)
+3. **Scoring**: Delegate to SWE-bench Docker evaluator (`score_predictions`) or compile+prove (`score_nginx`), then `aggregate_metrics`
 
 Tasks run sequentially. No threading, no Pydantic, no Docker Python SDK.
 
-## Dual-Mode Execution
+## Multi-Benchmark Support
 
-The harness supports two execution modes via `--mode`:
+The harness supports two benchmarks via `--benchmark`:
+
+| Benchmark | Source | Language | Scoring |
+|-----------|--------|----------|---------|
+| `swebench` (default) | HuggingFace dataset | Python | SWE-bench Docker evaluator |
+| `nginx` | `nginx_tasks.json` | C | Compile + `prove` exit code |
+
+For nginx, the harness clones two repos (nginx source + nginx-tests), creates
+a worktree at the pre-fix commit, runs the AI to fix the bug, then compiles
+nginx and runs the relevant test files via `prove`. TODO blocks in test files
+are stripped so assertions become real pass/fail checks.
+
+## Execution Modes
+
+The harness supports four execution modes via `--mode`:
 
 | Mode | What runs | What it tests |
 |------|-----------|---------------|
@@ -147,3 +161,59 @@ Per-task costs depend on the model and task complexity. Rough estimates:
 | Opus | ~150K | ~$5.00 | ~$1,500 |
 
 Always start with `--limit 1` to verify before scaling up.
+
+## Nginx Benchmark
+
+The harness supports nginx/nginx-tests as a second benchmark via `--benchmark nginx`.
+This runs the same 4-way mode comparison against C-language bug-fix tasks from the
+nginx web server.
+
+### Prerequisites (nginx-specific)
+
+| Dependency | Purpose | Install |
+|------------|---------|---------|
+| C compiler (gcc/clang) | Compile nginx from source | System package |
+| PCRE library | nginx regex support | `brew install pcre` / `apt install libpcre3-dev` |
+| zlib | nginx gzip support | `brew install zlib` / `apt install zlib1g-dev` |
+| OpenSSL | nginx SSL support | `brew install openssl` / `apt install libssl-dev` |
+| Perl + prove | Run nginx test suite | Pre-installed on macOS/Linux |
+
+The `Test::Nginx` module is shipped in the `lib/` directory of nginx-tests — no CPAN install needed.
+
+### Usage
+
+```bash
+# Dry-run (validates task loading + worktree setup)
+python -m agentize.eval.eval_harness run --benchmark nginx --mode raw --limit 1 --dry-run
+
+# Single task
+python -m agentize.eval.eval_harness run --benchmark nginx --mode raw \
+    --instance-ids nginx__ec714d52 --timeout 1800
+
+# Full 4-way comparison
+for mode in raw impl full nlcmd; do
+  python -m agentize.eval.eval_harness run --benchmark nginx --mode $mode --limit 5
+done
+```
+
+### Task Format (nginx_tasks.json)
+
+Each task specifies:
+- `instance_id`: Unique identifier (e.g. `nginx__ec714d52`)
+- `repo`: `nginx/nginx` (source repo)
+- `test_repo`: `nginx/nginx-tests` (test suite repo)
+- `base_commit`: Pre-fix commit in nginx source
+- `fix_commit`: The commit that fixes the bug (for validation)
+- `test_commit`: Corresponding commit in nginx-tests (usually `HEAD`)
+- `problem_statement`: Bug description for the AI
+- `test_files`: List of `.t` files to run
+- `modules_required`: nginx configure flags needed (e.g. `--with-http_ssl_module`)
+
+### Scoring
+
+Scoring compiles nginx from the patched worktree and runs `prove` against
+the specified test files. TODO blocks in test files are stripped so assertions
+become real checks. Results:
+- `completed` + `resolved=True`: all tests pass
+- `completed` + `resolved=False`: some tests fail
+- `compile_failed`: nginx fails to compile (distinct from error)

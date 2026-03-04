@@ -1,0 +1,67 @@
+[
+  {
+    "instance_id": "nginx__ec714d52",
+    "repo": "nginx/nginx",
+    "test_repo": "nginx/nginx-tests",
+    "base_commit": "bf0508fabfbfa2fa778edbf5b94d5c54a952156d",
+    "fix_commit": "ec714d52bd4914d52a113234c16e1855d9ac7dcf",
+    "test_commit": "HEAD",
+    "problem_statement": "SCGI: CONTENT_LENGTH is incorrect when scgi_request_buffering is off.\n\nWhen proxying to SCGI backends with `scgi_request_buffering off`, the CONTENT_LENGTH parameter is calculated by summing buffer sizes from `upstream->request_bufs`. In unbuffered mode, these buffers do not represent the complete request body — the body is forwarded in chunks as it arrives from the client. The CONTENT_LENGTH should instead use `r->headers_in.content_length_n` which reflects the actual Content-Length header from the client request.\n\nTo reproduce: send a POST request with a known body length to an SCGI backend with `scgi_request_buffering off` enabled, and observe that the CONTENT_LENGTH reported to the backend does not match the actual body size.",
+    "test_files": ["scgi_request_buffering.t"],
+    "expected_pass_tests": ["scgi body"],
+    "modules_required": [],
+    "lines_changed": 6
+  },
+  {
+    "instance_id": "nginx__f8e1bc5b",
+    "repo": "nginx/nginx",
+    "test_repo": "nginx/nginx-tests",
+    "base_commit": "d662a5cc469b64d9423ccae0a400ca34d11c3764",
+    "fix_commit": "f8e1bc5b9821eba7995905fe46c8ca383b5ea782",
+    "test_commit": "HEAD",
+    "problem_statement": "HTTP/2 upstream: second request fails with 'upstream sent frame for unknown stream' when proxy_cache and keepalive are both enabled.\n\nWith `proxy_cache` and `keepalive` both enabled for an HTTP/2 upstream, the second request for a cached resource triggers an error: 'upstream sent frame for unknown stream'. The root cause is that `ctx->id` is set to 1 during connection init, but on a cache hit there is no upstream connection. When the cached response is served, a spurious stream ID validation check fails because `ctx->id` was set even though no HTTP/2 stream was actually opened.\n\nTo reproduce: configure proxy_cache with keepalive to an HTTP/2 upstream. Send the same request twice. The first request populates the cache; the second request returns a cache HIT but logs a crit-level error about an unknown stream.",
+    "test_files": ["proxy_h2_cache.t"],
+    "expected_pass_tests": ["keepalive - request cached"],
+    "modules_required": ["--with-http_ssl_module", "--with-http_v2_module"],
+    "lines_changed": 7
+  },
+  {
+    "instance_id": "nginx__cd12dc4f",
+    "repo": "nginx/nginx",
+    "test_repo": "nginx/nginx-tests",
+    "base_commit": "349c72e8588c9b6f36f69b7789b3c7aac7a1bbdc",
+    "fix_commit": "cd12dc4f12489257e851654ec1883cf06fa0b095",
+    "test_commit": "HEAD",
+    "problem_statement": "HTTP/2 upstream: request body buffers not cleared on next_upstream retry.\n\nWhen switching to the next upstream server after the first fails, and the request body has not been fully sent (e.g. due to flow control or an early error response), unsent buffers remain in `ctx->in` and `ctx->busy`. When `reinit_request` is called for the retry, these stale buffer pointers are not cleared. This causes the retried HTTP/2 request to send corrupted or duplicate DATA frames, or the connection to stall entirely.\n\nTo reproduce: configure `proxy_next_upstream` with multiple upstream servers. Send a request with a large body. Trigger a failure on the first upstream (e.g. by returning 502). The retry to the second upstream sends malformed HTTP/2 frames.",
+    "test_files": ["proxy_h2_next_upstream.t"],
+    "expected_pass_tests": ["body 3"],
+    "modules_required": ["--with-http_ssl_module", "--with-http_v2_module"],
+    "lines_changed": 2
+  },
+  {
+    "instance_id": "nginx__3afd85e4",
+    "repo": "nginx/nginx",
+    "test_repo": "nginx/nginx-tests",
+    "base_commit": "cd12dc4f12489257e851654ec1883cf06fa0b095",
+    "fix_commit": "3afd85e4b5cbb0c49608b04e06ea7b5ef97b3308",
+    "test_commit": "HEAD",
+    "problem_statement": "Output chain: stale last_buf flag causes premature END_STREAM on upstream retry.\n\nIn `ngx_output_chain_copy_buf()`, when reusing a destination buffer to re-read a buffered request body (e.g. for an upstream retry via next_upstream), the buffer may contain a stale `last_buf = 1` flag from its previous use. For HTTP/2 upstream, this causes `END_STREAM` to be set prematurely on the first DATA frame of the retry, corrupting the stream — the upstream receives only a partial body and may close the connection.\n\nThe bug occurs in the `else` branch of the flag-copy logic, where `flush`, `last_buf`, and `last_in_chain` are not cleared when flags are NOT inherited from the source buffer.\n\nTo reproduce: configure `proxy_next_upstream` with `sendfile on` and a large request body. Trigger a retry to the next upstream. The retried request sends END_STREAM prematurely.",
+    "test_files": ["proxy_h2_next_upstream.t"],
+    "expected_pass_tests": ["body 2"],
+    "modules_required": ["--with-http_ssl_module", "--with-http_v2_module"],
+    "lines_changed": 10
+  },
+  {
+    "instance_id": "nginx__d7a24947",
+    "repo": "nginx/nginx",
+    "test_repo": "nginx/nginx-tests",
+    "base_commit": "a59f5f099a89dc8eaebd48077292313f9f7e33e3",
+    "fix_commit": "d7a249470b78a155c7548aea5f4eb959dae9fd03",
+    "test_commit": "HEAD",
+    "problem_statement": "Upstream: reinit not called when response is received before request is fully sent.\n\nWhen connecting to a backend, if the read event handler fires before the write event handler and the received response triggers a `next_upstream` condition, `ngx_http_upstream_reinit()` is not called. Currently, reinit is only called when `u->request_sent` is true, but in this scenario the response was received (and must be cleaned up) even though the request was not fully sent.\n\nThis causes duplicate response headers, ignored status codes, and use-after-free crashes in gRPC/HTTP/2 modules because `ctx->connection` still points to a freed upstream connection pool.\n\nTo reproduce: set up a backend that responds with a 502 before the full request body is received. Configure `proxy_next_upstream http_502`. The retry to the next upstream crashes or produces garbled response headers.",
+    "test_files": ["proxy_h2_next_upstream.t"],
+    "expected_pass_tests": ["body 1"],
+    "modules_required": ["--with-http_ssl_module", "--with-http_v2_module"],
+    "lines_changed": 6
+  }
+]
