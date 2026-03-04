@@ -15,5 +15,10 @@ vscode/out/
 vscode/*.vsix
 vscode/.vscode-test/
 
-agentize-*.agentize-*.json                          
+agentize-*.agentize-*.json
 logs/run_evaluation/
+
+# Eval report drafts and generated PDFs
+python/agentize/eval/eval-report-2026-02-25.*
+python/agentize/eval/eval-report-*.pdf
+python/agentize/eval/raspi-res.*
