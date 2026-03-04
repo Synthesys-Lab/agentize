@@ -97,25 +97,25 @@ CF = compile failure
 | Test result | CF | PASS | PASS | CF |
 
 **Divergent approaches to the init path.** All modes correctly added `ctx->id &&` to the stream_id validation check. But the second fix (preventing `ctx->id = 1` on cache hits) varied:
-- **raw/nlcmd:** Replaced `goto done` with inline window initialization — a valid approach but apparently introduces compilation issues (possibly referencing variables not in scope in this code path).
-- **impl:** Added a `c != NULL` guard around the id assignment — minimal and correct.
-- **full:** Over-engineered with 117 added lines across 3 files but compiles and passes.
+- **raw/nlcmd:** Replaced `goto done` with inline window initialization and `return NGX_OK`, but left the `done:` label orphaned with no remaining `goto done`. nginx compiles with `-Wall -Werror`, so the `-Wunused-label` warning becomes a fatal error.
+- **impl:** Added a `c != NULL` guard around the `ctx->id = 1` assignment — minimal, conservative, and preserves the existing `goto done` control flow. Compiles cleanly.
+- **full:** Used a different semantic approach (`ctx->header_sent` flag) to avoid the init-path issue entirely. More lines but compiles and passes.
 
 ---
 
 ### Task 3: `nginx__cd12dc4f` — HTTP/2 upstream buffers not cleared on retry
 
 **Bug:** `ctx->in` and `ctx->busy` not cleared in `reinit_request`, causing corrupted DATA frames on upstream retry.
-**Gold fix:** 2 LOC — add `ctx->in = NULL; ctx->busy = NULL;` in reinit.
+**Gold fix:** 2 LOC — add `ctx->in = NULL; ctx->busy = NULL;` in `ngx_http_proxy_v2_reinit_request()`.
 
 | Aspect | raw | impl | full | nlcmd |
 |--------|-----|------|------|-------|
-| Fixed grpc_module | Yes | Yes | Yes | Yes |
 | Fixed proxy_v2_module | Yes | **No** | Yes | Yes |
+| Fixed grpc_module (bonus) | Yes | Yes | Yes | Yes |
 | Patch size | +4 (2 files) | +3 (1 file) | +22 (2 files) | +8 (2 files) |
 | Test result | PASS | **FAIL** | PASS | PASS |
 
-**impl missed the second module.** The gold fix applies the same 2-line change to both `ngx_http_grpc_module.c` and `ngx_http_proxy_v2_module.c`. The test exercises the proxy_v2 code path. impl only patched grpc_module — technically a correct fix for gRPC, but incomplete for the proxy_v2 path the test covers. All other modes correctly patched both modules.
+**impl patched the wrong module.** The gold fix targets `ngx_http_proxy_v2_module.c`, and the test exercises the proxy_v2 code path. The problem statement says "HTTP/2 upstream" without naming files. impl's single-pass FSM found `ngx_http_grpc_reinit_request()` first (alphabetically earlier) and stopped. The fix is correct for gRPC but misses the proxy_v2 module that the test actually exercises. All other modes (which search more broadly or have planning) correctly patched both modules.
 
 ---
 
@@ -173,17 +173,17 @@ Full mode (4/5) outperforms all others (3/5 each). The planning pipeline helps t
 
 Compared to SWE-bench (Python), where impl/full/nlcmd all achieved 100% correctness on 5 tasks, the nginx benchmark shows more failures across all modes. C-language bugs involving pointer management, buffer chains, and multi-module interactions are fundamentally harder for the model.
 
-### 3. Planning doesn't prevent compilation errors
+### 3. `-Werror` is a C-specific failure mode the model doesn't anticipate
 
-Both raw and nlcmd (which uses the most elaborate planning) failed to compile f8e1bc5b with the same approach. The issue is a code-generation problem (incorrect init-path refactoring), not a planning problem. impl and full took a different, more conservative approach that compiled successfully.
+Both raw and nlcmd failed to compile f8e1bc5b because they orphaned a `done:` label (removed `goto done` but left `done:`). nginx compiles with `-Wall -Werror`, promoting `-Wunused-label` from warning to fatal error. The model produced logically correct code that a lenient compiler would accept — it doesn't model the project's specific compiler flags. impl avoided this by taking a more conservative approach that preserved the existing control flow.
 
-### 4. Minimal patches tend to be correct
+### 4. Incomplete search is a single-pass failure mode
 
-Tasks 3-5 have small gold fixes (2-10 LOC). When the model produces a similarly minimal patch, it's almost always correct. Over-engineering (like full's 117-line f8e1bc5b patch) can work but adds risk.
+impl's cd12dc4f failure stems from finding the first `reinit_request` match (`ngx_http_grpc_module.c`) and stopping, missing the second in `ngx_http_proxy_v2_module.c`. Planning modes (raw/full/nlcmd) search more broadly and find both. This suggests single-pass FSM execution without planning is vulnerable to "first match" bias in multi-module bugs.
 
 ### 5. SCGI test infra is a known gap
 
-Task 1 (ec714d52) fails universally due to missing Perl `SCGI` module — the fix is correct across all modes but the test cannot execute. This is a benchmark infrastructure issue, not an AI failure.
+Task 1 (ec714d52) fails universally due to missing Perl `SCGI` module — all modes produce identical, correct patches but the test cannot execute. This is a benchmark infrastructure issue, not an AI failure.
 
 ## Appendix: Tasks Evaluated
 
@@ -191,6 +191,6 @@ Task 1 (ec714d52) fails universally due to missing Perl `SCGI` module — the fi
 |---|-------------|-----------------|----------|---------------|
 | 1 | `nginx__ec714d52` | SCGI CONTENT_LENGTH wrong with unbuffered mode | 6 | `ngx_http_scgi_module.c` |
 | 2 | `nginx__f8e1bc5b` | HTTP/2 cache+keepalive stream ID error | 7 | `ngx_http_proxy_v2_module.c` |
-| 3 | `nginx__cd12dc4f` | HTTP/2 upstream buffers not cleared on retry | 2 | `ngx_http_grpc_module.c`, `ngx_http_proxy_v2_module.c` |
+| 3 | `nginx__cd12dc4f` | HTTP/2 upstream buffers not cleared on retry | 2 | `ngx_http_proxy_v2_module.c` |
 | 4 | `nginx__3afd85e4` | Stale last_buf flag causes premature END_STREAM | 10 | `ngx_output_chain.c` |
 | 5 | `nginx__d7a24947` | Upstream reinit not called on early response | 6 | `ngx_http_upstream.c` |
