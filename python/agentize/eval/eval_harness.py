@@ -260,8 +260,9 @@ def setup_nginx_worktree(
         configure_args = ["./auto/configure"]
         for flag in task.get("modules_required", []):
             configure_args.append(flag)
-        _run(configure_args + ["--prefix=" + str(wt_path / "install")],
-             check=False)
+        configure_args.append("--prefix=" + str(wt_path / "install"))
+        print(f"  $ {' '.join(configure_args)}  (cwd={wt_path})")
+        subprocess.run(configure_args, cwd=str(wt_path), check=False)
 
     # Clone nginx-tests repo (skip if exists for resume)
     tests_path = worktrees_dir / (instance_id + "__tests")
