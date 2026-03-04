@@ -104,7 +104,7 @@ def _parse_claude_usage(stdout: str, model: str) -> dict:
 # ---------------------------------------------------------------------------
 
 def load_tasks(
-    dataset_name: str = "princeton-nlp/SWE-bench_Lite",
+    dataset_name: str = "princeton-nlp/SWE-bench_Verified",
     instance_ids: list[str] | None = None,
     limit: int | None = None,
 ) -> list[dict]:
@@ -546,7 +546,7 @@ def run_nlcmd_impl(
     overrides_path: str,
     instance_id: str,
     problem_statement: str,
-    timeout: int = 1800,
+    timeout: int = 3600,
     model: str = "sonnet",
     planning_model: str = "opus",
     planner_cmd: str = "ultra-planner",
@@ -738,7 +738,7 @@ def extract_patch(wt_path: str | Path, base_commit: str) -> str:
 
 def score_predictions(
     predictions_path: str,
-    dataset_name: str = "princeton-nlp/SWE-bench_Lite",
+    dataset_name: str = "princeton-nlp/SWE-bench_Verified",
     max_workers: int = 4,
     run_id: str = "agentize-eval",
 ) -> dict | None:
@@ -806,7 +806,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # -- run subcommand -----------------------------------------------
     run_p = sub.add_parser("run", help="Run end-to-end evaluation")
-    run_p.add_argument("--dataset", default="princeton-nlp/SWE-bench_Lite")
+    run_p.add_argument("--dataset", default="princeton-nlp/SWE-bench_Verified")
     run_p.add_argument(
         "--instance-ids", nargs="*",
         help="Specific instance IDs to evaluate",
@@ -860,7 +860,7 @@ def main(argv: list[str] | None = None) -> int:
     # -- score subcommand ---------------------------------------------
     score_p = sub.add_parser("score", help="Score existing predictions")
     score_p.add_argument("--predictions", required=True)
-    score_p.add_argument("--dataset", default="princeton-nlp/SWE-bench_Lite")
+    score_p.add_argument("--dataset", default="princeton-nlp/SWE-bench_Verified")
     score_p.add_argument("--max-workers", type=int, default=4)
     score_p.add_argument("--run-id", default="agentize-eval")
 
