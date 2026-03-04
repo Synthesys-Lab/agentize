@@ -37,7 +37,7 @@ DEFAULT_BACKENDS = {
     "bold": ("claude", "opus"),
     "critique": ("claude", "opus"),
     "reducer": ("claude", "opus"),
-    "consensus": ("codex", "gpt-5.2-codex"),
+    "consensus": ("claude", "opus"),
 }
 
 # Tool configurations per stage (Claude provider only)
