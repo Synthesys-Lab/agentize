@@ -364,7 +364,7 @@ def score_nginx(
 
     # Run prove with the compiled binary
     env = os.environ.copy()
-    env["TEST_NGINX_BINARY"] = str(binary)
+    env["TEST_NGINX_BINARY"] = str(binary.resolve())
 
     prove_cmd = ["prove", "-v"] + task.get("test_files", [])
     print(f"  Running: {' '.join(prove_cmd)}")
