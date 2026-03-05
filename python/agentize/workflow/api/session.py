@@ -165,6 +165,7 @@ class Session:
         retry_delay: float = 0,
         input_path: str | Path | None = None,
         output_path: str | Path | None = None,
+        fallback_backend: tuple[str, str] | None = None,
     ) -> StageResult:
         input_path_resolved, output_path_resolved = self._resolve_paths(
             name, input_path, output_path
@@ -200,6 +201,36 @@ class Session:
                 last_error = exc
                 if attempt <= retry and retry_delay > 0:
                     time.sleep(retry_delay)
+
+        # If primary backend exhausted retries and a fallback is configured, try it
+        if fallback_backend and fallback_backend != backend:
+            self._log(
+                f"Stage '{name}' failed with {backend[0]}:{backend[1]}, "
+                f"falling back to {fallback_backend[0]}:{fallback_backend[1]}"
+            )
+            try:
+                self._write_prompt(prompt, input_path_resolved)
+                process = self._run_stage(
+                    name,
+                    fallback_backend,
+                    input_path_resolved,
+                    output_path_resolved,
+                    tools=tools,
+                    permission_mode=permission_mode,
+                    timeout=timeout,
+                    extra_flags=None,  # drop provider-specific flags
+                )
+                self._validate_output(name, output_path_resolved, process)
+                if self._log_output_dump:
+                    self._log(f"{name} dumped to {output_path_resolved}")
+                return StageResult(
+                    stage=name,
+                    input_path=input_path_resolved,
+                    output_path=output_path_resolved,
+                    process=process,
+                )
+            except Exception as exc:
+                last_error = exc
 
         raise PipelineError(name, attempts, last_error)
 

@@ -37,7 +37,7 @@ DEFAULT_BACKENDS = {
     "bold": ("claude", "opus"),
     "critique": ("claude", "opus"),
     "reducer": ("claude", "opus"),
-    "consensus": ("claude", "opus"),
+    "consensus": ("codex", "gpt-5.2-codex"),
 }
 
 # Tool configurations per stage (Claude provider only)
@@ -268,6 +268,7 @@ def run_planner_pipeline(
         tools=STAGE_TOOLS.get("consensus"),
         permission_mode=STAGE_PERMISSION_MODE.get("consensus"),
         extra_flags=codex_flags,
+        fallback_backend=("claude", "opus"),
     )
 
     return results
@@ -315,12 +316,20 @@ def run_consensus_stage(
         log_acw_command=True,
         log_output_dump=log_output_dump,
     )
+    consensus_provider = stage_backends["consensus"][0]
+    codex_flags = (
+        ["-s", "read-only", "--enable", "web_search_request",
+         "-c", "model_reasoning_effort=xhigh"]
+        if consensus_provider == "codex" else None
+    )
     return session.run_prompt(
         "consensus",
         _write_consensus_prompt,
         stage_backends["consensus"],
         tools=STAGE_TOOLS.get("consensus"),
         permission_mode=STAGE_PERMISSION_MODE.get("consensus"),
+        extra_flags=codex_flags,
+        fallback_backend=("claude", "opus"),
         input_path=input_path,
         output_path=output_path,
     )
