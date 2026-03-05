@@ -859,19 +859,20 @@ def run_nlcmd_impl(
     Phase 2: Read the consensus plan from ``.tmp/`` and feed it to the FSM
     orchestrator for implementation.
 
-    Token tracking captures the **orchestrator session** tokens.  Subagent
-    tokens (spawned via Task tool) run as separate processes and are not
-    included — this is a known limitation noted in the result dict.
+    Cost is tracked via JSONL session file diffing — the same approach used
+    by ``run_full_impl``.  A snapshot of JSONL files is taken before Phase 1,
+    then after Phase 2 completes, only NEW files are summed.  This captures
+    all subagent tokens (spawned via Task tool) accurately.
 
     Returns a result dict with combined cost from both phases.
     """
     start_time = time.time()
     result = _make_result(instance_id)
     result["planner_cmd"] = planner_cmd
-    result["cost_note"] = (
-        "orchestrator tokens tracked; subagent tokens not included "
-        "(they run as separate claude processes via Task tool)"
-    )
+    result["cost_note"] = "cost estimated from new JSONL session files"
+
+    # Snapshot JSONL file list before running — we'll sum only NEW files after
+    files_before = _list_jsonl_files()
 
     wt = Path(wt_path)
     tmp_dir = wt / ".tmp"
@@ -909,15 +910,6 @@ def run_nlcmd_impl(
             text=True,
             timeout=planning_timeout,
         )
-
-        # Track orchestrator-level token usage
-        plan_usage = _parse_claude_usage(plan_proc.stdout, planning_model)
-        result["input_tokens"] += plan_usage["input_tokens"]
-        result["output_tokens"] += plan_usage["output_tokens"]
-        result["tokens"] += plan_usage["tokens"]
-        result["cost_usd"] += plan_usage["cost_usd"]
-        result["planning_tokens"] = plan_usage["tokens"]
-        result["planning_cost_usd"] = plan_usage["cost_usd"]
 
         if plan_proc.returncode != 0:
             print(f"  NL planning failed (rc={plan_proc.returncode})", file=sys.stderr)
@@ -960,6 +952,17 @@ def run_nlcmd_impl(
         else:
             result["status"] = "timeout"
             result["wall_time"] = time.time() - start_time
+            # Capture any JSONL files written before the timeout
+            files_after = _list_jsonl_files()
+            new_files = sorted(files_after - files_before)
+            if new_files:
+                usage = _sum_jsonl_usage(new_files)
+                result["input_tokens"] = usage["input_tokens"]
+                result["output_tokens"] = usage["output_tokens"]
+                result["cache_read_tokens"] = usage["cache_read"]
+                result["cache_write_tokens"] = usage["cache_write"]
+                result["tokens"] = usage["tokens"]
+                result["cost_usd"] = usage["cost_usd"]
             return result
 
     # --- Phase 2: FSM impl with plan ---
@@ -997,6 +1000,18 @@ def run_nlcmd_impl(
     else:
         result["status"] = status_bucket[0] if status_bucket else "error"
         result["wall_time"] = time.time() - start_time
+
+    # Compute cost from NEW JSONL files only (created during this run)
+    files_after = _list_jsonl_files()
+    new_files = sorted(files_after - files_before)
+    if new_files:
+        usage = _sum_jsonl_usage(new_files)
+        result["input_tokens"] = usage["input_tokens"]
+        result["output_tokens"] = usage["output_tokens"]
+        result["cache_read_tokens"] = usage["cache_read"]
+        result["cache_write_tokens"] = usage["cache_write"]
+        result["tokens"] = usage["tokens"]
+        result["cost_usd"] = usage["cost_usd"]
 
     return result
 
