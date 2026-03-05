@@ -107,24 +107,31 @@ def _parse_claude_usage(stdout: str, model: str) -> dict:
 # JSONL-based cost tracking for ACW modes
 # ---------------------------------------------------------------------------
 
-def _snapshot_jsonl_usage() -> dict:
-    """Snapshot current token totals from all Claude JSONL session files.
 
-    Returns a dict with keys: input_tokens, output_tokens, cost_usd.
-    This reads ~/.claude/projects/**/*.jsonl and sums usage from all
-    assistant messages, allowing before/after diffing to measure cost
-    of ACW subprocess calls.
+def _list_jsonl_files() -> set[str]:
+    """Return the set of all JSONL file paths under ~/.claude/projects/."""
+    projects_dir = Path.home() / ".claude" / "projects"
+    if not projects_dir.exists():
+        return set()
+    return {str(p) for p in projects_dir.glob("**/*.jsonl")}
+
+
+def _sum_jsonl_usage(paths: list[str]) -> dict:
+    """Sum token usage and cost from a list of JSONL session files.
+
+    Returns a dict with keys: input_tokens, output_tokens, cache_read,
+    cache_write, tokens, cost_usd.
     """
     from agentize.usage import match_model_pricing
 
-    totals = {"input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0}
-    projects_dir = Path.home() / ".claude" / "projects"
-    if not projects_dir.exists():
-        return totals
-
-    for jsonl_path in projects_dir.glob("**/*.jsonl"):
+    totals = {
+        "input_tokens": 0, "output_tokens": 0,
+        "cache_read": 0, "cache_write": 0,
+        "tokens": 0, "cost_usd": 0.0,
+    }
+    for path in paths:
         try:
-            with open(jsonl_path, "r", encoding="utf-8", errors="ignore") as f:
+            with open(path, "r", encoding="utf-8", errors="ignore") as f:
                 for line in f:
                     line = line.strip()
                     if not line:
@@ -136,14 +143,16 @@ def _snapshot_jsonl_usage() -> dict:
                             usage = message.get("usage", {})
                             inp = usage.get("input_tokens", 0)
                             out = usage.get("output_tokens", 0)
+                            cache_read = usage.get("cache_read_input_tokens", 0)
+                            cache_write = usage.get("cache_creation_input_tokens", 0)
                             if inp > 0 or out > 0:
                                 totals["input_tokens"] += inp
                                 totals["output_tokens"] += out
+                                totals["cache_read"] += cache_read
+                                totals["cache_write"] += cache_write
                                 model_id = message.get("model", "")
                                 rates = match_model_pricing(model_id)
                                 if rates:
-                                    cache_read = usage.get("cache_read_input_tokens", 0)
-                                    cache_write = usage.get("cache_creation_input_tokens", 0)
                                     non_cache = max(0, inp - cache_read - cache_write)
                                     totals["cost_usd"] += (
                                         non_cache * rates["input"] / 1_000_000
@@ -156,24 +165,8 @@ def _snapshot_jsonl_usage() -> dict:
         except (OSError, IOError):
             continue
 
+    totals["tokens"] = totals["input_tokens"] + totals["output_tokens"]
     return totals
-
-
-def _diff_jsonl_usage(before: dict, after: dict) -> dict:
-    """Compute the delta between two JSONL usage snapshots.
-
-    Returns a dict compatible with result fields: input_tokens, output_tokens,
-    tokens, cost_usd.
-    """
-    inp = max(0, after["input_tokens"] - before["input_tokens"])
-    out = max(0, after["output_tokens"] - before["output_tokens"])
-    cost = max(0.0, after["cost_usd"] - before["cost_usd"])
-    return {
-        "input_tokens": inp,
-        "output_tokens": out,
-        "tokens": inp + out,
-        "cost_usd": cost,
-    }
 
 
 # ---------------------------------------------------------------------------
@@ -660,10 +653,10 @@ def run_full_impl(
     start_time = time.time()
     result = _make_result(instance_id)
 
-    # Snapshot JSONL usage before running to measure ACW cost via delta
-    usage_before = _snapshot_jsonl_usage()
+    # Snapshot JSONL file list before running — we'll sum only NEW files after
+    files_before = _list_jsonl_files()
     if not skip_planning:
-        result["cost_note"] = "planning+impl cost estimated via JSONL session delta"
+        result["cost_note"] = "cost estimated from new JSONL session files"
 
     # Run the pipeline body in a daemon thread so we can enforce a timeout.
     # A daemon thread is killed when the main thread moves on; this is
@@ -699,13 +692,17 @@ def run_full_impl(
         result["status"] = status_bucket[0] if status_bucket else "error"
         result["wall_time"] = time.time() - start_time
 
-    # Compute cost from JSONL delta
-    usage_after = _snapshot_jsonl_usage()
-    delta = _diff_jsonl_usage(usage_before, usage_after)
-    result["input_tokens"] = delta["input_tokens"]
-    result["output_tokens"] = delta["output_tokens"]
-    result["tokens"] = delta["tokens"]
-    result["cost_usd"] = delta["cost_usd"]
+    # Compute cost from NEW JSONL files only (created during this run)
+    files_after = _list_jsonl_files()
+    new_files = sorted(files_after - files_before)
+    if new_files:
+        usage = _sum_jsonl_usage(new_files)
+        result["input_tokens"] = usage["input_tokens"]
+        result["output_tokens"] = usage["output_tokens"]
+        result["cache_read_tokens"] = usage["cache_read"]
+        result["cache_write_tokens"] = usage["cache_write"]
+        result["tokens"] = usage["tokens"]
+        result["cost_usd"] = usage["cost_usd"]
 
     return result
 
