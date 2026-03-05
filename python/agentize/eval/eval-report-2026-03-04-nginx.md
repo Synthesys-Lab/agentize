@@ -42,10 +42,10 @@ Each task is scored by:
 |--------|-----|------|------|-------|
 | Total time | 387s (6.4 min) | 899s (15 min) | 8,437s (2.3 hrs) | 10,031s (2.8 hrs) |
 | Avg time/task | 97s | 180s | 1,687s (28 min) | 2,508s (42 min) |
-| Cost (USD) | $0.71 | N/A* | N/A* | $5.07 |
-| Avg cost/task | $0.14 | — | — | $1.01 |
+| Cost (USD) | $0.71 | ~$4† | ~$112† | $5.07 |
+| Avg cost/task | $0.14 | ~$0.83† | ~$22.39† | $1.01 |
 
-*\*impl and full use ACW subprocess calls that don't return token data.*
+*†impl and full costs estimated from single-task JSONL measurement (d7a24947) × 5. Full mode cost is dominated by 4 Opus planning calls ($75/M output, $18.75/M cache_write).*
 
 ### Speed Comparison (relative to raw)
 
