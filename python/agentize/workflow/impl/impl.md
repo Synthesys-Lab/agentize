@@ -83,7 +83,7 @@ flowchart LR
     pr -->|pr_fail_fixable| impl
     pr -->|pr_fail_need_rebase| rebase[rebase]
     pr -->|6x failures| fatal
-    rebase -->|rebase_ok| impl
+    rebase -->|rebase_ok| review
     rebase -->|rebase_conflict| fatal
 ```
 
