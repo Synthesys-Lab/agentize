@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-We evaluated agentize across two benchmarks — SWE-bench (Python library bugs) and nginx (C systems bugs) — using four execution modes. The key finding: **planning consistently improves correctness**, and full mode (script-orchestrated 5-agent planning) achieves **100% pass rate across both benchmarks** (10/10). Nlcmd (NL-orchestrated planning) produces richer artifacts but at 2-3x the time cost with slightly lower C pass rate (4/5).
+We evaluated agentize across two benchmarks — SWE-bench (Python library bugs) and nginx (C systems bugs) — using four execution modes. The key finding: **planning consistently improves correctness**, and full mode (script-orchestrated 5-agent planning) achieves **100% pass rate across both benchmarks** (10/10). Nlcmd (NL-orchestrated planning) produces richer artifacts but at 2x the time and ~1.4x the cost of full mode, with slightly lower C pass rate (4/5).
 
 ## Combined Results
 
@@ -36,9 +36,9 @@ We evaluated agentize across two benchmarks — SWE-bench (Python library bugs) 
 | **raw** | $0.44 | $0.71 | $1.15 | $0.12 |
 | **impl** | ~$4† | ~$4† | ~$8† | ~$0.83† |
 | **full** | ~$112† | ~$112† | ~$224† | ~$22† |
-| **nlcmd** | $4.07 | $5.07 | $9.14 | $0.91 |
+| **nlcmd** | ~$157† | ~$157† | ~$314† | ~$31† |
 
-*†impl and full costs estimated from single-task JSONL measurement (nginx d7a24947) extrapolated to 5 tasks per benchmark. Full mode cost is dominated by 4 Opus planning calls ($75/M output, $18.75/M cache_write). Actual per-task costs may vary with task complexity.*
+*†impl, full, and nlcmd costs estimated from single-task JSONL measurement (nginx d7a24947) extrapolated to 5 tasks per benchmark. Full mode cost is dominated by 4 Opus planning calls; nlcmd cost is dominated by multi-agent debate (understander + bold-proposer + critique + reducer + consensus). Prior nlcmd cost ($0.91/task) only counted orchestrator tokens — subagent tokens spawned via Task tool were missing. Actual per-task costs may vary with task complexity.*
 
 ## Analysis
 
@@ -66,18 +66,19 @@ All modes score lower on nginx than SWE-bench:
 
 The gap is largest for impl and nlcmd (-20pp), where C-specific challenges (compilation errors, multi-module interactions) cause failures that planning alone doesn't prevent.
 
-### Finding 3: Script orchestration (full) outperforms NL orchestration (nlcmd)
+### Finding 3: Script orchestration (full) dominates NL orchestration (nlcmd)
 
-Counter to expectations, full mode outperforms nlcmd on nginx despite nlcmd using more elaborate planning:
+Full mode outperforms nlcmd on every dimension — quality, speed, and cost:
 
 | | full | nlcmd |
 |--|------|-------|
 | **SWE-bench** | 5/5 | 5/5 (tie) |
 | **nginx** | **5/5** | 4/5 |
 | **Combined** | **10/10** | 9/10 |
-| **Time** | 6.9 hrs | 14.7 hrs |
+| **Time** | 6.9 hrs | 14.7 hrs (2.1x slower) |
+| **Cost** | ~$22/task | ~$31/task (1.4x more) |
 
-Full mode's advantage on nginx comes from a single task (f8e1bc5b) where full compiled successfully but nlcmd didn't. Both used the same model (Sonnet for impl), so the difference is in the planning-to-implementation handoff: the script pipeline's structured plan format may produce more precise implementation guidance for C code than the NL command's free-form plan.
+Full mode is faster, cheaper, and more accurate. The cost gap comes from nlcmd's multi-agent debate pipeline (5 agent calls via Task tool) running longer than full's scripted 4-stage Opus pipeline. The quality gap comes from a single nginx task (f8e1bc5b) where full compiled successfully but nlcmd didn't — the script pipeline's structured plan format produces more precise implementation guidance for C code than the NL command's free-form plan.
 
 ### Finding 4: impl is the best value proposition
 
@@ -85,7 +86,7 @@ Impl mode (FSM orchestrator without planning) achieves:
 - 100% on SWE-bench (tied for best)
 - 80% on nginx (tied with raw and nlcmd)
 - Total time: 19 minutes for 10 tasks
-- ~$0.83/task (~7x raw, but 27x cheaper than full)
+- ~$0.83/task (~7x raw, 27x cheaper than full, 37x cheaper than nlcmd)
 
 The iterative prompt rendering and retry logic in the FSM kernel loop provides most of the benefit of planning for Python tasks at a fraction of the cost. For C tasks, impl matches raw/nlcmd despite using no planning — the failures are in different tasks (impl misses cd12dc4f due to incomplete fix, while raw/nlcmd miss f8e1bc5b due to compile errors).
 
@@ -112,16 +113,16 @@ If failures were random, we'd expect overlapping failure sets. Instead, each mod
 | Rapid prototyping | **raw** | 91s/task, $0.12/task, 80% success |
 | Production patches (Python) | **impl** | 112s/task, ~$0.83/task, 100% success on Python |
 | Production patches (C/multi-lang) | **full** | 2,494s/task, ~$22/task, 100% success |
-| Maximum quality (Python) | **nlcmd** | 5,309s/task, $0.91/task, richer artifacts |
+| ~~Maximum quality (Python)~~ | ~~nlcmd~~ | ~$31/task, 90% success — dominated by full |
 
-Full mode's ~$22/task cost is dominated by 4 Opus planning calls. At 100% success rate, this is a cost-for-correctness tradeoff: ~$112/benchmark for guaranteed results vs ~$4/benchmark for 80-90% success with impl.
+Full mode dominates nlcmd on all axes: higher pass rate (100% vs 90%), faster (2,494s vs 5,309s/task), and cheaper (~$22 vs ~$31/task). There is no use case where nlcmd is the preferred choice. The original nlcmd cost of $0.91/task was a measurement error — subagent tokens spawned via the Task tool were not being counted.
 
 ## Limitations
 
 1. **Small sample size** — 5 tasks per benchmark is insufficient for statistical significance. These results indicate trends, not conclusions.
 2. **Single model** — All modes use Claude Sonnet for implementation. Results may differ with other models.
 3. **~~SCGI test gap~~** — Resolved. Perl SCGI module installed; ec714d52 now passes all modes.
-4. **~~No cost data for ACW modes~~** — Resolved. JSONL-based cost tracking (v2) now measures impl and full mode costs. Estimates are extrapolated from single-task measurements.
+4. **~~No cost data for ACW modes~~** — Resolved. JSONL-based cost tracking (v2) now measures impl, full, and nlcmd mode costs. Original nlcmd cost ($0.91/task) was a measurement bug — fixed in PR #981. All estimates are extrapolated from single-task measurements.
 5. **Single run** — No repeated trials to measure variance. Individual task results may not be reproducible.
 
 ## Recommendations
