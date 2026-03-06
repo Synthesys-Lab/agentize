@@ -31,10 +31,12 @@ are stripped so assertions become real pass/fail checks.
 
 The harness supports four execution modes via `--mode`:
 
-| Mode | What runs | What it tests |
-|------|-----------|---------------|
-| `raw` | `claude -p` + bare bug report | The model alone (baseline) |
-| `full` | Planning pipeline + FSM orchestrator | The agentize framework |
+| Mode | What runs | What it tests | Cost tracking |
+|------|-----------|---------------|---------------|
+| `raw` | `claude -p` + bare bug report | The model alone (baseline) | Claude JSON usage |
+| `impl` | FSM orchestrator only (no planning) | The impl kernel loop | JSONL session files |
+| `full` | Planning pipeline + FSM orchestrator | The agentize framework | JSONL session files |
+| `nlcmd` | NL planning via `claude -p` + FSM | NL orchestration | JSONL session files |
 
 ### Raw mode (default)
 

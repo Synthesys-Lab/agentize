@@ -42,10 +42,10 @@ Each task is scored by:
 |--------|-----|------|------|-------|
 | Total time | 387s (6.4 min) | 899s (15 min) | 8,437s (2.3 hrs) | 10,031s (2.8 hrs) |
 | Avg time/task | 97s | 180s | 1,687s (28 min) | 2,508s (42 min) |
-| Cost (USD) | $0.71 | ~$4† | ~$112† | $5.07 |
-| Avg cost/task | $0.14 | ~$0.83† | ~$22.39† | $1.01 |
+| Cost (USD) | $0.71 | ~$4† | ~$112† | ~$157† |
+| Avg cost/task | $0.14 | ~$0.83† | ~$22.39† | ~$31.38† |
 
-*†impl and full costs estimated from single-task JSONL measurement (d7a24947) × 5. Full mode cost is dominated by 4 Opus planning calls ($75/M output, $18.75/M cache_write).*
+*†impl, full, and nlcmd costs estimated from single-task JSONL measurement (d7a24947) × 5. Full mode cost is dominated by 4 Opus planning calls ($75/M output, $18.75/M cache_write). Nlcmd cost is dominated by multi-agent debate (understander + bold-proposer + critique + reducer + consensus). Prior nlcmd cost ($1.01/task) only counted orchestrator tokens — subagent tokens spawned via Task tool were missing (fixed in PR #981).*
 
 ### Speed Comparison (relative to raw)
 
