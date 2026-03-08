@@ -38,7 +38,7 @@ We evaluated agentize across two benchmarks — SWE-bench (Python library bugs) 
 | **full** | ~$112† | ~$112† | ~$224† | ~$22† |
 | **nlcmd** | $143.80 | ~$157† | ~$301 | ~$30 |
 
-*†nginx impl and full costs estimated from single-task JSONL measurement (d7a24947) × 5. Nginx nlcmd cost extrapolated from single-task measurement ($31.38 × 5). SWE-bench nlcmd cost ($143.80) measured directly across all 5 tasks. Prior nlcmd cost ($0.91/task) only counted orchestrator tokens — subagent tokens spawned via Task tool were missing (fixed in PR #981).*
+*†impl and full costs (both benchmarks) estimated from single-task JSONL measurement (nginx d7a24947) extrapolated to 5 tasks per benchmark. Nginx nlcmd cost extrapolated from the same single-task measurement ($31.38 × 5). SWE-bench nlcmd cost ($143.80) measured directly across all 5 tasks. Prior nlcmd cost ($0.91/task) only counted orchestrator tokens — subagent tokens spawned via Task tool were missing (fixed in PR #981).*
 
 ## Analysis
 

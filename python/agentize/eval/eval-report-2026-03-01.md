@@ -37,11 +37,10 @@ Extended the evaluation harness to support a 4th execution mode (**nlcmd**), ena
 
 | Metric | raw | impl | full | nlcmd |
 |--------|-----|------|------|-------|
-| Cost (USD) | $0.44 | N/A* | N/A* | $4.07 |
-| Avg cost/task | $0.09 | — | — | $1.02 |
-| Tokens (total) | 29,353 | — | — | 63,232 |
+| Cost (USD) | $0.44 | ~$4† | ~$112† | $143.80 |
+| Avg cost/task | $0.09 | ~$0.83† | ~$22† | $28.76 |
 
-*\*impl and full use ACW subprocess calls that don't return token data.*
+*†impl and full costs estimated from single-task JSONL measurement extrapolated to 5 tasks. Nlcmd cost ($143.80) measured directly across all 5 tasks via JSONL-based tracking. Prior nlcmd cost ($4.07) only counted orchestrator tokens — subagent tokens spawned via Task tool were missing (fixed in PR #981, ~34x undercount).*
 
 ### Speed comparison (relative to raw)
 
@@ -154,24 +153,24 @@ The quality progression is clear: **raw < impl < full < nlcmd**. However, the ga
 | Mode | Cost per task | Quality | Cost-effectiveness |
 |------|--------------|---------|-------------------|
 | raw | $0.09 | 80% correct, no tests | Baseline |
-| impl | ~$0.09* | 100% correct, some tests | Best value |
-| full | ~$1-3* | 100% correct, good tests | Diminishing returns |
-| nlcmd | $1.02 | 100% correct, excellent tests | Premium quality |
+| impl | ~$0.83 | 100% correct, some tests | Best value |
+| full | ~$22 | 100% correct, good tests | Diminishing returns |
+| nlcmd | $28.76 | 100% correct, excellent tests | Premium quality |
 
-*\*Estimated from raw cost since ACW doesn't track tokens.*
+*Costs measured via JSONL-based session file tracking (PR #981). Prior nlcmd cost ($1.02/task) only counted orchestrator tokens — subagent tokens were missing.*
 
-### 4. NL command orchestration is 2.6x slower than script orchestration
-nlcmd (12 hrs) vs full (4.6 hrs) for the same 5 tasks. The overhead comes from Claude Code's NL command system: each `/ultra-planner` session spawns subagents via the Task tool, which involves additional prompt parsing, permission checks, and session management. The Python pipeline makes direct subprocess calls.
+### 4. NL command orchestration is 2.6x slower and 1.3x more expensive than script orchestration
+nlcmd (12 hrs, $28.76/task) vs full (4.6 hrs, ~$22/task) for the same 5 tasks. The overhead comes from Claude Code's NL command system: each `/ultra-planner` session spawns subagents via the Task tool, which involves additional prompt parsing, permission checks, and session management. The Python pipeline makes direct subprocess calls. Full mode is strictly better: faster, cheaper, and equally accurate (both 100%).
 
 ### 5. NL commands produce richer artifacts
 Despite the overhead, nlcmd patches consistently included extras that other modes didn't: changelog entries, comprehensive docstrings explaining design rationale, edge-case tests, and more defensive error handling. This suggests the multi-agent debate via NL commands (which includes external AI synthesis) produces more thorough analysis than the script pipeline.
 
 ## Recommendations
 
-1. **Use impl for speed-sensitive workloads** — 100% correctness at raw-mode speed with decent test coverage.
-2. **Use full for production patches** — adds planning-quality tests with ~55 min/task overhead.
-3. **Use nlcmd for high-stakes or complex tasks** — produces the most thorough patches but at 10x the cost and time.
-4. **Invest in cost tracking for ACW modes** — the current gap (impl/full have no USD data) makes cost comparison incomplete.
+1. **Use impl for speed-sensitive workloads** — 100% correctness at raw-mode speed with decent test coverage (~$0.83/task).
+2. **Use full for production patches** — adds planning-quality tests with ~55 min/task overhead (~$22/task). Strictly dominates nlcmd.
+3. **~~Use nlcmd for high-stakes or complex tasks~~** — Superseded. Full mode is faster, cheaper ($22 vs $29/task), and achieves equal or better pass rates across both benchmarks. nlcmd's richer artifacts (changelogs, extra tests) do not justify the 1.3x cost and 2.6x time premium.
+4. **~~Invest in cost tracking for ACW modes~~** — Resolved in PR #981 via JSONL-based session file tracking.
 5. **Increase nlcmd default timeout to 3600s** — the default 1800s causes timeouts on complex planning debates.
 
 ## Appendix: Tasks Evaluated
