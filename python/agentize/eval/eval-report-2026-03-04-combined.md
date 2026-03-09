@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-We evaluated agentize across two benchmarks — SWE-bench (Python library bugs) and nginx (C systems bugs) — using four execution modes. The key finding: **planning consistently improves correctness**, and full mode (script-orchestrated 5-agent planning) achieves **100% pass rate across both benchmarks** (10/10). Nlcmd (NL-orchestrated planning) produces richer artifacts but at 2x the time and ~1.4x the cost of full mode, with slightly lower C pass rate (4/5).
+We evaluated agentize across two benchmarks — SWE-bench (Python library bugs) and nginx (C systems bugs) — using four execution modes. The key finding: **planning consistently improves correctness**, and full mode (script-orchestrated 5-agent planning) achieves **100% pass rate across both benchmarks** (10/10). Nlcmd (NL-orchestrated planning) produces richer artifacts but at ~1.4x the time and ~1.4x the cost of full mode, with slightly lower C pass rate (4/5). A secondary finding: **Codex consensus adds latency without reducing Anthropic cost** — the Opus fallback path is 3x faster with equivalent quality.
 
 ## Combined Results
 
@@ -26,8 +26,8 @@ We evaluated agentize across two benchmarks — SWE-bench (Python library bugs) 
 |------|----------------|-------------|----------------|----------|
 | **raw** | 524s | 387s | 911s (15 min) | 91s |
 | **impl** | 221s | 899s | 1,120s (19 min) | 112s |
-| **full** | 16,505s | 8,437s | 24,942s (6.9 hrs) | 2,494s |
-| **nlcmd** | 43,056s | 10,031s | 53,087s (14.7 hrs) | 5,309s |
+| **full** | 5,493s | 8,437s | 13,930s (3.9 hrs) | 1,393s |
+| **nlcmd** | 8,911s | 10,031s | 18,942s (5.3 hrs) | 1,894s |
 
 ### Cost
 
@@ -35,10 +35,10 @@ We evaluated agentize across two benchmarks — SWE-bench (Python library bugs) 
 |------|-----------|-------|----------|----------|
 | **raw** | $0.44 | $0.71 | $1.15 | $0.12 |
 | **impl** | ~$4† | ~$4† | ~$8† | ~$0.83† |
-| **full** | ~$112† | ~$112† | ~$224† | ~$22† |
+| **full** | $103.61 | ~$112† | ~$216 | ~$22 |
 | **nlcmd** | $143.80 | ~$157† | ~$301 | ~$30 |
 
-*†impl and full costs (both benchmarks) estimated from single-task JSONL measurement (nginx d7a24947) extrapolated to 5 tasks per benchmark. Nginx nlcmd cost extrapolated from the same single-task measurement ($31.38 × 5). SWE-bench nlcmd cost ($143.80) measured directly across all 5 tasks. Prior nlcmd cost ($0.91/task) only counted orchestrator tokens — subagent tokens spawned via Task tool were missing (fixed in PR #981).*
+*†nginx impl and full costs estimated from single-task JSONL measurement (d7a24947) × 5. Nginx nlcmd cost extrapolated from single-task measurement ($31.38 × 5). SWE-bench full ($103.61) and nlcmd ($143.80) measured directly across all 5 tasks. Full mode costs reflect Anthropic API usage only — Codex consensus calls add additional OpenAI cost not captured in JSONL. Prior nlcmd cost ($0.91/task) only counted orchestrator tokens (fixed in PR #981).*
 
 ## Analysis
 
@@ -75,10 +75,10 @@ Full mode outperforms nlcmd on every dimension — quality, speed, and cost:
 | **SWE-bench** | 5/5 | 5/5 (tie) |
 | **nginx** | **5/5** | 4/5 |
 | **Combined** | **10/10** | 9/10 |
-| **Time** | 6.9 hrs | 14.7 hrs (2.1x slower) |
+| **Time** | 3.9 hrs | 5.3 hrs (1.4x slower) |
 | **Cost** | ~$22/task | ~$30/task (1.4x more) |
 
-Full mode is faster, cheaper, and more accurate. The cost gap comes from nlcmd's multi-agent debate pipeline (5 agent calls via Task tool) running longer than full's scripted 4-stage Opus pipeline. The quality gap comes from a single nginx task (f8e1bc5b) where full compiled successfully but nlcmd didn't — the script pipeline's structured plan format produces more precise implementation guidance for C code than the NL command's free-form plan.
+Full mode is faster, cheaper, and more accurate. The cost gap comes from nlcmd's multi-agent debate pipeline (5 agent calls via Task tool) running longer than full's scripted 5-stage pipeline. The quality gap comes from a single nginx task (f8e1bc5b) where full compiled successfully but nlcmd didn't — the script pipeline's structured plan format produces more precise implementation guidance for C code than the NL command's free-form plan.
 
 ### Finding 4: impl is the best value proposition
 
@@ -112,23 +112,39 @@ If failures were random, we'd expect overlapping failure sets. Instead, each mod
 |----------|-----------------|-----|
 | Rapid prototyping | **raw** | 91s/task, $0.12/task, 80% success |
 | Production patches (Python) | **impl** | 112s/task, ~$0.83/task, 100% success on Python |
-| Production patches (C/multi-lang) | **full** | 2,494s/task, ~$22/task, 100% success |
+| Production patches (C/multi-lang) | **full** | 1,393s/task, ~$22/task, 100% success |
 | ~~Maximum quality (Python)~~ | ~~nlcmd~~ | ~$30/task, 90% success — dominated by full |
 
-Full mode dominates nlcmd on all axes: higher pass rate (100% vs 90%), faster (2,494s vs 5,309s/task), and cheaper (~$22 vs ~$30/task). There is no use case where nlcmd is the preferred choice. The original nlcmd cost of $0.91/task was a measurement error — subagent tokens spawned via the Task tool were not being counted.
+Full mode dominates nlcmd on all axes: higher pass rate (100% vs 90%), faster (1,393s vs 1,894s/task), and cheaper (~$22 vs ~$30/task). There is no use case where nlcmd is the preferred choice. The original nlcmd cost of $0.91/task was a measurement error — subagent tokens spawned via the Task tool were not being counted.
+
+### Finding 7: Codex consensus adds latency without reducing Anthropic cost
+
+Full mode was re-run with Codex (gpt-5.2-codex) working as the consensus backend. Comparing against the Opus-fallback run:
+
+| | Codex consensus | Opus fallback |
+|--|---|---|
+| SWE-bench total time | 5,493s (1.5 hrs) | 1,843s (31 min) |
+| Avg time/task | 1,099s (18 min) | 369s (6 min) |
+| Avg Anthropic cost/task | $20.72 | $19.77 |
+| Consensus stage time | 247-422s | 39-85s |
+
+Codex consensus is **3x slower** than Opus fallback (18 min vs 6 min per task) with nearly identical Anthropic costs (~$20/task). Codex also adds hidden OpenAI API costs not captured in JSONL tracking. Agent runtime variance is high — understander ranged from 82-533s, reducer hit 1,002s on one task.
+
+The timing table above uses the Codex run (representative of production configuration). The Opus-fallback path offers a faster alternative when latency matters more than cross-model validation.
 
 ## Limitations
 
 1. **Small sample size** — 5 tasks per benchmark is insufficient for statistical significance. These results indicate trends, not conclusions.
 2. **Single model** — All modes use Claude Sonnet for implementation. Results may differ with other models.
 3. **~~SCGI test gap~~** — Resolved. Perl SCGI module installed; ec714d52 now passes all modes.
-4. **~~No cost data for ACW modes~~** — Resolved. JSONL-based cost tracking (v2) now measures impl, full, and nlcmd mode costs. Original nlcmd cost ($0.91/task) was a measurement bug — fixed in PR #981. SWE-bench nlcmd cost measured directly ($143.80 for 5 tasks); nginx costs extrapolated from single-task measurements.
-5. **Single run** — No repeated trials to measure variance. Individual task results may not be reproducible.
+4. **~~No cost data for ACW modes~~** — Resolved. JSONL-based cost tracking (v2) now measures impl, full, and nlcmd mode costs. Original nlcmd cost ($0.91/task) was a measurement bug — fixed in PR #981. SWE-bench full and nlcmd costs measured directly; nginx costs extrapolated from single-task measurements.
+5. **Single run** — No repeated trials to measure variance. Individual task results may not be reproducible. Full mode re-runs show 3x timing variation depending on consensus backend (Codex vs Opus fallback).
+6. **Codex costs not captured** — JSONL tracking only captures Anthropic API costs. Codex (OpenAI) consensus calls add additional cost not reflected in the cost tables.
 
 ## Recommendations
 
 1. **Use full mode as the default for production** — 100% combined pass rate across both benchmarks.
-2. **Use impl for Python-only workloads** — equivalent quality at 22x less time.
+2. **Use impl for Python-only workloads** — equivalent quality at 12x less time.
 3. **Invest in C-specific improvements** — impl/nlcmd still fail 1/5 nginx tasks due to compilation and multi-module issues.
 4. **Expand task sets** — 5 tasks per benchmark is a proof of concept. Scale to 50+ tasks for statistically meaningful results.
 5. **Add compilation checking to planning** — full mode's nginx advantage comes partly from planning that considers compilation. Making this explicit (e.g., a "compile check" stage) could help all planned modes.
