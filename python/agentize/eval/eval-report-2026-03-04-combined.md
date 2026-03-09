@@ -121,7 +121,39 @@ If failures were random, we'd expect overlapping failure sets. Instead, each mod
 
 Full mode dominates nlcmd on all axes: higher pass rate (100% vs 90%), faster (1,393s vs 1,894s/task), and cheaper (~$22 vs ~$30/task). There is no use case where nlcmd is the preferred choice. The original nlcmd cost of $0.91/task was a measurement error — subagent tokens spawned via the Task tool were not being counted.
 
-### Finding 7: Codex consensus adds latency without reducing Anthropic cost
+### Finding 7: Cost sanity check — cost-per-second is consistent across modes
+
+Cost should be roughly proportional to time when the same models are used. A large $/s discrepancy between modes using the same models indicates a measurement bug (as happened with the original nlcmd cost of $0.91/task — see Limitation 4).
+
+| Mode | $/task | Time/task | $/second | Models |
+|------|--------|-----------|----------|--------|
+| **raw** | $0.12 | 91s | $0.0013/s | Sonnet only |
+| **impl** | $0.83 | 112s | $0.0074/s | Sonnet only |
+| **full (codex)** | $20.72 | 1,099s | $0.019/s | Opus+Sonnet (consensus on OpenAI) |
+| **full (opus)** | $19.77 | 369s | $0.054/s | Opus+Sonnet |
+| **nlcmd** | $30.00 | 1,894s | $0.016/s | Opus+Sonnet (via Task tool) |
+
+**Within-group consistency:**
+
+- **Sonnet-only (raw vs impl):** $0.0013 vs $0.0074/s — 5.7x gap. Impl's FSM overhead (multi-turn conversation, commit, parse gate) burns more tokens per second than raw's single `claude -p` call. Expected.
+- **Opus+Sonnet (full-codex vs nlcmd):** $0.019 vs $0.016/s — **1.2x gap**. Same order of magnitude. Passes the smell test.
+- **Full (opus) $/s is higher** ($0.054) because Opus consensus completes in 39-85s vs Codex's 247-422s — the same dollar spend is compressed into less wall time. The idle/network time is shorter, not the token rate.
+
+**Absolute cost check** (full mode, per task):
+- 4 Opus calls (bold + critique + reducer + consensus) × ~$4-5 each = ~$16-20
+- 2 Sonnet calls (understander + impl) × ~$1-2 each = ~$2-4
+- Expected: ~$18-24/task → Measured: $20.72. ✓
+
+**Before vs after the nlcmd cost fix (PR #981):**
+
+| | Before fix | After fix |
+|--|---|---|
+| nlcmd $/s | $0.0002/s | $0.016/s |
+| full vs nlcmd $/s ratio | 52x | 1.2x |
+
+The 52x discrepancy revealed that nlcmd was only counting orchestrator tokens — subagent tokens (spawned via Task tool) were missing. After the fix, all modes using the same models show consistent cost-per-second within ~1-6x, explainable by differences in conversation overhead and idle time.
+
+### Finding 8: Codex consensus adds latency without reducing Anthropic cost
 
 Full mode was re-run with Codex (gpt-5.2-codex) working as the consensus backend. Comparing against the Opus-fallback run:
 
