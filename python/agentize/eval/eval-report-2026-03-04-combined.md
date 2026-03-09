@@ -26,11 +26,11 @@ We evaluated agentize across two benchmarks — SWE-bench (Python library bugs) 
 |------|----------------|-------------|----------------|----------|
 | **raw** | 524s | 387s | 911s (15 min) | 91s |
 | **impl** | 221s | 899s | 1,120s (19 min) | 112s |
-| **full (codex)** | 5,493s | — | — | 1,099s |
-| **full (opus)** | 1,843s | — | — | 369s |
+| **full (codex)** | 5,493s | TBD | — | 1,099s |
+| **full (opus)** | 1,843s | 8,437s | 10,280s (2.9 hrs) | 1,028s |
 | **nlcmd** | 8,911s | 10,031s | 18,942s (5.3 hrs) | 1,894s |
 
-*Nginx full and nlcmd timing from original runs (Codex vs Opus breakdown not yet available for nginx). Full (codex) uses gpt-5.2-codex for consensus; full (opus) uses Claude Opus fallback when Codex is unavailable.*
+*Full (codex) uses gpt-5.2-codex for consensus; full (opus) uses Claude Opus fallback. Original nginx full run used Opus fallback (Codex was unavailable). Nginx full (codex) TBD — re-run needed.*
 
 ### Cost (Anthropic API only)
 
@@ -38,11 +38,11 @@ We evaluated agentize across two benchmarks — SWE-bench (Python library bugs) 
 |------|-----------|-------|----------|----------|
 | **raw** | $0.44 | $0.71 | $1.15 | $0.12 |
 | **impl** | ~$4† | ~$4† | ~$8† | ~$0.83† |
-| **full (codex)** | $103.61 | — | — | $20.72 |
-| **full (opus)** | $98.87 | — | — | $19.77 |
+| **full (codex)** | $103.61 | TBD | — | $20.72 |
+| **full (opus)** | $98.87 | ~$112† | ~$211 | ~$21 |
 | **nlcmd** | $143.80 | ~$157† | ~$301 | ~$30 |
 
-*†nginx impl cost estimated from single-task JSONL measurement (d7a24947) × 5. Nginx nlcmd cost extrapolated from single-task measurement ($31.38 × 5). SWE-bench full and nlcmd costs measured directly across all 5 tasks. All costs reflect Anthropic API usage only — Codex (OpenAI) consensus calls add additional cost not captured in JSONL. Prior nlcmd cost ($0.91/task) only counted orchestrator tokens (fixed in PR #981).*
+*†nginx impl cost estimated from single-task JSONL measurement (d7a24947) × 5. Nginx full (opus) cost extrapolated the same way. Nginx nlcmd cost extrapolated from single-task measurement ($31.38 × 5). SWE-bench full and nlcmd costs measured directly across all 5 tasks. All costs reflect Anthropic API usage only — Codex (OpenAI) consensus calls add additional cost not captured in JSONL. Prior nlcmd cost ($0.91/task) only counted orchestrator tokens (fixed in PR #981).*
 
 ## Analysis
 
