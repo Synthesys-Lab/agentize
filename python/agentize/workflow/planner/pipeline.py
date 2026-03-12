@@ -147,6 +147,8 @@ def run_planner_pipeline(
     prefix: str | None = None,
     output_suffix: str = "-output.md",
     skip_consensus: bool = False,
+    cwd: str | Path | None = None,
+    no_project_config: bool = False,
 ) -> dict[str, StageResult]:
     """Execute the 5-stage planner pipeline."""
     agentize_home = Path(get_agentize_home())
@@ -178,6 +180,16 @@ def run_planner_pipeline(
 
     results: dict[str, StageResult] = {}
 
+    # Build a helper that merges base extra_flags with --no-project-config for
+    # claude provider stages (prevents CLAUDE.md contamination in foreign repos).
+    _no_project_flag = ["--no-project-config"] if no_project_config else []
+
+    def _extra_flags(stage: str, base: list[str] | None = None) -> list[str] | None:
+        provider = stage_backends[stage][0]
+        additions = _no_project_flag if provider == "claude" else []
+        combined = (base or []) + additions
+        return combined if combined else None
+
     understander_prompt = _render_stage_prompt(
         "understander", feature_desc, agentize_home
     )
@@ -188,6 +200,8 @@ def run_planner_pipeline(
         stage_backends["understander"],
         tools=STAGE_TOOLS.get("understander"),
         permission_mode=STAGE_PERMISSION_MODE.get("understander"),
+        extra_flags=_extra_flags("understander"),
+        cwd=cwd,
     )
     understander_output = results["understander"].text()
 
@@ -201,6 +215,8 @@ def run_planner_pipeline(
         stage_backends["bold"],
         tools=STAGE_TOOLS.get("bold"),
         permission_mode=STAGE_PERMISSION_MODE.get("bold"),
+        extra_flags=_extra_flags("bold"),
+        cwd=cwd,
     )
     bold_output = results["bold"].text()
 
@@ -224,6 +240,8 @@ def run_planner_pipeline(
                 stage_backends["critique"],
                 tools=STAGE_TOOLS.get("critique"),
                 permission_mode=STAGE_PERMISSION_MODE.get("critique"),
+                extra_flags=_extra_flags("critique"),
+                cwd=cwd,
             ),
             session.stage(
                 "reducer",
@@ -231,6 +249,8 @@ def run_planner_pipeline(
                 stage_backends["reducer"],
                 tools=STAGE_TOOLS.get("reducer"),
                 permission_mode=STAGE_PERMISSION_MODE.get("reducer"),
+                extra_flags=_extra_flags("reducer"),
+                cwd=cwd,
             ),
         ]
     )
@@ -267,8 +287,9 @@ def run_planner_pipeline(
         stage_backends["consensus"],
         tools=STAGE_TOOLS.get("consensus"),
         permission_mode=STAGE_PERMISSION_MODE.get("consensus"),
-        extra_flags=codex_flags,
+        extra_flags=_extra_flags("consensus", codex_flags),
         fallback_backend=("claude", "opus"),
+        cwd=cwd,
     )
 
     return results

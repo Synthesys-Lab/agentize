@@ -23,6 +23,8 @@ from agentize.eval.eval_harness import (
     _compute_cost,
     _make_result,
     _find_consensus_plan,
+    _list_jsonl_files,
+    _sum_jsonl_usage,
     _PLANNER_CMD_TEMPLATES,
 )
 
@@ -512,4 +514,49 @@ class TestNlcmdImpl:
             timeout=2,
         )
         assert result["planner_cmd"] == "mega-planner"
-        assert "cost_note" in result
+        assert result["cost_note"] == "cost estimated from new JSONL session files"
+
+    def test_jsonl_cost_tracking_on_timeout(self, tmp_path, monkeypatch):
+        """JSONL-based cost tracking should capture partial costs on timeout."""
+        def _slow_run(*args, **kwargs):
+            raise subprocess.TimeoutExpired(cmd="claude", timeout=1)
+
+        monkeypatch.setattr(subprocess, "run", _slow_run)
+
+        # Mock JSONL tracking to return known values
+        call_count = [0]
+
+        def _mock_list_jsonl():
+            call_count[0] += 1
+            if call_count[0] == 1:
+                return set()  # before
+            return {"/tmp/fake-session.jsonl"}  # after
+
+        mock_usage = {
+            "input_tokens": 100, "output_tokens": 200,
+            "cache_read": 10, "cache_write": 20,
+            "tokens": 300, "cost_usd": 1.50,
+        }
+
+        monkeypatch.setattr(
+            "agentize.eval.eval_harness._list_jsonl_files", _mock_list_jsonl
+        )
+        monkeypatch.setattr(
+            "agentize.eval.eval_harness._sum_jsonl_usage",
+            lambda paths: mock_usage,
+        )
+
+        overrides = write_overrides(tmp_path, "nlcmd-jsonl")
+        result = run_nlcmd_impl(
+            wt_path=str(tmp_path),
+            overrides_path=overrides,
+            instance_id="nlcmd-jsonl",
+            problem_statement="test",
+            timeout=2,
+        )
+        assert result["input_tokens"] == 100
+        assert result["output_tokens"] == 200
+        assert result["cache_read_tokens"] == 10
+        assert result["cache_write_tokens"] == 20
+        assert result["tokens"] == 300
+        assert result["cost_usd"] == 1.50

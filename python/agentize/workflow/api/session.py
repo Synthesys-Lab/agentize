@@ -127,6 +127,7 @@ class Session:
         permission_mode: str | None,
         timeout: int,
         extra_flags: list[str] | None,
+        cwd: str | Path | None = None,
     ) -> subprocess.CompletedProcess:
         provider, model = backend
         acw_runner = ACW(
@@ -137,6 +138,7 @@ class Session:
             tools=tools,
             permission_mode=permission_mode,
             extra_flags=extra_flags,
+            cwd=cwd,
             log_writer=self._log,
             log_command=self._log_acw_command,
             runner=self._runner,
@@ -161,6 +163,7 @@ class Session:
         permission_mode: str | None = None,
         timeout: int = 3600,
         extra_flags: list[str] | None = None,
+        cwd: str | Path | None = None,
         retry: int = 0,
         retry_delay: float = 0,
         input_path: str | Path | None = None,
@@ -187,6 +190,7 @@ class Session:
                     permission_mode=permission_mode,
                     timeout=timeout,
                     extra_flags=extra_flags,
+                    cwd=cwd,
                 )
                 self._validate_output(name, output_path_resolved, process)
                 if self._log_output_dump:
@@ -219,6 +223,7 @@ class Session:
                     permission_mode=permission_mode,
                     timeout=timeout,
                     extra_flags=None,  # drop provider-specific flags
+                    cwd=cwd,
                 )
                 self._validate_output(name, output_path_resolved, process)
                 if self._log_output_dump:

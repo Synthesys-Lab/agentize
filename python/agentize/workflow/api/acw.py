@@ -187,6 +187,7 @@ class ACW:
         tools: str | None = None,
         permission_mode: str | None = None,
         extra_flags: list[str] | None = None,
+        cwd: str | Path | None = None,
         log_writer: Callable[[str], None] | None = None,
         log_command: bool = False,
         runner: Callable[..., subprocess.CompletedProcess] | None = None,
@@ -205,6 +206,7 @@ class ACW:
         self.tools = tools
         self.permission_mode = permission_mode
         self.extra_flags = extra_flags
+        self.cwd = cwd
         self._log_writer = log_writer
         self._log_command = log_command
         self._runner = runner if runner is not None else run_acw
@@ -244,6 +246,7 @@ class ACW:
             permission_mode=self.permission_mode,
             extra_flags=self.extra_flags,
             timeout=self.timeout,
+            cwd=self.cwd,
         )
 
         elapsed = int(time.time() - start_time)
