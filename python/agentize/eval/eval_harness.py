@@ -438,6 +438,7 @@ def score_nginx(
         proc = subprocess.run(
             prove_cmd, cwd=str(tests),
             env=env, capture_output=True, text=True, timeout=300,
+            errors="replace",
         )
 
         # Parse TAP output for individual test results
@@ -596,6 +597,7 @@ def run_planning_phase(
     problem_statement: str,
     output_dir: Path,
     model: str = "sonnet",
+    cwd: str | Path | None = None,
 ) -> str:
     """Run the agentize planner pipeline and return formatted issue content.
 
@@ -608,6 +610,7 @@ def run_planning_phase(
     results = run_planner_pipeline(
         feature_desc=problem_statement,
         output_dir=str(output_dir),
+        cwd=cwd,
     )
 
     consensus = results.get("consensus")
@@ -757,8 +760,12 @@ def _run_full_impl_body(
             f"## Instructions\n\nImplement the fix. Make minimal changes.\n"
         )
     else:
-        issue_content = run_planning_phase(problem_statement, tmp_dir, model)
+        issue_content = run_planning_phase(problem_statement, tmp_dir, model, cwd=wt)
     issue_file.write_text(issue_content, encoding="utf-8")
+
+    # Ensure subprocesses default to the worktree so Claude's tools
+    # (Glob/Read/Grep) operate on the target repo, not the agentize repo.
+    os.chdir(wt)
 
     # Build state and context
     state = create_initial_state(issue_no=1, worktree=wt)
