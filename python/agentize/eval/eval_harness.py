@@ -278,6 +278,17 @@ def cleanup_worktree(
           "--force", str(wt_path)], check=False)
 
 
+def _nginx_build_env() -> dict[str, str]:
+    """Return env dict with PKG_CONFIG_PATH set for conda-installed PCRE."""
+    env = os.environ.copy()
+    conda_prefix = env.get("CONDA_PREFIX")
+    if conda_prefix:
+        pkgconfig_dir = os.path.join(conda_prefix, "lib", "pkgconfig")
+        existing = env.get("PKG_CONFIG_PATH", "")
+        env["PKG_CONFIG_PATH"] = f"{pkgconfig_dir}:{existing}" if existing else pkgconfig_dir
+    return env
+
+
 def setup_nginx_worktree(
     task: dict,
     repos_dir: str | Path,
@@ -321,14 +332,16 @@ def setup_nginx_worktree(
         issue_path.write_text(task["problem_statement"], encoding="utf-8")
 
     # Pre-configure nginx so scoring only needs `make`
-    makefile = wt_path / "Makefile"
-    if not makefile.exists():
+    objs_makefile = wt_path / "objs" / "Makefile"
+    if not objs_makefile.exists():
         configure_args = ["./auto/configure"]
         for flag in task.get("modules_required", []):
             configure_args.append(flag)
         configure_args.append("--prefix=" + str(wt_path / "install"))
         print(f"  $ {' '.join(configure_args)}  (cwd={wt_path})")
-        subprocess.run(configure_args, cwd=str(wt_path), check=False)
+        configure_env = _nginx_build_env()
+        subprocess.run(configure_args, cwd=str(wt_path), check=False,
+                       env=configure_env)
 
     # Clone nginx-tests repo (skip if exists for resume)
     tests_path = worktrees_dir / (instance_id + "__tests")
@@ -387,14 +400,16 @@ def score_nginx(
     for flag in task.get("modules_required", []):
         configure_args.append(flag)
 
-    # Configure (skip if Makefile already exists from a previous configure)
-    makefile = wt / "Makefile"
+    # Configure (skip if objs/Makefile already exists from a previous configure)
+    objs_makefile = wt / "objs" / "Makefile"
+    build_env = _nginx_build_env()
     print(f"  Compiling nginx...")
-    if not makefile.exists():
+    if not objs_makefile.exists():
         try:
             subprocess.run(
                 configure_args, cwd=str(wt),
                 capture_output=True, text=True, check=True, timeout=120,
+                env=build_env,
             )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
             print(f"  Configure failed: {e}", file=sys.stderr)
@@ -407,6 +422,7 @@ def score_nginx(
         subprocess.run(
             ["make", f"-j{jobs}"], cwd=str(wt),
             capture_output=True, text=True, check=True, timeout=300,
+            env=build_env,
         )
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
         print(f"  Make failed: {e}", file=sys.stderr)
@@ -538,6 +554,7 @@ def run_impl(
     try:
         proc = subprocess.run(
             ["claude", "-p", "--output-format", "json",
+             "--dangerously-skip-permissions",
              "--model", model, prompt],
             cwd=str(wt_path),
             env=env,
@@ -787,7 +804,7 @@ def _run_full_impl_body(
             "impl_model": model,
             "review_provider": "claude",
             "review_model": model,
-            "yolo": False,
+            "yolo": True,
             "enable_review": enable_review,
             "enable_simp": enable_simp,
             "max_iterations": max_iterations,
@@ -910,6 +927,7 @@ def run_nlcmd_impl(
     try:
         plan_proc = subprocess.run(
             ["claude", "-p", "--output-format", "json",
+             "--dangerously-skip-permissions",
              "--model", planning_model, cmd_str],
             cwd=str(wt_path),
             env=env,
@@ -1178,6 +1196,14 @@ def main(argv: list[str] | None = None) -> int:
         "--dry-run", action="store_true",
         help="Setup tasks without running implementation",
     )
+    run_p.add_argument(
+        "--resume", action="store_true",
+        help="Skip instances that already have predictions in the output file",
+    )
+    run_p.add_argument(
+        "--cleanup", action="store_true",
+        help="Remove worktree after each task to save disk space",
+    )
 
     # -- score subcommand ---------------------------------------------
     score_p = sub.add_parser("score", help="Score existing predictions (SWE-bench only)")
@@ -1231,12 +1257,27 @@ def _cmd_run(args) -> int:
         print("No tasks to run.", file=sys.stderr)
         return 1
 
+    # Resume support: load existing predictions and skip completed instances
+    completed_ids: set[str] = set()
+    existing_predictions: list[dict] = []
+    if args.resume and predictions_path.exists():
+        with open(predictions_path, encoding="utf-8") as f:
+            for line in f:
+                pred = json.loads(line)
+                completed_ids.add(pred["instance_id"])
+                existing_predictions.append(pred)
+        print(f"Resuming: {len(completed_ids)} instances already completed, skipping them")
+
     results = []
-    predictions = []
+    predictions = list(existing_predictions)
 
     for i, task in enumerate(tasks):
         instance_id = task["instance_id"]
         print(f"\n[{i + 1}/{len(tasks)}] {instance_id}")
+
+        if instance_id in completed_ids:
+            print(f"  Skipping (already completed)")
+            continue
 
         # Setup worktree
         print(f"  Setting up worktree...")
@@ -1306,7 +1347,21 @@ def _cmd_run(args) -> int:
             else:
                 print(f"  No changes detected")
 
-    # Write predictions JSONL
+        # Incremental save: write predictions after each task so progress survives crashes
+        if predictions:
+            with open(predictions_path, "w", encoding="utf-8") as f:
+                for pred in predictions:
+                    f.write(json.dumps(pred) + "\n")
+
+        # Cleanup worktree to save disk space
+        if getattr(args, "cleanup", False) and not is_nginx:
+            import shutil
+            wt_dir = worktrees_dir / instance_id
+            if wt_dir.exists():
+                shutil.rmtree(wt_dir, ignore_errors=True)
+                print(f"  Cleaned up worktree")
+
+    # Write predictions JSONL (final)
     if predictions:
         with open(predictions_path, "w", encoding="utf-8") as f:
             for pred in predictions:
