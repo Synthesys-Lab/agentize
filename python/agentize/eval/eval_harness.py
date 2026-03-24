@@ -1257,8 +1257,9 @@ def main(argv: list[str] | None = None) -> int:
 
 def _cmd_run(args) -> int:
     """Execute the ``run`` subcommand."""
-    # Auto-append mode to output dir so raw/full don't overwrite each other
-    base_dir = Path(args.output_dir)
+    # Auto-append mode to output dir so raw/full don't overwrite each other.
+    # Resolve to absolute paths because full mode os.chdir()s into worktrees.
+    base_dir = Path(args.output_dir).resolve()
     output_dir = base_dir / args.mode
     # Share repo cache across modes (clones are expensive)
     repos_dir = base_dir / "repos"
