@@ -108,7 +108,7 @@ Report Claude Code token usage statistics.
 lol usage [--today | --week]
 ```
 
-Parses JSONL files from `~/.claude/projects/**/*.jsonl` to extract and aggregate token usage statistics by time bucket.
+Parses JSONL files from `~/.claude/projects/**/*.jsonl` to extract and aggregate token usage statistics by time bucket. Assistant entries with the same `message.id` within a session are deduplicated to avoid double-counting streamed content blocks. Cost estimates use cache-tier pricing when cache token fields are present.
 
 #### Options
 
