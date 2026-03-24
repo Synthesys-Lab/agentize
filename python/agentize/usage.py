@@ -127,6 +127,7 @@ def count_usage(mode: str, home_dir: str = None, include_cache: bool = False, in
 
             # Parse JSONL file line by line for memory efficiency
             file_has_usage = False
+            seen_msg_ids: set[str] = set()  # dedup per file
             with open(jsonl_path, "r", encoding="utf-8", errors="ignore") as f:
                 for line in f:
                     line = line.strip()
@@ -137,6 +138,13 @@ def count_usage(mode: str, home_dir: str = None, include_cache: bool = False, in
                         # Extract usage from assistant messages
                         if entry.get("type") == "assistant":
                             message = entry.get("message", {})
+                            # Deduplicate by message.id (streaming produces
+                            # multiple JSONL lines per API response)
+                            msg_id = message.get("id", "")
+                            if msg_id:
+                                if msg_id in seen_msg_ids:
+                                    continue
+                                seen_msg_ids.add(msg_id)
                             usage = message.get("usage", {})
                             input_tokens = usage.get("input_tokens", 0)
                             output_tokens = usage.get("output_tokens", 0)
