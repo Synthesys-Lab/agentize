@@ -126,10 +126,50 @@ The 5-task sample was pessimistic — the first 5 astropy tasks happened to be h
 4. **Investigate the 8 hard-fail tasks** — root-cause analysis may reveal systematic pipeline gaps.
 5. **Expand to other repositories** — astropy-only evaluation limits generalizability.
 
-## Appendix: Cost Efficiency
+## Appendix A: Cost Efficiency
 
 | Mode | Cost/task | Time/task | $/second | Tokens/task |
 |------|-----------|-----------|----------|-------------|
 | **cc.r** | $0.23 | 102s | $0.0023 | 5,133 |
 | **cc.nl** | ~$0.45 | ~157s | ~$0.003 | ~6,188 |
 | **cc.script** | $3.53 | 712s | $0.005 | 7,640 |
+
+## Appendix B: Model-Level Cost Breakdown (2026-03-25)
+
+### Raw Opus Baseline
+
+Running raw mode with opus instead of sonnet validates cost proportionality:
+
+| Mode | Model | Tokens | Cost | Cost/task | Time |
+|------|-------|--------|------|-----------|------|
+| `--mode raw` | sonnet | 102,658 | $4.64 | $0.23 | 34 min |
+| `--mode raw` | opus | 66,139 | $27.32 | $1.37 | 49 min |
+| `--mode full` | opus plan + sonnet impl | 152,796 | $70.62 | $3.53 | 3.9 hrs |
+
+**Key insight:** Raw opus costs $27.32 — the 5.9x ratio vs raw sonnet ($4.64) matches the ~5x opus/sonnet pricing difference. Full mode's $70.62 breaks down as: raw opus baseline ($27) + planning pipeline overhead (~$43). The planning overhead is ~1.6x the raw opus cost, not the 15x it appears when comparing against raw sonnet.
+
+### Codex Implementation Backend — Iteration Loop Bug
+
+Running full mode with `--planner-backend claude:opus --impl-backend codex:gpt-5.2-codex` revealed a critical iteration bug. On task 1 (astropy-12907), the Codex implementation agent failed to produce the FSM completion marker, causing the harness to loop:
+
+```
+Iteration 1: impl-iter-1 (codex:gpt-5.2-codex) runs 83s → "completion marker missing"
+Iteration 2: impl-iter-2 (codex:gpt-5.2-codex) runs 158s → "completion marker missing"
+Iteration 3: impl-iter-3 (codex:gpt-5.2-codex) runs 81s  → "completion marker missing"
+Iteration 4: impl-iter-4 (codex:gpt-5.2-codex) runs 193s → "completion marker missing"
+Iteration 5: (killed by user)
+```
+
+The Codex backend produced the correct patch in iteration 1 but never emitted the completion signal. Each subsequent iteration found "no changes to commit" yet still burned ~100-200s. This multi-iteration loop is the likely cause of unexpectedly long run times when using Codex as the implementation backend. The sonnet implementation backend consistently completes in exactly 1 iteration across all 20 tasks.
+
+### nlcmd Mode — Planning Timeout Analysis (2026-03-25)
+
+Re-running nlcmd with corrected cost tracking revealed that 7/20 tasks (35%) consistently timeout during Phase 1 (NL planning via `claude -p "/ultra-planner"`), even across two attempts with the 900s planning budget:
+
+| Attempt | Completed | Timed out | Cost |
+|---------|-----------|-----------|------|
+| Run 1 (20 tasks) | 10 | 10 | $101.22 |
+| Run 2 (10 retried) | 3 | 7 | $57.85 |
+| **Combined** | **13** | **7** | **$159.07** |
+
+The nlcmd mode is paradoxically the most expensive ($159 total) due to timeout waste — the timed-out planning phases still consume tokens and cost without producing patches. The 7 persistently-failing tasks (13236, 13398, 13977, 14369, 14508, 14598, 7671) suggest the `claude -p` NL dispatch adds overhead that pushes the 5-agent debate past the 900s budget.
