@@ -33,7 +33,7 @@ The harness supports four execution modes via `--mode`:
 
 | Mode | What runs | What it tests | Cost tracking |
 |------|-----------|---------------|---------------|
-| `raw` | `claude -p` + bare bug report | The model alone (baseline) | Claude JSON usage |
+| `raw` | `claude -p` + bare bug report | The model alone (baseline) | Claude JSON usage (cache-tier aware when provided) |
 | `impl` | FSM orchestrator only (no planning) | The impl kernel loop | JSONL session files |
 | `full` | Planning pipeline + FSM orchestrator | The agentize framework | JSONL session files |
 | `nlcmd` | NL planning via `claude -p` + FSM | NL orchestration | JSONL session files |
@@ -153,6 +153,11 @@ Run costs scale with task count and per-task timeout. Validate incrementally:
 - Disk usage: ~5-10 GB for repos, ~1 GB per 100 worktrees.
 
 ## Cost Estimation
+
+For JSONL-based modes (`impl`, `full`, `nlcmd`), cost is tracked via session file
+diffing with per-session deduplication by `message.id` to avoid counting streamed
+content blocks multiple times. Raw mode uses `claude -p` JSON output with
+cache-tier-aware pricing when cache token fields are present.
 
 Per-task costs depend on the model and task complexity. Rough estimates:
 

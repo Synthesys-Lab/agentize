@@ -240,4 +240,39 @@ echo "$output" | grep -q '\$' || {
 
 cleanup_dir "$TEST_HOME"
 
+# Test 9: lol usage deduplicates entries with same message.id
+TEST_HOME=$(make_temp_dir "usage-dedup")
+PROJECTS_DIR="$TEST_HOME/.claude/projects"
+FIXTURE_DIR="$PROJECTS_DIR/test-project"
+mkdir -p "$FIXTURE_DIR"
+
+# Create fixture with duplicate message.id entries (simulates streaming content blocks)
+# Each entry has 1000 input, 500 output — but same message.id means count once
+cat > "$FIXTURE_DIR/session.jsonl" << 'EOF'
+{"type":"assistant","message":{"id":"msg_001","model":"claude-3-5-sonnet-20241022","usage":{"input_tokens":1000,"output_tokens":500,"cache_read_input_tokens":800,"cache_creation_input_tokens":0}}}
+{"type":"assistant","message":{"id":"msg_001","model":"claude-3-5-sonnet-20241022","usage":{"input_tokens":1000,"output_tokens":500,"cache_read_input_tokens":800,"cache_creation_input_tokens":0}}}
+{"type":"assistant","message":{"id":"msg_002","model":"claude-3-5-sonnet-20241022","usage":{"input_tokens":2000,"output_tokens":1000,"cache_read_input_tokens":1500,"cache_creation_input_tokens":0}}}
+EOF
+
+touch "$FIXTURE_DIR/session.jsonl"
+
+output=$(HOME="$TEST_HOME" lol usage --today 2>&1)
+exit_code=$?
+if [ $exit_code -ne 0 ]; then
+  echo "Output: $output"
+  cleanup_dir "$TEST_HOME"
+  test_fail "lol usage dedup test exited with code $exit_code"
+fi
+
+# Total should show 3.0K input (1000+2000, not 1000+1000+2000) after dedup
+# Check that Total line shows 3.0K input (deduplicated), not 4.0K (without dedup)
+total_line=$(echo "$output" | grep "Total:")
+if echo "$total_line" | grep -q "4.0K input"; then
+  echo "Output: $output"
+  cleanup_dir "$TEST_HOME"
+  test_fail "lol usage is NOT deduplicating entries with same message.id (showing 4.0K instead of 3.0K)"
+fi
+
+cleanup_dir "$TEST_HOME"
+
 test_pass "lol usage command works correctly"

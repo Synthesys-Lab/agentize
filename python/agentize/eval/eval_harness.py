@@ -61,10 +61,18 @@ def _make_result(instance_id: str) -> dict:
     }
 
 
-def _compute_cost(input_tokens: int, output_tokens: int, model: str) -> float:
+def _compute_cost(
+    input_tokens: int,
+    output_tokens: int,
+    model: str,
+    cache_read: int = 0,
+    cache_write: int = 0,
+) -> float:
     """Compute estimated USD cost from token counts and model short-name.
 
-    Falls back to 0.0 if the model is not in the pricing table.
+    When cache_read/cache_write are provided, applies cache-tier pricing:
+    non-cache input at base rate, cache reads at cache_read rate, cache
+    writes at cache_write rate. Falls back to 0.0 if model is unknown.
     """
     from agentize.usage import match_model_pricing
 
@@ -72,19 +80,26 @@ def _compute_cost(input_tokens: int, output_tokens: int, model: str) -> float:
     rates = match_model_pricing(model_id)
     if not rates:
         return 0.0
+    non_cache = max(0, input_tokens - cache_read - cache_write)
     return (
-        input_tokens * rates["input"] / 1_000_000
+        non_cache * rates["input"] / 1_000_000
         + output_tokens * rates["output"] / 1_000_000
+        + cache_read * rates["cache_read"] / 1_000_000
+        + cache_write * rates["cache_write"] / 1_000_000
     )
 
 
 def _parse_claude_usage(stdout: str, model: str) -> dict:
     """Parse ``claude -p --output-format json`` output for token/cost data.
 
-    Returns a dict with keys: input_tokens, output_tokens, tokens, cost_usd.
+    Returns a dict with keys: input_tokens, output_tokens, tokens,
+    cache_read_tokens, cache_write_tokens, cost_usd.
     Returns zeroes on parse failure.
     """
-    result = {"input_tokens": 0, "output_tokens": 0, "tokens": 0, "cost_usd": 0.0}
+    result = {
+        "input_tokens": 0, "output_tokens": 0, "tokens": 0,
+        "cache_read_tokens": 0, "cache_write_tokens": 0, "cost_usd": 0.0,
+    }
     if not stdout:
         return result
     try:
@@ -92,12 +107,19 @@ def _parse_claude_usage(stdout: str, model: str) -> dict:
         usage = data.get("usage", {})
         inp = usage.get("input_tokens", 0)
         out = usage.get("output_tokens", 0)
+        cache_read = usage.get("cache_read_input_tokens", 0)
+        cache_write = usage.get("cache_creation_input_tokens", 0)
         result["input_tokens"] = inp
         result["output_tokens"] = out
         result["tokens"] = inp + out
+        result["cache_read_tokens"] = cache_read
+        result["cache_write_tokens"] = cache_write
         # Use model from JSON if available, else fall back to caller's model
         json_model = data.get("model", "")
-        result["cost_usd"] = _compute_cost(inp, out, json_model or model)
+        result["cost_usd"] = _compute_cost(
+            inp, out, json_model or model,
+            cache_read=cache_read, cache_write=cache_write,
+        )
     except (json.JSONDecodeError, KeyError):
         pass
     return result
@@ -130,6 +152,7 @@ def _sum_jsonl_usage(paths: list[str]) -> dict:
         "tokens": 0, "cost_usd": 0.0,
     }
     for path in paths:
+        seen_msg_ids: set[str] = set()  # dedup per file
         try:
             with open(path, "r", encoding="utf-8", errors="ignore") as f:
                 for line in f:
@@ -140,6 +163,13 @@ def _sum_jsonl_usage(paths: list[str]) -> dict:
                         entry = json.loads(line)
                         if entry.get("type") == "assistant":
                             message = entry.get("message", {})
+                            # Deduplicate by message.id (streaming produces
+                            # multiple JSONL lines per API response)
+                            msg_id = message.get("id", "")
+                            if msg_id:
+                                if msg_id in seen_msg_ids:
+                                    continue
+                                seen_msg_ids.add(msg_id)
                             usage = message.get("usage", {})
                             inp = usage.get("input_tokens", 0)
                             out = usage.get("output_tokens", 0)
@@ -1227,8 +1257,9 @@ def main(argv: list[str] | None = None) -> int:
 
 def _cmd_run(args) -> int:
     """Execute the ``run`` subcommand."""
-    # Auto-append mode to output dir so raw/full don't overwrite each other
-    base_dir = Path(args.output_dir)
+    # Auto-append mode to output dir so raw/full don't overwrite each other.
+    # Resolve to absolute paths because full mode os.chdir()s into worktrees.
+    base_dir = Path(args.output_dir).resolve()
     output_dir = base_dir / args.mode
     # Share repo cache across modes (clones are expensive)
     repos_dir = base_dir / "repos"

@@ -47,6 +47,8 @@ Dict mapping bucket keys to stats:
 - Scans `~/.claude/projects/**/*.jsonl` files
 - Filters by modification time (24h for today, 7d for week)
 - Extracts `input_tokens` and `output_tokens` from assistant messages
+- Deduplicates assistant entries that share the same `message.id` within a session file
+- Cost estimation applies cache_read/cache_write tiers when present
 - Counts unique sessions (one JSONL file = one session)
 - Returns empty buckets if `~/.claude/projects` doesn't exist
 - Cache tokens: Extracts `cache_read_input_tokens` and `cache_creation_input_tokens` when `include_cache=True`
