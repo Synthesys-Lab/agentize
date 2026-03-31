@@ -1,6 +1,6 @@
 # SWE-bench 20-Task Evaluation Report
 
-**Date:** 2026-03-16 (costs corrected 2026-03-24)
+**Date:** 2026-03-31 (costs corrected 2026-03-24)
 **Benchmark:** SWE-bench Verified (20 astropy tasks)
 **Modes tested:** cc.r (raw), cc.nl (nlcmd), cc.script (full with Claude consensus)
 **Scoring:** SWE-bench Docker evaluator via podman
