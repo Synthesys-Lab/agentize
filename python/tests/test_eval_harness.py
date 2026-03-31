@@ -24,6 +24,8 @@ from agentize.eval.eval_harness import (
     _make_result,
     _find_consensus_plan,
     _list_jsonl_files,
+    _parse_backend_spec,
+    _planner_backends,
     _sum_jsonl_usage,
     _PLANNER_CMD_TEMPLATES,
 )
@@ -268,6 +270,35 @@ class TestFullImplTimeout:
         assert result["status"] == "timeout"
         assert result["wall_time"] <= 3.0  # should return promptly after 1s
 
+    def test_backend_overrides_forwarded(self, tmp_path, monkeypatch):
+        """run_full_impl should forward planner/impl backend overrides."""
+        from agentize.eval import eval_harness
+
+        captured: dict[str, str | None] = {}
+
+        def _fake_body(*args, **kwargs):
+            captured["planner_backend"] = kwargs.get("planner_backend")
+            captured["impl_backend"] = kwargs.get("impl_backend")
+            return "completed"
+
+        monkeypatch.setattr(eval_harness, "_run_full_impl_body", _fake_body)
+        monkeypatch.setattr(eval_harness, "_list_jsonl_files", lambda: set())
+
+        overrides = write_overrides(tmp_path, "backend-test")
+        result = run_full_impl(
+            wt_path=str(tmp_path),
+            overrides_path=overrides,
+            instance_id="backend-test",
+            problem_statement="test",
+            timeout=1,
+            planner_backend="claude:opus",
+            impl_backend="codex:gpt-5.2-codex",
+        )
+
+        assert result["status"] == "completed"
+        assert captured["planner_backend"] == "claude:opus"
+        assert captured["impl_backend"] == "codex:gpt-5.2-codex"
+
 
 class TestCLI:
     def test_no_command_returns_error(self, capsys):
@@ -302,6 +333,25 @@ class TestCLI:
         parser.add_argument("--mode", choices=["raw", "full", "impl", "nlcmd"], default="raw")
         args = parser.parse_args(["--mode", "nlcmd"])
         assert args.mode == "nlcmd"
+
+
+class TestBackendParsing:
+    def test_parse_backend_spec(self):
+        assert _parse_backend_spec("claude:opus") == ("claude", "opus")
+
+    def test_parse_backend_spec_rejects_invalid(self):
+        with pytest.raises(ValueError):
+            _parse_backend_spec("claude-opus")
+
+    def test_planner_backends_applies_one_override_to_all_stages(self):
+        backends = _planner_backends("claude:opus")
+        assert backends == {
+            "understander": ("claude", "opus"),
+            "bold": ("claude", "opus"),
+            "critique": ("claude", "opus"),
+            "reducer": ("claude", "opus"),
+            "consensus": ("claude", "opus"),
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -365,6 +415,51 @@ class TestParseClaudeUsage:
         )
         assert usage_opus["cost_usd"] > usage_sonnet["cost_usd"]
 
+    def test_extracts_cache_tokens(self):
+        """Should extract cache_read and cache_write token fields."""
+        stdout = json.dumps({
+            "model": "claude-sonnet-4-20260514",
+            "usage": {
+                "input_tokens": 1000,
+                "output_tokens": 500,
+                "cache_read_input_tokens": 800,
+                "cache_creation_input_tokens": 100,
+            },
+        })
+        usage = _parse_claude_usage(stdout, "sonnet")
+        assert usage["cache_read_tokens"] == 800
+        assert usage["cache_write_tokens"] == 100
+
+    def test_cache_tokens_default_zero(self):
+        """Cache tokens should default to 0 when not present."""
+        stdout = json.dumps({
+            "model": "claude-sonnet-4-20260514",
+            "usage": {"input_tokens": 1000, "output_tokens": 500},
+        })
+        usage = _parse_claude_usage(stdout, "sonnet")
+        assert usage["cache_read_tokens"] == 0
+        assert usage["cache_write_tokens"] == 0
+
+    def test_cache_aware_cost(self):
+        """Cost should use cache tiers when cache tokens are present."""
+        stdout_no_cache = json.dumps({
+            "model": "claude-sonnet-4-20260514",
+            "usage": {"input_tokens": 1000, "output_tokens": 500},
+        })
+        stdout_with_cache = json.dumps({
+            "model": "claude-sonnet-4-20260514",
+            "usage": {
+                "input_tokens": 1000,
+                "output_tokens": 500,
+                "cache_read_input_tokens": 900,
+                "cache_creation_input_tokens": 0,
+            },
+        })
+        cost_no_cache = _parse_claude_usage(stdout_no_cache, "sonnet")["cost_usd"]
+        cost_with_cache = _parse_claude_usage(stdout_with_cache, "sonnet")["cost_usd"]
+        # With 900/1000 tokens as cache reads (10x cheaper), cost should be lower
+        assert cost_with_cache < cost_no_cache
+
 
 class TestComputeCost:
     def test_sonnet_cost(self):
@@ -388,6 +483,40 @@ class TestComputeCost:
     def test_full_model_id(self):
         """Should handle full model IDs via prefix matching."""
         cost = _compute_cost(1_000_000, 0, "claude-sonnet-4-20260514")
+        assert cost == pytest.approx(3.0)
+
+    def test_cache_read_reduces_cost(self):
+        """Cache reads at 0.1x should be much cheaper than base input."""
+        # 1M input, 0 output, all cache reads — sonnet cache_read = $0.30/M
+        cost_cached = _compute_cost(1_000_000, 0, "sonnet",
+                                    cache_read=1_000_000, cache_write=0)
+        # All tokens are cache reads → non_cache = 0, cost = cache_read rate only
+        assert cost_cached == pytest.approx(0.30)
+
+    def test_cache_write_cost(self):
+        """Cache writes at 1.25x should cost more than base input."""
+        # 1M input, 0 output, all cache writes — sonnet cache_write = $3.75/M
+        cost = _compute_cost(1_000_000, 0, "sonnet",
+                             cache_read=0, cache_write=1_000_000)
+        assert cost == pytest.approx(3.75)
+
+    def test_mixed_cache_tiers(self):
+        """Mixed cache tiers should split cost correctly."""
+        # 1M total input: 500K cache_read, 200K cache_write, 300K base
+        # Sonnet: base=$3/M, cache_read=$0.30/M, cache_write=$3.75/M, output=$15/M
+        cost = _compute_cost(1_000_000, 100_000, "sonnet",
+                             cache_read=500_000, cache_write=200_000)
+        expected = (
+            300_000 * 3.0 / 1_000_000      # base input
+            + 100_000 * 15.0 / 1_000_000   # output
+            + 500_000 * 0.30 / 1_000_000   # cache_read
+            + 200_000 * 3.75 / 1_000_000   # cache_write
+        )
+        assert cost == pytest.approx(expected)
+
+    def test_no_cache_params_backward_compat(self):
+        """Without cache params, should behave like before (all input at base rate)."""
+        cost = _compute_cost(1_000_000, 0, "sonnet")
         assert cost == pytest.approx(3.0)
 
 
@@ -560,3 +689,84 @@ class TestNlcmdImpl:
         assert result["cache_write_tokens"] == 20
         assert result["tokens"] == 300
         assert result["cost_usd"] == 1.50
+
+
+# ---------------------------------------------------------------------------
+# JSONL deduplication tests
+# ---------------------------------------------------------------------------
+
+
+class TestSumJsonlUsageDedup:
+    def test_dedup_by_message_id(self, tmp_path):
+        """Duplicate entries with same message.id should be counted once."""
+        jsonl = tmp_path / "session.jsonl"
+        lines = [
+            json.dumps({"type": "assistant", "message": {
+                "id": "msg_001", "model": "claude-sonnet-4-20260514",
+                "usage": {"input_tokens": 100, "output_tokens": 50,
+                          "cache_read_input_tokens": 80,
+                          "cache_creation_input_tokens": 0}}}),
+            # Duplicate — same message.id, different content block
+            json.dumps({"type": "assistant", "message": {
+                "id": "msg_001", "model": "claude-sonnet-4-20260514",
+                "usage": {"input_tokens": 100, "output_tokens": 50,
+                          "cache_read_input_tokens": 80,
+                          "cache_creation_input_tokens": 0}}}),
+        ]
+        jsonl.write_text("\n".join(lines) + "\n")
+
+        result = _sum_jsonl_usage([str(jsonl)])
+        # Should count only once despite two lines
+        assert result["input_tokens"] == 100
+        assert result["output_tokens"] == 50
+        assert result["cache_read"] == 80
+
+    def test_different_message_ids_both_counted(self, tmp_path):
+        """Entries with different message.id should both be counted."""
+        jsonl = tmp_path / "session.jsonl"
+        lines = [
+            json.dumps({"type": "assistant", "message": {
+                "id": "msg_001", "model": "claude-sonnet-4-20260514",
+                "usage": {"input_tokens": 100, "output_tokens": 50}}}),
+            json.dumps({"type": "assistant", "message": {
+                "id": "msg_002", "model": "claude-sonnet-4-20260514",
+                "usage": {"input_tokens": 200, "output_tokens": 75}}}),
+        ]
+        jsonl.write_text("\n".join(lines) + "\n")
+
+        result = _sum_jsonl_usage([str(jsonl)])
+        assert result["input_tokens"] == 300
+        assert result["output_tokens"] == 125
+
+    def test_no_message_id_still_counted(self, tmp_path):
+        """Entries without message.id should still be counted (no dedup)."""
+        jsonl = tmp_path / "session.jsonl"
+        lines = [
+            json.dumps({"type": "assistant", "message": {
+                "model": "claude-sonnet-4-20260514",
+                "usage": {"input_tokens": 100, "output_tokens": 50}}}),
+            json.dumps({"type": "assistant", "message": {
+                "model": "claude-sonnet-4-20260514",
+                "usage": {"input_tokens": 200, "output_tokens": 75}}}),
+        ]
+        jsonl.write_text("\n".join(lines) + "\n")
+
+        result = _sum_jsonl_usage([str(jsonl)])
+        # No message.id → no dedup → both counted
+        assert result["input_tokens"] == 300
+        assert result["output_tokens"] == 125
+
+    def test_dedup_scoped_per_file(self, tmp_path):
+        """Dedup sets should reset between files (same msg ID in different files = counted twice)."""
+        jsonl1 = tmp_path / "session1.jsonl"
+        jsonl2 = tmp_path / "session2.jsonl"
+        line = json.dumps({"type": "assistant", "message": {
+            "id": "msg_001", "model": "claude-sonnet-4-20260514",
+            "usage": {"input_tokens": 100, "output_tokens": 50}}})
+        jsonl1.write_text(line + "\n")
+        jsonl2.write_text(line + "\n")
+
+        result = _sum_jsonl_usage([str(jsonl1), str(jsonl2)])
+        # Same msg ID but different files → counted in each file
+        assert result["input_tokens"] == 200
+        assert result["output_tokens"] == 100

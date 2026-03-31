@@ -58,6 +58,10 @@ bash -n "$OVERRIDES_PATH" || test_fail "overrides file has syntax errors"
 # Test 7: --benchmark flag is accepted in run --help
 python -m agentize.eval.eval_harness run --help 2>&1 | grep -q "benchmark" || test_fail "--benchmark flag missing from run --help"
 
+# Test 7b: backend override flags are accepted in run --help
+python -m agentize.eval.eval_harness run --help 2>&1 | grep -q "planner-backend" || test_fail "--planner-backend flag missing from run --help"
+python -m agentize.eval.eval_harness run --help 2>&1 | grep -q "impl-backend" || test_fail "--impl-backend flag missing from run --help"
+
 # Test 8: load_nginx_tasks loads and filters tasks from JSON
 output=$(python -c "
 import json

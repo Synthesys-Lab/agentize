@@ -33,10 +33,18 @@ The harness supports four execution modes via `--mode`:
 
 | Mode | What runs | What it tests | Cost tracking |
 |------|-----------|---------------|---------------|
-| `raw` | `claude -p` + bare bug report | The model alone (baseline) | Claude JSON usage |
+| `raw` | `claude -p` + bare bug report | The model alone (baseline) | Claude JSON usage (cache-tier aware when provided) |
 | `impl` | FSM orchestrator only (no planning) | The impl kernel loop | JSONL session files |
 | `full` | Planning pipeline + FSM orchestrator | The agentize framework | JSONL session files |
 | `nlcmd` | NL planning via `claude -p` + FSM | NL orchestration | JSONL session files |
+
+Two backend override flags align the harness with the interactive CLI:
+
+- `--planner-backend <provider:model>` matches `lol plan --backend ...` for `--mode full`.
+- `--impl-backend <provider:model>` matches `lol impl --backend ...` for `--mode impl`, `full`, and `nlcmd`.
+
+When these flags are omitted, the harness keeps its existing defaults and
+`--model` / `--planning-model` behavior.
 
 ### Raw mode (default)
 
@@ -112,6 +120,13 @@ python -m agentize.eval.eval_harness run --mode full \
     --instance-ids django__django-16527 \
     --model sonnet --timeout 3600
 
+# Full mode using the same backend knobs as `lol plan` and `lol impl`
+python -m agentize.eval.eval_harness run --mode full \
+    --limit 20 \
+    --planner-backend claude:opus \
+    --impl-backend codex:gpt-5.2-codex \
+    --timeout 3600
+
 # With review and simplification stages enabled
 python -m agentize.eval.eval_harness run --mode full \
     --limit 5 --enable-review --enable-simp --max-iterations 15
@@ -154,6 +169,11 @@ Run costs scale with task count and per-task timeout. Validate incrementally:
 
 ## Cost Estimation
 
+For JSONL-based modes (`impl`, `full`, `nlcmd`), cost is tracked via session file
+diffing with per-session deduplication by `message.id` to avoid counting streamed
+content blocks multiple times. Raw mode uses `claude -p` JSON output with
+cache-tier-aware pricing when cache token fields are present.
+
 Per-task costs depend on the model and task complexity. Rough estimates:
 
 | Model | Tokens/task (est.) | Cost/task (est.) | 300 tasks |
@@ -163,6 +183,17 @@ Per-task costs depend on the model and task complexity. Rough estimates:
 | Opus | ~150K | ~$5.00 | ~$1,500 |
 
 Always start with `--limit 1` to verify before scaling up.
+
+## Reading Results
+
+Each run writes mode-specific artifacts under `<output-dir>/<mode>/`:
+
+- `metrics.json`: aggregate task count, total/mean time, total/mean tokens, and total/mean USD cost
+- `predictions.jsonl`: extracted patches for later SWE-bench scoring
+- `worktrees/`: per-task repositories used during the run
+
+The CLI also prints a per-task line with `Status`, `Time`, `Tokens`, and `Cost`,
+followed by an end-of-run summary with totals.
 
 ## Nginx Benchmark
 

@@ -29,6 +29,7 @@ def test_run_prompt_retries_on_missing_output(tmp_path: Path):
         permission_mode: str | None = None,
         extra_flags: list[str] | None = None,
         timeout: int = 900,
+        cwd: str | Path | None = None,
     ) -> subprocess.CompletedProcess:
         calls.append({"provider": provider, "model": model})
         if len(calls) == 1:
@@ -63,6 +64,7 @@ def test_run_prompt_raises_after_retries(tmp_path: Path):
         permission_mode: str | None = None,
         extra_flags: list[str] | None = None,
         timeout: int = 900,
+        cwd: str | Path | None = None,
     ) -> subprocess.CompletedProcess:
         return subprocess.CompletedProcess(args=["stub"], returncode=1)
 
@@ -109,6 +111,7 @@ def test_run_parallel_returns_mapping(tmp_path: Path):
         permission_mode: str | None = None,
         extra_flags: list[str] | None = None,
         timeout: int = 900,
+        cwd: str | Path | None = None,
     ) -> subprocess.CompletedProcess:
         with lock:
             seen.append(str(output_file))
@@ -144,6 +147,7 @@ def test_log_output_dump_after_validation(tmp_path: Path, capsys):
         permission_mode: str | None = None,
         extra_flags: list[str] | None = None,
         timeout: int = 900,
+        cwd: str | Path | None = None,
     ) -> subprocess.CompletedProcess:
         calls.append(1)
         if len(calls) == 1:
@@ -183,6 +187,7 @@ def test_log_output_dump_disabled(tmp_path: Path, capsys):
         permission_mode: str | None = None,
         extra_flags: list[str] | None = None,
         timeout: int = 900,
+        cwd: str | Path | None = None,
     ) -> subprocess.CompletedProcess:
         Path(output_file).write_text("ok")
         return subprocess.CompletedProcess(args=["stub"], returncode=0)
