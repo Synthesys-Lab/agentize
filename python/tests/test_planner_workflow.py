@@ -64,6 +64,7 @@ def stub_runner(tmp_path: Path) -> Callable:
         permission_mode: str | None = None,
         extra_flags: list[str] | None = None,
         timeout: int = 900,
+        cwd: str | Path | None = None,
     ) -> subprocess.CompletedProcess:
         """Stub runner that writes deterministic output and records call."""
         invocations.append({
@@ -427,6 +428,7 @@ class TestACWRunner:
             permission_mode: str | None = None,
             extra_flags: list[str] | None = None,
             timeout: int = 900,
+            cwd: str | Path | None = None,
         ) -> subprocess.CompletedProcess:
             invocations.append({"provider": provider, "model": model})
             return subprocess.CompletedProcess(args=["custom"], returncode=0)
@@ -467,6 +469,7 @@ class TestACWRunner:
             permission_mode: str | None = None,
             extra_flags: list[str] | None = None,
             timeout: int = 900,
+            cwd: str | Path | None = None,
         ) -> subprocess.CompletedProcess:
             invocations.append({
                 "provider": provider,
@@ -528,6 +531,7 @@ class TestACWRunner:
             permission_mode: str | None = None,
             extra_flags: list[str] | None = None,
             timeout: int = 900,
+            cwd: str | Path | None = None,
         ) -> subprocess.CompletedProcess:
             return subprocess.CompletedProcess(args=["acw"], returncode=0, stdout="", stderr="")
 
