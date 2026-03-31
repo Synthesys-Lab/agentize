@@ -24,6 +24,8 @@ from agentize.eval.eval_harness import (
     _make_result,
     _find_consensus_plan,
     _list_jsonl_files,
+    _parse_backend_spec,
+    _planner_backends,
     _sum_jsonl_usage,
     _PLANNER_CMD_TEMPLATES,
 )
@@ -268,6 +270,35 @@ class TestFullImplTimeout:
         assert result["status"] == "timeout"
         assert result["wall_time"] <= 3.0  # should return promptly after 1s
 
+    def test_backend_overrides_forwarded(self, tmp_path, monkeypatch):
+        """run_full_impl should forward planner/impl backend overrides."""
+        from agentize.eval import eval_harness
+
+        captured: dict[str, str | None] = {}
+
+        def _fake_body(*args, **kwargs):
+            captured["planner_backend"] = kwargs.get("planner_backend")
+            captured["impl_backend"] = kwargs.get("impl_backend")
+            return "completed"
+
+        monkeypatch.setattr(eval_harness, "_run_full_impl_body", _fake_body)
+        monkeypatch.setattr(eval_harness, "_list_jsonl_files", lambda: set())
+
+        overrides = write_overrides(tmp_path, "backend-test")
+        result = run_full_impl(
+            wt_path=str(tmp_path),
+            overrides_path=overrides,
+            instance_id="backend-test",
+            problem_statement="test",
+            timeout=1,
+            planner_backend="claude:opus",
+            impl_backend="codex:gpt-5.2-codex",
+        )
+
+        assert result["status"] == "completed"
+        assert captured["planner_backend"] == "claude:opus"
+        assert captured["impl_backend"] == "codex:gpt-5.2-codex"
+
 
 class TestCLI:
     def test_no_command_returns_error(self, capsys):
@@ -302,6 +333,25 @@ class TestCLI:
         parser.add_argument("--mode", choices=["raw", "full", "impl", "nlcmd"], default="raw")
         args = parser.parse_args(["--mode", "nlcmd"])
         assert args.mode == "nlcmd"
+
+
+class TestBackendParsing:
+    def test_parse_backend_spec(self):
+        assert _parse_backend_spec("claude:opus") == ("claude", "opus")
+
+    def test_parse_backend_spec_rejects_invalid(self):
+        with pytest.raises(ValueError):
+            _parse_backend_spec("claude-opus")
+
+    def test_planner_backends_applies_one_override_to_all_stages(self):
+        backends = _planner_backends("claude:opus")
+        assert backends == {
+            "understander": ("claude", "opus"),
+            "bold": ("claude", "opus"),
+            "critique": ("claude", "opus"),
+            "reducer": ("claude", "opus"),
+            "consensus": ("claude", "opus"),
+        }
 
 
 # ---------------------------------------------------------------------------

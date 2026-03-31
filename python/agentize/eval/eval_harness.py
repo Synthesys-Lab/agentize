@@ -18,6 +18,8 @@ All modes track per-task cost in USD via ``agentize.usage.MODEL_PRICING``.
 
 Usage:
     python -m agentize.eval.eval_harness run --mode raw --limit 1 --dry-run
+    python -m agentize.eval.eval_harness run --mode full --limit 20 \
+        --planner-backend claude:opus --impl-backend codex:gpt-5.2-codex
     python -m agentize.eval.eval_harness run --benchmark nginx --mode raw --limit 1
     python -m agentize.eval.eval_harness score --predictions .tmp/eval/predictions.jsonl
 """
@@ -123,6 +125,36 @@ def _parse_claude_usage(stdout: str, model: str) -> dict:
     except (json.JSONDecodeError, KeyError):
         pass
     return result
+
+
+def _parse_backend_spec(spec: str) -> tuple[str, str]:
+    """Parse a provider:model backend override."""
+    if ":" not in spec:
+        raise ValueError(
+            f"Invalid backend '{spec}' (expected provider:model)"
+        )
+    provider, model = spec.split(":", 1)
+    provider = provider.strip()
+    model = model.strip()
+    if not provider or not model:
+        raise ValueError(
+            f"Invalid backend '{spec}' (expected provider:model)"
+        )
+    return provider, model
+
+
+def _planner_backends(backend: str | None) -> dict[str, tuple[str, str]] | None:
+    """Build per-stage backend overrides matching ``lol plan --backend``."""
+    if not backend:
+        return None
+    parsed = _parse_backend_spec(backend)
+    return {
+        "understander": parsed,
+        "bold": parsed,
+        "critique": parsed,
+        "reducer": parsed,
+        "consensus": parsed,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -645,6 +677,7 @@ def run_planning_phase(
     output_dir: Path,
     model: str = "sonnet",
     cwd: str | Path | None = None,
+    planner_backend: str | None = None,
 ) -> str:
     """Run the agentize planner pipeline and return formatted issue content.
 
@@ -657,6 +690,7 @@ def run_planning_phase(
     results = run_planner_pipeline(
         feature_desc=problem_statement,
         output_dir=str(output_dir),
+        backends=_planner_backends(planner_backend),
         cwd=cwd,
     )
 
@@ -686,6 +720,8 @@ def run_full_impl(
     enable_simp: bool = False,
     max_iterations: int = 10,
     skip_planning: bool = False,
+    planner_backend: str | None = None,
+    impl_backend: str | None = None,
 ) -> dict:
     """Run the agentize pipeline against a task.
 
@@ -721,6 +757,8 @@ def run_full_impl(
                 problem_statement, model,
                 enable_review, enable_simp, max_iterations,
                 skip_planning=skip_planning,
+                planner_backend=planner_backend,
+                impl_backend=impl_backend,
             )
             status_bucket.append(status)
         except Exception as exc:
@@ -768,6 +806,8 @@ def _run_full_impl_body(
     max_iterations: int,
     skip_planning: bool = False,
     plan_override: str | None = None,
+    planner_backend: str | None = None,
+    impl_backend: str | None = None,
 ) -> str:
     """Inner body of run_full_impl — runs planning + FSM, returns status string.
 
@@ -807,7 +847,13 @@ def _run_full_impl_body(
             f"## Instructions\n\nImplement the fix. Make minimal changes.\n"
         )
     else:
-        issue_content = run_planning_phase(problem_statement, tmp_dir, model, cwd=wt)
+        issue_content = run_planning_phase(
+            problem_statement,
+            tmp_dir,
+            model,
+            cwd=wt,
+            planner_backend=planner_backend,
+        )
     issue_file.write_text(issue_content, encoding="utf-8")
 
     # Ensure subprocesses default to the worktree so Claude's tools
@@ -822,6 +868,11 @@ def _run_full_impl_body(
     from agentize.workflow.impl.impl import rel_path
     template_path = rel_path("continue-prompt.md")
 
+    if impl_backend:
+        impl_provider, impl_model_name = _parse_backend_spec(impl_backend)
+    else:
+        impl_provider, impl_model_name = "claude", model
+
     context = WorkflowContext(
         plan="",
         upstream_instruction="",
@@ -830,10 +881,10 @@ def _run_full_impl_body(
             "impl_state": state,
             "session": session,
             "template_path": template_path,
-            "impl_provider": "claude",
-            "impl_model": model,
-            "review_provider": "claude",
-            "review_model": model,
+            "impl_provider": impl_provider,
+            "impl_model": impl_model_name,
+            "review_provider": impl_provider,
+            "review_model": impl_model_name,
             "yolo": True,
             "enable_review": enable_review,
             "enable_simp": enable_simp,
@@ -902,6 +953,7 @@ def run_nlcmd_impl(
     enable_review: bool = False,
     enable_simp: bool = False,
     max_iterations: int = 10,
+    impl_backend: str | None = None,
 ) -> dict:
     """Run multi-agent NL planning command + FSM implementation.
 
@@ -1035,6 +1087,7 @@ def run_nlcmd_impl(
                 enable_review, enable_simp, max_iterations,
                 skip_planning=True,
                 plan_override=plan_text,
+                impl_backend=impl_backend,
             )
             status_bucket.append(status)
         except Exception as exc:
@@ -1206,6 +1259,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Model for planning phase in nlcmd/full modes (default: opus)",
     )
     run_p.add_argument(
+        "--planner-backend", default="",
+        help="Backend override in provider:model form, equivalent to `lol plan --backend` in full mode",
+    )
+    run_p.add_argument(
+        "--impl-backend", default="",
+        help="Backend override in provider:model form, equivalent to `lol impl --backend` in impl/full/nlcmd modes",
+    )
+    run_p.add_argument(
         "--planner-cmd", default="ultra-planner",
         choices=["ultra-planner", "mega-planner"],
         help="NL planner command for nlcmd mode (default: ultra-planner)",
@@ -1257,6 +1318,15 @@ def main(argv: list[str] | None = None) -> int:
 
 def _cmd_run(args) -> int:
     """Execute the ``run`` subcommand."""
+    try:
+        if getattr(args, "planner_backend", ""):
+            _parse_backend_spec(args.planner_backend)
+        if getattr(args, "impl_backend", ""):
+            _parse_backend_spec(args.impl_backend)
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 2
+
     # Auto-append mode to output dir so raw/full don't overwrite each other.
     # Resolve to absolute paths because full mode os.chdir()s into worktrees.
     base_dir = Path(args.output_dir).resolve()
@@ -1325,7 +1395,12 @@ def _cmd_run(args) -> int:
             continue
 
         # Run implementation
-        print(f"  Running implementation (mode={args.mode}, timeout={args.timeout}s, model={args.model})...")
+        planner_label = args.planner_backend or args.planning_model
+        impl_label = args.impl_backend or args.model
+        print(
+            f"  Running implementation (mode={args.mode}, timeout={args.timeout}s, "
+            f"planner={planner_label}, impl={impl_label})..."
+        )
         if args.mode == "nlcmd":
             result = run_nlcmd_impl(
                 wt_path, overrides_path, instance_id,
@@ -1336,6 +1411,7 @@ def _cmd_run(args) -> int:
                 enable_review=args.enable_review,
                 enable_simp=args.enable_simp,
                 max_iterations=args.max_iterations,
+                impl_backend=args.impl_backend or None,
             )
         elif args.mode in ("full", "impl"):
             result = run_full_impl(
@@ -1346,6 +1422,8 @@ def _cmd_run(args) -> int:
                 enable_simp=args.enable_simp,
                 max_iterations=args.max_iterations,
                 skip_planning=(args.mode == "impl"),
+                planner_backend=args.planner_backend or None,
+                impl_backend=args.impl_backend or None,
             )
         else:
             result = run_impl(
