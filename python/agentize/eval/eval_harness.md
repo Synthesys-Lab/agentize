@@ -67,7 +67,9 @@ instantly.
 
 ### Timeout Enforcement
 
-Both modes enforce the `--timeout` flag. Raw mode uses `subprocess.run(timeout=...)`
+Both modes enforce the `--timeout` flag. Planning in `full`/`nlcmd` also respects
+`--planning-timeout` (default: 600) and reports `planning_timeout` status if the limit
+is exceeded before a plan is available. Raw mode uses `subprocess.run(timeout=...)`
 natively. Full mode runs the planning + FSM body in a daemon thread and joins
 with a deadline — if the thread is still alive after `timeout` seconds, the task
 is marked as `"timeout"` and the main loop moves to the next task. The daemon
