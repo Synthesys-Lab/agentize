@@ -177,7 +177,7 @@ autoload -Uz compinit && compinit
 ## Notes
 
 - The output directory is created automatically if it doesn't exist (skipped when `--stdout` is used)
-- Provider-specific options are passed through unchanged, except `--yolo` is normalized to Claude's `--dangerously-skip-permissions`
+- Provider-specific options are passed through unchanged, except `--yolo` is normalized to Claude's `--dangerously-skip-permissions` and Codex's `--full-auto`
 - The wrapper returns the provider's exit code on successful execution
 - Best-effort providers (opencode, cursor, kimi) may have limited functionality
 - Only `acw` is the public function; all helper functions (provider invocation, completion, validation) are internal (prefixed with `_acw_`) and won't appear in tab completion

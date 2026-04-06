@@ -269,7 +269,7 @@ lol impl <issue-no> [--backend <provider:model>] [--max-iterations <N>] [--yolo]
 |--------|----------|---------|-------------|
 | `--backend` | No | `impl.model` or `codex:gpt-5.2-codex` | Backend in `provider:model` form |
 | `--max-iterations` | No | `impl.max_iter` or `10` | Maximum `acw` iterations before giving up |
-| `--yolo` | No | Off | Pass through to provider CLI options (Claude via acw maps to `--dangerously-skip-permissions`) |
+| `--yolo` | No | Off | Pass through to provider CLI options (Claude via acw maps to `--dangerously-skip-permissions`; Codex maps to `--full-auto`) |
 | `--wait-for-ci` | No | Off | After PR creation, monitor mergeability + CI and iterate on failures |
 
 #### Impl defaults in `.agentize.local.yaml`
