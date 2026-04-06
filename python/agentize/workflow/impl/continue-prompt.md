@@ -3,7 +3,7 @@ Each iteration:
 - read the issue file for the context, and read the current repo file state to determine what to do next to achieve the goal.
 - it is ok to fail some test cases temporarily at the end of an iteration, as long as they are properly reported for further development.
 - create the commit report file for the current iteration in .tmp/commit-report-iter-<iter>.txt with the full commit message for this iteration.
-- update {{finalize_file}} with PR title (first line) and body (full file); include "Issue {{issue_no}} resolved" only when done.
+- update {{finalize_file}} with PR title (first line) and body (full file); include "Issue {{issue_no}} resolved" only when done. Example: `echo "Issue {{issue_no}} resolved" >> {{finalize_file}}`
 
 PR Title Format:
 The first line of {{finalize_file}} will be used as the PR title and MUST follow this exact format:

@@ -42,9 +42,19 @@ _acw_invoke_codex() {
     local output="$3"
     shift 3
 
+    # Normalize --yolo to Codex's supported flag
+    local args=()
+    for arg in "$@"; do
+        if [ "$arg" = "--yolo" ]; then
+            args+=( "--full-auto" )
+        else
+            args+=( "$arg" )
+        fi
+    done
+
     # Codex reads from stdin, uses -o for output file
     # stderr passes through for progress messages
-    codex exec --model "$model" -o "$output" "$@" - < "$input"
+    codex exec --model "$model" -o "$output" "${args[@]}" - < "$input"
 }
 
 # Invoke Opencode CLI (best-effort)
