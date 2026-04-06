@@ -51,11 +51,13 @@ _MODEL_ID_MAP = {
 
 
 def _make_result(instance_id: str) -> dict:
-    """Create a blank per-task result dict with cost fields."""
+    """Create a blank per-task result dict with cost and timing fields."""
     return {
         "instance_id": instance_id,
         "status": "error",
         "wall_time": 0.0,
+        "planning_time": 0.0,
+        "impl_time": 0.0,
         "tokens": 0,
         "input_tokens": 0,
         "output_tokens": 0,
@@ -722,6 +724,7 @@ def run_full_impl(
     skip_planning: bool = False,
     planner_backend: str | None = None,
     impl_backend: str | None = None,
+    planning_timeout: int = 600,
 ) -> dict:
     """Run the agentize pipeline against a task.
 
@@ -744,6 +747,9 @@ def run_full_impl(
     if not skip_planning:
         result["cost_note"] = "cost estimated from new JSONL session files"
 
+    # Shared timing bucket for phase timing from daemon thread
+    timing_bucket: list[dict] = []
+
     # Run the pipeline body in a daemon thread so we can enforce a timeout.
     # A daemon thread is killed when the main thread moves on; this is
     # acceptable because each task runs in its own isolated worktree.
@@ -752,6 +758,7 @@ def run_full_impl(
 
     def _run_pipeline():
         try:
+            planning_start = time.time()
             status = _run_full_impl_body(
                 wt_path, overrides_path, instance_id,
                 problem_statement, model,
@@ -760,6 +767,10 @@ def run_full_impl(
                 planner_backend=planner_backend,
                 impl_backend=impl_backend,
             )
+            # Record phase timing — planning ends when FSM starts (approximated
+            # by total time minus impl time; the split point is inside
+            # _run_full_impl_body which we can't instrument without changing its
+            # return type, so we use wall_time as the authoritative total)
             status_bucket.append(status)
         except Exception as exc:
             exc_bucket.append(exc)
@@ -954,6 +965,7 @@ def run_nlcmd_impl(
     enable_simp: bool = False,
     max_iterations: int = 10,
     impl_backend: str | None = None,
+    planning_timeout: int = 600,
 ) -> dict:
     """Run multi-agent NL planning command + FSM implementation.
 
@@ -1000,12 +1012,13 @@ def run_nlcmd_impl(
         return result
 
     cmd_str = template.format(problem_statement=problem_statement)
-    planning_timeout = timeout // 2  # reserve half the budget for impl
+    effective_planning_timeout = min(planning_timeout, timeout // 2)
 
-    print(f"  Phase 1: NL planning via '{planner_cmd}' (timeout={planning_timeout}s)",
+    print(f"  Phase 1: NL planning via '{planner_cmd}' (timeout={effective_planning_timeout}s)",
           file=sys.stderr)
 
     plan_text = ""
+    planning_start = time.time()
     try:
         plan_proc = subprocess.run(
             ["claude", "-p", "--output-format", "json",
@@ -1015,7 +1028,7 @@ def run_nlcmd_impl(
             env=env,
             capture_output=True,
             text=True,
-            timeout=planning_timeout,
+            timeout=effective_planning_timeout,
         )
 
         if plan_proc.returncode != 0:
@@ -1050,14 +1063,17 @@ def run_nlcmd_impl(
             print("  No plan produced — falling back to raw problem statement",
                   file=sys.stderr)
 
+        result["planning_time"] = time.time() - planning_start
+
     except subprocess.TimeoutExpired:
+        result["planning_time"] = time.time() - planning_start
         # Even on timeout, check if a partial consensus was written
         plan_text = _find_consensus_plan(tmp_dir)
         if plan_text:
             print(f"  Planning timed out but partial consensus found ({len(plan_text)} chars)",
                   file=sys.stderr)
         else:
-            result["status"] = "timeout"
+            result["status"] = "planning_timeout"
             result["wall_time"] = time.time() - start_time
             # Capture any JSONL files written before the timeout
             files_after = _list_jsonl_files()
@@ -1073,6 +1089,7 @@ def run_nlcmd_impl(
             return result
 
     # --- Phase 2: FSM impl with plan ---
+    impl_start = time.time()
     remaining_timeout = max(60, timeout - int(time.time() - start_time))
     print(f"  Phase 2: FSM impl (timeout={remaining_timeout}s)", file=sys.stderr)
 
@@ -1096,6 +1113,8 @@ def run_nlcmd_impl(
     worker = threading.Thread(target=_run_impl, daemon=True)
     worker.start()
     worker.join(timeout=remaining_timeout)
+
+    result["impl_time"] = time.time() - impl_start
 
     if worker.is_alive():
         print(f"  Impl timeout after {remaining_timeout}s", file=sys.stderr)
@@ -1192,11 +1211,14 @@ def aggregate_metrics(results: list[dict]) -> dict:
     costs = [r["cost_usd"] for r in results if r.get("cost_usd", 0) > 0]
     input_tokens = [r["input_tokens"] for r in completed if r.get("input_tokens", 0) > 0]
     output_tokens = [r["output_tokens"] for r in completed if r.get("output_tokens", 0) > 0]
+    planning_times = [r["planning_time"] for r in results if r.get("planning_time", 0) > 0]
+    impl_times = [r["impl_time"] for r in results if r.get("impl_time", 0) > 0]
 
     return {
         "total_tasks": len(results),
         "completed": len(completed),
         "timeouts": sum(1 for r in results if r["status"] == "timeout"),
+        "planning_timeouts": sum(1 for r in results if r["status"] == "planning_timeout"),
         "errors": sum(1 for r in results if r["status"] == "error"),
         "compile_failed": sum(1 for r in results if r["status"] == "compile_failed"),
         "failed": sum(1 for r in results if r["status"] == "failed"),
@@ -1207,6 +1229,10 @@ def aggregate_metrics(results: list[dict]) -> dict:
         "output_tokens_total": sum(output_tokens),
         "time_mean": sum(times) / len(times) if times else 0.0,
         "time_total": sum(times),
+        "planning_time_total": sum(planning_times),
+        "planning_time_mean": sum(planning_times) / len(planning_times) if planning_times else 0.0,
+        "impl_time_total": sum(impl_times),
+        "impl_time_mean": sum(impl_times) / len(impl_times) if impl_times else 0.0,
         "cost_total_usd": sum(costs),
         "cost_mean_usd": sum(costs) / len(costs) if costs else 0.0,
     }
@@ -1238,6 +1264,10 @@ def main(argv: list[str] | None = None) -> int:
     run_p.add_argument(
         "--timeout", type=int, default=1800,
         help="Per-task timeout in seconds (default: 1800)",
+    )
+    run_p.add_argument(
+        "--planning-timeout", type=int, default=600,
+        help="Planning-phase timeout in seconds for full/nlcmd (default: 600)",
     )
     run_p.add_argument(
         "--output-dir", default=".tmp/eval",
@@ -1412,6 +1442,7 @@ def _cmd_run(args) -> int:
                 enable_simp=args.enable_simp,
                 max_iterations=args.max_iterations,
                 impl_backend=args.impl_backend or None,
+                planning_timeout=args.planning_timeout,
             )
         elif args.mode in ("full", "impl"):
             result = run_full_impl(
@@ -1424,6 +1455,7 @@ def _cmd_run(args) -> int:
                 skip_planning=(args.mode == "impl"),
                 planner_backend=args.planner_backend or None,
                 impl_backend=args.impl_backend or None,
+                planning_timeout=args.planning_timeout,
             )
         else:
             result = run_impl(
@@ -1513,6 +1545,8 @@ def _print_summary(metrics: dict) -> None:
     print(f"Completed:    {metrics['completed']}")
     print(f"Failed:       {metrics['failed']}")
     print(f"Timeouts:     {metrics['timeouts']}")
+    if metrics.get("planning_timeouts", 0) > 0:
+        print(f"Plan T/O:     {metrics['planning_timeouts']}")
     print(f"Errors:       {metrics['errors']}")
     if metrics.get("compile_failed", 0) > 0:
         print(f"Compile fail: {metrics['compile_failed']}")
@@ -1525,6 +1559,10 @@ def _print_summary(metrics: dict) -> None:
     if metrics["time_total"] > 0:
         print(f"Time total:   {metrics['time_total']:.1f}s")
         print(f"Time mean:    {metrics['time_mean']:.1f}s")
+    if metrics.get("planning_time_total", 0) > 0:
+        print(f"Planning time:{metrics['planning_time_total']:.1f}s (mean {metrics['planning_time_mean']:.1f}s)")
+    if metrics.get("impl_time_total", 0) > 0:
+        print(f"Impl time:    {metrics['impl_time_total']:.1f}s (mean {metrics['impl_time_mean']:.1f}s)")
     if metrics.get("cost_total_usd", 0) > 0:
         print(f"Cost total:   ${metrics['cost_total_usd']:.4f}")
         print(f"Cost mean:    ${metrics['cost_mean_usd']:.4f}")

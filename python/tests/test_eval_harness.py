@@ -662,7 +662,7 @@ class TestNlcmdImpl:
             problem_statement="test problem",
             timeout=2,
         )
-        assert result["status"] == "timeout"
+        assert result["status"] == "planning_timeout"
 
     def test_unknown_planner_returns_error(self, tmp_path):
         overrides = write_overrides(tmp_path, "nlcmd-bad")
