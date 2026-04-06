@@ -369,6 +369,12 @@ class TestMakeResult:
         assert result["tokens"] == 0
         assert result["status"] == "error"
 
+    def test_has_timing_fields(self):
+        result = _make_result("test-timing")
+        assert result["planning_time"] == 0.0
+        assert result["impl_time"] == 0.0
+        assert result["wall_time"] == 0.0
+
 
 class TestParseClaudeUsage:
     def test_valid_json_with_usage(self):
@@ -552,6 +558,49 @@ class TestAggregateMetricsCost:
         assert metrics["cost_mean_usd"] == 0.0
 
 
+class TestAggregateMetricsPhaseTimming:
+    def test_planning_impl_time_aggregation(self):
+        results = [
+            {
+                "instance_id": "a", "status": "completed",
+                "tokens": 100, "wall_time": 100.0,
+                "planning_time": 60.0, "impl_time": 40.0,
+            },
+            {
+                "instance_id": "b", "status": "completed",
+                "tokens": 200, "wall_time": 200.0,
+                "planning_time": 120.0, "impl_time": 80.0,
+            },
+        ]
+        metrics = aggregate_metrics(results)
+        assert metrics["planning_time_total"] == pytest.approx(180.0)
+        assert metrics["planning_time_mean"] == pytest.approx(90.0)
+        assert metrics["impl_time_total"] == pytest.approx(120.0)
+        assert metrics["impl_time_mean"] == pytest.approx(60.0)
+
+    def test_planning_timeouts_counted(self):
+        results = [
+            {"instance_id": "a", "status": "planning_timeout",
+             "tokens": 0, "wall_time": 600.0,
+             "planning_time": 600.0, "impl_time": 0.0},
+            {"instance_id": "b", "status": "completed",
+             "tokens": 100, "wall_time": 100.0,
+             "planning_time": 50.0, "impl_time": 50.0},
+        ]
+        metrics = aggregate_metrics(results)
+        assert metrics["planning_timeouts"] == 1
+
+    def test_zero_timing_when_not_present(self):
+        results = [
+            {"instance_id": "a", "status": "completed",
+             "tokens": 100, "wall_time": 10.0},
+        ]
+        metrics = aggregate_metrics(results)
+        assert metrics["planning_time_total"] == 0.0
+        assert metrics["impl_time_total"] == 0.0
+        assert metrics["planning_timeouts"] == 0
+
+
 class TestPlannerCmdTemplates:
     def test_ultra_planner_template(self):
         """ultra-planner template should include --force-full and --dry-run."""
@@ -689,6 +738,50 @@ class TestNlcmdImpl:
         assert result["cache_write_tokens"] == 20
         assert result["tokens"] == 300
         assert result["cost_usd"] == 1.50
+
+    def test_planning_timeout_status(self, tmp_path, monkeypatch):
+        """run_nlcmd_impl should emit 'planning_timeout' when planning exceeds limit."""
+        def _slow_run(*args, **kwargs):
+            raise subprocess.TimeoutExpired(cmd="claude", timeout=1)
+
+        monkeypatch.setattr(subprocess, "run", _slow_run)
+        monkeypatch.setattr(
+            "agentize.eval.eval_harness._list_jsonl_files", lambda: set()
+        )
+
+        overrides = write_overrides(tmp_path, "nlcmd-ptimeout")
+        result = run_nlcmd_impl(
+            wt_path=str(tmp_path),
+            overrides_path=overrides,
+            instance_id="nlcmd-ptimeout",
+            problem_statement="test",
+            timeout=4,
+            planning_timeout=1,
+        )
+        assert result["status"] == "planning_timeout"
+        assert result["planning_time"] > 0.0
+
+    def test_planning_time_recorded(self, tmp_path, monkeypatch):
+        """run_nlcmd_impl should record planning_time even on timeout."""
+        def _slow_run(*args, **kwargs):
+            raise subprocess.TimeoutExpired(cmd="claude", timeout=1)
+
+        monkeypatch.setattr(subprocess, "run", _slow_run)
+        monkeypatch.setattr(
+            "agentize.eval.eval_harness._list_jsonl_files", lambda: set()
+        )
+
+        overrides = write_overrides(tmp_path, "nlcmd-ptime")
+        result = run_nlcmd_impl(
+            wt_path=str(tmp_path),
+            overrides_path=overrides,
+            instance_id="nlcmd-ptime",
+            problem_statement="test",
+            timeout=4,
+            planning_timeout=1,
+        )
+        assert "planning_time" in result
+        assert result["planning_time"] >= 0.0
 
 
 # ---------------------------------------------------------------------------
