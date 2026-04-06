@@ -868,6 +868,22 @@ def impl_kernel(
         ci_failure=ci_failure,
     )
 
+    # Write AGENTS.md for non-claude providers (e.g., Codex reads this at startup)
+    if provider != "claude":
+        agents_md = state.worktree / "AGENTS.md"
+        if not agents_md.exists():
+            agents_md.write_text(
+                f"IMPORTANT: After implementing the fix, you MUST create "
+                f"{finalize_file} with the completion marker.\n"
+                f"Run: cat > {finalize_file} << 'EOF'\n"
+                f"[bugfix][#{ state.issue_no}] Brief description\n"
+                f"Issue {state.issue_no} resolved\n"
+                f"closes #{state.issue_no}\n"
+                f"EOF\n"
+                f"The orchestrator will loop forever if this file is missing.\n",
+                encoding="utf-8",
+            )
+
     # Run the prompt
     extra_flags = ["--yolo"] if yolo else None
     try:
