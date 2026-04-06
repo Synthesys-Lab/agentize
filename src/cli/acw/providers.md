@@ -18,6 +18,7 @@ serve as the provider invocation surface for the dispatcher.
 
 ### _acw_invoke_codex <model> <input> <output> [options...]
 - Reads the prompt from `input` via stdin and writes the response to `output`.
+- Normalizes `--yolo` to `--full-auto`.
 - Returns the Codex CLI exit code.
 
 ### _acw_invoke_opencode <model> <input> <output> [options...]
