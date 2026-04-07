@@ -766,6 +766,7 @@ def run_full_impl(
                 planner_backend=planner_backend,
                 impl_backend=impl_backend,
                 timing_bucket=timing_bucket,
+                planning_timeout=planning_timeout,
             )
             status_bucket.append(status)
         except Exception as exc:
@@ -790,7 +791,7 @@ def run_full_impl(
     # Extract phase timing from daemon thread
     if timing_bucket:
         result["planning_time"] = timing_bucket[0].get("planning_time", 0.0)
-        result["impl_time"] = result["wall_time"] - result["planning_time"]
+        result["impl_time"] = max(0.0, result["wall_time"] - result["planning_time"])
 
     # Compute cost from NEW JSONL files only (created during this run)
     files_after = _list_jsonl_files()
@@ -821,6 +822,7 @@ def _run_full_impl_body(
     planner_backend: str | None = None,
     impl_backend: str | None = None,
     timing_bucket: list[dict] | None = None,
+    planning_timeout: int = 600,
 ) -> str:
     """Inner body of run_full_impl — runs planning + FSM, returns status string.
 
@@ -861,15 +863,51 @@ def _run_full_impl_body(
         )
     else:
         _planning_start = time.time()
-        issue_content = run_planning_phase(
-            problem_statement,
-            tmp_dir,
-            model,
-            cwd=wt,
-            planner_backend=planner_backend,
-        )
+        # Run planning in a sub-thread to enforce planning_timeout
+        _plan_result: list[str] = []
+        _plan_exc: list[Exception] = []
+
+        def _run_planning():
+            try:
+                content = run_planning_phase(
+                    problem_statement,
+                    tmp_dir,
+                    model,
+                    cwd=wt,
+                    planner_backend=planner_backend,
+                )
+                _plan_result.append(content)
+            except Exception as exc:
+                _plan_exc.append(exc)
+
+        plan_worker = threading.Thread(target=_run_planning, daemon=True)
+        plan_worker.start()
+        plan_worker.join(timeout=planning_timeout)
+
+        _planning_elapsed = time.time() - _planning_start
         if timing_bucket is not None:
-            timing_bucket.append({"planning_time": time.time() - _planning_start})
+            timing_bucket.append({"planning_time": _planning_elapsed})
+
+        if plan_worker.is_alive():
+            print(f"  Planning timeout after {planning_timeout}s — using raw problem statement",
+                  file=sys.stderr)
+            if timing_bucket is not None:
+                timing_bucket[0]["planning_timed_out"] = True
+            issue_content = (
+                f"# SWE-bench Task\n\n"
+                f"## Problem Statement\n\n{problem_statement}\n\n"
+                f"## Instructions\n\nImplement the fix. Make minimal changes.\n"
+            )
+        elif _plan_exc:
+            print(f"  Planning error: {_plan_exc[0]}", file=sys.stderr)
+            issue_content = (
+                f"# SWE-bench Task\n\n"
+                f"## Problem Statement\n\n{problem_statement}\n\n"
+                f"## Instructions\n\nImplement the fix. Make minimal changes.\n"
+            )
+        else:
+            issue_content = _plan_result[0] if _plan_result else ""
+
     issue_file.write_text(issue_content, encoding="utf-8")
 
     # Ensure subprocesses default to the worktree so Claude's tools
