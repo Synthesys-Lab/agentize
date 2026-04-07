@@ -56,7 +56,22 @@ We scaled the SWE-bench evaluation from 5 to 20 tasks across three orchestration
 | **cc.nl** | ~123,763* | ~6,188* | ~3,134s* (~52 min) | ~157s* |
 | **cc.script** | 152,796 | 7,640 | 14,241s (3.9 hrs) | 712s |
 
-### Phase Timing Breakdown (5-task sample, 2026-04-07)
+### Phase Timing Breakdown (5-task samples, 2026-04-07)
+
+#### cc.r opus (raw — no planning phase)
+
+| Task | Planning | Impl | Total | Planning % | Timed out? |
+|------|----------|------|-------|------------|------------|
+| astropy-12907 | 0s | 68s | 68s | 0% | N/A |
+| astropy-13033 | 0s | 82s | 82s | 0% | N/A |
+| astropy-13236 | 0s | 68s | 68s | 0% | N/A |
+| astropy-13398 | 0s | 58s | 58s | 0% | N/A |
+| astropy-13453 | 0s | 197s | 197s | 0% | N/A |
+| **Mean** | **0s** | **95s** | **95s** | **0%** | **N/A** |
+
+Raw mode has no planning phase — all time is implementation (single `claude -p` call).
+
+#### cc.script (full — opus planning + sonnet impl, --planning-timeout 600)
 
 | Task | Planning | Impl | Total | Planning % | Timed out? |
 |------|----------|------|-------|------------|------------|
@@ -67,10 +82,20 @@ We scaled the SWE-bench evaluation from 5 to 20 tasks across three orchestration
 | astropy-13453 | 600s | 47s | 647s | 93% | Yes (600s cap) |
 | **Mean** | **514s** | **190s** | **704s** | **73%** | **2/5 (40%)** |
 
-Key observations:
-- Planning accounts for **51-93%** of total task time (mean 73%)
-- Implementation is fast: mean 190s (3.2 min) per task
-- 2/5 tasks hit the 600s planning timeout — typically when understander or bold-proposer runs long
+#### cc.nl (nlcmd — TBD, run pending)
+
+*To be added after `--mode nlcmd --limit 5 --planning-timeout 600` run.*
+
+#### cc.script + codex impl (full — opus planning + codex impl, TBD)
+
+*To be added after `--mode full --limit 5 --impl-backend codex:gpt-5.2-codex --planning-timeout 600` run.*
+
+#### Key observations
+
+- **Raw mode**: All time is implementation — mean 95s/task with opus
+- **Full mode**: Planning accounts for **51-93%** of total task time (mean 73%)
+- Implementation is fast: mean 190s (3.2 min) per task with sonnet
+- 2/5 full-mode tasks hit the 600s planning timeout — typically when understander (48-292s) or bold-proposer (72-347s) runs long
 - Per-agent timing: understander 48-292s, bold 72-347s, critique+reducer 62-108s (parallel), consensus 89-253s
 
 ## Analysis
