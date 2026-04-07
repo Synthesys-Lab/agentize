@@ -758,7 +758,6 @@ def run_full_impl(
 
     def _run_pipeline():
         try:
-            planning_start = time.time()
             status = _run_full_impl_body(
                 wt_path, overrides_path, instance_id,
                 problem_statement, model,
@@ -766,11 +765,8 @@ def run_full_impl(
                 skip_planning=skip_planning,
                 planner_backend=planner_backend,
                 impl_backend=impl_backend,
+                timing_bucket=timing_bucket,
             )
-            # Record phase timing — planning ends when FSM starts (approximated
-            # by total time minus impl time; the split point is inside
-            # _run_full_impl_body which we can't instrument without changing its
-            # return type, so we use wall_time as the authoritative total)
             status_bucket.append(status)
         except Exception as exc:
             exc_bucket.append(exc)
@@ -790,6 +786,11 @@ def run_full_impl(
     else:
         result["status"] = status_bucket[0] if status_bucket else "error"
         result["wall_time"] = time.time() - start_time
+
+    # Extract phase timing from daemon thread
+    if timing_bucket:
+        result["planning_time"] = timing_bucket[0].get("planning_time", 0.0)
+        result["impl_time"] = result["wall_time"] - result["planning_time"]
 
     # Compute cost from NEW JSONL files only (created during this run)
     files_after = _list_jsonl_files()
@@ -819,6 +820,7 @@ def _run_full_impl_body(
     plan_override: str | None = None,
     planner_backend: str | None = None,
     impl_backend: str | None = None,
+    timing_bucket: list[dict] | None = None,
 ) -> str:
     """Inner body of run_full_impl — runs planning + FSM, returns status string.
 
@@ -858,6 +860,7 @@ def _run_full_impl_body(
             f"## Instructions\n\nImplement the fix. Make minimal changes.\n"
         )
     else:
+        _planning_start = time.time()
         issue_content = run_planning_phase(
             problem_statement,
             tmp_dir,
@@ -865,6 +868,8 @@ def _run_full_impl_body(
             cwd=wt,
             planner_backend=planner_backend,
         )
+        if timing_bucket is not None:
+            timing_bucket.append({"planning_time": time.time() - _planning_start})
     issue_file.write_text(issue_content, encoding="utf-8")
 
     # Ensure subprocesses default to the worktree so Claude's tools
@@ -1464,8 +1469,11 @@ def _cmd_run(args) -> int:
             )
         results.append(result)
         cost_str = f", Cost: ${result['cost_usd']:.4f}" if result.get("cost_usd") else ""
+        phase_str = ""
+        if result.get("planning_time", 0) > 0:
+            phase_str = f" (plan: {result['planning_time']:.0f}s, impl: {result['impl_time']:.0f}s)"
         print(f"  Status: {result['status']}, "
-              f"Time: {result['wall_time']:.1f}s, "
+              f"Time: {result['wall_time']:.1f}s{phase_str}, "
               f"Tokens: {result['tokens']}{cost_str}")
 
         # Extract patch
