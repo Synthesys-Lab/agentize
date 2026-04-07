@@ -82,13 +82,25 @@ Raw mode has no planning phase — all time is implementation (single `claude -p
 | astropy-13453 | 600s | 47s | 647s | 93% | Yes (600s cap) |
 | **Mean** | **514s** | **190s** | **704s** | **73%** | **2/5 (40%)** |
 
-#### cc.nl (nlcmd — TBD, run pending)
+#### cc.nl (nlcmd — `claude -p "/ultra-planner"` + sonnet impl, --planning-timeout 600)
 
-*To be added after `--mode nlcmd --limit 5 --planning-timeout 600` run.*
+| Task | Planning | Impl | Total | Planning % | Timed out? |
+|------|----------|------|-------|------------|------------|
+| astropy-12907 | 600s | 37s | 637s | 94% | Yes (600s cap, partial plan found) |
+| astropy-13033 | 600s | 64s | 664s | 90% | Yes (600s cap, partial plan found) |
+| **Mean (2/5)** | **600s** | **51s** | **651s** | **92%** | **2/2 (100%)** |
 
-#### cc.script + codex impl (full — opus planning + codex impl, TBD)
+nlcmd planning **always** times out at 600s. The `claude -p "/ultra-planner"` NL dispatch adds ~200-300s overhead compared to direct agent invocation in full mode. However, partial consensus plans are still found and used for implementation. Full 5-task run pending.
 
-*To be added after `--mode full --limit 5 --impl-backend codex:gpt-5.2-codex --planning-timeout 600` run.*
+#### cc.script + codex impl (full — opus planning + codex:gpt-5.2-codex impl, --planning-timeout 600)
+
+| Task | Planning | Impl | Iters | Total | Planning % | Plan T/O? |
+|------|----------|------|-------|-------|------------|-----------|
+| astropy-12907 | 397s | 80s | 1 | 477s | 83% | No |
+| astropy-13033 | 365s | 466s | 2 | 831s | 44% | No |
+| **Mean (2/5)** | **381s** | **273s** | **1.5** | **654s** | **58%** | **0/2** |
+
+Codex impl completes in 1-2 iterations (down from 4+ before #984 fix). Task 2 needed 2 iterations because Codex wrote the code fix but missed the completion marker on iter 1 — a known probabilistic behavior where ~60-70% of tasks complete in 1 iteration. Full 5-task run in progress.
 
 #### Key observations
 
