@@ -1534,11 +1534,15 @@ def _cmd_run(args) -> int:
             else:
                 print(f"  No changes detected")
 
-        # Incremental save: write predictions after each task so progress survives crashes
+        # Incremental save: write predictions and results after each task
         if predictions:
             with open(predictions_path, "w", encoding="utf-8") as f:
                 for pred in predictions:
                     f.write(json.dumps(pred) + "\n")
+        results_path = output_dir / "results.jsonl"
+        with open(results_path, "w", encoding="utf-8") as f:
+            for r in results:
+                f.write(json.dumps(r) + "\n")
 
         # Cleanup worktree to save disk space
         if getattr(args, "cleanup", False) and not is_nginx:
@@ -1555,8 +1559,14 @@ def _cmd_run(args) -> int:
                 f.write(json.dumps(pred) + "\n")
         print(f"\nPredictions written to {predictions_path}")
 
-    # Write metrics
+    # Write per-task results and metrics
     if results:
+        results_path = output_dir / "results.jsonl"
+        with open(results_path, "w", encoding="utf-8") as f:
+            for r in results:
+                f.write(json.dumps(r) + "\n")
+        print(f"Results written to {results_path}")
+
         metrics = aggregate_metrics(results)
         metrics_path.write_text(
             json.dumps(metrics, indent=2) + "\n", encoding="utf-8",
