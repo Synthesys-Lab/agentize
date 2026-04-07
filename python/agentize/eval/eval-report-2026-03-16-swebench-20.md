@@ -56,6 +56,23 @@ We scaled the SWE-bench evaluation from 5 to 20 tasks across three orchestration
 | **cc.nl** | ~123,763* | ~6,188* | ~3,134s* (~52 min) | ~157s* |
 | **cc.script** | 152,796 | 7,640 | 14,241s (3.9 hrs) | 712s |
 
+### Phase Timing Breakdown (5-task sample, 2026-04-07)
+
+| Task | Planning | Impl | Total | Planning % | Timed out? |
+|------|----------|------|-------|------------|------------|
+| astropy-12907 | 600s | 55s | 655s | 92% | Yes (600s cap) |
+| astropy-13033 | 488s | 83s | 570s | 86% | No |
+| astropy-13236 | 369s | 280s | 649s | 57% | No |
+| astropy-13398 | 513s | 484s | 998s | 51% | No |
+| astropy-13453 | 600s | 47s | 647s | 93% | Yes (600s cap) |
+| **Mean** | **514s** | **190s** | **704s** | **73%** | **2/5 (40%)** |
+
+Key observations:
+- Planning accounts for **51-93%** of total task time (mean 73%)
+- Implementation is fast: mean 190s (3.2 min) per task
+- 2/5 tasks hit the 600s planning timeout — typically when understander or bold-proposer runs long
+- Per-agent timing: understander 48-292s, bold 72-347s, critique+reducer 62-108s (parallel), consensus 89-253s
+
 ## Analysis
 
 ### Finding 1: cc.r < cc.nl < cc.script confirmed (barely)
