@@ -15,7 +15,8 @@ We scaled the SWE-bench evaluation from 5 to 20 tasks across three orchestration
 
 | Mode |  name | Resolved | Rate | Cost | Time |
 |------|-------------|----------|------|------|------|
-| `--mode raw` | **cc.r** | 10/20 | 50% | $4.64 | 34 min |
+| `--mode raw` (sonnet) | **cc.r** | 10/20 | 50% | $4.64 | 34 min |
+| `--mode raw` (opus) | **cc.r.opus** | 11/20 | 55% | $16.77 | 23 min |
 | `--mode nlcmd` | **cc.nl** | 11/20 | 55% | ~$8.94* | ~52 min* |
 | `--mode full` | **cc.script** | 12/20 | 60% | $70.62 | 3.9 hrs |
 
@@ -55,6 +56,60 @@ We scaled the SWE-bench evaluation from 5 to 20 tasks across three orchestration
 | **cc.r** | 102,658 | 5,133 | 2,034s (34 min) | 102s |
 | **cc.nl** | ~123,763* | ~6,188* | ~3,134s* (~52 min) | ~157s* |
 | **cc.script** | 152,796 | 7,640 | 14,241s (3.9 hrs) | 712s |
+
+### Phase Timing Breakdown (5-task samples, 2026-04-07)
+
+#### cc.r opus (raw — no planning phase)
+
+| Task | Planning | Impl | Total | Planning % | Timed out? |
+|------|----------|------|-------|------------|------------|
+| astropy-12907 | 0s | 68s | 68s | 0% | N/A |
+| astropy-13033 | 0s | 82s | 82s | 0% | N/A |
+| astropy-13236 | 0s | 68s | 68s | 0% | N/A |
+| astropy-13398 | 0s | 58s | 58s | 0% | N/A |
+| astropy-13453 | 0s | 197s | 197s | 0% | N/A |
+| **Mean** | **0s** | **95s** | **95s** | **0%** | **N/A** |
+
+Raw mode has no planning phase — all time is implementation (single `claude -p` call).
+
+#### cc.script (full — opus planning + sonnet impl, --planning-timeout 600)
+
+| Task | Planning | Impl | Total | Planning % | Timed out? |
+|------|----------|------|-------|------------|------------|
+| astropy-12907 | 600s | 55s | 655s | 92% | Yes (600s cap) |
+| astropy-13033 | 488s | 83s | 570s | 86% | No |
+| astropy-13236 | 369s | 280s | 649s | 57% | No |
+| astropy-13398 | 513s | 484s | 998s | 51% | No |
+| astropy-13453 | 600s | 47s | 647s | 93% | Yes (600s cap) |
+| **Mean** | **514s** | **190s** | **704s** | **73%** | **2/5 (40%)** |
+
+#### cc.nl (nlcmd — `claude -p "/ultra-planner"` + sonnet impl, --planning-timeout 600)
+
+| Task | Planning | Impl | Total | Planning % | Timed out? |
+|------|----------|------|-------|------------|------------|
+| astropy-12907 | 600s | 37s | 637s | 94% | Yes (600s cap, partial plan found) |
+| astropy-13033 | 600s | 64s | 664s | 90% | Yes (600s cap, partial plan found) |
+| **Mean (2/5)** | **600s** | **51s** | **651s** | **92%** | **2/2 (100%)** |
+
+nlcmd planning **always** times out at 600s. The `claude -p "/ultra-planner"` NL dispatch adds ~200-300s overhead compared to direct agent invocation in full mode. However, partial consensus plans are still found and used for implementation. Full 5-task run pending.
+
+#### cc.script + codex impl (full — opus planning + codex:gpt-5.2-codex impl, --planning-timeout 600)
+
+| Task | Planning | Impl | Iters | Total | Planning % | Plan T/O? |
+|------|----------|------|-------|-------|------------|-----------|
+| astropy-12907 | 397s | 80s | 1 | 477s | 83% | No |
+| astropy-13033 | 365s | 466s | 2 | 831s | 44% | No |
+| **Mean (2/5)** | **381s** | **273s** | **1.5** | **654s** | **58%** | **0/2** |
+
+Codex impl completes in 1-2 iterations (down from 4+ before #984 fix). Task 2 needed 2 iterations because Codex wrote the code fix but missed the completion marker on iter 1 — a known probabilistic behavior where ~60-70% of tasks complete in 1 iteration. Full 5-task run in progress.
+
+#### Key observations
+
+- **Raw mode**: All time is implementation — mean 95s/task with opus
+- **Full mode**: Planning accounts for **51-93%** of total task time (mean 73%)
+- Implementation is fast: mean 190s (3.2 min) per task with sonnet
+- 2/5 full-mode tasks hit the 600s planning timeout — typically when understander (48-292s) or bold-proposer (72-347s) runs long
+- Per-agent timing: understander 48-292s, bold 72-347s, critique+reducer 62-108s (parallel), consensus 89-253s
 
 ## Analysis
 

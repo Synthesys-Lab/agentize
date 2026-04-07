@@ -7,7 +7,9 @@ Tests for `agentize.eval.eval_harness` pure functions.
 - `_compute_cost`: Cache-tier-aware pricing with `cache_read` and `cache_write` parameters
 - `_parse_claude_usage`: Cache token extraction from `claude -p` JSON output
 - `_sum_jsonl_usage`: Deduplication by `message.id` to avoid counting streamed content blocks
-- `aggregate_metrics`: Cost aggregation across task results
+- `aggregate_metrics`: Cost + per-phase timing aggregation across task results
+- `run_nlcmd_impl`: Planning-timeout status handling
+- `_make_result`: Default timing fields (`planning_time`, `impl_time`)
 - `extract_patch`: Git diff extraction from worktrees
 - `write_overrides`: Shell override generation for eval isolation
 
