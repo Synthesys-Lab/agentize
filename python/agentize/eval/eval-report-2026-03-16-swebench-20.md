@@ -15,7 +15,8 @@ We scaled the SWE-bench evaluation from 5 to 20 tasks across three orchestration
 
 | Mode |  name | Resolved | Rate | Cost | Time |
 |------|-------------|----------|------|------|------|
-| `--mode raw` | **cc.r** | 10/20 | 50% | $4.64 | 34 min |
+| `--mode raw` (sonnet) | **cc.r** | 10/20 | 50% | $4.64 | 34 min |
+| `--mode raw` (opus) | **cc.r.opus** | 10/20 | 50% | $16.77 | 23 min |
 | `--mode nlcmd` | **cc.nl** | 11/20 | 55% | ~$8.94* | ~52 min* |
 | `--mode full` | **cc.script** | 12/20 | 60% | $70.62 | 3.9 hrs |
 
