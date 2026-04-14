@@ -95,13 +95,17 @@ nlcmd planning **always** times out at 600s. The `claude -p "/ultra-planner"` NL
 
 #### cc.script + codex impl (full — opus planning + codex:gpt-5.2-codex impl, --planning-timeout 600)
 
-| Task | Planning | Impl | Iters | Total | Planning % | Plan T/O? |
-|------|----------|------|-------|-------|------------|-----------|
-| astropy-12907 | 397s | 80s | 1 | 477s | 83% | No |
-| astropy-13033 | 365s | 466s | 2 | 831s | 44% | No |
-| **Mean (2/5)** | **381s** | **273s** | **1.5** | **654s** | **58%** | **0/2** |
+20-task run: **8/20 completed, 12/20 failed** (Codex exit code 1 — API crashes, not completion marker issue).
 
-Codex impl completes in 1-2 iterations (down from 4+ before #984 fix). Task 2 needed 2 iterations because Codex wrote the code fix but missed the completion marker on iter 1 — a known probabilistic behavior where ~60-70% of tasks complete in 1 iteration. Full 5-task run in progress.
+| Metric | Value |
+|--------|-------|
+| Completed | 8/20 (40%) |
+| Failed (Codex crash) | 12/20 (60%) |
+| Cost total | $99.37 |
+| Planning time | 4939s (mean 247s) |
+| Impl time | 3234s (mean 162s) |
+
+The 12 failed tasks show Codex returning exit code 1 within 1-2s on every iteration — not the completion marker issue but a Codex API failure (likely rate limiting or auth). Tasks 1-8 ran normally (planning 250-600s, impl 80-466s, 1-2 iterations). Tasks 9-20 crashed immediately with `Planning error: Stage failed with exit code 1` followed by 10 instant-fail impl iterations.
 
 #### Key observations
 
