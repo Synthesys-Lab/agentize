@@ -65,6 +65,7 @@ Global rules are defined in `.claude-plugin/lib/permission/rules.py`. They are e
 # Allow rules
 ('allow', 'Bash', r'^git\s+status'),    # Always allow git status
 ('allow', 'Read', r'.*'),               # Allow all file reads
+('allow', 'Monitor', r'.*'),            # Allow streaming background process events
 
 # Ask rules (fall through)
 ('ask', 'Bash', r'^gh\s+api'),          # Prompt for gh api calls

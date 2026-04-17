@@ -62,6 +62,7 @@ PERMISSION_RULES = {
         ('Grep', r'.*'),
         ('Glob', r'.*'),
         ('LSP', r'.*'),
+        ('Monitor', r'.*'),
 
         # Task agents (exploration/research)
         ('Task', r'.*'),

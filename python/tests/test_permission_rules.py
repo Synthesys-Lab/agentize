@@ -57,6 +57,13 @@ class TestHardcodedRules:
         assert result is not None
         assert result[0] == 'allow'
 
+    def test_match_rule_returns_hardcoded_allow_for_monitor(self):
+        """Test match_rule auto-allows the Monitor tool (read-only streaming)."""
+        result = match_rule('Monitor', 'bg_task_abc')
+        assert result is not None
+        assert result[0] == 'allow'
+        assert 'hardcoded' in result[1]
+
 
 class TestFindConfigPaths:
     """Tests for _find_config_paths function."""

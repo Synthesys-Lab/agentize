@@ -6,6 +6,8 @@ This module provides the permission determination logic for the PreToolUse hook.
 
 Evaluates tool permission requests using rules, Haiku LLM fallback, and optional Telegram approval integration. Returns `allow`, `deny`, or `ask` decisions for Claude Code tool usage.
 
+Read-only observation tools (`Grep`, `Glob`, `LSP`, `Monitor`) are hardcoded to `allow` since they cannot mutate state.
+
 ## Files
 
 | File | Purpose |
