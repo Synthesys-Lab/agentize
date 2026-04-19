@@ -72,6 +72,9 @@ def _ask_haiku_first(tool: str, target: str, workflow: str = 'unknown', session_
         return 'ask'
 
     prompt = f'''Evaluate this Claude Code tool call for automatic permission in hands-off mode.
+If this is a script within the repo, you are encouraged to look at this script and
+understand what it does to make the decision. If it's a one liner command,
+you can make the decision based on the command and your understanding of it.
 
 Tool: {tool}
 Target: {target}
