@@ -89,6 +89,7 @@ class TestTransitions:
         assert next_stage(STAGE_SIMP, EVENT_SIMP_PASS) == STAGE_PR
         assert next_stage(STAGE_SIMP, EVENT_SIMP_FAIL) == STAGE_IMPL
         assert next_stage(STAGE_PR, EVENT_PR_PASS) == STAGE_FINISH
+        assert next_stage(STAGE_REBASE, EVENT_REBASE_OK) == STAGE_REVIEW
 
     def test_next_stage_raises_on_unknown_stage(self):
         with pytest.raises(TransitionError, match="Unknown stage"):
@@ -154,6 +155,44 @@ class TestOrchestrator:
         assert result.attempts[STAGE_IMPL] == 2
         assert any("stage=impl event=impl_not_done" in line for line in logs)
         assert any("stage=impl event=impl_done" in line for line in logs)
+        assert any("stage=review event=review_pass" in line for line in logs)
+        assert any("stage=simp event=simp_pass" in line for line in logs)
+        assert any("stage=pr event=pr_pass" in line for line in logs)
+
+    def test_run_fsm_orchestrator_rebase_ok_reaches_review_then_finish(self):
+        context = WorkflowContext(plan="p", upstream_instruction="u")
+        context.current_stage = STAGE_REBASE
+        logs: list[str] = []
+
+        def rebase_kernel(ctx: WorkflowContext) -> StageResult:
+            return StageResult(event=EVENT_REBASE_OK, reason="rebased")
+
+        def review_kernel(ctx: WorkflowContext) -> StageResult:
+            return StageResult(event=EVENT_REVIEW_PASS, reason="review ok")
+
+        def simp_kernel(ctx: WorkflowContext) -> StageResult:
+            return StageResult(event=EVENT_SIMP_PASS, reason="simp ok")
+
+        def pr_kernel(ctx: WorkflowContext) -> StageResult:
+            return StageResult(event=EVENT_PR_PASS, reason="pr ok")
+
+        kernels = {
+            STAGE_REBASE: rebase_kernel,
+            STAGE_REVIEW: review_kernel,
+            STAGE_SIMP: simp_kernel,
+            STAGE_PR: pr_kernel,
+        }
+
+        result = run_fsm_orchestrator(
+            context,
+            kernels=kernels,
+            logger=logs.append,
+            max_steps=10,
+        )
+
+        assert result.current_stage == STAGE_FINISH
+        assert result.final_status == "finish"
+        assert any("stage=rebase event=rebase_ok" in line for line in logs)
         assert any("stage=review event=review_pass" in line for line in logs)
         assert any("stage=simp event=simp_pass" in line for line in logs)
         assert any("stage=pr event=pr_pass" in line for line in logs)
@@ -538,6 +577,25 @@ class TestRebaseStageKernel:
         result = rebase_stage_kernel(context)
         assert result.event == EVENT_REBASE_OK
         assert state.iteration == initial_iter + 1
+
+    def test_rebase_ok_resets_review_counters(self, tmp_path: Path, monkeypatch):
+        context = _make_impl_context(
+            tmp_path,
+            review_fail_streak=2,
+            review_attempts=3,
+            last_review_score=50,
+        )
+
+        monkeypatch.setattr(
+            "agentize.workflow.impl.kernels.rebase_kernel",
+            lambda state, **kw: (EVENT_REBASE_OK, "Rebased", tmp_path / "rebase.json"),
+        )
+
+        result = rebase_stage_kernel(context)
+        assert result.event == EVENT_REBASE_OK
+        assert context.data["review_fail_streak"] == 0
+        assert context.data["review_attempts"] == 0
+        assert context.data["last_review_score"] is None
 
     def test_rebase_attempts_4_returns_fatal(self, tmp_path: Path):
         context = _make_impl_context(tmp_path, rebase_attempts=3)
